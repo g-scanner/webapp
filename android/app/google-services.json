@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1026607445667",
+    "project_id": "gscanner-5a2c9",
+    "storage_bucket": "gscanner-5a2c9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1026607445667:android:c10ca7ddfb5fb9558e3116",
+        "android_client_info": {
+          "package_name": "it.emanueleciotola.gscanner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzVVkQ02iXJI_sQiBq7oN6t8vFHbZeZDw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

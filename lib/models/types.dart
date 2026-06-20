@@ -1,0 +1,240 @@
+enum GlutenSafetyStatus {
+  adatto,
+  non_adatto,
+  incerto,
+  sconosciuto
+}
+
+class IngredientAnalyzed {
+  final String ingredient;
+  final String dangerLevel; // "safe" | "warning" | "danger"
+  final String reason;
+
+  IngredientAnalyzed({
+    required this.ingredient,
+    required this.dangerLevel,
+    required this.reason,
+  });
+
+  factory IngredientAnalyzed.fromJson(Map<String, dynamic> json) {
+    return IngredientAnalyzed(
+      ingredient: json['ingredient'] ?? '',
+      dangerLevel: json['dangerLevel'] ?? 'warning',
+      reason: json['reason'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'ingredient': ingredient,
+      'dangerLevel': dangerLevel,
+      'reason': reason,
+    };
+  }
+}
+
+class Product {
+  final String barcode;
+  final String name;
+  final String brand;
+  final String ingredients;
+  final List<String> allergens;
+  final GlutenSafetyStatus status;
+  final String reason;
+  final List<IngredientAnalyzed>? ingredientsAnalyzed;
+  final String? imageUrl;
+  final bool? isManual;
+  final String lastUpdated;
+  final int? reportCount;
+
+  Product({
+    required this.barcode,
+    required this.name,
+    required this.brand,
+    required this.ingredients,
+    required this.allergens,
+    required this.status,
+    required this.reason,
+    this.ingredientsAnalyzed,
+    this.imageUrl,
+    this.isManual,
+    required this.lastUpdated,
+    this.reportCount,
+  });
+
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      barcode: json['barcode'] ?? '',
+      name: json['name'] ?? '',
+      brand: json['brand'] ?? '',
+      ingredients: json['ingredients'] ?? '',
+      allergens: List<String>.from(json['allergens'] ?? []),
+      status: GlutenSafetyStatus.values.firstWhere(
+          (e) => e.name == json['status'],
+          orElse: () => GlutenSafetyStatus.sconosciuto),
+      reason: json['reason'] ?? '',
+      ingredientsAnalyzed: (json['ingredients_analyzed'] as List?)
+          ?.map((e) => IngredientAnalyzed.fromJson(e))
+          .toList(),
+      imageUrl: json['image_url'],
+      isManual: json['isManual'],
+      lastUpdated: json['lastUpdated'] ?? DateTime.now().toIso8601String(),
+      reportCount: json['reportCount'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'barcode': barcode,
+      'name': name,
+      'brand': brand,
+      'ingredients': ingredients,
+      'allergens': allergens,
+      'status': status.name,
+      'reason': reason,
+      'ingredients_analyzed': ingredientsAnalyzed?.map((e) => e.toJson()).toList(),
+      'image_url': imageUrl,
+      'isManual': isManual,
+      'lastUpdated': lastUpdated,
+      'reportCount': reportCount,
+    };
+  }
+}
+
+class ScanHistoryItem {
+  final String id;
+  final String? userId;
+  final String barcode;
+  final String productName;
+  final String brand;
+  final GlutenSafetyStatus status;
+  final String scannedAt;
+
+  ScanHistoryItem({
+    required this.id,
+    this.userId,
+    required this.barcode,
+    required this.productName,
+    required this.brand,
+    required this.status,
+    required this.scannedAt,
+  });
+
+  factory ScanHistoryItem.fromJson(Map<String, dynamic> json) {
+    return ScanHistoryItem(
+      id: json['id'] ?? '',
+      userId: json['userId'],
+      barcode: json['barcode'] ?? '',
+      productName: json['productName'] ?? '',
+      brand: json['brand'] ?? '',
+      status: GlutenSafetyStatus.values.firstWhere(
+          (e) => e.name == json['status'],
+          orElse: () => GlutenSafetyStatus.sconosciuto),
+      scannedAt: json['scannedAt'] ?? DateTime.now().toIso8601String(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'barcode': barcode,
+      'productName': productName,
+      'brand': brand,
+      'status': status.name,
+      'scannedAt': scannedAt,
+    };
+  }
+}
+
+class ProductReport {
+  final String id;
+  final String? userId;
+  final String barcode;
+  final String productName;
+  final String brand;
+  final String type;
+  final String comments;
+  final String submittedAt;
+  final String status;
+
+  ProductReport({
+    required this.id,
+    this.userId,
+    required this.barcode,
+    required this.productName,
+    required this.brand,
+    required this.type,
+    required this.comments,
+    required this.submittedAt,
+    required this.status,
+  });
+
+  factory ProductReport.fromJson(Map<String, dynamic> json) {
+    return ProductReport(
+      id: json['id'] ?? '',
+      userId: json['userId'],
+      barcode: json['barcode'] ?? '',
+      productName: json['productName'] ?? '',
+      brand: json['brand'] ?? '',
+      type: json['type'] ?? 'other',
+      comments: json['comments'] ?? '',
+      submittedAt: json['submittedAt'] ?? DateTime.now().toIso8601String(),
+      status: json['status'] ?? 'open',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'barcode': barcode,
+      'productName': productName,
+      'brand': brand,
+      'type': type,
+      'comments': comments,
+      'submittedAt': submittedAt,
+      'status': status,
+    };
+  }
+}
+
+class UserSettings {
+  final String? userId;
+  final bool strictMode;
+  final bool alertLactose;
+  final bool warnAdditives;
+  final bool autoSaveHistory;
+  final String preferredLanguage;
+
+  UserSettings({
+    this.userId,
+    required this.strictMode,
+    required this.alertLactose,
+    required this.warnAdditives,
+    required this.autoSaveHistory,
+    required this.preferredLanguage,
+  });
+
+  factory UserSettings.fromJson(Map<String, dynamic> json) {
+    return UserSettings(
+      userId: json['userId'],
+      strictMode: json['strictMode'] ?? false,
+      alertLactose: json['alertLactose'] ?? false,
+      warnAdditives: json['warnAdditives'] ?? true,
+      autoSaveHistory: json['autoSaveHistory'] ?? true,
+      preferredLanguage: json['preferredLanguage'] ?? 'it',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'strictMode': strictMode,
+      'alertLactose': alertLactose,
+      'warnAdditives': warnAdditives,
+      'autoSaveHistory': autoSaveHistory,
+      'preferredLanguage': preferredLanguage,
+    };
+  }
+}
