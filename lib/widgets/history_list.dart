@@ -28,7 +28,9 @@ class _HistoryListState extends State<HistoryList> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Eliminare scansione?"),
-        content: const Text("Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?"),
+        content: const Text(
+          "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -50,16 +52,23 @@ class _HistoryListState extends State<HistoryList> {
   @override
   Widget build(BuildContext context) {
     final filteredHistory = widget.history.where((item) {
-      final matchesSearch = item.productName.toLowerCase().contains(_search.toLowerCase()) ||
+      final matchesSearch =
+          item.productName.toLowerCase().contains(_search.toLowerCase()) ||
           item.brand.toLowerCase().contains(_search.toLowerCase()) ||
           item.barcode.contains(_search);
       final matchesFilter = _filter == null || item.status == _filter;
       return matchesSearch && matchesFilter;
     }).toList();
 
-    int safeCount = widget.history.where((h) => h.status == GlutenSafetyStatus.adatto).length;
-    int dangerCount = widget.history.where((h) => h.status == GlutenSafetyStatus.non_adatto).length;
-    int uncertainCount = widget.history.where((h) => h.status == GlutenSafetyStatus.incerto).length;
+    int safeCount = widget.history
+        .where((h) => h.status == GlutenSafetyStatus.adatto)
+        .length;
+    int dangerCount = widget.history
+        .where((h) => h.status == GlutenSafetyStatus.nonAdatto)
+        .length;
+    int uncertainCount = widget.history
+        .where((h) => h.status == GlutenSafetyStatus.incerto)
+        .length;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -74,7 +83,11 @@ class _HistoryListState extends State<HistoryList> {
               borderRadius: BorderRadius.circular(28),
               border: Border.all(color: Colors.grey.shade300),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
             child: Column(
@@ -86,7 +99,10 @@ class _HistoryListState extends State<HistoryList> {
                     SizedBox(width: 8),
                     Text(
                       "Cronologia Scansioni",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -95,20 +111,35 @@ class _HistoryListState extends State<HistoryList> {
                   "Esplora la lista dei tuoi prodotti analizzati e memorizzati nel database locale.",
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
-                
+
                 if (widget.history.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      _buildStatBox(safeCount.toString(), "Sicuri", Colors.green.shade50, Colors.green.shade800),
+                      _buildStatBox(
+                        safeCount.toString(),
+                        "Sicuri",
+                        Colors.green.shade50,
+                        Colors.green.shade800,
+                      ),
                       const SizedBox(width: 8),
-                      _buildStatBox(uncertainCount.toString(), "Incerti", Colors.orange.shade50, Colors.orange.shade800),
+                      _buildStatBox(
+                        uncertainCount.toString(),
+                        "Incerti",
+                        Colors.orange.shade50,
+                        Colors.orange.shade800,
+                      ),
                       const SizedBox(width: 8),
-                      _buildStatBox(dangerCount.toString(), "Tossici", Colors.red.shade50, Colors.red.shade800),
+                      _buildStatBox(
+                        dangerCount.toString(),
+                        "Tossici",
+                        Colors.red.shade50,
+                        Colors.red.shade800,
+                      ),
                     ],
                   ),
                 ],
-                
+
                 const SizedBox(height: 16),
                 TextField(
                   onChanged: (val) => setState(() => _search = val),
@@ -118,7 +149,10 @@ class _HistoryListState extends State<HistoryList> {
                     isDense: true,
                     filled: true,
                     fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -128,23 +162,56 @@ class _HistoryListState extends State<HistoryList> {
                     isDense: true,
                     filled: true,
                     fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                   items: const [
-                    DropdownMenuItem(value: null, child: Text("Filtra Stati: Tutti", style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: GlutenSafetyStatus.adatto, child: Text("🟢 Solo Idonei", style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: GlutenSafetyStatus.incerto, child: Text("🟡 Solo Incerti", style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: GlutenSafetyStatus.non_adatto, child: Text("🔴 Solo Non Idonei", style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: GlutenSafetyStatus.sconosciuto, child: Text("⚪️ Solo Non Trovati", style: TextStyle(fontSize: 12))),
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(
+                        "Filtra Stati: Tutti",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: GlutenSafetyStatus.adatto,
+                      child: Text(
+                        "🟢 Solo Idonei",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: GlutenSafetyStatus.incerto,
+                      child: Text(
+                        "🟡 Solo Incerti",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: GlutenSafetyStatus.nonAdatto,
+                      child: Text(
+                        "🔴 Solo Non Idonei",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: GlutenSafetyStatus.sconosciuto,
+                      child: Text(
+                        "⚪️ Solo Non Trovati",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
                   ],
                   onChanged: (val) => setState(() => _filter = val),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // List
           if (filteredHistory.isEmpty)
             Container(
@@ -158,7 +225,10 @@ class _HistoryListState extends State<HistoryList> {
                 children: [
                   Icon(Icons.delete_outline, size: 40, color: Colors.grey),
                   SizedBox(height: 16),
-                  Text("Nessuna scansione trovata", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    "Nessuna scansione trovata",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
             )
@@ -191,12 +261,30 @@ class _HistoryListState extends State<HistoryList> {
                                 children: [
                                   _buildStatusTag(item.status),
                                   const SizedBox(width: 8),
-                                  Text("Barcode: ${item.barcode}", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                  Text(
+                                    "Barcode: ${item.barcode}",
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 4),
-                              Text(item.productName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              Text(item.brand, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              Text(
+                                item.productName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                item.brand,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -212,7 +300,12 @@ class _HistoryListState extends State<HistoryList> {
     );
   }
 
-  Widget _buildStatBox(String count, String label, Color bgColor, Color textColor) {
+  Widget _buildStatBox(
+    String count,
+    String label,
+    Color bgColor,
+    Color textColor,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(8),
@@ -222,8 +315,22 @@ class _HistoryListState extends State<HistoryList> {
         ),
         child: Column(
           children: [
-            Text(count, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
-            Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor)),
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
           ],
         ),
       ),
@@ -241,7 +348,7 @@ class _HistoryListState extends State<HistoryList> {
         textColor = Colors.green.shade800;
         label = "Idoneo";
         break;
-      case GlutenSafetyStatus.non_adatto:
+      case GlutenSafetyStatus.nonAdatto:
         bgColor = Colors.red.shade50;
         textColor = Colors.red.shade800;
         label = "Contiene Glutine";
@@ -264,7 +371,14 @@ class _HistoryListState extends State<HistoryList> {
         color: bgColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
+      ),
     );
   }
 }

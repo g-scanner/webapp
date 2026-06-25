@@ -21,10 +21,13 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
 
   @override
   Widget build(BuildContext context) {
-    final reportedProducts = widget.products.where((p) => (p.reportCount ?? 0) > 0).toList();
+    final reportedProducts = widget.products
+        .where((p) => (p.reportCount ?? 0) > 0)
+        .toList();
 
     final filtered = reportedProducts.where((p) {
-      final queryMatches = p.name.toLowerCase().contains(_searchTerm.toLowerCase()) ||
+      final queryMatches =
+          p.name.toLowerCase().contains(_searchTerm.toLowerCase()) ||
           p.brand.toLowerCase().contains(_searchTerm.toLowerCase()) ||
           p.barcode.contains(_searchTerm);
       final filterMatches = _statusFilter == null || p.status == _statusFilter;
@@ -53,7 +56,10 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     SizedBox(width: 8),
                     Text(
                       "Segnalazioni / Conferme",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -63,7 +69,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 16),
-                
+
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -78,18 +84,31 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                       Expanded(
                         child: Text(
                           "Totale Prodotti: ${reportedProducts.length} salvati",
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800, fontSize: 12),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade800,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         color: Colors.white54,
-                        child: Text("REVISIONE IN CORSO", style: TextStyle(fontSize: 8, color: Colors.orange.shade900)),
-                      )
+                        child: Text(
+                          "REVISIONE IN CORSO",
+                          style: TextStyle(
+                            fontSize: 8,
+                            color: Colors.orange.shade900,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
                 TextField(
                   onChanged: (val) => setState(() => _searchTerm = val),
@@ -99,7 +118,10 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     isDense: true,
                     filled: true,
                     fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -109,23 +131,56 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     isDense: true,
                     filled: true,
                     fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                   items: const [
-                    DropdownMenuItem(value: null, child: Text("Tutti gli stati", style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: GlutenSafetyStatus.adatto, child: Text("🟢 Solo Idonei", style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: GlutenSafetyStatus.sconosciuto, child: Text("⚪️ Solo Sconosciuti", style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: GlutenSafetyStatus.incerto, child: Text("🟡 Solo Incerti", style: TextStyle(fontSize: 12))),
-                    DropdownMenuItem(value: GlutenSafetyStatus.non_adatto, child: Text("🔴 Solo Non Idonei", style: TextStyle(fontSize: 12))),
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(
+                        "Tutti gli stati",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: GlutenSafetyStatus.adatto,
+                      child: Text(
+                        "🟢 Solo Idonei",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: GlutenSafetyStatus.sconosciuto,
+                      child: Text(
+                        "⚪️ Solo Sconosciuti",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: GlutenSafetyStatus.incerto,
+                      child: Text(
+                        "🟡 Solo Incerti",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: GlutenSafetyStatus.nonAdatto,
+                      child: Text(
+                        "🔴 Solo Non Idonei",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
                   ],
                   onChanged: (val) => setState(() => _statusFilter = val),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           if (filtered.isEmpty)
             Container(
               padding: const EdgeInsets.all(32),
@@ -136,7 +191,10 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
               ),
               child: const Column(
                 children: [
-                  Text("Nessun prodotto corrisponde", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    "Nessun prodotto corrisponde",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
             )
@@ -165,12 +223,30 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           children: [
                             _buildStatusBadge(prod.status),
                             const SizedBox(width: 8),
-                            Text("Barcode: ${prod.barcode}", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                            Text(
+                              "Barcode: ${prod.barcode}",
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text(prod.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        Text("Marca: ${prod.brand}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text(
+                          prod.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          "Marca: ${prod.brand}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(8),
@@ -180,12 +256,17 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                             border: Border.all(color: Colors.grey.shade200),
                           ),
                           child: Text(
-                            prod.reason.isEmpty ? "Nessun commento aggiuntivo." : prod.reason,
-                            style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
+                            prod.reason.isEmpty
+                                ? "Nessun commento aggiuntivo."
+                                : prod.reason,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontStyle: FontStyle.italic,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -208,7 +289,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
         textColor = Colors.green.shade800;
         label = "🟢 IDONEO";
         break;
-      case GlutenSafetyStatus.non_adatto:
+      case GlutenSafetyStatus.nonAdatto:
         bgColor = Colors.red.shade50;
         textColor = Colors.red.shade800;
         label = "🔴 NOCIVO";
@@ -231,7 +312,14 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
         color: bgColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
+      ),
     );
   }
 }

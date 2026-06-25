@@ -1,9 +1,4 @@
-enum GlutenSafetyStatus {
-  adatto,
-  non_adatto,
-  incerto,
-  sconosciuto
-}
+enum GlutenSafetyStatus { adatto, nonAdatto, incerto, sconosciuto }
 
 class IngredientAnalyzed {
   final String ingredient;
@@ -70,8 +65,9 @@ class Product {
       ingredients: json['ingredients'] ?? '',
       allergens: List<String>.from(json['allergens'] ?? []),
       status: GlutenSafetyStatus.values.firstWhere(
-          (e) => e.name == json['status'],
-          orElse: () => GlutenSafetyStatus.sconosciuto),
+        (e) => e.name == json['status'],
+        orElse: () => GlutenSafetyStatus.sconosciuto,
+      ),
       reason: json['reason'] ?? '',
       ingredientsAnalyzed: (json['ingredients_analyzed'] as List?)
           ?.map((e) => IngredientAnalyzed.fromJson(e))
@@ -92,7 +88,9 @@ class Product {
       'allergens': allergens,
       'status': status.name,
       'reason': reason,
-      'ingredients_analyzed': ingredientsAnalyzed?.map((e) => e.toJson()).toList(),
+      'ingredients_analyzed': ingredientsAnalyzed
+          ?.map((e) => e.toJson())
+          .toList(),
       'image_url': imageUrl,
       'isManual': isManual,
       'lastUpdated': lastUpdated,
@@ -128,8 +126,9 @@ class ScanHistoryItem {
       productName: json['productName'] ?? '',
       brand: json['brand'] ?? '',
       status: GlutenSafetyStatus.values.firstWhere(
-          (e) => e.name == json['status'],
-          orElse: () => GlutenSafetyStatus.sconosciuto),
+        (e) => e.name == json['status'],
+        orElse: () => GlutenSafetyStatus.sconosciuto,
+      ),
       scannedAt: json['scannedAt'] ?? DateTime.now().toIso8601String(),
     );
   }
