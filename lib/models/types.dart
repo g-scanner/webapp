@@ -41,6 +41,7 @@ class Product {
   final bool? isManual;
   final String lastUpdated;
   final int? reportCount;
+  final GlutenSafetyStatus? originalStatus;
 
   Product({
     required this.barcode,
@@ -55,6 +56,7 @@ class Product {
     this.isManual,
     required this.lastUpdated,
     this.reportCount,
+    this.originalStatus,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -76,6 +78,12 @@ class Product {
       isManual: json['isManual'],
       lastUpdated: json['lastUpdated'] ?? DateTime.now().toIso8601String(),
       reportCount: json['reportCount'],
+      originalStatus: json['originalStatus'] != null
+          ? GlutenSafetyStatus.values.firstWhere(
+              (e) => e.name == json['originalStatus'],
+              orElse: () => GlutenSafetyStatus.sconosciuto,
+            )
+          : null,
     );
   }
 
@@ -95,6 +103,7 @@ class Product {
       'isManual': isManual,
       'lastUpdated': lastUpdated,
       'reportCount': reportCount,
+      'originalStatus': originalStatus?.name,
     };
   }
 }
@@ -156,6 +165,9 @@ class ProductReport {
   final String comments;
   final String submittedAt;
   final String status;
+  final GlutenSafetyStatus?
+  originalStatus; // Lo stato del prodotto al momento della segnalazione
+  final int score;
 
   ProductReport({
     required this.id,
@@ -167,6 +179,8 @@ class ProductReport {
     required this.comments,
     required this.submittedAt,
     required this.status,
+    this.originalStatus,
+    this.score = 0,
   });
 
   factory ProductReport.fromJson(Map<String, dynamic> json) {
@@ -180,6 +194,13 @@ class ProductReport {
       comments: json['comments'] ?? '',
       submittedAt: json['submittedAt'] ?? DateTime.now().toIso8601String(),
       status: json['status'] ?? 'open',
+      originalStatus: json['originalStatus'] != null
+          ? GlutenSafetyStatus.values.firstWhere(
+              (e) => e.name == json['originalStatus'],
+              orElse: () => GlutenSafetyStatus.sconosciuto,
+            )
+          : null,
+      score: json['score'] ?? 0,
     );
   }
 
@@ -194,6 +215,8 @@ class ProductReport {
       'comments': comments,
       'submittedAt': submittedAt,
       'status': status,
+      'originalStatus': originalStatus?.name,
+      'score': score,
     };
   }
 }

@@ -1,18 +1,37 @@
 import 'package:flutter/material.dart';
 import '../models/types.dart';
 
+// --- Colori estratti dal tuo Tailwind Config ---
+const Color bgBackground = Color(0xFFFAF9FC);
+const Color surfaceLowest = Color(0xFFFFFFFF);
+const Color onSurface = Color(0xFF1B1B1E);
+const Color onSurfaceVariant = Color(0xFF40493D);
+const Color surfaceContainer = Color(0xFFEFEDF1);
+const Color surfaceContainerHigh = Color(0xFFE9E7EB);
+const Color surfaceContainerLow = Color(0xFFF5F3F7);
+const Color outlineVariant = Color(0xFFBFCABA);
+
+const Color primary = Color(0xFF0D631B);
+const Color error = Color(0xFFBA1A1A);
+const Color warningText = Color(0xFF884200);
+
 class HistoryList extends StatefulWidget {
   final List<ScanHistoryItem> history;
+  final List<Product>
+  liveProducts; // Aggiunto per sincronizzare lo stato in tempo reale
   final Function(String) onSelectItem;
   final Future<void> Function() onClearHistory;
   final Future<void> Function(String) onDeleteHistoryItem;
+  final Future<void> Function() onRefresh;
 
   const HistoryList({
     super.key,
     required this.history,
+    required this.liveProducts, // Aggiunto al costruttore
     required this.onSelectItem,
     required this.onClearHistory,
     required this.onDeleteHistoryItem,
+    required this.onRefresh,
   });
 
   @override
@@ -22,11 +41,38 @@ class HistoryList extends StatefulWidget {
 class _HistoryListState extends State<HistoryList> {
   String _search = "";
   GlutenSafetyStatus? _filter;
+  late FocusNode _searchFocusNode;
+  late TextEditingController _searchController;
+
+  bool _isSearchFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchFocusNode = FocusNode();
+    _searchFocusNode.addListener(_onSearchFocusChange);
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchFocusNode.removeListener(_onSearchFocusChange);
+    _searchFocusNode.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchFocusChange() {
+    setState(() {
+      _isSearchFocused = _searchFocusNode.hasFocus;
+    });
+  }
 
   void _confirmDelete(String id) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: surfaceLowest,
         title: const Text("Eliminare scansione?"),
         content: const Text(
           "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
@@ -34,6 +80,7 @@ class _HistoryListState extends State<HistoryList> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
             child: const Text("Annulla"),
           ),
           TextButton(
@@ -41,7 +88,7 @@ class _HistoryListState extends State<HistoryList> {
               Navigator.of(ctx).pop();
               widget.onDeleteHistoryItem(id);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: error),
             child: const Text("Elimina"),
           ),
         ],
@@ -49,9 +96,68 @@ class _HistoryListState extends State<HistoryList> {
     );
   }
 
+  String _getTodayFormatted() {
+    final now = DateTime.now();
+    const months = [
+      'Gen',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mag',
+      'Giu',
+      'Lug',
+      'Ago',
+      'Set',
+      'Ott',
+      'Nov',
+      'Dic',
+    ];
+    return "${now.day} ${months[now.month - 1]} ${now.year}";
+  }
+
+  Color _getFilterColor() {
+    switch (_filter) {
+      case GlutenSafetyStatus.adatto:
+        return primary.withOpacity(0.12);
+      case GlutenSafetyStatus.incerto:
+        return warningText.withOpacity(0.12);
+      case GlutenSafetyStatus.nonAdatto:
+        return error.withOpacity(0.12);
+      case GlutenSafetyStatus.sconosciuto:
+        return outlineVariant.withOpacity(0.2);
+      default:
+        return surfaceContainer;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filteredHistory = widget.history.where((item) {
+    // 1. SINCRONIZZAZIONE LIVE DEGLI STATI
+    // Incrocia la cronologia con il database prodotti scaricato all'avvio
+    final List<ScanHistoryItem> syncedHistory = widget.history.map((item) {
+      final liveProd = widget.liveProducts.cast<Product?>().firstWhere(
+        (p) => p?.barcode == item.barcode,
+        orElse: () => null,
+      );
+
+      // Se troviamo il prodotto nel DB e lo stato è diverso, restituiamo un item aggiornato
+      if (liveProd != null && liveProd.status != item.status) {
+        return ScanHistoryItem(
+          id: item.id,
+          userId: item.userId,
+          barcode: item.barcode,
+          productName: liveProd
+              .name, // Aggiorna anche il nome se la community lo ha corretto
+          brand: liveProd.brand,
+          status: liveProd.status, // ECCO LA MAGIA: STATO AGGIORNATO AL LIVE
+          scannedAt: item.scannedAt,
+        );
+      }
+      return item; // Se non lo trova o non è cambiato, lascia quello in cronologia
+    }).toList();
+
+    // 2. USA IL SYNCED HISTORY PER IL RESTO DELLA LOGICA
+    final filteredHistory = syncedHistory.where((item) {
       final matchesSearch =
           item.productName.toLowerCase().contains(_search.toLowerCase()) ||
           item.brand.toLowerCase().contains(_search.toLowerCase()) ||
@@ -60,275 +166,278 @@ class _HistoryListState extends State<HistoryList> {
       return matchesSearch && matchesFilter;
     }).toList();
 
-    int safeCount = widget.history
+    int safeCount = syncedHistory
         .where((h) => h.status == GlutenSafetyStatus.adatto)
         .length;
-    int dangerCount = widget.history
+    int dangerCount = syncedHistory
         .where((h) => h.status == GlutenSafetyStatus.nonAdatto)
         .length;
-    int uncertainCount = widget.history
+    int uncertainCount = syncedHistory
         .where((h) => h.status == GlutenSafetyStatus.incerto)
         .length;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header box
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.grey.shade300),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+    final bool showClearIcon = _isSearchFocused && _search.isNotEmpty;
+
+    return RefreshIndicator(
+      onRefresh: widget.onRefresh,
+      color: primary,
+      backgroundColor: surfaceLowest,
+      displacement: 15.0,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Intestazione Pagina ─────────────────────────────────────
+            const Text(
+              "Cronologia Scansioni",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w500,
+                color: onSurface,
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 8),
+            const Text(
+              "Rivedi i prodotti che hai scansionato e i loro controlli di sicurezza.",
+              style: TextStyle(
+                fontSize: 14,
+                color: onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Bento Grid (Statistiche) ────────────────────────────────
+            if (syncedHistory.isNotEmpty) ...[
+              Row(
+                children: [
+                  _buildStatBox(
+                    count: safeCount.toString(),
+                    label: "Idonei",
+                    color: primary,
+                    icon: Icons.check_circle,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildStatBox(
+                    count: uncertainCount.toString(),
+                    label: "Incerti",
+                    color: warningText,
+                    icon: Icons.help,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildStatBox(
+                    count: dangerCount.toString(),
+                    label: "Vietati",
+                    color: error,
+                    icon: Icons.cancel,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // ── Ricerca e Filtri ────────────────────────────────────────
+            Row(
               children: [
-                const Row(
-                  children: [
-                    Icon(Icons.history, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text(
-                      "Cronologia Scansioni",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  flex: 5,
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    onChanged: (val) => setState(() => _search = val),
+                    style: const TextStyle(fontSize: 14, color: onSurface),
+                    decoration: InputDecoration(
+                      hintText: "Cerca prodotto...",
+                      hintStyle: TextStyle(
+                        color: onSurfaceVariant.withOpacity(0.6),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
+                              return ScaleTransition(
+                                scale: animation,
+                                child: child,
+                              );
+                            },
+                        child: showClearIcon
+                            ? IconButton(
+                                key: const ValueKey('clearIcon'),
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: onSurfaceVariant,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _search = "";
+                                  });
+                                  _searchFocusNode.requestFocus();
+                                },
+                              )
+                            : const Icon(
+                                key: ValueKey('searchIcon'),
+                                Icons.search,
+                                color: onSurfaceVariant,
+                              ),
+                      ),
+                      filled: true,
+                      fillColor: surfaceContainer,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        borderSide: BorderSide.none,
                       ),
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Esplora la lista dei tuoi prodotti analizzati e memorizzati nel database locale.",
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-
-                if (widget.history.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _buildStatBox(
-                        safeCount.toString(),
-                        "Sicuri",
-                        Colors.green.shade50,
-                        Colors.green.shade800,
+                const SizedBox(width: 12),
+                Flexible(
+                  flex: 2,
+                  child: DropdownButtonFormField<GlutenSafetyStatus?>(
+                    value: _filter,
+                    icon: const Icon(
+                      Icons.filter_list,
+                      color: onSurfaceVariant,
+                      size: 20,
+                    ),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: onSurface,
+                    ),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: _getFilterColor(),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
                       ),
-                      const SizedBox(width: 8),
-                      _buildStatBox(
-                        uncertainCount.toString(),
-                        "Incerti",
-                        Colors.orange.shade50,
-                        Colors.orange.shade800,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        borderSide: BorderSide.none,
                       ),
-                      const SizedBox(width: 8),
-                      _buildStatBox(
-                        dangerCount.toString(),
-                        "Tossici",
-                        Colors.red.shade50,
-                        Colors.red.shade800,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: null, child: Text("Tutti")),
+                      DropdownMenuItem(
+                        value: GlutenSafetyStatus.adatto,
+                        child: Text("Sicuri"),
+                      ),
+                      DropdownMenuItem(
+                        value: GlutenSafetyStatus.incerto,
+                        child: Text("Incerti"),
+                      ),
+                      DropdownMenuItem(
+                        value: GlutenSafetyStatus.nonAdatto,
+                        child: Text("Vietati"),
+                      ),
+                      DropdownMenuItem(
+                        value: GlutenSafetyStatus.sconosciuto,
+                        child: Text("Scon."),
                       ),
                     ],
+                    onChanged: (val) => setState(() => _filter = val),
                   ),
-                ],
-
-                const SizedBox(height: 16),
-                TextField(
-                  onChanged: (val) => setState(() => _search = val),
-                  decoration: InputDecoration(
-                    hintText: "Cerca per nome, marca o barcode...",
-                    prefixIcon: const Icon(Icons.search),
-                    isDense: true,
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<GlutenSafetyStatus?>(
-                  initialValue: _filter,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: null,
-                      child: Text(
-                        "Filtra Stati: Tutti",
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: GlutenSafetyStatus.adatto,
-                      child: Text(
-                        "🟢 Solo Idonei",
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: GlutenSafetyStatus.incerto,
-                      child: Text(
-                        "🟡 Solo Incerti",
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: GlutenSafetyStatus.nonAdatto,
-                      child: Text(
-                        "🔴 Solo Non Idonei",
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: GlutenSafetyStatus.sconosciuto,
-                      child: Text(
-                        "⚪️ Solo Non Trovati",
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ],
-                  onChanged: (val) => setState(() => _filter = val),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 24),
 
-          const SizedBox(height: 16),
-
-          // List
-          if (filteredHistory.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.delete_outline, size: 40, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    "Nessuna scansione trovata",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            )
-          else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: filteredHistory.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final item = filteredHistory[index];
-                return InkWell(
-                  onTap: () => widget.onSelectItem(item.barcode),
-                  onLongPress: () => _confirmDelete(item.id),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade300),
+            // ── Lista Prodotti ────────────────────────────────────────
+            if (filteredHistory.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 48,
+                  horizontal: 24,
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: const BoxDecoration(
+                        color: surfaceContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.history,
+                        size: 40,
+                        color: outlineVariant,
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  _buildStatusTag(item.status),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    "Barcode: ${item.barcode}",
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                item.productName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Text(
-                                item.brand,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right, color: Colors.green),
-                      ],
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Nessuna scansione trovata",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: onSurface,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-        ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Quando scansionerai un prodotto, apparirà qui.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14, color: onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredHistory.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final item = filteredHistory[index];
+                  return _buildHistoryCard(item);
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatBox(
-    String count,
-    String label,
-    Color bgColor,
-    Color textColor,
-  ) {
+  Widget _buildStatBox({
+    required String count,
+    required String label,
+    required Color color,
+    required IconData icon,
+  }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(16),
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
           children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
             Text(
               count,
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: textColor,
+                color: color,
+                height: 1.1,
               ),
             ),
             Text(
               label,
               style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: color.withOpacity(0.9),
               ),
             ),
           ],
@@ -341,42 +450,160 @@ class _HistoryListState extends State<HistoryList> {
     Color bgColor;
     Color textColor;
     String label;
+    IconData icon;
 
     switch (status) {
       case GlutenSafetyStatus.adatto:
-        bgColor = Colors.green.shade50;
-        textColor = Colors.green.shade800;
-        label = "Idoneo";
+        bgColor = primary.withOpacity(0.12);
+        textColor = primary;
+        label = "Sicuro - non contiene glutine";
+        icon = Icons.check_circle_outline;
         break;
       case GlutenSafetyStatus.nonAdatto:
-        bgColor = Colors.red.shade50;
-        textColor = Colors.red.shade800;
-        label = "Contiene Glutine";
+        bgColor = error.withOpacity(0.12);
+        textColor = error;
+        label = "Vietato - contiene glutine";
+        icon = Icons.cancel_outlined;
         break;
       case GlutenSafetyStatus.incerto:
-        bgColor = Colors.orange.shade50;
-        textColor = Colors.orange.shade800;
-        label = "Incerto";
+        bgColor = warningText.withOpacity(0.12);
+        textColor = warningText;
+        label = "Incerto - potrebbe contenere glutine";
+        icon = Icons.help_outline;
         break;
       case GlutenSafetyStatus.sconosciuto:
-        bgColor = Colors.grey.shade200;
-        textColor = Colors.grey.shade800;
-        label = "Sconosciuto";
+        bgColor = outlineVariant.withOpacity(0.2);
+        textColor = onSurfaceVariant;
+        label = "Sconosciuto - nessuna informazione disponibile";
+        icon = Icons.search_off;
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(24),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: textColor,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: textColor),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryCard(ScanHistoryItem item) {
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      color: surfaceLowest,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: outlineVariant.withOpacity(0.3)),
+      ),
+      child: InkWell(
+        onTap: () => widget.onSelectItem(item.barcode),
+        onLongPress: () => _confirmDelete(item.id),
+        hoverColor: surfaceContainerHigh,
+        highlightColor: surfaceContainerLow,
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatusTag(item.status),
+                  const SizedBox(height: 8),
+                  Text(
+                    item.productName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: onSurface,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.storefront_outlined,
+                        size: 14,
+                        color: onSurfaceVariant.withOpacity(0.6),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        item.brand,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: onSurfaceVariant.withOpacity(0.9),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "•",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: onSurfaceVariant.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.calendar_month_outlined,
+                        size: 14,
+                        color: onSurfaceVariant.withOpacity(0.4),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getTodayFormatted(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: onSurfaceVariant.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Transform.translate(
+                    offset: const Offset(8, 0),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: onSurfaceVariant.withOpacity(0.3),
+                      size: 26,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
