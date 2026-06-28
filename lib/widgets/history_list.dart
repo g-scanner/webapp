@@ -96,24 +96,7 @@ class _HistoryListState extends State<HistoryList> {
     );
   }
 
-  String _getTodayFormatted() {
-    final now = DateTime.now();
-    const months = [
-      'Gen',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mag',
-      'Giu',
-      'Lug',
-      'Ago',
-      'Set',
-      'Ott',
-      'Nov',
-      'Dic',
-    ];
-    return "${now.day} ${months[now.month - 1]} ${now.year}";
-  }
+
 
   Color _getFilterColor() {
     switch (_filter) {
@@ -527,78 +510,84 @@ class _HistoryListState extends State<HistoryList> {
           padding: const EdgeInsets.all(20.0),
           child: Row(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildStatusTag(item.status),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.productName,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: onSurface,
-                      letterSpacing: -0.2,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatusTag(item.status),
+                    const SizedBox(height: 8),
+                    Text(
+                      item.productName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: onSurface,
+                        letterSpacing: -0.2,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.storefront_outlined,
-                        size: 14,
-                        color: onSurfaceVariant.withOpacity(0.6),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        item.brand,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: onSurfaceVariant.withOpacity(0.9),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.storefront_outlined,
+                              size: 14,
+                              color: onSurfaceVariant.withOpacity(0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                item.brand,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: onSurfaceVariant.withOpacity(0.9),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "•",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: onSurfaceVariant.withOpacity(0.6),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.calendar_month_outlined,
+                              size: 14,
+                              color: onSurfaceVariant.withOpacity(0.4),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              formatRelativeDate(item.scannedAt),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: onSurfaceVariant.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.calendar_month_outlined,
-                        size: 14,
-                        color: onSurfaceVariant.withOpacity(0.4),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _getTodayFormatted(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: onSurfaceVariant.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Transform.translate(
-                    offset: const Offset(8, 0),
-                    child: Icon(
-                      Icons.chevron_right_rounded,
-                      color: onSurfaceVariant.withOpacity(0.3),
-                      size: 26,
-                    ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Transform.translate(
+                  offset: const Offset(8, 0),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    color: onSurfaceVariant.withOpacity(0.3),
+                    size: 26,
                   ),
                 ),
               ),

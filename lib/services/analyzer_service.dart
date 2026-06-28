@@ -365,8 +365,21 @@ class AnalyzerService {
     String reason;
     List<IngredientAnalyzed> ingredientsAnalyzed = [];
 
-    // CASO 1: BOLLINO UFFICIALE (Vince su tutto. Se c'è bollino, è <20ppm per legge)
-    if (hasGlutenFreeBollino || hasGlutenFreeTextClaim) {
+    // CASO 1: SEGNALAZIONI (Vince su tutto in caso di incongruenze)
+    if (reportCount > 0) {
+      status = GlutenSafetyStatus.incerto;
+      reason =
+          "ATTENZIONE: Questo prodotto ha $reportCount segnalazione/i dagli utenti.";
+      ingredientsAnalyzed.add(
+        IngredientAnalyzed(
+          ingredient: "Segnalazione Utenti",
+          dangerLevel: "warning",
+          reason: "Incongruenze segnalate dalla community.",
+        ),
+      );
+    }
+    // CASO 2: BOLLINO UFFICIALE (Se c'è bollino, è <20ppm per legge)
+    else if (hasGlutenFreeBollino || hasGlutenFreeTextClaim) {
       status = GlutenSafetyStatus.adatto;
       reason =
           "ADATTO ai celiaci. Certificazione o etichetta 'Senza Glutine' rilevata.";
@@ -398,7 +411,7 @@ class AnalyzerService {
         );
       }
     }
-    // CASO 2: ROSSO (Pericolo certo o Tracce con Filtro Rigido Attivo)
+    // CASO 3: ROSSO (Pericolo certo o Tracce con Filtro Rigido Attivo)
     else if (foundDanger.isNotEmpty ||
         hasOffGlutenAllergen ||
         (hasAnyTrace && strictMode)) {
@@ -436,7 +449,7 @@ class AnalyzerService {
           ),
         );
     }
-    // CASO 3: GRIGIO
+    // CASO 4: GRIGIO
     else if (hasNoInfo) {
       status = GlutenSafetyStatus.sconosciuto;
       reason =
@@ -446,19 +459,6 @@ class AnalyzerService {
           ingredient: "Dati Assenti",
           dangerLevel: "warning",
           reason: "Nessuna specifica trovata.",
-        ),
-      );
-    }
-    // CASO 4: GIALLO (Segnalazioni Utenti)
-    else if (reportCount > 0) {
-      status = GlutenSafetyStatus.incerto;
-      reason =
-          "ATTENZIONE: Questo prodotto ha $reportCount segnalazione/i dagli utenti.";
-      ingredientsAnalyzed.add(
-        IngredientAnalyzed(
-          ingredient: "Segnalazione Utenti",
-          dangerLevel: "warning",
-          reason: "Incongruenze segnalate dalla community.",
         ),
       );
     }
@@ -480,13 +480,6 @@ class AnalyzerService {
       status = GlutenSafetyStatus.incerto;
       reason =
           "ATTENZIONE: Prodotto lavorato senza dicitura 'Senza glutine'. Verifica l'etichetta.";
-      ingredientsAnalyzed.add(
-        IngredientAnalyzed(
-          ingredient: "Assenza Certificazione",
-          dangerLevel: "warning",
-          reason: "Prodotto lavorato a potenziale rischio stabilimento.",
-        ),
-      );
 
       if (hasAnyTrace && !strictMode) {
         reason =
@@ -533,17 +526,60 @@ class AnalyzerService {
       }
     }
 
-    List<String> detectedAllergens = allergensList.toSet().toList();
+    final Map<String, String> allergenTranslations = {
+      "milk": "latte", "lait": "latte", "melk": "latte", "leche": "latte", "milch": "latte",
+      "wheat": "frumento", "blé": "frumento", "trigo": "frumento", "weizen": "frumento", "grano": "frumento",
+      "barley": "orzo", "orge": "orzo", "cebada": "orzo", "gerste": "orzo",
+      "rye": "segale", "seigle": "segale", "centeno": "segale", "roggen": "segale",
+      "oat": "avena", "avoine": "avena", "avena": "avena", "hafer": "avena", "oats": "avena",
+      "spelt": "farro", "épeautre": "farro", "espelta": "farro", "dinkel": "farro",
+      "soy": "soia", "soja": "soia", "soybeans": "soia",
+      "egg": "uovo", "eggs": "uova", "œuf": "uovo", "huevo": "uovo", "ei": "uovo", "uova": "uovo",
+      "peanut": "arachidi", "peanuts": "arachidi", "cacahuète": "arachidi", "cacahuete": "arachidi", "erdnuss": "arachidi", "arachidi": "arachidi",
+      "nut": "frutta a guscio", "nuts": "frutta a guscio", "fruits à coque": "frutta a guscio", "frutos de cáscara": "frutta a guscio", "schalenfrüchte": "frutta a guscio",
+      "almond": "mandorle", "almonds": "mandorle", "amande": "mandorle", "almendra": "mandorle", "mandel": "mandorle", "mandorle": "mandorle",
+      "hazelnut": "nocciole", "hazelnuts": "nocciole", "noisette": "nocciole", "avellana": "nocciole", "haselnuss": "nocciole", "nocciole": "nocciole",
+      "walnut": "noci", "walnuts": "noci", "noix": "noci", "nuez": "noci", "walnuss": "noci", "noci": "noci",
+      "cashew": "anacardi", "cashews": "anacardi", "noix de cajou": "anacardi", "anacardo": "anacardi", "cashewnuss": "anacardi", "anacardi": "anacardi",
+      "pecan": "noci pecan", "noix de pécan": "noci pecan", "nuez moscada": "noci pecan", "pekannuss": "noci pecan",
+      "brazil nut": "noci del brasile", "noix du brésil": "noci del brasile", "nuez de brasil": "noci del brasile", "paranuss": "noci del brasile",
+      "pistachio": "pistacchi", "pistachios": "pistacchi", "pistache": "pistacchi", "pistacho": "pistacchi", "pistazie": "pistacchi", "pistacchi": "pistacchi",
+      "macadamia": "noci macadamia", "noix de macadamia": "noci macadamia", "nuez de macadamia": "noci macadamia", "macadamianuss": "noci macadamia",
+      "celery": "sedano", "céleri": "sedano", "apio": "sedano", "sellerie": "sedano",
+      "mustard": "senape", "moutarde": "senape", "mostaza": "senape", "senf": "senape",
+      "sesame": "sesamo", "sésame": "sesamo", "sésamo": "sesamo", "sesam": "sesamo", "sesame seeds": "sesamo",
+      "sulphur dioxide": "anidride solforosa", "sulfites": "solfiti", "anhydride sulfureux": "anidride solforosa", "dióxido de azufre": "anidride solforosa", "schwefeldioxid": "anidride solforosa",
+      "lupin": "lupini", "lupins": "lupini", "altramuz": "lupini", "lupine": "lupini", "lupini": "lupini",
+      "mollusc": "molluschi", "molluscs": "molluschi", "mollusques": "molluschi", "moluscos": "molluschi", "weichtiere": "molluschi",
+      "fish": "pesce", "poisson": "pesce", "pescado": "pesce", "fisch": "pesce",
+      "crustacean": "crostacei", "crustaceans": "crostacei", "crustacés": "crostacei", "crustáceos": "crostacei", "krebstiere": "crostacei",
+      "gluten": "glutine", "glutine": "glutine",
+    };
+
+    List<String> translatedAllergens = allergensList.map((a) {
+      String clean = a.trim().toLowerCase();
+      // Rimuove eventuali prefissi lingua di OpenFoodFacts (es. "en:milk" -> "milk")
+      if (clean.contains(':')) {
+        clean = clean.split(':').last;
+      }
+      return allergenTranslations[clean] ?? clean;
+    }).toSet().toList();
+
+    List<String> finalAllergens = translatedAllergens.map((a) {
+      if (a.isEmpty) return a;
+      return a[0].toUpperCase() + a.substring(1);
+    }).toList();
+
     if (status == GlutenSafetyStatus.nonAdatto &&
-        !detectedAllergens.contains("glutine") &&
+        !finalAllergens.any((a) => a.toLowerCase() == "glutine") &&
         !strictMode) {
-      detectedAllergens.add("glutine");
+      finalAllergens.add("Glutine");
     }
 
     return AnalyzerResult(
       status: status,
       reason: reason,
-      allergens: detectedAllergens,
+      allergens: finalAllergens,
       ingredientsAnalyzed: ingredientsAnalyzed,
     );
   }

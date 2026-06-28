@@ -56,12 +56,14 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   String _reportType = "label_unclear";
   final TextEditingController _reportCommentsController =
       TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   bool _reportSubmitted = false;
   bool _submittingReport = false;
 
   @override
   void dispose() {
     _reportCommentsController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -92,24 +94,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     }
   }
 
-  String _getTodayFormatted() {
-    final now = DateTime.now();
-    const months = [
-      'Gen',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mag',
-      'Giu',
-      'Lug',
-      'Ago',
-      'Set',
-      'Ott',
-      'Nov',
-      'Dic',
-    ];
-    return "${now.day} ${months[now.month - 1]} ${now.year}";
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -225,6 +210,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         ],
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -309,7 +295,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   // DATA AGGIUNTA DA RICHIESTA
                   const SizedBox(height: 4),
                   Text(
-                    "Scansionato il: ${_getTodayFormatted()}",
+                    "Scansionato il: ${formatRelativeDate(widget.product.lastUpdated)}",
                     style: TextStyle(
                       fontSize: 12,
                       color: onSurfaceVariant.withOpacity(0.8),
@@ -603,7 +589,16 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 )
               else
                 OutlinedButton.icon(
-                  onPressed: () => setState(() => _isReporting = true),
+                  onPressed: () {
+                    setState(() => _isReporting = true);
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      _scrollController.animateTo(
+                        _scrollController.position.maxScrollExtent,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    });
+                  },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: error,
                     side: const BorderSide(color: error, width: 1.5),

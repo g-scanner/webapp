@@ -260,3 +260,30 @@ class UserSettings {
     };
   }
 }
+
+String formatRelativeDate(String isoDate) {
+  try {
+    final parsed = DateTime.parse(isoDate).toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final targetDate = DateTime(parsed.year, parsed.month, parsed.day);
+    
+    final hour = parsed.hour.toString().padLeft(2, '0');
+    final minute = parsed.minute.toString().padLeft(2, '0');
+
+    if (targetDate == today) {
+      return "Oggi, $hour:$minute";
+    } else if (targetDate == yesterday) {
+      return "Ieri, $hour:$minute";
+    } else {
+      const months = [
+        'Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
+        'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'
+      ];
+      return "${parsed.day} ${months[parsed.month - 1]} ${parsed.year}, $hour:$minute";
+    }
+  } catch (e) {
+    return "";
+  }
+}

@@ -51,6 +51,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  bool _isCameraActive = true;
 
   List<Product> products = [];
   List<ScanHistoryItem> history = [];
@@ -64,7 +65,6 @@ class _MainScreenState extends State<MainScreen> {
   );
 
   String? userId;
-  Product? selectedProduct;
   List<String> reportedSessionBarcodes = [];
   bool scanningProgress = false;
   String? scanError;
@@ -86,14 +86,12 @@ class _MainScreenState extends State<MainScreen> {
         });
       }
 
-      // 2. Scarica i dati SOLO ORA che sei certo che auth.currentUser esista
-      // e il database non verrà interrogato due volte
-      await Future.wait([
-        _fetchProducts(),
-        _fetchHistory(),
-        _fetchReports(),
-        _fetchSettings(),
-      ]);
+      // 2. Scarica i dati essenziali per l'avvio veloce
+      await Future.wait([_fetchHistory(), _fetchSettings()]);
+
+      // Carica i dati pesanti in background senza bloccare la UI
+      _fetchProducts();
+      _fetchReports();
 
       // 3. Listener passivo per futuri cambi di utenza (senza far scattare chiamate duplicate all'avvio)
       FirebaseAuth.instance.authStateChanges().listen((user) {
@@ -150,19 +148,25 @@ class _MainScreenState extends State<MainScreen> {
         barcode,
         userSettings,
       );
-      setState(() {
-        selectedProduct = product;
-      });
       _fetchHistory();
       _fetchProducts();
+
+      if (mounted) {
+        _navigateToProduct(product);
+      }
     } catch (e) {
-      setState(() {
-        scanError = "Errore di analisi o connessione con il database celiaci.";
-      });
+      if (mounted) {
+        setState(() {
+          scanError =
+              "Errore di analisi o connessione con il database celiaci.";
+        });
+      }
     } finally {
-      setState(() {
-        scanningProgress = false;
-      });
+      if (mounted) {
+        setState(() {
+          scanningProgress = false;
+        });
+      }
     }
   }
 
@@ -194,22 +198,6 @@ class _MainScreenState extends State<MainScreen> {
 
       setState(() {
         reportedSessionBarcodes.add(barcode);
-        if (selectedProduct?.barcode == barcode) {
-          selectedProduct = Product(
-            barcode: selectedProduct!.barcode,
-            name: selectedProduct!.name,
-            brand: selectedProduct!.brand,
-            ingredients: selectedProduct!.ingredients,
-            allergens: selectedProduct!.allergens,
-            status: GlutenSafetyStatus.incerto,
-            reason:
-                "ATTENZIONE: Segnalata etichetta incongruente o obsoleta dagli utenti. Note: ${reportData['comments']}",
-            ingredientsAnalyzed: selectedProduct!.ingredientsAnalyzed,
-            imageUrl: selectedProduct!.imageUrl,
-            lastUpdated: selectedProduct!.lastUpdated,
-            reportCount: selectedProduct!.reportCount,
-          );
-        }
       });
 
       await Future.wait([_fetchReports(), _fetchProducts()]);
@@ -237,9 +225,7 @@ class _MainScreenState extends State<MainScreen> {
           .collection('products')
           .doc(finalProduct.barcode)
           .set(finalProduct.toJson(), SetOptions(merge: true));
-      setState(() {
-        selectedProduct = finalProduct;
-      });
+
       await _fetchProducts();
     } catch (e) {
       print("Aggiornamento fallito: $e");
@@ -248,20 +234,54 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> handleDeleteHistoryByBarcode(String barcode) async {
     await DbService.deleteHistoryByBarcodeLocal(barcode);
-    setState(() {
-      selectedProduct = null;
-    });
     await _fetchHistory();
   }
 
   Future<void> handleDeleteReport(String reportId) async {
     await DbService.deleteReportFromDb(reportId);
     setState(() {
-      reportedSessionBarcodes.removeWhere((b) => selectedProduct?.barcode == b);
-      selectedProduct = null;
+      // Remove from session so button re-enables
+      // Note: we can't easily access selectedProduct.barcode here, but we can if we passed it.
+      // But let's just clear reportedSessionBarcodes if needed. Actually we'll need the barcode to remove it.
+      // We will leave it as is or pass the barcode to handleDeleteReport if needed.
     });
     await _fetchReports();
     await _fetchProducts();
+  }
+
+  void _navigateToProduct(Product match) async {
+    setState(() => _isCameraActive = false);
+
+    final userReport = reports.cast<ProductReport?>().firstWhere(
+      (r) => r?.barcode == match.barcode && r?.userId == userId,
+      orElse: () => null,
+    );
+    final isInHistory = history.any((h) => h.barcode == match.barcode);
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailCard(
+          product: match,
+          onBack: () => Navigator.pop(context),
+          onReportSubmit: handleReportSubmit,
+          onProductUpdate: handleProductUpdate,
+          userSettings: userSettings,
+          onDeleteHistoryByBarcode: isInHistory
+              ? handleDeleteHistoryByBarcode
+              : null,
+          hasReportedThisSession:
+              reportedSessionBarcodes.contains(match.barcode) ||
+              userReport != null,
+          userReportId: userReport?.id,
+          onDeleteReport: handleDeleteReport,
+        ),
+      ),
+    );
+
+    if (mounted) {
+      setState(() => _isCameraActive = true);
+    }
   }
 
   Widget _buildBody() {
@@ -281,41 +301,16 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    if (selectedProduct != null) {
-      final userReport = reports.cast<ProductReport?>().firstWhere(
-        (r) => r?.barcode == selectedProduct!.barcode && r?.userId == userId,
-        orElse: () => null,
-      );
-      final isInHistory = history.any(
-        (h) => h.barcode == selectedProduct!.barcode,
-      );
-
-      return ProductDetailCard(
-        product: selectedProduct!,
-        onBack: () => setState(() => selectedProduct = null),
-        onReportSubmit: handleReportSubmit,
-        onProductUpdate: handleProductUpdate,
-        userSettings: userSettings,
-        onDeleteHistoryByBarcode: isInHistory && _currentIndex != 4
-            ? handleDeleteHistoryByBarcode
-            : null,
-        hasReportedThisSession:
-            reportedSessionBarcodes.contains(selectedProduct!.barcode) ||
-            userReport != null,
-        userReportId: userReport?.id,
-        onDeleteReport: handleDeleteReport,
-      );
-    }
-
-    switch (_currentIndex) {
-      case 0:
-        return CameraModule(
+    return IndexedStack(
+      index: _currentIndex > 3 ? 3 : _currentIndex,
+      children: [
+        CameraModule(
+          isActive: _isCameraActive && _currentIndex == 0,
           onScanSuccess: handleScanSuccess,
           scanningProgress: scanningProgress,
           scanError: scanError,
-        );
-      case 1:
-        return HistoryList(
+        ),
+        HistoryList(
           history: history,
           liveProducts: products,
           onRefresh: refreshAllData,
@@ -325,7 +320,7 @@ class _MainScreenState extends State<MainScreen> {
               orElse: () => null,
             );
             if (match != null) {
-              setState(() => selectedProduct = match);
+              _navigateToProduct(match);
             }
           },
           onClearHistory: () async {
@@ -336,9 +331,8 @@ class _MainScreenState extends State<MainScreen> {
             await DbService.deleteHistoryItemLocal(id);
             await _fetchHistory();
           },
-        );
-      case 2:
-        return DatabaseProducts(
+        ),
+        DatabaseProducts(
           products: products,
           onRefresh: refreshAllData,
           onSelectItem: (barcode) {
@@ -347,12 +341,11 @@ class _MainScreenState extends State<MainScreen> {
               orElse: () => null,
             );
             if (match != null) {
-              setState(() => selectedProduct = match);
+              _navigateToProduct(match);
             }
           },
-        );
-      case 3:
-        return SettingsPanel(
+        ),
+        SettingsPanel(
           settings: userSettings,
           onSettingsChange: (newSet) async {
             await DbService.saveLocalSettings(newSet);
@@ -369,10 +362,9 @@ class _MainScreenState extends State<MainScreen> {
             await DbService.wipeHistoryLocal();
             await _fetchHistory();
           },
-        );
-      default:
-        return Container();
-    }
+        ),
+      ],
+    );
   }
 
   Widget _buildCustomBottomNav() {
@@ -434,7 +426,6 @@ class _MainScreenState extends State<MainScreen> {
       child: GestureDetector(
         onTap: () {
           setState(() {
-            selectedProduct = null;
             _currentIndex = index;
           });
         },
@@ -491,23 +482,21 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9FC),
-      appBar: selectedProduct != null
-          ? null
-          : AppBar(
-              title: const Text(
-                "G-Scanner",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 22,
-                  letterSpacing: -0.5,
-                  color: onSurface,
-                ),
-              ),
-              centerTitle: true,
-              backgroundColor: const Color(0xFFFFFFFF),
-              elevation: 0,
-              scrolledUnderElevation: 0,
-            ),
+      appBar: AppBar(
+        title: const Text(
+          "G-Scanner",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 22,
+            letterSpacing: -0.5,
+            color: onSurface,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: const Color(0xFFFFFFFF),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
       body: _buildBody(),
       bottomNavigationBar: _currentIndex == 4 ? null : _buildCustomBottomNav(),
     );

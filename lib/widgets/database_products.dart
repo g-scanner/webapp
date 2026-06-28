@@ -67,25 +67,6 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
     });
   }
 
-  // Helper per la data
-  String _getTodayFormatted() {
-    final now = DateTime.now();
-    const months = [
-      'Gen',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mag',
-      'Giu',
-      'Lug',
-      'Ago',
-      'Set',
-      'Ott',
-      'Nov',
-      'Dic',
-    ];
-    return "${now.day} ${months[now.month - 1]} ${now.year}";
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -397,7 +378,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 reportComment: prod.reason.isNotEmpty
                     ? prod.reason
                     : "Nessun commento",
-                reportDate: _getTodayFormatted(),
+                reportDate: formatRelativeDate(prod.lastUpdated),
                 onVote: (vote) async {
                   await DbService.voteOnReportByBarcode(prod.barcode, vote);
                 },
@@ -438,71 +419,70 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                   ),
                   const SizedBox(height: 6),
 
-                  // MARCA (SX) E DATA (DX)
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Icon(
-                        Icons.storefront_outlined,
-                        size: 16,
-                        color: onSurfaceVariant.withOpacity(0.6),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        prod.brand,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: onSurfaceVariant.withOpacity(0.9),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "•",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: onSurfaceVariant.withOpacity(0.6),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 14,
-                        color: onSurfaceVariant.withOpacity(0.5),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _getTodayFormatted(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: onSurfaceVariant.withOpacity(0.7),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "•",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: onSurfaceVariant.withOpacity(0.6),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.qr_code_2,
-                        size: 18,
-                        color: onSurfaceVariant.withOpacity(0.6),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          prod.barcode,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: onSurfaceVariant.withOpacity(0.8),
-                            letterSpacing: 0.5,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.storefront_outlined,
+                            size: 16,
+                            color: onSurfaceVariant.withOpacity(0.6),
                           ),
-                        ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              prod.brand,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: onSurfaceVariant.withOpacity(0.9),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 14,
+                            color: onSurfaceVariant.withOpacity(0.5),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            formatRelativeDate(prod.lastUpdated),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: onSurfaceVariant.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.qr_code_2,
+                            size: 18,
+                            color: onSurfaceVariant.withOpacity(0.6),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            prod.barcode,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: onSurfaceVariant.withOpacity(0.8),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -17,12 +19,14 @@ class CameraModule extends StatefulWidget {
   final Future<void> Function(String barcode) onScanSuccess;
   final bool scanningProgress;
   final String? scanError;
+  final bool isActive;
 
   const CameraModule({
     super.key,
     required this.onScanSuccess,
     required this.scanningProgress,
     this.scanError,
+    this.isActive = true,
   });
 
   @override
@@ -33,9 +37,35 @@ class _CameraModuleState extends State<CameraModule> {
   final TextEditingController _manualCodeController = TextEditingController();
   final MobileScannerController _scannerController = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
+    formats: const [
+      BarcodeFormat.ean13,
+      BarcodeFormat.ean8,
+      BarcodeFormat.qrCode,
+    ],
+    cameraResolution: const Size(480, 640),
   );
 
   bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isActive) {
+      _scannerController.start();
+    }
+  }
+
+  @override
+  void didUpdateWidget(CameraModule oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        _scannerController.start();
+      } else {
+        _scannerController.stop();
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -248,18 +278,11 @@ class _CameraModuleState extends State<CameraModule> {
                         controller: _scannerController,
                         onDetect: _onDetect,
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: Alignment.center,
-                            radius: 1.1,
-                            colors: [
-                              Colors.transparent,
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.85),
-                            ],
-                            stops: const [0.0, 0.45, 1.0],
-                          ),
+                      CustomPaint(
+                        size: Size(w, h),
+                        painter: _VignetteBorderPainter(
+                          frameWidth: frameW,
+                          frameHeight: frameH,
                         ),
                       ),
                       Center(
@@ -653,4 +676,101 @@ class _CornerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CornerPainter oldDelegate) => false;
+}
+
+/// Disegna un gradiente infallibile calcolando matematicamente l'Alpha Blending.
+/// Utilizza una curva (Curves.easeInOut) per garantire che l'opacità al bordo del
+/// riquadro parta ESATTAMENTE da 0.0 e salga in modo morbidissimo verso l'esterno.
+class _VignetteBorderPainter extends CustomPainter {
+  final double frameWidth;
+  final double frameHeight;
+
+  _VignetteBorderPainter({required this.frameWidth, required this.frameHeight});
+
+  // L'oscurità massima raggiunta ai bordi estremi dello schermo
+  static const double _targetMaxOpacity = 0.75;
+
+  // Alzato a 45 per garantire che la curva matematica non mostri mai "scalini"
+  static const int _steps = 45;
+
+  // Calcola l'opacità totale che il gradiente deve avere ad un determinato step.
+  // k=0 è il bordo esterno (più scuro), k=_steps-1 è il riquadro centrale (0.0).
+  double _getTargetOpacity(int k) {
+    if (k >= _steps - 1) return 0.0;
+
+    // t va da 0.0 (interno) a 1.0 (esterno)
+    final double t = 1.0 - (k / (_steps - 1));
+
+    // Curves.easeInOut garantisce che il gradiente parta piatto da 0 e acceleri dolcemente
+    final double curveT = Curves.easeInOut.transform(t);
+    return _targetMaxOpacity * curveT;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    final screenRect = Rect.fromLTRB(
+      -100,
+      -100,
+      size.width + 100,
+      size.height + 100,
+    );
+
+    // Partiamo da fuori lo schermo per coprire bene anche gli angoli del dispositivo
+    final double startWidth = size.width * 1.3;
+    final double startHeight = size.height * 1.3;
+
+    for (int i = 0; i < _steps; i++) {
+      final double currentTarget = _getTargetOpacity(i);
+      final double innerTarget = _getTargetOpacity(i + 1);
+
+      // --- LA MAGIA DELL'ALPHA BLENDING ---
+      // Calcoliamo esattamente quale opacità (layerAlpha) deve avere questo strato
+      // per raggiungere il 'currentTarget', sapendo che sotto di esso ci sono strati
+      // che arrivano a 'innerTarget'.
+      double layerAlpha = 0.0;
+      if (innerTarget < 1.0) {
+        layerAlpha = (currentTarget - innerTarget) / (1.0 - innerTarget);
+      }
+      // Sicurezza contro approssimazioni in virgola mobile
+      layerAlpha = layerAlpha.clamp(0.0, 1.0);
+
+      final Paint paint = Paint()
+        ..color = Colors.black.withOpacity(layerAlpha)
+        ..style = PaintingStyle.fill;
+
+      // Interpola la dimensione geometrica del livello
+      final double t = i / (_steps - 1);
+      final double currentWidth = startWidth + (frameWidth - startWidth) * t;
+      final double currentHeight =
+          startHeight + (frameHeight - startHeight) * t;
+
+      // Curvatura dinamica: più ampia all'esterno, aderente a 24 al centro
+      final double currentRadius = 60.0 + (24.0 - 60.0) * t;
+
+      final RRect hole = RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(cx, cy),
+          width: currentWidth,
+          height: currentHeight,
+        ),
+        Radius.circular(currentRadius),
+      );
+
+      final Path path = Path()
+        ..addRect(screenRect)
+        ..addRRect(hole)
+        ..fillType = PathFillType.evenOdd;
+
+      // Lo strato più vicino al centro avrà letteralmente opacità 0.0!
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _VignetteBorderPainter oldDelegate) =>
+      oldDelegate.frameWidth != frameWidth ||
+      oldDelegate.frameHeight != frameHeight;
 }
