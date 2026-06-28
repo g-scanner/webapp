@@ -40,7 +40,6 @@ class DbService {
     }
   }
 
-  // Fetch solo le segnalazioni dell'utente corrente
   static Future<List<ProductReport>> fetchUserReports() async {
     final userId = auth.currentUser?.uid;
     if (userId == null) return [];
@@ -66,6 +65,8 @@ class DbService {
     String offBrand = "Produttore Sconosciuto";
     String offIngredients = "";
     List<String> offAllergens = [];
+    List<String> offCategories =
+        []; // Variabile per le Categorie OFF (Context-Aware)
     String offImage = "";
     int offLastModified = 0;
 
@@ -111,6 +112,11 @@ class DbService {
                 .toList();
           }
 
+          // Estrazione delle categorie (Context-Aware)
+          if (pData['categories_tags'] != null) {
+            offCategories = List<String>.from(pData['categories_tags']);
+          }
+
           final offTags = OffTags(
             allergensTags: List<String>.from(pData['allergens_tags'] ?? []),
             tracesTags: List<String>.from(pData['traces_tags'] ?? []),
@@ -120,15 +126,19 @@ class DbService {
             ),
           );
 
+          // 1° CHIAMATA ANALYZER (Prodotti Nuovi / Aggiornati)
           final analysis = AnalyzerService.analyzeGlutenSafety(
             name: offName,
             brand: offBrand,
             ingredients: offIngredients,
             allergensList: offAllergens,
-            reportCount: 0, // prodotto fresco da API
+            reportCount: 0,
             offTags: offTags,
+            categoriesTags: offCategories, // Passo le categorie
             strictMode: settings.strictMode,
             warnAdditives: settings.warnAdditives,
+            alertLactose:
+                settings.alertLactose, // Passo l'impostazione lattosio
           );
 
           productApi = Product(
@@ -181,17 +191,19 @@ class DbService {
                 .set(productToReturn.toJson());
           } catch (e) {}
         } else {
-          // Prodotto ha segnalazioni attive: ricalcola con reportCount reale
-          // così l'analyzer applica la logica gialla per segnalazione
+          // 2° CHIAMATA ANALYZER (Ricalcolo per prodotto con segnalazioni attive)
           final reanalysis = AnalyzerService.analyzeGlutenSafety(
             name: productApi.name,
             brand: productApi.brand,
             ingredients: productApi.ingredients,
             allergensList: productApi.allergens,
             reportCount: productDb.reportCount ?? 0,
-            offTags: null, // offTags già incorporati nella prima analisi
+            offTags: null,
+            categoriesTags: offCategories, // Passo le categorie
             strictMode: settings.strictMode,
             warnAdditives: settings.warnAdditives,
+            alertLactose:
+                settings.alertLactose, // Passo l'impostazione lattosio
           );
           productToReturn = Product(
             barcode: productApi.barcode,
@@ -200,7 +212,7 @@ class DbService {
             ingredients: productApi.ingredients,
             allergens: reanalysis.allergens,
             status: reanalysis.status,
-            reason: productDb.reason, // usa il reason dell'ultima segnalazione
+            reason: productDb.reason,
             ingredientsAnalyzed: reanalysis.ingredientsAnalyzed,
             imageUrl: productApi.imageUrl,
             lastUpdated: productDb.lastUpdated,
@@ -220,6 +232,7 @@ class DbService {
       if (productDb != null) {
         productToReturn = productDb;
       } else {
+        // 3° CHIAMATA ANALYZER (Fallback se l'API non risponde e non è nel DB)
         final analysisFallback = AnalyzerService.analyzeGlutenSafety(
           name: offName,
           brand: offBrand,
@@ -227,8 +240,10 @@ class DbService {
           allergensList: offAllergens,
           reportCount: 0,
           offTags: null,
+          categoriesTags: offCategories, // Passo le categorie
           strictMode: settings.strictMode,
           warnAdditives: settings.warnAdditives,
+          alertLactose: settings.alertLactose, // Passo l'impostazione lattosio
         );
 
         productToReturn = Product(
@@ -263,12 +278,9 @@ class DbService {
     return productToReturn;
   }
 
-  /// Salva un elemento nella cronologia (Firestore se loggato, SharedPreferences altrimenti)
-  /// Salva un elemento nella cronologia
   static Future<void> _saveHistoryItem(Product product) async {
     final user = auth.currentUser;
 
-    // Controlliamo che l'utente esista e NON sia anonimo
     if (user != null && !user.isAnonymous) {
       final userId = user.uid;
       try {
@@ -298,13 +310,11 @@ class DbService {
         print("Failed saving history to Firestore: $error");
       }
     } else {
-      // UTENTE ANONIMO: Salva solo nel telefono
       try {
         final prefs = await SharedPreferences.getInstance();
         List<String> histStr = prefs.getStringList('celiac_history') ?? [];
         List<dynamic> localHist = histStr.map((e) => json.decode(e)).toList();
 
-        // Evita duplicati rimuovendo il vecchio se esiste
         localHist.removeWhere((item) => item['barcode'] == product.barcode);
 
         final id = DateTime.now().millisecondsSinceEpoch.toString();
@@ -329,11 +339,9 @@ class DbService {
     }
   }
 
-  /// Recupera la cronologia
   static Future<List<ScanHistoryItem>> getHistory() async {
     final user = auth.currentUser;
 
-    // Se loggato con credenziali reali
     if (user != null && !user.isAnonymous) {
       try {
         final snap = await db
@@ -350,7 +358,6 @@ class DbService {
       }
     }
 
-    // UTENTE ANONIMO: Prendi i dati dalla memoria del telefono
     final prefs = await SharedPreferences.getInstance();
     List<String> histStr = prefs.getStringList('celiac_history') ?? [];
     return histStr
@@ -432,7 +439,6 @@ class DbService {
     final userId = auth.currentUser?.uid ?? "anonymous";
 
     try {
-      // 1. Estraiamo lo stato originale passato dalla UI
       GlutenSafetyStatus? originalStatus;
       if (reportData['originalStatus'] != null) {
         originalStatus = GlutenSafetyStatus.values.firstWhere(
@@ -441,7 +447,6 @@ class DbService {
         );
       }
 
-      // 2. Creiamo il report INCLUDENDO l'originalStatus
       final docRef = db.collection(reportsCollection).doc();
       final finalReport = ProductReport(
         id: docRef.id,
@@ -453,12 +458,11 @@ class DbService {
         submittedAt: DateTime.now().toIso8601String(),
         status: "open",
         userId: userId,
-        originalStatus: originalStatus, // <--- SALVATO QUI!
+        originalStatus: originalStatus,
       );
 
       await docRef.set(finalReport.toJson());
 
-      // 3. Ora procediamo al resto (aggiornare il prodotto a INCERTO)
       final prodRef = db.collection(productsCollection).doc(barcode);
       final prodSnap = await prodRef.get();
 
@@ -516,19 +520,13 @@ class DbService {
   }
 
   static Future<void> voteOnReportByBarcode(String barcode, int newVote) async {
-    // FIX: Aggiunto il fallback nel caso in cui Firebase non sia riuscito a fare il login anonimo,
-    // esattamente come hai fatto per l'invio della segnalazione!
     final userId = auth.currentUser?.uid ?? "anonymous_voter";
 
     try {
-      // 1. Cerca la segnalazione "aperta" associata a questo barcode
       final querySnapshot = await db
           .collection(reportsCollection)
           .where('barcode', isEqualTo: barcode)
-          .where(
-            'status',
-            isEqualTo: 'open',
-          ) // Cerca solo le segnalazioni attive
+          .where('status', isEqualTo: 'open')
           .limit(1)
           .get();
 
@@ -537,14 +535,10 @@ class DbService {
         return;
       }
 
-      // 2. Prendi l'ID reale del report
       final reportDoc = querySnapshot.docs.first;
       final reportRef = reportDoc.reference;
-
-      // 3. Creiamo il riferimento per il voto dello specifico utente
       final userVoteRef = reportRef.collection('votes').doc(userId);
 
-      // 4. Eseguiamo la transazione per aggiornare i voti in modo sicuro
       await db.runTransaction((transaction) async {
         final voteSnap = await transaction.get(userVoteRef);
 
@@ -553,21 +547,14 @@ class DbService {
           oldVote = voteSnap.data()?['val'] ?? 0;
         }
 
-        // Se è lo stesso voto, non facciamo nulla
         if (oldVote == newVote) return;
 
-        // Calcola la differenza da applicare al totale
         final scoreDiff = newVote - oldVote;
-
-        // Salva/aggiorna il voto del singolo utente
         transaction.set(userVoteRef, {'val': newVote});
-
-        // Aggiorna il punteggio globale della segnalazione
         transaction.update(reportRef, {
           'score': FieldValue.increment(scoreDiff),
         });
       });
-
       print("Voto $newVote salvato con successo per il barcode $barcode!");
     } catch (e) {
       print("Errore durante il salvataggio del voto: $e");
@@ -580,7 +567,6 @@ class DbService {
     final userId = auth.currentUser?.uid ?? "anonymous_voter";
 
     try {
-      // 1. Cerca la segnalazione aperta
       final querySnapshot = await db
           .collection(reportsCollection)
           .where('barcode', isEqualTo: barcode)
@@ -594,9 +580,8 @@ class DbService {
 
       final reportDoc = querySnapshot.docs.first;
       int score = reportDoc.data()['score'] ?? 0;
-
       int userVote = 0;
-      // 2. Controlla se questo specifico utente ha già votato in passato
+
       final voteSnap = await reportDoc.reference
           .collection('votes')
           .doc(userId)
@@ -612,13 +597,11 @@ class DbService {
     }
   }
 
-  // Aggiungi questo in DbService.dart
   static Future<void> voteOnReport(String reportId, int newVote) async {
     final userId = auth.currentUser?.uid;
-    if (userId == null) return; // L'utente deve essere loggato per votare
+    if (userId == null) return;
 
     final reportRef = db.collection(reportsCollection).doc(reportId);
-    // Usiamo una sottocollezione "votes" dentro al report per tracciare i voti degli utenti
     final userVoteRef = reportRef.collection('votes').doc(userId);
 
     try {
@@ -630,16 +613,11 @@ class DbService {
           oldVote = voteSnap.data()?['val'] ?? 0;
         }
 
-        // Se l'utente clicca lo stesso voto che aveva già dato, ignoriamo o resettiamo
         if (oldVote == newVote) return;
 
-        // Calcola la differenza (es: se prima era -1 e ora mette +1, la differenza è +2)
         final scoreDiff = newVote - oldVote;
 
-        // Salva il voto del singolo utente
         transaction.set(userVoteRef, {'val': newVote});
-
-        // Aggiorna il totale del report in modo sicuro
         transaction.update(reportRef, {
           'score': FieldValue.increment(scoreDiff),
         });
@@ -680,7 +658,7 @@ class DbService {
       return UserSettings.fromJson(json.decode(settingsStr));
     }
     return UserSettings(
-      strictMode: false,
+      strictMode: true,
       alertLactose: false,
       warnAdditives: true,
       autoSaveHistory: true,

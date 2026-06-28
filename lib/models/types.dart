@@ -241,7 +241,7 @@ class UserSettings {
   factory UserSettings.fromJson(Map<String, dynamic> json) {
     return UserSettings(
       userId: json['userId'],
-      strictMode: json['strictMode'] ?? false,
+      strictMode: json['strictMode'] ?? true,
       alertLactose: json['alertLactose'] ?? false,
       warnAdditives: json['warnAdditives'] ?? true,
       autoSaveHistory: json['autoSaveHistory'] ?? true,

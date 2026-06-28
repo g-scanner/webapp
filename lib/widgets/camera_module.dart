@@ -7,6 +7,7 @@ const Color surfaceContainerLowest = Color(0xFFFFFFFF);
 const Color surfaceContainer = Color(0xFFEFEDF1);
 const Color surfaceContainerLow = Color(0xFFF5F3F7);
 const Color surfaceContainerHighest = Color(0xFFE3E2E6);
+const Color outlineVariant = Color(0xFFBFCABA);
 const Color onSurface = Color(0xFF1B1B1E);
 const Color onSurfaceVariant = Color(0xFF40493D);
 const Color errorColor = Color(0xFFBA1A1A);
@@ -63,54 +64,46 @@ class _CameraModuleState extends State<CameraModule> {
     return Container(
       color: surfaceContainerLowest,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+        // Margini esterni alla card
+        padding: const EdgeInsets.only(
+          left: 20.0,
+          right: 20.0,
+          top: 16.0,
+          bottom: 40.0,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Intestazione ────────────────────────────────────────────────
-            const Text(
-              "Scan Product",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w400,
-                color: onSurface,
-                fontFamily: 'Inter',
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Align barcode within frame to check celiac safety.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: onSurfaceVariant),
-            ),
-            const SizedBox(height: 32),
-
-            // ── Card Integrata (Fotocamera + Inserimento Manuale) ───────────
+            // ── Card Integrata (Testo + Fotocamera + Inserimento Manuale) ───
             _buildIntegratedCard(),
 
             // Errore eventuale scansione
             if (widget.scanError != null) ...[
               const SizedBox(height: 24),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: errorColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: errorColor.withOpacity(0.3)),
+                  color: errorColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: errorColor.withOpacity(0.2)),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.error_outline,
                       color: errorColor,
-                      size: 20,
+                      size: 24,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         widget.scanError!,
-                        style: const TextStyle(fontSize: 14, color: errorColor),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: errorColor,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                   ],
@@ -128,67 +121,103 @@ class _CameraModuleState extends State<CameraModule> {
     );
   }
 
-  /// ── Nuova Card Unica per Fotocamera e Input ──────────────────────────────
+  /// ── Card Unica Material 3: Spaziosa, Rotonda e Pulita ────────────────────
   Widget _buildIntegratedCard() {
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(40), // 40px come nel CSS (2.5rem)
-        border: Border.all(color: surfaceContainerHighest),
+        borderRadius: BorderRadius.circular(36), // Raggio armonioso per M3
+        border: Border.all(color: outlineVariant.withOpacity(0.25), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 30,
-            offset: const Offset(0, 8),
+            color: onSurface.withOpacity(0.04), // Ombra impalpabile e diffusa
+            blurRadius: 28,
+            spreadRadius: 0,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 1. Area Fotocamera
-          _buildCameraArea(),
-
-          // 2. Divisore "oppure"
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
+      child: Padding(
+        // Spaziature interne perfette
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Intestazione ───────────────────────────────────────────
+            const Text(
+              "Scan Product",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: onSurface,
+                fontFamily: 'Inter',
+                letterSpacing: -0.5,
+              ),
             ),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Divider(color: surfaceContainerHighest, thickness: 1),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                "Align barcode within frame to check celiac safety.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: onSurfaceVariant,
+                  height: 1.4,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    "Oppure",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: onSurfaceVariant.withOpacity(0.6),
-                      fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 32), // Respiro tra testo e fotocamera
+            // 1. Area Fotocamera
+            _buildCameraArea(),
+
+            // 2. Divisore "oppure" spazioso
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8.0,
+                vertical: 24.0, // Respiro verticale bilanciato
+              ),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Divider(
+                      color: surfaceContainerHighest,
+                      thickness: 1.5,
                     ),
                   ),
-                ),
-                const Expanded(
-                  child: Divider(color: surfaceContainerHighest, thickness: 1),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      "Oppure",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: onSurfaceVariant.withOpacity(0.6),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const Expanded(
+                    child: Divider(
+                      color: surfaceContainerHighest,
+                      thickness: 1.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
 
-          // 3. Inserimento Manuale
-          _buildManualInput(),
-        ],
+            // 3. Inserimento Manuale
+            _buildManualInput(),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCameraArea() {
-    const double buttonOverflow = 38.0;
+    const double buttonOverflow = 28.0;
 
     return Stack(
       children: [
@@ -197,12 +226,11 @@ class _CameraModuleState extends State<CameraModule> {
           padding: const EdgeInsets.only(bottom: buttonOverflow),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(
-                32.0,
-              ), // Arrotondato bene come nel CSS
+              borderRadius: BorderRadius.circular(28.0), // Curve interne dolci
               color: surfaceContainer,
             ),
             clipBehavior: Clip.antiAlias,
+            // ASPECT RATIO A RETTANGOLO (16/10)
             child: AspectRatio(
               aspectRatio: 16 / 10,
               child: LayoutBuilder(
@@ -293,30 +321,41 @@ class _CameraModuleState extends State<CameraModule> {
           ),
         ),
 
-        // Pulsante Flash
+        // ── Pulsante Flash Ricostruito M3 Perfettamente Centrato ──
         Positioned(
-          bottom: 15,
+          bottom: 0,
           left: 0,
           right: 0,
           child: Center(
-            child: SizedBox(
-              width: 56,
-              height: 56,
-              child: FloatingActionButton(
-                onPressed: () => _scannerController.toggleTorch(),
-                backgroundColor: surfaceContainerHighest,
-                foregroundColor: onSurface,
-                elevation: 4,
-                shape: const CircleBorder(),
-                child: ValueListenableBuilder<TorchState>(
-                  valueListenable: _scannerController.torchState,
-                  builder: (context, state, child) {
-                    return Icon(
-                      state == TorchState.on ? Icons.flash_on : Icons.flash_off,
-                    );
-                  },
-                ),
-              ),
+            child: ValueListenableBuilder<TorchState>(
+              valueListenable: _scannerController.torchState,
+              builder: (context, state, child) {
+                final bool isOn = state == TorchState.on;
+
+                return Material(
+                  color: isOn ? primaryContainer : surfaceContainerLowest,
+                  elevation:
+                      4, // Ombra definita per spiccare dal nero della fotocamera
+                  shadowColor: Colors.black.withOpacity(0.4),
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => _scannerController.toggleTorch(),
+                    child: SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: Center(
+                        child: Icon(
+                          // La torcia è un'icona perfettamente simmetrica
+                          isOn ? Icons.flashlight_on : Icons.flashlight_off,
+                          size: 24,
+                          color: isOn ? surfaceContainerLowest : onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -333,20 +372,27 @@ class _CameraModuleState extends State<CameraModule> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(
               color: surfaceContainerLow,
-              borderRadius: BorderRadius.circular(28), // Design a pillola
-              border: Border.all(color: surfaceContainerHighest),
+              borderRadius: BorderRadius.circular(999), // Forma a pillola
+              border: Border.all(color: outlineVariant.withOpacity(0.3)),
             ),
             child: Center(
               child: TextField(
                 controller: _manualCodeController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(fontSize: 16, color: onSurface),
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: onSurface,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.5,
+                ),
                 decoration: InputDecoration(
-                  hintText: "Manual Barcode Entry",
+                  hintText: "Manual Barcode",
                   hintStyle: TextStyle(
-                    color: onSurfaceVariant.withOpacity(0.4),
+                    color: onSurfaceVariant.withOpacity(0.5),
+                    letterSpacing: 0,
+                    fontWeight: FontWeight.normal,
                   ),
-                  border: InputBorder.none, // Rimossa la riga sotto
+                  border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -364,12 +410,12 @@ class _CameraModuleState extends State<CameraModule> {
             minimumSize: const Size(0, 56),
             padding: const EdgeInsets.symmetric(horizontal: 24),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28), // Design a pillola
+              borderRadius: BorderRadius.circular(999),
             ),
           ),
           child: const Text(
             "Search",
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -378,22 +424,22 @@ class _CameraModuleState extends State<CameraModule> {
 
   Widget _buildSafetyGuide() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: surfaceContainerLow,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(32),
       ),
       child: Column(
         children: [
           const Text(
             "Safety Indicators",
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w500,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
               color: onSurface,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,27 +496,27 @@ class _CameraModuleState extends State<CameraModule> {
     return Column(
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
             color: surfaceContainerLowest,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Icon(icon, color: color, size: 24),
+          child: Icon(icon, color: color, size: 26),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           title,
           style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
             color: onSurface,
             height: 1.2,
           ),
@@ -478,11 +524,11 @@ class _CameraModuleState extends State<CameraModule> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           subtitle,
           style: const TextStyle(
-            fontSize: 10,
+            fontSize: 11,
             color: onSurfaceVariant,
             height: 1.2,
           ),

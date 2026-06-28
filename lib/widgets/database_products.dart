@@ -17,6 +17,10 @@ const Color primary = Color(0xFF0D631B);
 const Color error = Color(0xFFBA1A1A);
 const Color warningText = Color(0xFF884200);
 
+// --- Colori per il Filtro Selezionato ---
+const Color secondaryContainer = Color(0xFF54A0FE);
+const Color onSecondaryContainer = Color(0xFF003567);
+
 class DatabaseProducts extends StatefulWidget {
   final List<Product> products;
   final Function(String) onSelectItem;
@@ -63,7 +67,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
     });
   }
 
-  // Helper per la data (come avevi in HistoryList)
+  // Helper per la data
   String _getTodayFormatted() {
     final now = DateTime.now();
     const months = [
@@ -104,6 +108,18 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
     }).toList();
 
     final bool showClearIcon = _isSearchFocused && _searchTerm.isNotEmpty;
+
+    // --- Variabili di Stile Dinamiche per il Filtro ---
+    final bool isMineSelected = _reportFilter == "Mie";
+    final Color filterBgColor = isMineSelected
+        ? secondaryContainer.withOpacity(0.15)
+        : surfaceContainer;
+    final Color filterTextColor = isMineSelected
+        ? onSecondaryContainer
+        : onSurface;
+    final Color filterIconColor = isMineSelected
+        ? onSecondaryContainer
+        : onSurfaceVariant;
 
     return RefreshIndicator(
       onRefresh: widget.onRefresh,
@@ -265,22 +281,19 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                   flex: 2,
                   child: DropdownButtonFormField<String>(
                     value: _reportFilter,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.filter_list,
-                      color: onSurfaceVariant,
+                      color: filterIconColor, // Colore Dinamico Icona
                       size: 20,
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: onSurface,
+                      color: filterTextColor, // Colore Dinamico Testo
                     ),
                     decoration: InputDecoration(
                       filled: true,
-                      // Colore standard da item di navbar selezionato (grigio overlay) invece del verde primario
-                      fillColor: _reportFilter == "Mie"
-                          ? onSurface.withOpacity(0.08)
-                          : surfaceContainer,
+                      fillColor: filterBgColor, // Sfondo Dinamico
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                       ),
@@ -378,21 +391,14 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
               builder: (context) => ReportDetailCard(
                 product: prod,
                 originalStatus:
-                    prod.originalStatus ??
-                    GlutenSafetyStatus
-                        .sconosciuto, // Passa il prodotto originale se necessario
-                onBack: () => Navigator.pop(context), // Torna indietro
-                // NOTA: Assicurati di passare i dati reali dal tuo DB.
-                // Uso prod.reason come commento, dato che lo avevi nella versione precedente.
-                reportReasonKey:
-                    "label_unclear", // Inserisci il campo reale dal tuo model
+                    prod.originalStatus ?? GlutenSafetyStatus.sconosciuto,
+                onBack: () => Navigator.pop(context),
+                reportReasonKey: "label_unclear",
                 reportComment: prod.reason.isNotEmpty
                     ? prod.reason
                     : "Nessun commento",
-                reportDate:
-                    _getTodayFormatted(), // Oppure la data dal tuo model (es: prod.reportDate)
+                reportDate: _getTodayFormatted(),
                 onVote: (vote) async {
-                  // Passiamo il barcode del prodotto e il voto (1, -1, o 0)
                   await DbService.voteOnReportByBarcode(prod.barcode, vote);
                 },
                 onInitVote: () async {
@@ -423,8 +429,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize:
-                            18, // Leggermente più grande per dargli risalto
+                        fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: onSurface,
                         letterSpacing: -0.2,
@@ -467,7 +472,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _getTodayFormatted(), // O inserisci il campo data dal tuo model se lo aggiungi
+                        _getTodayFormatted(),
                         style: TextStyle(
                           fontSize: 12,
                           color: onSurfaceVariant.withOpacity(0.7),
@@ -495,8 +500,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             color: onSurfaceVariant.withOpacity(0.8),
-                            letterSpacing:
-                                0.5, // Leggermente distanziato per i codici
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),

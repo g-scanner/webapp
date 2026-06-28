@@ -29,23 +29,44 @@ class AnalyzerResult {
 }
 
 class AnalyzerService {
-  // Parole che CERTAMENTE indicano glutine (ingredienti/allergeni dichiarati)
+  // ─── DIZIONARI KEYWORDS ──────────────────────────────────────────────────
+
   static const List<String> _dangerKeywords = [
-    // Italian
-    "frumento", "grano", "orzo", "segale", "farro", "kamut", "spelta",
-    "glutine", "tritordeum", "couscous", "bulgur", "seitan", "grano saraceno",
-    // English
-    "wheat", "barley", "rye", "spelt", "gluten", "seitan", "semolina",
-    "couscous", "bulgur", "triticale", "graham",
-    // French
-    "blé", "froment", "orge", "seigle", "épeautre",
-    // Spanish
-    "trigo", "cebada", "centeno", "espelta",
-    // German
-    "weizen", "gerste", "roggen", "dinkel",
+    "frumento",
+    "grano",
+    "orzo",
+    "segale",
+    "farro",
+    "kamut",
+    "spelta",
+    "glutine",
+    "tritordeum",
+    "couscous",
+    "bulgur",
+    "seitan",
+    "grano saraceno",
+    "wheat",
+    "barley",
+    "rye",
+    "spelt",
+    "gluten",
+    "semolina",
+    "triticale",
+    "blé",
+    "froment",
+    "orge",
+    "seigle",
+    "épeautre",
+    "trigo",
+    "cebada",
+    "centeno",
+    "espelta",
+    "weizen",
+    "gerste",
+    "roggen",
+    "dinkel",
   ];
 
-  // "Malto" da solo può essere malto di riso (ok), malto d'orzo (no): trattiamolo come traccia/incerto
   static const List<String> _maltoKeywords = [
     "malto",
     "malt",
@@ -54,7 +75,6 @@ class AnalyzerService {
     "malz",
   ];
 
-  // Parole che indicano possibile contaminazione/tracce
   static const List<String> _traceKeywords = [
     "tracce di grano",
     "tracce di frumento",
@@ -63,13 +83,10 @@ class AnalyzerService {
     "può contenere glutine",
     "può contenere frumento",
     "può contenere orzo",
-    "può contenere cereali contenenti glutine",
     "può contenere farro",
     "traces of wheat",
     "may contain wheat",
     "may contain gluten",
-    "processed in a facility that uses wheat",
-    "may contain barley",
     "trazas de trigo",
     "puede contener trigo",
     "puede contener gluten",
@@ -78,10 +95,10 @@ class AnalyzerService {
     "peut contenir du gluten",
   ];
 
-  // Bollini / certificazioni ufficiali "senza glutine"
   static const List<String> _safeTextKeywords = [
     "senza glutine",
     "spiga sbarrata",
+    "spiga barrata",
     "naturalmente privo di glutine",
     "adatto ai celiaci",
     "gluten free",
@@ -92,7 +109,6 @@ class AnalyzerService {
     "sans gluten",
   ];
 
-  // Additivi ambigui (generano warning extra se warnAdditives=true)
   static const List<String> _doubtfulAdditives = [
     "amido modificato",
     "lievito",
@@ -102,35 +118,123 @@ class AnalyzerService {
     "yeast",
     "flavorings",
     "vegetable fiber",
-    "almidón modificado",
-    "levadura",
-    "aromas",
-    "fibra vegetal",
-    "amidon modifié",
-    "levure",
-    "arômes",
-    "fibre végétale",
   ];
+
+  static const List<String> _lactoseKeywords = [
+    "latte",
+    "burro",
+    "siero di latte",
+    "lattosio",
+    "panna",
+    "formaggio",
+    "yogurt",
+    "mascarpone",
+    "ricotta",
+    "milk",
+    "butter",
+    "whey",
+    "lactose",
+    "cream",
+    "cheese",
+    "lait",
+    "beurre",
+    "lactosérum",
+  ];
+
+  static const List<String> _naturallySafeCategories = [
+    'en:waters',
+    'en:spring-waters',
+    'en:mineral-waters',
+    'en:milks',
+    'en:fresh-milks',
+    'en:fresh-fruits',
+    'en:fruits',
+    'en:fresh-vegetables',
+    'en:vegetables',
+    'en:extra-virgin-olive-oils',
+    'en:olive-oils',
+    'en:virgin-olive-oils',
+    'en:sugars',
+    'en:honeys',
+    'en:salts',
+    'en:coffees',
+    'en:teas',
+  ];
+
+  // ─── METODI DI SANITIZZAZIONE ──────────────────────────────────────────
+
+  // Nasconde le frasi sicure per non far scattare l'allarme sulla parola "glutine"
+  static String _sanitizeForGluten(String input) {
+    String text = input.toLowerCase();
+    final safePhrases = [
+      "senza glutine",
+      "privo di glutine",
+      "gluten free",
+      "gluten-free",
+      "sans gluten",
+      "sin gluten",
+      "libre de gluten",
+      "deglutinato",
+      "degliutinato",
+      "amido di frumento deglutinato",
+      "spiga barrata",
+      "spiga sbarrata",
+      "adatto ai celiaci",
+      "zero glutine",
+    ];
+    for (var phrase in safePhrases) {
+      text = text.replaceAll(phrase, " ");
+    }
+    return text;
+  }
+
+  // Nasconde le frasi sicure per non far scattare l'allarme sulla parola "lattosio"
+  static String _sanitizeForLactose(String input) {
+    String text = input.toLowerCase();
+    final safePhrases = [
+      "senza lattosio",
+      "privo di lattosio",
+      "lactose free",
+      "lactose-free",
+      "sans lactose",
+      "sin lactosa",
+      "delattosato",
+      "senza latte",
+    ];
+    for (var phrase in safePhrases) {
+      text = text.replaceAll(phrase, " ");
+    }
+    return text;
+  }
+
+  // ─── ANALISI PRINCIPALE ────────────────────────────────────────────────
 
   static AnalyzerResult analyzeGlutenSafety({
     required String name,
     required String brand,
     required String ingredients,
     required List<String> allergensList,
-    required int reportCount, // <-- nuovo parametro
+    required int reportCount,
+    required List<String> categoriesTags,
     OffTags? offTags,
-    bool strictMode = false,
-    bool warnAdditives = true,
+    bool strictMode = false, // Impostazione 1
+    bool warnAdditives = true, // Impostazione 2
+    bool alertLactose = false, // Impostazione 3 (Nuova)
   }) {
     final String lowerIng = ingredients.toLowerCase();
     final String lowerName = name.toLowerCase();
     final String lowerBrand = brand.toLowerCase();
-    final String combined = "$lowerIng $lowerName $lowerBrand";
+    final String combinedRaw = "$lowerIng $lowerName $lowerBrand";
+
+    // SANITIZZAZIONE (Risolve il bug "Pasta Senza Glutine")
+    final String safeIng = _sanitizeForGluten(lowerIng);
+    final String safeName = _sanitizeForGluten(lowerName);
 
     // ─── STEP 1: Controlla certificazione Gluten-Free ────────────────────────
-    bool hasGlutenFreeBollino = false; // bollino OFF ufficiale (labels_tags)
-    bool hasGlutenFreeTextClaim =
-        false; // claim testuale negli ingredienti/nome
+    bool hasGlutenFreeBollino = false;
+    bool hasGlutenFreeTextClaim = _safeTextKeywords.any(
+      (s) => combinedRaw.contains(s),
+    );
 
     if (offTags != null) {
       hasGlutenFreeBollino = offTags.labelsTags.any((t) {
@@ -141,25 +245,23 @@ class AnalyzerService {
             lt.contains('sin-gluten');
       });
     }
-    hasGlutenFreeTextClaim = _safeTextKeywords.any((s) => combined.contains(s));
 
-    // ─── STEP 2: Controlla ingredienti PERICOLOSI ────────────────────────────
+    // ─── STEP 2: Controlla ingredienti PERICOLOSI (usando il testo pulito) ───
     List<String> foundDanger = [];
     for (String k in _dangerKeywords) {
       final regex = RegExp(
         r'\b' + RegExp.escape(k) + r'\b',
         caseSensitive: false,
       );
-      if (regex.hasMatch(lowerIng) || regex.hasMatch(lowerName)) {
+      // Cerchiamo nel testo a cui abbiamo tolto "senza glutine"
+      if (regex.hasMatch(safeIng) || regex.hasMatch(safeName)) {
         foundDanger.add(k);
       }
     }
 
-    // Malto senza qualificatore "di riso" è sospetto (incerto, non pericolo certo)
     bool hasMalto = false;
     for (String m in _maltoKeywords) {
       if (lowerIng.contains(m)) {
-        // se è "malto di riso" o "rice malt" non è pericoloso
         if (!lowerIng.contains("malto di riso") &&
             !lowerIng.contains("rice malt")) {
           hasMalto = true;
@@ -179,12 +281,7 @@ class AnalyzerService {
             lowerT.contains('barley') ||
             lowerT.contains('rye') ||
             lowerT.contains('spelt') ||
-            lowerT.contains('kamut') ||
-            lowerT.contains('frumento') ||
-            lowerT.contains('orzo') ||
-            lowerT.contains('farro') ||
-            lowerT.contains('segale') ||
-            lowerT.contains('avena');
+            lowerT.contains('kamut');
       }
 
       hasOffGlutenAllergen = offTags.allergensTags.any(isGlutenTag);
@@ -196,15 +293,17 @@ class AnalyzerService {
     for (String t in _traceKeywords) {
       if (lowerIng.contains(t)) foundTraces.add(t);
     }
-    // Allergeni dalla lista OFF che contengono parole pericolose → tracce
     for (String a in allergensList) {
       final lowerA = a.toLowerCase();
-      if (_dangerKeywords.any((k) => lowerA.contains(k))) {
-        if (!foundDanger.contains(lowerA)) foundTraces.add(lowerA);
+      if (_dangerKeywords.any((k) => lowerA.contains(k)) &&
+          !foundDanger.contains(lowerA)) {
+        foundTraces.add(lowerA);
       }
     }
 
-    // ─── STEP 5: Additivi ambigui ────────────────────────────────────────────
+    bool hasAnyTrace = hasOffGlutenTrace || foundTraces.isNotEmpty;
+
+    // ─── STEP 5: Filtro Additivi (Impostazione 2) ────────────────────────────
     List<String> foundDoubtful = [];
     if (warnAdditives) {
       for (String d in _doubtfulAdditives) {
@@ -216,7 +315,44 @@ class AnalyzerService {
       }
     }
 
-    // ─── STEP 6: Informazioni sufficienti? ──────────────────────────────────
+    // ─── STEP 6: Filtro Lattosio (Impostazione 3) ────────────────────────────
+    List<String> foundLactose = [];
+    if (alertLactose) {
+      final String safeLactoseIng = _sanitizeForLactose(lowerIng);
+      for (String l in _lactoseKeywords) {
+        final regex = RegExp(
+          r'\b' + RegExp.escape(l) + r'\b',
+          caseSensitive: false,
+        );
+        if (regex.hasMatch(safeLactoseIng)) foundLactose.add(l);
+      }
+      if (offTags != null) {
+        bool hasMilk = offTags.allergensTags.any(
+          (t) =>
+              t.toLowerCase().contains('milk') ||
+              t.toLowerCase().contains('lait'),
+        );
+        if (hasMilk && foundLactose.isEmpty)
+          foundLactose.add("Allergene Latte (OFF)");
+      }
+    }
+
+    // ─── STEP 7: Naturalmente Sicuro ─────────────────────────────────────────
+    bool isInSafeCategory = categoriesTags.any(
+      (cat) => _naturallySafeCategories.contains(cat.toLowerCase()),
+    );
+    List<String> ingredientList = lowerIng
+        .split(',')
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+    bool isMonoIngredient =
+        ingredientList.length == 1 && ingredientList[0].length > 3;
+    bool isNaturallySafe =
+        (isInSafeCategory || isMonoIngredient) &&
+        !hasMalto &&
+        foundDoubtful.isEmpty;
+
+    // ─── STEP 8: Informazioni sufficienti? ──────────────────────────────────
     bool hasNoInfo =
         lowerIng.length < 5 &&
         !hasGlutenFreeBollino &&
@@ -224,181 +360,183 @@ class AnalyzerService {
         !hasOffGlutenTrace &&
         !hasGlutenFreeTextClaim;
 
-    // ─── STEP 7: Determina lo status finale ─────────────────────────────────
-    //
-    // LOGICA (priorità dall'alto):
-    // 1. ROSSO  → ingrediente rischioso dichiarato (testo O allergeni OFF)
-    // 2. GRIGIO → nessuna info sufficiente
-    // 3. GIALLO → segnalazione utente attiva (indipendentemente dal bollino)
-    //           → bollino GF assente ma nessun rischio trovato
-    //           → malto ambiguo / tracce / additivi dubbi
-    // 4. VERDE  → bollino GF ufficiale (OFF labels_tags) O claim testuale + zero rischi
-
+    // ─── STEP 9: DETERMINA LO STATUS FINALE SUL GLUTINE ─────────────────────
     GlutenSafetyStatus status;
     String reason;
     List<IngredientAnalyzed> ingredientsAnalyzed = [];
 
-    if (foundDanger.isNotEmpty || hasOffGlutenAllergen) {
-      // ── ROSSO ──────────────────────────────────────────────────────────────
-      status = GlutenSafetyStatus.nonAdatto;
+    // CASO 1: BOLLINO UFFICIALE (Vince su tutto. Se c'è bollino, è <20ppm per legge)
+    if (hasGlutenFreeBollino || hasGlutenFreeTextClaim) {
+      status = GlutenSafetyStatus.adatto;
       reason =
-          "NON ADATTO ai celiaci. Rilevati ingredienti o allergeni vietati.";
-      if (hasOffGlutenAllergen)
-        reason += " Segnalato tra gli allergeni Open Food Facts.";
-      if (foundDanger.isNotEmpty)
-        reason += " Trovati nel testo: ${foundDanger.join(', ')}.";
+          "ADATTO ai celiaci. Certificazione o etichetta 'Senza Glutine' rilevata.";
+      ingredientsAnalyzed.add(
+        IngredientAnalyzed(
+          ingredient: "Etichetta Gluten-Free",
+          dangerLevel: "safe",
+          reason: "Prodotto certificato o dichiarato senza glutine.",
+        ),
+      );
 
-      if (hasOffGlutenAllergen) {
+      if (foundDanger.isNotEmpty) {
+        // Es. "Amido di frumento deglutinato"
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
-            ingredient: "Allergeni OFF",
-            dangerLevel: "danger",
-            reason:
-                "Il database ufficiale riporta glutine tra gli allergeni di questo prodotto.",
+            ingredient: foundDanger.join(', '),
+            dangerLevel: "safe",
+            reason: "Ingrediente deglutinato (Sicuro grazie al bollino).",
           ),
         );
       }
+      if (hasAnyTrace) {
+        ingredientsAnalyzed.add(
+          IngredientAnalyzed(
+            ingredient: "Tracce (<20ppm)",
+            dangerLevel: "warning",
+            reason: "Tracce segnalate, ma il bollino garantisce limiti sicuri.",
+          ),
+        );
+      }
+    }
+    // CASO 2: ROSSO (Pericolo certo o Tracce con Filtro Rigido Attivo)
+    else if (foundDanger.isNotEmpty ||
+        hasOffGlutenAllergen ||
+        (hasAnyTrace && strictMode)) {
+      status = GlutenSafetyStatus.nonAdatto;
+      if (foundDanger.isNotEmpty || hasOffGlutenAllergen) {
+        reason = "NON ADATTO ai celiaci. Rilevati ingredienti vietati.";
+      } else {
+        reason =
+            "VIETATO DAL FILTRO: Rilevate possibili tracce di contaminazione crociata (Filtro Rigido attivo).";
+      }
+
       for (var ing in foundDanger) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
             ingredient: ing,
             dangerLevel: "danger",
-            reason:
-                "Contiene una fonte diretta di glutine vietata per i celiaci.",
+            reason: "Fonte diretta di glutine.",
           ),
         );
       }
-    } else if (hasNoInfo) {
-      // ── GRIGIO ─────────────────────────────────────────────────────────────
+      if (hasOffGlutenAllergen)
+        ingredientsAnalyzed.add(
+          IngredientAnalyzed(
+            ingredient: "Allergeni OFF",
+            dangerLevel: "danger",
+            reason: "Glutine tra gli allergeni ufficiali.",
+          ),
+        );
+      if (hasAnyTrace && strictMode)
+        ingredientsAnalyzed.add(
+          IngredientAnalyzed(
+            ingredient: "Tracce",
+            dangerLevel: "danger",
+            reason: "Bloccato dal Filtro Rigido Contaminazioni.",
+          ),
+        );
+    }
+    // CASO 3: GRIGIO
+    else if (hasNoInfo) {
       status = GlutenSafetyStatus.sconosciuto;
       reason =
-          "SCONOSCIUTO. Informazioni assenti o insufficienti nel database. Leggi sempre l'etichetta del prodotto fisico.";
+          "SCONOSCIUTO. Informazioni insufficienti. Leggi l'etichetta fisica.";
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
           ingredient: "Dati Assenti",
           dangerLevel: "warning",
-          reason: "Nessuna specifica trovata. Prodotto non classificabile.",
+          reason: "Nessuna specifica trovata.",
         ),
       );
-    } else if (reportCount > 0) {
-      // ── GIALLO per segnalazione attiva ─────────────────────────────────────
+    }
+    // CASO 4: GIALLO (Segnalazioni Utenti)
+    else if (reportCount > 0) {
       status = GlutenSafetyStatus.incerto;
       reason =
-          "ATTENZIONE: Questo prodotto ha $reportCount segnalazione/i da parte degli utenti. Verifica sempre la confezione fisica.";
+          "ATTENZIONE: Questo prodotto ha $reportCount segnalazione/i dagli utenti.";
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
           ingredient: "Segnalazione Utenti",
           dangerLevel: "warning",
-          reason: "Un utente ha segnalato incongruenze su questo prodotto.",
+          reason: "Incongruenze segnalate dalla community.",
         ),
       );
-      // Se c'era anche il bollino, aggiungiamo nota positiva
-      if (hasGlutenFreeBollino || hasGlutenFreeTextClaim) {
-        ingredientsAnalyzed.add(
-          IngredientAnalyzed(
-            ingredient: "Bollino Gluten-Free presente",
-            dangerLevel: "safe",
-            reason:
-                "Il prodotto dichiara assenza di glutine, ma è stato segnalato dagli utenti. Verifica la confezione.",
-          ),
-        );
-      }
-    } else if (hasGlutenFreeBollino || hasGlutenFreeTextClaim) {
-      // ── VERDE ──────────────────────────────────────────────────────────────
+    }
+    // CASO 5: VERDE (Naturalmente Sicuro)
+    else if (isNaturallySafe) {
       status = GlutenSafetyStatus.adatto;
-      if (hasGlutenFreeBollino) {
-        reason =
-            "ADATTO ai celiaci. Bollino ufficiale 'Senza Glutine' rilevato nel database Open Food Facts.";
-      } else {
-        reason =
-            "ADATTO ai celiaci. Claim testuale 'Senza Glutine' / 'Gluten-Free' chiaramente rilevato negli ingredienti o nel nome.";
-      }
+      reason =
+          "ADATTO ai celiaci. Prodotto di base naturalmente privo di glutine.";
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
-          ingredient: hasGlutenFreeBollino
-              ? "Bollino OFF Gluten-Free"
-              : "Etichetta Gluten-Free",
+          ingredient: "Naturalmente Sicuro",
           dangerLevel: "safe",
-          reason:
-              "Certificazione o dichiarazione esplicita di assenza di glutine rilevata.",
+          reason: "Categoria a bassissimo rischio (es. olio, acqua).",
         ),
       );
-      // Segnala comunque tracce o additivi come note aggiuntive
-      if (hasOffGlutenTrace) {
+    }
+    // CASO 6: GIALLO (Fallback)
+    else {
+      status = GlutenSafetyStatus.incerto;
+      reason =
+          "ATTENZIONE: Prodotto lavorato senza dicitura 'Senza glutine'. Verifica l'etichetta.";
+      ingredientsAnalyzed.add(
+        IngredientAnalyzed(
+          ingredient: "Assenza Certificazione",
+          dangerLevel: "warning",
+          reason: "Prodotto lavorato a potenziale rischio stabilimento.",
+        ),
+      );
+
+      if (hasAnyTrace && !strictMode) {
+        reason =
+            "ATTENZIONE: Trovate diciture di contaminazione. Consumo a tuo rischio.";
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
-            ingredient: "Tracce (OFF)",
+            ingredient: "Tracce",
             dangerLevel: "warning",
-            reason:
-                "OFF segnala possibili tracce. Il bollino GF può indicare che sono entro i limiti di legge (<20ppm).",
+            reason: "Contaminazione crociata. Il filtro rigido è disattivato.",
           ),
         );
       }
+      if (hasMalto)
+        ingredientsAnalyzed.add(
+          IngredientAnalyzed(
+            ingredient: "Malto",
+            dangerLevel: "warning",
+            reason: "Possibile malto d'orzo. Origine non specificata.",
+          ),
+        );
       for (var d in foundDoubtful) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
             ingredient: d,
             dangerLevel: "warning",
-            reason: "Additivo ambiguo, ma il prodotto è certificato GF.",
+            reason: "Ingrediente ambiguo.",
           ),
         );
-      }
-    } else {
-      // ── GIALLO — nessun bollino, nessun pericolo certo ────────────────────
-      status = GlutenSafetyStatus.incerto;
-      reason = "ATTENZIONE: ";
-      reason +=
-          "Il prodotto non presenta l'etichetta esplicita 'Senza Glutine'. Anche se gli ingredienti sembrano sicuri, verifica SEMPRE la confezione fisica. ";
-      ingredientsAnalyzed.add(
-        IngredientAnalyzed(
-          ingredient: "Assenza Certificazione",
-          dangerLevel: "warning",
-          reason:
-              "Nessun bollino 'Senza Glutine' / 'Gluten-free' rilevato. Verifica la dicitura sulla confezione.",
-        ),
-      );
-      if (hasOffGlutenTrace || foundTraces.isNotEmpty) {
-        reason += "Trovate possibili diciture di contaminazione crociata. ";
-        for (var t in [...foundTraces, if (hasOffGlutenTrace) "tracce (OFF)"]) {
-          ingredientsAnalyzed.add(
-            IngredientAnalyzed(
-              ingredient: t,
-              dangerLevel: "warning",
-              reason: "Rischio contaminazione crociata nello stabilimento.",
-            ),
-          );
-        }
-      }
-      if (hasMalto) {
-        reason += "Contiene 'malto' non specificato (potrebbe essere orzo). ";
-        ingredientsAnalyzed.add(
-          IngredientAnalyzed(
-            ingredient: "Malto (origine incerta)",
-            dangerLevel: "warning",
-            reason:
-                "Il malto d'orzo contiene glutine. Verifica se è specificata l'origine (es. malto di riso).",
-          ),
-        );
-      }
-      if (strictMode && foundDoubtful.isNotEmpty) {
-        reason += "Trovati ingredienti ambigui (${foundDoubtful.join(', ')}). ";
-        for (var d in foundDoubtful) {
-          ingredientsAnalyzed.add(
-            IngredientAnalyzed(
-              ingredient: d,
-              dangerLevel: "warning",
-              reason:
-                  "Ingrediente ambiguo. Potrebbe derivare da cereali vietati.",
-            ),
-          );
-        }
       }
     }
 
-    // Costruiamo la lista allergeni finale
+    // ─── AGGIUNTA ALLERTA LATTOSIO ALLA UI ──────────────────────────────────
+    if (alertLactose && foundLactose.isNotEmpty) {
+      reason += "\n\n🥛 ALLERTA LATTOSIO: Il prodotto contiene lattosio/latte.";
+      for (var l in foundLactose) {
+        ingredientsAnalyzed.add(
+          IngredientAnalyzed(
+            ingredient: l,
+            dangerLevel:
+                "danger", // Mostra rosso negli ingredienti per far capire all'utente
+            reason: "Rilevato per le tue impostazioni sul lattosio.",
+          ),
+        );
+      }
+    }
+
     List<String> detectedAllergens = allergensList.toSet().toList();
     if (status == GlutenSafetyStatus.nonAdatto &&
-        !detectedAllergens.contains("glutine")) {
+        !detectedAllergens.contains("glutine") &&
+        !strictMode) {
       detectedAllergens.add("glutine");
     }
 

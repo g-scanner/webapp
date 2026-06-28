@@ -10,7 +10,6 @@ import 'widgets/camera_module.dart';
 import 'widgets/history_list.dart';
 import 'widgets/database_products.dart';
 import 'widgets/settings_panel.dart';
-import 'widgets/my_reports_list.dart';
 import 'widgets/product_detail_card.dart';
 
 // --- Colori estratti dal tuo Tailwind HTML ---
@@ -57,7 +56,7 @@ class _MainScreenState extends State<MainScreen> {
   List<ScanHistoryItem> history = [];
   List<ProductReport> reports = [];
   UserSettings userSettings = UserSettings(
-    strictMode: false,
+    strictMode: true,
     alertLactose: false,
     warnAdditives: true,
     autoSaveHistory: true,
@@ -355,7 +354,6 @@ class _MainScreenState extends State<MainScreen> {
       case 3:
         return SettingsPanel(
           settings: userSettings,
-          reports: reports,
           onSettingsChange: (newSet) async {
             await DbService.saveLocalSettings(newSet);
             setState(() => userSettings = newSet);
@@ -371,22 +369,6 @@ class _MainScreenState extends State<MainScreen> {
             await DbService.wipeHistoryLocal();
             await _fetchHistory();
           },
-          onViewReports: () => setState(() => _currentIndex = 4),
-        );
-      case 4:
-        return MyReportsList(
-          reports: reports,
-          onBack: () => setState(() => _currentIndex = 3),
-          onSelectReport: (barcode) {
-            final match = products.cast<Product?>().firstWhere(
-              (p) => p?.barcode == barcode,
-              orElse: () => null,
-            );
-            if (match != null) {
-              setState(() => selectedProduct = match);
-            }
-          },
-          onDeleteReport: handleDeleteReport,
         );
       default:
         return Container();
