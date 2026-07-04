@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
@@ -48,6 +49,12 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
+        await FirebaseAuth.instance.signInWithPopup(provider);
+        return;
+      }
+
       final googleSignIn = GoogleSignIn.instance;
 
       // 1. Inizializza passando il WEB CLIENT ID (Obbligatorio per Android dalla v7)
@@ -121,6 +128,12 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _signInWithFacebook() async {
     setState(() => _isLoading = true);
     try {
+      if (kIsWeb) {
+        final provider = FacebookAuthProvider();
+        await FirebaseAuth.instance.signInWithPopup(provider);
+        return;
+      }
+
       // 1. Avvia il flusso nativo di Facebook usando .instance
       final LoginResult result = await FacebookAuth.instance.login(
         permissions: ['email', 'public_profile'],

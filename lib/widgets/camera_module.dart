@@ -350,10 +350,10 @@ class _CameraModuleState extends State<CameraModule> {
           left: 0,
           right: 0,
           child: Center(
-            child: ValueListenableBuilder<TorchState>(
-              valueListenable: _scannerController.torchState,
+            child: ValueListenableBuilder<MobileScannerState>(
+              valueListenable: _scannerController,
               builder: (context, state, child) {
-                final bool isOn = state == TorchState.on;
+                final bool isOn = state.torchState == TorchState.on;
 
                 return Material(
                   color: isOn ? primaryContainer : surfaceContainerLowest,
