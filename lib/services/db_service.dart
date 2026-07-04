@@ -41,12 +41,23 @@ class DbService {
   }
 
   static Future<List<ProductReport>> fetchUserReports() async {
-    final userId = auth.currentUser?.uid;
-    if (userId == null) return [];
+    final user = auth.currentUser;
+    if (user == null || user.isAnonymous) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        List<String> reportsStr = prefs.getStringList('celiac_reports') ?? [];
+        return reportsStr
+            .map((e) => ProductReport.fromJson(json.decode(e)))
+            .toList();
+      } catch (e) {
+        print("Error fetching local user reports: $e");
+        return [];
+      }
+    }
     try {
       final snap = await db
           .collection(reportsCollection)
-          .where("userId", isEqualTo: userId)
+          .where("userId", isEqualTo: user.uid)
           .orderBy("submittedAt", descending: true)
           .limit(50)
           .get();
@@ -280,6 +291,7 @@ class DbService {
 
   static Future<void> _saveHistoryItem(Product product) async {
     final user = auth.currentUser;
+    final now = DateTime.now();
 
     if (user != null && !user.isAnonymous) {
       final userId = user.uid;
@@ -287,11 +299,26 @@ class DbService {
         final q = await db
             .collection("users/$userId/history")
             .orderBy("scannedAt", descending: true)
-            .limit(1)
+            .limit(5)
             .get();
-        bool isDuplicate =
-            q.docs.isNotEmpty &&
-            q.docs.first.data()['barcode'] == product.barcode;
+
+        bool isDuplicate = false;
+        for (var doc in q.docs) {
+          final data = doc.data();
+          if (data['barcode'] == product.barcode) {
+            final scannedAtStr = data['scannedAt'] as String?;
+            if (scannedAtStr != null) {
+              final scannedAt = DateTime.tryParse(scannedAtStr);
+              if (scannedAt != null) {
+                final diff = now.difference(scannedAt).inSeconds.abs();
+                if (diff <= 10) {
+                  isDuplicate = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
 
         if (!isDuplicate) {
           final historyRef = db.collection("users/$userId/history").doc();
@@ -302,7 +329,7 @@ class DbService {
             productName: product.name,
             brand: product.brand,
             status: product.status,
-            scannedAt: DateTime.now().toIso8601String(),
+            scannedAt: now.toIso8601String(),
           );
           await historyRef.set(historyItem.toJson());
         }
@@ -315,24 +342,41 @@ class DbService {
         List<String> histStr = prefs.getStringList('celiac_history') ?? [];
         List<dynamic> localHist = histStr.map((e) => json.decode(e)).toList();
 
-        localHist.removeWhere((item) => item['barcode'] == product.barcode);
+        bool isDuplicate = false;
+        for (var item in localHist) {
+          if (item['barcode'] == product.barcode) {
+            final scannedAtStr = item['scannedAt'] as String?;
+            if (scannedAtStr != null) {
+              final scannedAt = DateTime.tryParse(scannedAtStr);
+              if (scannedAt != null) {
+                final diff = now.difference(scannedAt).inSeconds.abs();
+                if (diff <= 10) {
+                  isDuplicate = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
 
-        final id = DateTime.now().millisecondsSinceEpoch.toString();
-        localHist.insert(0, {
-          'id': id,
-          'barcode': product.barcode,
-          'productName': product.name,
-          'brand': product.brand,
-          'status': product.status.name,
-          'scannedAt': DateTime.now().toIso8601String(),
-        });
+        if (!isDuplicate) {
+          final id = DateTime.now().millisecondsSinceEpoch.toString();
+          localHist.insert(0, {
+            'id': id,
+            'barcode': product.barcode,
+            'productName': product.name,
+            'brand': product.brand,
+            'status': product.status.name,
+            'scannedAt': now.toIso8601String(),
+          });
 
-        if (localHist.length > 50) localHist.removeLast();
+          if (localHist.length > 50) localHist.removeLast();
 
-        await prefs.setStringList(
-          'celiac_history',
-          localHist.map((e) => json.encode(e)).toList(),
-        );
+          await prefs.setStringList(
+            'celiac_history',
+            localHist.map((e) => json.encode(e)).toList(),
+          );
+        }
       } catch (e) {
         print("Failed saving history locally: $e");
       }
@@ -430,13 +474,70 @@ class DbService {
     }
   }
 
+  static Future<void> _updateProductStatusOnReport(
+    String barcode,
+    ProductReport finalReport,
+  ) async {
+    final prodRef = db.collection(productsCollection).doc(barcode);
+    final prodSnap = await prodRef.get();
+
+    if (prodSnap.exists) {
+      final p = Product.fromJson(prodSnap.data()!);
+
+      int offLastModified = 0;
+      try {
+        final offRes = await http.get(
+          Uri.parse(
+            'https://world.openfoodfacts.org/api/v2/product/$barcode.json?fields=last_modified_t',
+          ),
+        );
+        if (offRes.statusCode == 200) {
+          final offData = json.decode(offRes.body);
+          if (offData['product'] != null &&
+              offData['product']['last_modified_t'] != null) {
+            offLastModified =
+                (offData['product']['last_modified_t'] as int) * 1000;
+          }
+        }
+      } catch (err) {
+        print("Could not check OFF last modification date. $err");
+      }
+
+      int reportTime = DateTime.parse(
+        finalReport.submittedAt,
+      ).millisecondsSinceEpoch;
+
+      if (offLastModified > 0 && reportTime > offLastModified) {
+        await prodRef.update({
+          'status': GlutenSafetyStatus.incerto.name,
+          'reason':
+              '''ATTENZIONE: La tua segnalazione ("${finalReport.comments}") è più recente dell'ultimo aggiornamento del database Open Food Facts. La ricetta in fabbrica potrebbe essere cambiata. Risulta INCERTO.''',
+          'reportCount': (p.reportCount ?? 0) + 1,
+          'lastUpdated': DateTime.now().toIso8601String(),
+          'originalStatus': finalReport.originalStatus?.name,
+        });
+      } else {
+        await prodRef.update({
+          'status': GlutenSafetyStatus.incerto.name,
+          'reason':
+              'ATTENZIONE: Segnalata etichetta incongruente. Note: ${finalReport.comments}',
+          'reportCount': (p.reportCount ?? 0) + 1,
+          'lastUpdated': DateTime.now().toIso8601String(),
+          'originalStatus': finalReport.originalStatus?.name,
+        });
+      }
+    }
+  }
+
   static Future<ProductReport> submitProductReportClientSide(
     String barcode,
     String productName,
     String brand,
     Map<String, dynamic> reportData,
   ) async {
-    final userId = auth.currentUser?.uid ?? "anonymous";
+    final user = auth.currentUser;
+    final isAnonymous = user == null || user.isAnonymous;
+    final userId = user?.uid ?? "anonymous";
 
     try {
       GlutenSafetyStatus? originalStatus;
@@ -447,72 +548,68 @@ class DbService {
         );
       }
 
-      final docRef = db.collection(reportsCollection).doc();
-      final finalReport = ProductReport(
-        id: docRef.id,
-        barcode: barcode,
-        productName: productName,
-        brand: brand,
-        type: reportData['type'] ?? "label_unclear",
-        comments: reportData['comments'] ?? "Etichetta poco chiara.",
-        submittedAt: DateTime.now().toIso8601String(),
-        status: "open",
-        userId: userId,
-        originalStatus: originalStatus,
-      );
+      if (!isAnonymous) {
+        final docRef = db.collection(reportsCollection).doc();
+        final finalReport = ProductReport(
+          id: docRef.id,
+          barcode: barcode,
+          productName: productName,
+          brand: brand,
+          type: reportData['type'] ?? "label_unclear",
+          comments: reportData['comments'] ?? "Etichetta poco chiara.",
+          submittedAt: DateTime.now().toIso8601String(),
+          status: "open",
+          userId: userId,
+          originalStatus: originalStatus,
+        );
 
-      await docRef.set(finalReport.toJson());
+        await docRef.set(finalReport.toJson());
 
-      final prodRef = db.collection(productsCollection).doc(barcode);
-      final prodSnap = await prodRef.get();
+        await db.collection("users").doc(userId).set({
+          'reportedBarcodes': FieldValue.arrayUnion([barcode]),
+        }, SetOptions(merge: true));
 
-      if (prodSnap.exists) {
-        final p = Product.fromJson(prodSnap.data()!);
+        await _updateProductStatusOnReport(barcode, finalReport);
+        return finalReport;
+      } else {
+        final prefs = await SharedPreferences.getInstance();
+        List<String> reportsStr = prefs.getStringList('celiac_reports') ?? [];
+        List<dynamic> localReports = reportsStr
+            .map((e) => json.decode(e))
+            .toList();
 
-        int offLastModified = 0;
-        try {
-          final offRes = await http.get(
-            Uri.parse(
-              'https://world.openfoodfacts.org/api/v2/product/$barcode.json?fields=last_modified_t',
-            ),
+        final id = DateTime.now().millisecondsSinceEpoch.toString();
+        final finalReport = ProductReport(
+          id: id,
+          barcode: barcode,
+          productName: productName,
+          brand: brand,
+          type: reportData['type'] ?? "label_unclear",
+          comments: reportData['comments'] ?? "Etichetta poco chiara.",
+          submittedAt: DateTime.now().toIso8601String(),
+          status: "open",
+          userId: "anonymous",
+          originalStatus: originalStatus,
+        );
+
+        localReports.insert(0, finalReport.toJson());
+        await prefs.setStringList(
+          'celiac_reports',
+          localReports.map((e) => json.encode(e)).toList(),
+        );
+
+        List<String> reportedBarcodes =
+            prefs.getStringList('celiac_reported_barcodes') ?? [];
+        if (!reportedBarcodes.contains(barcode)) {
+          reportedBarcodes.add(barcode);
+          await prefs.setStringList(
+            'celiac_reported_barcodes',
+            reportedBarcodes,
           );
-          if (offRes.statusCode == 200) {
-            final offData = json.decode(offRes.body);
-            if (offData['product'] != null &&
-                offData['product']['last_modified_t'] != null) {
-              offLastModified =
-                  (offData['product']['last_modified_t'] as int) * 1000;
-            }
-          }
-        } catch (err) {
-          print("Could not check OFF last modification date. $err");
         }
 
-        int reportTime = DateTime.parse(
-          finalReport.submittedAt,
-        ).millisecondsSinceEpoch;
-
-        if (offLastModified > 0 && reportTime > offLastModified) {
-          await prodRef.update({
-            'status': GlutenSafetyStatus.incerto.name,
-            'reason':
-                '''ATTENZIONE: La tua segnalazione ("${finalReport.comments}") è più recente dell'ultimo aggiornamento del database Open Food Facts. La ricetta in fabbrica potrebbe essere cambiata. Risulta INCERTO.''',
-            'reportCount': (p.reportCount ?? 0) + 1,
-            'lastUpdated': DateTime.now().toIso8601String(),
-            'originalStatus': originalStatus?.name,
-          });
-        } else {
-          await prodRef.update({
-            'status': GlutenSafetyStatus.incerto.name,
-            'reason':
-                'ATTENZIONE: Segnalata etichetta incongruente. Note: ${finalReport.comments}',
-            'reportCount': (p.reportCount ?? 0) + 1,
-            'lastUpdated': DateTime.now().toIso8601String(),
-            'originalStatus': originalStatus?.name,
-          });
-        }
+        return finalReport;
       }
-      return finalReport;
     } catch (error) {
       print("Error submit report: $error");
       rethrow;
@@ -655,7 +752,11 @@ class DbService {
     final prefs = await SharedPreferences.getInstance();
     String? settingsStr = prefs.getString('celiac_settings');
     if (settingsStr != null) {
-      return UserSettings.fromJson(json.decode(settingsStr));
+      try {
+        return UserSettings.fromJson(json.decode(settingsStr));
+      } catch (e) {
+        print("Error parsing local settings: $e");
+      }
     }
     return UserSettings(
       strictMode: true,
@@ -663,11 +764,262 @@ class DbService {
       warnAdditives: true,
       autoSaveHistory: true,
       preferredLanguage: "it",
+      reportedBarcodes: const [],
     );
   }
 
   static Future<void> saveLocalSettings(UserSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('celiac_settings', json.encode(settings.toJson()));
+  }
+
+  static Future<void> saveSettings(UserSettings settings) async {
+    final user = auth.currentUser;
+    final effectiveSettings = user != null && !user.isAnonymous
+        ? UserSettings(
+            userId: user.uid,
+            strictMode: settings.strictMode,
+            alertLactose: settings.alertLactose,
+            warnAdditives: settings.warnAdditives,
+            autoSaveHistory: settings.autoSaveHistory,
+            preferredLanguage: settings.preferredLanguage,
+            reportedBarcodes: settings.reportedBarcodes,
+          )
+        : settings;
+
+    await saveLocalSettings(effectiveSettings);
+    if (user != null && !user.isAnonymous) {
+      try {
+        await db
+            .collection("users")
+            .doc(user.uid)
+            .set(effectiveSettings.toJson(), SetOptions(merge: true));
+      } catch (e) {
+        print("Failed saving settings to Firestore: $e");
+      }
+    }
+  }
+
+  static Future<UserSettings> syncSettingsWithFirestore(
+    UserSettings localSettings,
+  ) async {
+    final user = auth.currentUser;
+    if (user == null || user.isAnonymous) return localSettings;
+
+    try {
+      final docSnap = await db.collection("users").doc(user.uid).get();
+      final effectiveLocalSettings = UserSettings(
+        userId: user.uid,
+        strictMode: localSettings.strictMode,
+        alertLactose: localSettings.alertLactose,
+        warnAdditives: localSettings.warnAdditives,
+        autoSaveHistory: localSettings.autoSaveHistory,
+        preferredLanguage: localSettings.preferredLanguage,
+        reportedBarcodes: localSettings.reportedBarcodes,
+      );
+
+      if (docSnap.exists && docSnap.data() != null) {
+        final firestoreSettings = UserSettings.fromJson(docSnap.data()!);
+
+        final localBarcodes = effectiveLocalSettings.reportedBarcodes;
+        final remoteBarcodes = firestoreSettings.reportedBarcodes;
+        final mergedBarcodes = {...localBarcodes, ...remoteBarcodes}.toList();
+
+        final mergedSettings = UserSettings(
+          userId: user.uid,
+          strictMode: firestoreSettings.strictMode,
+          alertLactose: firestoreSettings.alertLactose,
+          warnAdditives: firestoreSettings.warnAdditives,
+          autoSaveHistory: firestoreSettings.autoSaveHistory,
+          preferredLanguage: firestoreSettings.preferredLanguage,
+          reportedBarcodes: mergedBarcodes,
+        );
+
+        await saveLocalSettings(mergedSettings);
+
+        await db
+            .collection("users")
+            .doc(user.uid)
+            .set(mergedSettings.toJson(), SetOptions(merge: true));
+
+        return mergedSettings;
+      } else {
+        await db
+            .collection("users")
+            .doc(user.uid)
+            .set(effectiveLocalSettings.toJson(), SetOptions(merge: true));
+        await saveLocalSettings(effectiveLocalSettings);
+        return effectiveLocalSettings;
+      }
+    } catch (e) {
+      print("Failed syncing settings from Firestore: $e");
+    }
+    return UserSettings(
+      userId: user.uid,
+      strictMode: localSettings.strictMode,
+      alertLactose: localSettings.alertLactose,
+      warnAdditives: localSettings.warnAdditives,
+      autoSaveHistory: localSettings.autoSaveHistory,
+      preferredLanguage: localSettings.preferredLanguage,
+      reportedBarcodes: localSettings.reportedBarcodes,
+    );
+  }
+
+  static Future<List<ScanHistoryItem>> getLocalUnsyncedHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> histStr = prefs.getStringList('celiac_history') ?? [];
+    return histStr
+        .map((e) => ScanHistoryItem.fromJson(json.decode(e)))
+        .toList();
+  }
+
+  static Future<List<ProductReport>> getLocalUnsyncedReports() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> reportsStr = prefs.getStringList('celiac_reports') ?? [];
+    return reportsStr
+        .map((e) => ProductReport.fromJson(json.decode(e)))
+        .toList();
+  }
+
+  static Future<void> migrateLocalDataToFirestore(String newUid) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      bool _sameHistoryItem(ScanHistoryItem a, ScanHistoryItem b) {
+        if (a.barcode != b.barcode) return false;
+        if (a.scannedAt == b.scannedAt) return true;
+
+        final aTime = DateTime.tryParse(a.scannedAt);
+        final bTime = DateTime.tryParse(b.scannedAt);
+        if (aTime == null || bTime == null) return false;
+        return aTime.difference(bTime).inSeconds.abs() <= 10;
+      }
+
+      // 1. MIGRAZIONE CRONOLOGIA
+      List<String> histStr = prefs.getStringList('celiac_history') ?? [];
+      if (histStr.isNotEmpty) {
+        final localHistory = histStr
+            .map((e) => ScanHistoryItem.fromJson(json.decode(e)))
+            .toList();
+
+        final firestoreHistorySnap = await db
+            .collection("users/$newUid/history")
+            .orderBy("scannedAt", descending: true)
+            .limit(100)
+            .get();
+        final firestoreHistory = firestoreHistorySnap.docs
+            .map((d) => ScanHistoryItem.fromJson(d.data()))
+            .toList();
+
+        final historyBatch = db.batch();
+        final historyRefBase = db.collection("users/$newUid/history");
+        final pendingHistory = <ScanHistoryItem>[];
+        bool hasHistoryToMigrate = false;
+
+        for (var localItem in localHistory) {
+          final isDuplicate =
+              firestoreHistory.any(
+                (existing) => _sameHistoryItem(existing, localItem),
+              ) ||
+              pendingHistory.any(
+                (existing) => _sameHistoryItem(existing, localItem),
+              );
+
+          if (!isDuplicate) {
+            final docRef = historyRefBase.doc(
+              localItem.id.isNotEmpty ? localItem.id : historyRefBase.doc().id,
+            );
+            final itemMap = localItem.toJson();
+            itemMap['userId'] = newUid;
+            historyBatch.set(docRef, itemMap);
+            pendingHistory.add(localItem);
+            hasHistoryToMigrate = true;
+          }
+        }
+
+        if (hasHistoryToMigrate) {
+          await historyBatch.commit();
+        }
+      }
+
+      // 2. MIGRAZIONE SEGNALAZIONI (REPORTS)
+      List<String> reportsStr = prefs.getStringList('celiac_reports') ?? [];
+      if (reportsStr.isNotEmpty) {
+        final localReports = reportsStr
+            .map((e) => ProductReport.fromJson(json.decode(e)))
+            .toList();
+
+        final firestoreReportsSnap = await db
+            .collection(reportsCollection)
+            .where("userId", isEqualTo: newUid)
+            .get();
+        final firestoreReports = firestoreReportsSnap.docs
+            .map((d) => ProductReport.fromJson(d.data()))
+            .toList();
+
+        final reportsBatch = db.batch();
+        final migratedReports = <ProductReport>[];
+        bool hasReportsToMigrate = false;
+
+        for (var localReport in localReports) {
+          bool reportExists = firestoreReports.any(
+            (r) => r.barcode == localReport.barcode,
+          );
+
+          if (!reportExists) {
+            final docRef = db
+                .collection(reportsCollection)
+                .doc(
+                  localReport.id.isNotEmpty
+                      ? localReport.id
+                      : db.collection(reportsCollection).doc().id,
+                );
+            final reportMap = localReport.toJson();
+            reportMap['userId'] = newUid;
+
+            reportsBatch.set(docRef, reportMap);
+            migratedReports.add(localReport);
+            hasReportsToMigrate = true;
+          }
+        }
+
+        if (hasReportsToMigrate) {
+          await reportsBatch.commit();
+          for (final report in migratedReports) {
+            await _updateProductStatusOnReport(report.barcode, report);
+          }
+        }
+      }
+
+      // 3. SINCRONIZZAZIONE REPORTED BARCODES
+      List<String> localReportedBarcodes =
+          prefs.getStringList('celiac_reported_barcodes') ?? [];
+      if (localReportedBarcodes.isNotEmpty) {
+        await db.collection("users").doc(newUid).set({
+          'reportedBarcodes': FieldValue.arrayUnion(localReportedBarcodes),
+        }, SetOptions(merge: true));
+      }
+
+      // 4. PULIZIA COMPLETA SHAREDPREFERENCES LOCALI
+      await prefs.remove('celiac_history');
+      await prefs.remove('celiac_reports');
+      await prefs.remove('celiac_reported_barcodes');
+      print("Migrazione completata con successo!");
+    } catch (e) {
+      print("Errore durante la migrazione: $e");
+    }
+  }
+
+  static Future<void> wipeAllLocalData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('celiac_history');
+      await prefs.remove('celiac_reports');
+      await prefs.remove('celiac_reported_barcodes');
+      await prefs.remove('celiac_settings');
+      print("Tutti i dati locali sono stati eliminati con successo!");
+    } catch (e) {
+      print("Errore durante il wipe dei dati locali: $e");
+    }
   }
 }

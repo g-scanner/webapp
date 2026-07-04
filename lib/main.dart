@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gscanner/widgets/sync_data_screen.dart';
 
 import 'models/types.dart';
 import 'services/db_service.dart';
@@ -11,6 +12,9 @@ import 'widgets/history_list.dart';
 import 'widgets/database_products.dart';
 import 'widgets/settings_panel.dart';
 import 'widgets/product_detail_card.dart';
+
+// IMPORTA LA NUOVA SCHERMATA
+import 'widgets/auth_screen.dart';
 
 // --- Colori estratti dal tuo Tailwind HTML ---
 const Color surfaceContainerLow = Color(0xFFF5F3F7);
@@ -37,7 +41,28 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Inter',
       ),
-      home: const MainScreen(),
+      // LOGICA DI ROUTING: Ascolta i cambiamenti di stato di Firebase
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // 1. In attesa della risposta da Firebase
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: Color(0xFF0D631B)),
+              ),
+            );
+          }
+
+          // 2. Utente Loggato (Social o Anonimo) -> Vai all'app
+          if (snapshot.hasData && snapshot.data != null) {
+            return const MainScreen();
+          }
+
+          // 3. Nessun utente loggato -> Mostra la UI di Login
+          return const AuthScreen();
+        },
+      ),
     );
   }
 }
@@ -70,6 +95,9 @@ class _MainScreenState extends State<MainScreen> {
   String? scanError;
   bool loadingApp = true;
 
+  bool _requiresSyncDecision = false;
+  int _anonymousHistoryCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -78,38 +106,50 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _initApp() async {
     try {
-      // 1. Effettua/Recupera il login in modo sicuro
-      final userCred = await FirebaseAuth.instance.signInAnonymously();
-      if (mounted) {
-        setState(() {
-          userId = userCred.user?.uid;
-        });
+      final user = FirebaseAuth.instance.currentUser;
+      if (mounted) setState(() => userId = user?.uid);
+
+      if (user != null) {
+        var settings = await DbService.getLocalSettings();
+
+        // ATTENZIONE: Qui usiamo il NUOVO metodo per forzare la lettura locale!
+        final localHistory = await DbService.getLocalUnsyncedHistory();
+        final localReports = await DbService.getLocalUnsyncedReports();
+
+        // Se l'utente è Google/Facebook, ci sono dati locali "orfani" e l'ID è cambiato
+        if (!user.isAnonymous &&
+            (localHistory.isNotEmpty || localReports.isNotEmpty) &&
+            settings.userId != user.uid) {
+          if (mounted) {
+            setState(() {
+              _anonymousHistoryCount =
+                  localHistory.length + localReports.length;
+              _requiresSyncDecision = true;
+              loadingApp = false;
+            });
+          }
+          return;
+        }
+        // Sincronizza le impostazioni con Firestore per utenti registrati
+        if (!user.isAnonymous) {
+          settings = await DbService.syncSettingsWithFirestore(settings);
+          if (mounted) setState(() => userSettings = settings);
+        }
       }
 
-      // 2. Scarica i dati essenziali per l'avvio veloce
-      await Future.wait([_fetchHistory(), _fetchSettings()]);
-
-      // Carica i dati pesanti in background senza bloccare la UI
-      _fetchProducts();
-      _fetchReports();
-
-      // 3. Listener passivo per futuri cambi di utenza (senza far scattare chiamate duplicate all'avvio)
-      FirebaseAuth.instance.authStateChanges().listen((user) {
-        if (mounted) {
-          setState(() {
-            userId = user?.uid;
-          });
-        }
-      });
+      await _loadAllData();
     } catch (e) {
       print("Inizializzazione fallita: $e");
-    } finally {
-      if (mounted) {
-        setState(() {
-          loadingApp = false;
-        });
-      }
+      if (mounted) setState(() => loadingApp = false);
     }
+  }
+
+  // 4. Estrai il caricamento dei dati in una funzione a parte (per richiamarla dopo la decisione)
+  Future<void> _loadAllData() async {
+    await Future.wait([_fetchHistory(), _fetchSettings()]);
+    _fetchProducts();
+    _fetchReports();
+    if (mounted) setState(() => loadingApp = false);
   }
 
   Future<void> _fetchProducts() async {
@@ -128,12 +168,15 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _fetchSettings() async {
-    final data = await DbService.getLocalSettings();
+    var data = await DbService.getLocalSettings();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && !user.isAnonymous) {
+      data = await DbService.syncSettingsWithFirestore(data);
+    }
     if (mounted) setState(() => userSettings = data);
   }
 
   Future<void> refreshAllData() async {
-    // Il RefreshIndicator richiede un Future per capire quando far sparire la rotellina
     await Future.wait([_fetchProducts(), _fetchHistory(), _fetchReports()]);
   }
 
@@ -198,7 +241,19 @@ class _MainScreenState extends State<MainScreen> {
 
       setState(() {
         reportedSessionBarcodes.add(barcode);
+        if (!userSettings.reportedBarcodes.contains(barcode)) {
+          userSettings = UserSettings(
+            userId: userSettings.userId,
+            strictMode: userSettings.strictMode,
+            alertLactose: userSettings.alertLactose,
+            warnAdditives: userSettings.warnAdditives,
+            autoSaveHistory: userSettings.autoSaveHistory,
+            preferredLanguage: userSettings.preferredLanguage,
+            reportedBarcodes: [...userSettings.reportedBarcodes, barcode],
+          );
+        }
       });
+      await DbService.saveSettings(userSettings);
 
       await Future.wait([_fetchReports(), _fetchProducts()]);
     } catch (e) {
@@ -239,12 +294,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> handleDeleteReport(String reportId) async {
     await DbService.deleteReportFromDb(reportId);
-    setState(() {
-      // Remove from session so button re-enables
-      // Note: we can't easily access selectedProduct.barcode here, but we can if we passed it.
-      // But let's just clear reportedSessionBarcodes if needed. Actually we'll need the barcode to remove it.
-      // We will leave it as is or pass the barcode to handleDeleteReport if needed.
-    });
+    setState(() {}); // Forza l'aggiornamento
     await _fetchReports();
     await _fetchProducts();
   }
@@ -334,6 +384,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
         DatabaseProducts(
           products: products,
+          reportedBarcodes: userSettings.reportedBarcodes,
           onRefresh: refreshAllData,
           onSelectItem: (barcode) {
             final match = products.cast<Product?>().firstWhere(
@@ -348,7 +399,7 @@ class _MainScreenState extends State<MainScreen> {
         SettingsPanel(
           settings: userSettings,
           onSettingsChange: (newSet) async {
-            await DbService.saveLocalSettings(newSet);
+            await DbService.saveSettings(newSet);
             setState(() => userSettings = newSet);
           },
           onResetDB: () async {
@@ -480,6 +531,35 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // SE L'UTENTE DEVE PRENDERE UNA DECISIONE, SOSTITUIAMO TUTTO LO SCHERMO
+    if (_requiresSyncDecision) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFAF9FC),
+        body: SyncDataScreen(
+          historyCount: _anonymousHistoryCount,
+          onDecision: (bool wantToSync) async {
+            // L'utente ha premuto un pulsante, riattiviamo il caricamento
+            setState(() {
+              _requiresSyncDecision = false;
+              loadingApp = true;
+            });
+
+            if (wantToSync) {
+              // Ha scelto di UNIRE: migra cronologia, segnalazioni e barcode segnalati
+              await DbService.migrateLocalDataToFirestore(userId!);
+            } else {
+              // Ha scelto di CANCELLARE: Svuotiamo tutti i dati locali e assegniamo il nuovo ID
+              await DbService.wipeAllLocalData();
+            }
+
+            // Adesso riprendiamo il caricamento normale dei dati
+            await _loadAllData();
+          },
+        ),
+      );
+    }
+
+    // ALTRIMENTI MOSTRA LA NORMALE APP
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9FC),
       appBar: AppBar(
@@ -497,7 +577,7 @@ class _MainScreenState extends State<MainScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
-      body: _buildBody(),
+      body: _buildBody(), // Il tuo IndexedStack originale
       bottomNavigationBar: _currentIndex == 4 ? null : _buildCustomBottomNav(),
     );
   }

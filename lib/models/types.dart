@@ -228,6 +228,7 @@ class UserSettings {
   final bool warnAdditives;
   final bool autoSaveHistory;
   final String preferredLanguage;
+  final List<String> reportedBarcodes;
 
   UserSettings({
     this.userId,
@@ -236,6 +237,7 @@ class UserSettings {
     required this.warnAdditives,
     required this.autoSaveHistory,
     required this.preferredLanguage,
+    this.reportedBarcodes = const [],
   });
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
@@ -246,6 +248,7 @@ class UserSettings {
       warnAdditives: json['warnAdditives'] ?? true,
       autoSaveHistory: json['autoSaveHistory'] ?? true,
       preferredLanguage: json['preferredLanguage'] ?? 'it',
+      reportedBarcodes: List<String>.from(json['reportedBarcodes'] ?? []),
     );
   }
 
@@ -257,6 +260,7 @@ class UserSettings {
       'warnAdditives': warnAdditives,
       'autoSaveHistory': autoSaveHistory,
       'preferredLanguage': preferredLanguage,
+      'reportedBarcodes': reportedBarcodes,
     };
   }
 }

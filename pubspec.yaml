@@ -31,11 +31,13 @@ dependencies:
   flutter:
     sdk: flutter
   firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
+  firebase_auth: ^4.16.0
   cloud_firestore: ^4.13.6
   shared_preferences: ^2.2.2
   http: ^1.1.0
   mobile_scanner: ^3.5.2
+  google_sign_in: ^7.2.0
+  flutter_facebook_auth: ^7.1.7
 
 dev_dependencies:
   flutter_test:

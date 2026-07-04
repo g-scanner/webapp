@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/types.dart';
+import '../services/db_service.dart';
 
 // --- Colori estratti dal tuo Tailwind Config ---
 const Color bgBackground = Color(0xFFFAF9FC);
@@ -35,11 +36,13 @@ class SettingsPanel extends StatefulWidget {
 
 class _SettingsPanelState extends State<SettingsPanel> {
   bool _clearing = false;
-
-  // Variabile temporanea per il tema (Chiaro/Scuro/Sistema)
   String _selectedTheme = 'system';
 
+  // Variabile per l'aggiornamento UI istantaneo ("Optimistic Update")
+  String? _optimisticDisplayName;
+
   void _triggerToast(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -85,17 +88,14 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    // Leggiamo lo stato dell'utente corrente da Firebase
     final currentUser = FirebaseAuth.instance.currentUser;
     final bool isAnonymous = currentUser?.isAnonymous ?? true;
-    final String userEmail = currentUser?.email ?? "";
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Intestazione Pagina ─────────────────────────────────────
           const Text(
             "Impostazioni",
             style: TextStyle(
@@ -115,25 +115,22 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           const SizedBox(height: 32),
 
-          // ── 1. Sezione: Account ──────────────────────────────────────
           _buildSectionHeader(
-            icon: Icons.account_circle_outlined,
+            icon: Icons.attribution_rounded,
             title: "Il tuo Account",
             color: primary,
           ),
           const SizedBox(height: 16),
-          _buildAccountCard(isAnonymous, userEmail),
+          _buildAccountCard(isAnonymous, currentUser),
 
           const SizedBox(height: 40),
 
-          // ── 2. Sezione: Allergeni e Sensibilità ────────────────────────
           _buildSectionHeader(
             icon: Icons.tune,
             title: "Regole di Analisi",
             color: primary,
           ),
           const SizedBox(height: 16),
-
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -172,14 +169,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           const SizedBox(height: 40),
 
-          // ── 3. Sezione: Aspetto ─────────────────────────────────────────
           _buildSectionHeader(
             icon: Icons.palette_outlined,
             title: "Aspetto",
             color: primary,
           ),
           const SizedBox(height: 16),
-
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -192,10 +187,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           const SizedBox(height: 40),
 
-          // ── 4. Sezione: Dati Locali ────────────────────────────────────
           _buildSectionHeader(
-            icon: Icons.storage,
-            title: "Dati Locali",
+            icon: Icons.data_usage,
+            title: "Dati e Cronologia",
             color: primary,
           ),
           const SizedBox(height: 16),
@@ -208,6 +202,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       context: context,
                       builder: (ctx) => AlertDialog(
                         backgroundColor: surfaceLowest,
+                        surfaceTintColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -216,7 +211,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           style: TextStyle(color: onSurface),
                         ),
                         content: const Text(
-                          "Sei sicuro di voler eliminare tutte le scansioni salvate sul tuo dispositivo? L'azione non è reversibile.",
+                          "Sei sicuro di voler eliminare tutta la cronologia delle scansioni? Questa azione non è reversibile.",
                           style: TextStyle(color: onSurfaceVariant),
                         ),
                         actions: [
@@ -292,7 +287,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          "Elimina le ultime scansioni dal telefono",
+                          "Rimuove in modo permanente la tua cronologia scansioni.",
                           style: TextStyle(fontSize: 13, color: error),
                         ),
                       ],
@@ -309,8 +304,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
     );
   }
 
-  // Helper per la Card Account
-  Widget _buildAccountCard(bool isAnonymous, String email) {
+  // ── M3 Account Card Unificata ─────────────────────────────────────────
+  Widget _buildAccountCard(bool isAnonymous, User? currentUser) {
+    // Usa il nome ottimistico se presente, altrimenti quello di Firebase
+    final String displayName =
+        _optimisticDisplayName ?? currentUser?.displayName ?? "";
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -322,28 +321,18 @@ class _SettingsPanelState extends State<SettingsPanel> {
         children: [
           Row(
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: isAnonymous
-                      ? surfaceContainerHigh
-                      : primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isAnonymous ? Icons.person_outline : Icons.person,
-                  color: isAnonymous ? onSurfaceVariant : primary,
-                  size: 28,
-                ),
-              ),
+              _buildUserAvatar(isAnonymous, size: 56),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isAnonymous ? "Utente Anonimo" : email,
+                      isAnonymous
+                          ? "Utente Ospite"
+                          : (displayName.isNotEmpty
+                                ? displayName
+                                : "Utente Registrato"),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -353,8 +342,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     const SizedBox(height: 4),
                     Text(
                       isAnonymous
-                          ? "Le tue scansioni sono salvate solo sul dispositivo."
-                          : "Account sincronizzato sul cloud in sicurezza.",
+                          ? "Le tue scansioni sono salvate solo su questo dispositivo."
+                          : "Il tuo profilo e le scansioni sono sincronizzati sul cloud.",
                       style: const TextStyle(
                         fontSize: 13,
                         color: onSurfaceVariant,
@@ -369,37 +358,532 @@ class _SettingsPanelState extends State<SettingsPanel> {
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                _triggerToast(
-                  "Il Login multi-dispositivo arriverà nel prossimo aggiornamento!",
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: onSurface,
-                side: BorderSide(color: outlineVariant.withOpacity(0.5)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
+            child: isAnonymous
+                ? FilledButton.tonalIcon(
+                    onPressed: () => _handleAnonymousAction(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: surfaceContainer,
+                      foregroundColor: onSurface,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    icon: const Icon(Icons.login, size: 20),
+                    label: const Text(
+                      "Accedi o Registrati",
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: () => _showAccountManagementMenu(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: onSurface,
+                      side: BorderSide(color: outlineVariant.withOpacity(0.5)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    icon: const Icon(Icons.manage_accounts_outlined, size: 20),
+                    label: const Text(
+                      "Gestisci Account",
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Costruisce l'avatar base
+  Widget _buildUserAvatar(bool isAnonymous, {double size = 56}) {
+    if (isAnonymous) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: const BoxDecoration(
+          color: surfaceContainerHigh,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.person_outline,
+          color: onSurfaceVariant,
+          size: size * 0.5,
+        ),
+      );
+    } else {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: primary.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(Icons.person, color: primary, size: size * 0.5),
+      );
+    }
+  }
+
+  // Helper per mostrare info Provider nel BottomSheet
+  Widget _buildProviderInfoTile(User currentUser) {
+    String providerStr = "Sconosciuto";
+    IconData providerIcon = Icons.account_circle_outlined;
+
+    if (currentUser.providerData.isNotEmpty) {
+      final pid = currentUser.providerData.first.providerId;
+      if (pid.contains('google')) {
+        providerStr = "Google";
+        providerIcon = Icons.g_mobiledata;
+      } else if (pid.contains('facebook')) {
+        providerStr = "Facebook";
+        providerIcon = Icons.facebook;
+      } else if (pid.contains('password')) {
+        providerStr = "Email";
+        providerIcon = Icons.email_outlined;
+      } else if (pid.contains('phone')) {
+        providerStr = "Telefono";
+        providerIcon = Icons.phone_android;
+      }
+    }
+
+    final String identifier =
+        (currentUser.email != null && currentUser.email!.isNotEmpty)
+        ? currentUser.email!
+        : ((currentUser.phoneNumber != null &&
+                  currentUser.phoneNumber!.isNotEmpty)
+              ? currentUser.phoneNumber!
+              : "Nessun recapito collegato");
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: surfaceContainerHigh,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(providerIcon, color: onSurfaceVariant, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Accesso tramite $providerStr",
+                  style: const TextStyle(fontSize: 13, color: onSurfaceVariant),
                 ),
-              ),
-              icon: Icon(
-                isAnonymous ? Icons.login : Icons.manage_accounts,
-                size: 18,
-                color: onSurfaceVariant,
-              ),
-              label: Text(
-                isAnonymous ? "Accedi o Registrati" : "Gestisci Account",
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 2),
+                Text(
+                  identifier,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: onSurface,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  // ── Bottom Sheet: Gestione Avanzata Profilo ─────────────────────────
+  void _showAccountManagementMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: surfaceLowest,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext ctx, StateSetter setModalState) {
+            final currentUser = FirebaseAuth.instance.currentUser;
+            if (currentUser == null) return const SizedBox.shrink();
+
+            // Sincronizzato con l'UI Principale
+            final String displayName =
+                _optimisticDisplayName ?? currentUser.displayName ?? "";
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 24),
+                      decoration: BoxDecoration(
+                        color: outlineVariant.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+
+                    _buildUserAvatar(false, size: 80),
+                    const SizedBox(height: 16),
+
+                    InkWell(
+                      onTap: () =>
+                          _updateDisplayName(setModalState, displayName),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              displayName.isNotEmpty
+                                  ? displayName
+                                  : "Aggiungi il tuo nome",
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: onSurface,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.edit_outlined,
+                              size: 18,
+                              color: primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    const SizedBox(height: 16),
+
+                    _buildProviderInfoTile(currentUser),
+
+                    const SizedBox(height: 16),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    const SizedBox(height: 8),
+
+                    ListTile(
+                      leading: const Icon(
+                        Icons.logout,
+                        color: onSurfaceVariant,
+                      ),
+                      title: const Text(
+                        "Esci dall'account",
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _handleLogout();
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.person_remove_outlined,
+                        color: error,
+                      ),
+                      title: const Text(
+                        "Elimina Account",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: error,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _handleDeleteAccount();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ── Modifica Nome (Optimistic Update & Validazione live) ──────────────
+  Future<void> _updateDisplayName(
+    StateSetter setModalState,
+    String currentName,
+  ) async {
+    final controller = TextEditingController(text: currentName);
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: surfaceLowest,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        icon: const Icon(Icons.badge_outlined, color: primary, size: 32),
+        title: const Text(
+          "Modifica Nome",
+          style: TextStyle(
+            color: onSurface,
+            fontSize: 22,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              "Scegli come vuoi farti chiamare. Questo nome sarà visibile all'interno dell'app.",
+              style: TextStyle(
+                color: onSurfaceVariant,
+                fontSize: 14,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: controller,
+              textCapitalization: TextCapitalization.words,
+              autofocus: true,
+              style: const TextStyle(fontSize: 16, color: onSurface),
+              cursorColor: primary,
+              decoration: InputDecoration(
+                labelText: "Il tuo nome",
+                labelStyle: const TextStyle(color: onSurfaceVariant),
+                filled: true,
+                fillColor: surfaceContainerHigh,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: primary, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.only(bottom: 24, right: 24, left: 24),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(
+              foregroundColor: onSurfaceVariant,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            child: const Text(
+              "Annulla",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          // Validazione in tempo reale sul testo inserito
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              final bool isValid = value.text
+                  .trim()
+                  .isNotEmpty; // Almeno 1 carattere
+
+              return FilledButton(
+                // Se non valido (vuoto), il bottone è null -> disabilitato automaticamente
+                onPressed: isValid
+                    ? () => Navigator.pop(ctx, value.text.trim())
+                    : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor: surfaceLowest,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: const Text(
+                  "Salva",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    // Se è stato inserito un nome valido e diverso dall'attuale
+    if (newName != null && newName.isNotEmpty && newName != currentName) {
+      // 1. UPDATE ISTANTANEO (Optimistic UI Update)
+      setState(() {
+        _optimisticDisplayName = newName;
+      });
+      setModalState(() {});
+
+      // 2. ESECUZIONE SILENZIOSA IN BACKGROUND
+      try {
+        await FirebaseAuth.instance.currentUser?.updateDisplayName(newName);
+        // Nessun messaggio di caricamento che interrompe l'utente:
+        // l'update al server è nascosto per massima fluidità.
+      } catch (e) {
+        // Fallback invisibile nel caso l'utente abbia un drop di connessione temporaneo
+      }
+    }
+  }
+
+  // ── Gestione Azioni Account ─────────────────────────────────────────
+
+  Future<void> _handleAnonymousAction() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: surfaceLowest,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          "Effettua l'accesso",
+          style: TextStyle(color: onSurface),
+        ),
+        content: const Text(
+          "Accedendo potrai sincronizzare la tua cronologia nel cloud.\nI tuoi dati locali verranno mantenuti fino al prossimo accesso.",
+          style: TextStyle(color: onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+            child: const Text("Annulla"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: primary),
+            child: const Text("Procedi"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      if (mounted) _triggerToast("Preparazione all'accesso...");
+      try {
+        await DbService.wipeAllLocalData();
+        await FirebaseAuth.instance.currentUser?.delete();
+        await FirebaseAuth.instance.signOut();
+      } catch (e) {
+        if (mounted) _triggerToast("Errore: $e");
+      }
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: surfaceLowest,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text("Vuoi uscire?", style: TextStyle(color: onSurface)),
+        content: const Text(
+          "Uscendo dal tuo account, i dati salvati su questo dispositivo verranno rimossi per privacy.\nPotrai ripristinarli al prossimo accesso.",
+          style: TextStyle(color: onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+            child: const Text("Annulla"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: error),
+            child: const Text("Esci"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      if (mounted) _triggerToast("Uscita in corso...");
+      try {
+        await DbService.wipeAllLocalData();
+        await FirebaseAuth.instance.signOut();
+      } catch (e) {
+        if (mounted) _triggerToast("Errore durante la disconnessione: $e");
+      }
+    }
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: surfaceLowest,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: errorContainer, width: 2),
+        ),
+        icon: const Icon(Icons.warning_amber_rounded, color: error, size: 36),
+        title: const Text(
+          "Eliminazione Definitiva",
+          style: TextStyle(color: error, fontSize: 20),
+        ),
+        content: const Text(
+          "Sei sicuro di voler eliminare il tuo account e tutti i dati cloud? Questa azione è IRREVERSIBILE.\n\nNota: Per motivi di sicurezza potrebbe esserti richiesto di effettuare nuovamente l'accesso.",
+          style: TextStyle(color: onSurface),
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+            child: const Text("Annulla"),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Elimina"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      if (mounted) _triggerToast("Tentativo di eliminazione account...");
+      try {
+        await DbService.wipeAllLocalData();
+        await FirebaseAuth.instance.currentUser?.delete();
+        await FirebaseAuth.instance.signOut();
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          if (mounted) {
+            _triggerToast(
+              "Sicurezza: Uscita forzata. Esegui un nuovo accesso e riprova ad eliminare l'account.",
+            );
+          }
+          await FirebaseAuth.instance.signOut();
+        } else {
+          if (mounted) _triggerToast("Errore: ${e.message}");
+        }
+      } catch (e) {
+        if (mounted) _triggerToast("Errore imprevisto: $e");
+      }
+    }
   }
 
   // Helper per l'intestazione delle sezioni
@@ -485,7 +969,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 onChanged: (val) {
                   if (val != null) {
                     setState(() => _selectedTheme = val);
-                    // TODO: Qui aggiungeremo il salvataggio nelle impostazioni globali in futuro
                   }
                 },
               ),
@@ -549,7 +1032,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             activeTrackColor: primary,
             inactiveThumbColor: onSurfaceVariant.withOpacity(0.7),
             inactiveTrackColor: surfaceContainerHigh,
-            trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
+            trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
           ),
         ],
       ),

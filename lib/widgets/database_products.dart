@@ -23,12 +23,14 @@ const Color onSecondaryContainer = Color(0xFF003567);
 
 class DatabaseProducts extends StatefulWidget {
   final List<Product> products;
+  final List<String> reportedBarcodes;
   final Function(String) onSelectItem;
   final Future<void> Function() onRefresh;
 
   const DatabaseProducts({
     super.key,
     required this.products,
+    required this.reportedBarcodes,
     required this.onSelectItem,
     required this.onRefresh,
   });
@@ -82,8 +84,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
           p.brand.toLowerCase().contains(_searchTerm.toLowerCase()) ||
           p.barcode.contains(_searchTerm);
 
-      // TODO: Sostituisci "true" con la logica del tuo utente per "Le mie"
-      final filterMatches = _reportFilter == "Tutte" ? true : true;
+      final filterMatches = _reportFilter == "Tutte" ? true : widget.reportedBarcodes.contains(p.barcode);
 
       return queryMatches && filterMatches;
     }).toList();

@@ -12,7 +12,20 @@
           "package_name": "it.emanueleciotola.gscanner"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1026607445667-tehmncv5mu5q4frufaako7tdmijl0107.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "it.emanueleciotola.gscanner",
+            "certificate_hash": "c6f92c42983fdbb366c2d1ee38e5cf78c12930e5"
+          }
+        },
+        {
+          "client_id": "1026607445667-17rnkrlq2rb5csff47m8832htnco8964.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDzVVkQ02iXJI_sQiBq7oN6t8vFHbZeZDw"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1026607445667-17rnkrlq2rb5csff47m8832htnco8964.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1026607445667-9n4il00a2cmtr36cb2mvhrds0moc6qnj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "it.emanueleciotola.gscanner"
+              }
+            }
+          ]
         }
       }
     }
