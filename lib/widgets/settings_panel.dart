@@ -146,7 +146,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       "Genera un avviso per amidi modificati o aromi senza origine specificata.",
                   value: widget.settings.warnAdditives,
                   onChanged: (val) => _handleToggle(val, 'warnAdditives'),
-                  isLast: true,
+                  isFirst: true,
                 ),
                 _buildToggleItem(
                   title: "Filtro Rigido Contaminazioni",
@@ -154,7 +154,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       "Segnala come 'Vietato' qualsiasi alimento con dicitura \"può contenere tracce di glutine\".",
                   value: widget.settings.strictMode,
                   onChanged: (val) => _handleToggle(val, 'strictMode'),
-                  isFirst: true,
                 ),
                 _buildToggleItem(
                   title: "Intolleranza al Lattosio",
@@ -162,6 +161,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       "Verifica la presenza di lattosio, burro, polvere di latte o siero.",
                   value: widget.settings.alertLactose,
                   onChanged: (val) => _handleToggle(val, 'alertLactose'),
+                  isLast: true,
                 ),
               ],
             ),
@@ -242,6 +242,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     }
                   },
             borderRadius: BorderRadius.circular(24),
+            splashColor: error.withOpacity(0.12),
+            highlightColor: error.withOpacity(0.08),
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -304,9 +306,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
     );
   }
 
-  // ── M3 Account Card Unificata ─────────────────────────────────────────
+  // ── M3 Account Card Unificata (Pagina Principale) ──────────────────────
   Widget _buildAccountCard(bool isAnonymous, User? currentUser) {
-    // Usa il nome ottimistico se presente, altrimenti quello di Firebase
     final String displayName =
         _optimisticDisplayName ?? currentUser?.displayName ?? "";
 
@@ -391,7 +392,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
     );
   }
 
-  // Costruisce l'avatar base
   Widget _buildUserAvatar(bool isAnonymous, {double size = 56}) {
     if (isAnonymous) {
       return Container(
@@ -420,326 +420,514 @@ class _SettingsPanelState extends State<SettingsPanel> {
     }
   }
 
-  // Helper per mostrare info Provider nel BottomSheet
-  Widget _buildProviderInfoTile(User currentUser) {
-    String providerStr = "Sconosciuto";
-    IconData providerIcon = Icons.account_circle_outlined;
+  // ── Bottom Sheet Animato: Gestione & Modifica Nome ──────────────────
+  void _showAccountManagementMenu(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
 
+    // Stato locale del Bottom Sheet
+    bool isEditingName = false;
+    final TextEditingController nameController = TextEditingController(
+      text: _optimisticDisplayName ?? currentUser.displayName ?? "",
+    );
+
+    // FocusNode per gestire l'apertura ritardata e fluida della tastiera
+    final FocusNode nameFocusNode = FocusNode();
+
+    // Recupero Dati Provider (Google, Facebook, Email)
+    String providerName = "Account";
+    IconData providerIcon = Icons.account_circle_outlined;
     if (currentUser.providerData.isNotEmpty) {
       final pid = currentUser.providerData.first.providerId;
       if (pid.contains('google')) {
-        providerStr = "Google";
-        providerIcon = Icons.g_mobiledata;
+        providerName = "Google";
+        providerIcon = Icons.g_mobiledata; // fallback, overridden below
       } else if (pid.contains('facebook')) {
-        providerStr = "Facebook";
-        providerIcon = Icons.facebook;
+        providerName = "Facebook";
+        providerIcon = Icons.facebook; // fallback, overridden below
       } else if (pid.contains('password')) {
-        providerStr = "Email";
+        providerName = "Email";
         providerIcon = Icons.email_outlined;
       } else if (pid.contains('phone')) {
-        providerStr = "Telefono";
+        providerName = "Telefono";
         providerIcon = Icons.phone_android;
       }
     }
-
     final String identifier =
         (currentUser.email != null && currentUser.email!.isNotEmpty)
         ? currentUser.email!
         : ((currentUser.phoneNumber != null &&
                   currentUser.phoneNumber!.isNotEmpty)
               ? currentUser.phoneNumber!
-              : "Nessun recapito collegato");
+              : "Dati cloud");
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: surfaceContainerHigh,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(providerIcon, color: onSurfaceVariant, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Accesso tramite $providerStr",
-                  style: const TextStyle(fontSize: 13, color: onSurfaceVariant),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  identifier,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: onSurface,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Bottom Sheet: Gestione Avanzata Profilo ─────────────────────────
-  void _showAccountManagementMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: surfaceLowest,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext ctx, StateSetter setModalState) {
-            final currentUser = FirebaseAuth.instance.currentUser;
-            if (currentUser == null) return const SizedBox.shrink();
-
-            // Sincronizzato con l'UI Principale
-            final String displayName =
+            final String currentDisplayName =
                 _optimisticDisplayName ?? currentUser.displayName ?? "";
 
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 24),
+            // Funzione helper per tornare al menu fluidamente nascondendo prima la tastiera
+            void goBackToMenu() {
+              nameFocusNode.unfocus(); // Scende la tastiera
+              Future.delayed(const Duration(milliseconds: 200), () {
+                if (ctx.mounted)
+                  setModalState(() => isEditingName = false); // Animazione UI
+              });
+            }
+
+            // ── VISTA 1: IL MENU ACCOUNT ────────────────
+            Widget buildMenuView() {
+              return Column(
+                key: const ValueKey("MenuView"),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Maniglia Superiore
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 5,
+                      margin: const EdgeInsets.only(top: 16, bottom: 24),
                       decoration: BoxDecoration(
                         color: outlineVariant.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     ),
+                  ),
 
-                    _buildUserAvatar(false, size: 80),
-                    const SizedBox(height: 16),
+                  // ── Area Profilo Libera ──
+                  _buildUserAvatar(false, size: 80),
+                  const SizedBox(height: 16),
 
-                    InkWell(
-                      onTap: () =>
-                          _updateDisplayName(setModalState, displayName),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      currentDisplayName.isNotEmpty
+                          ? currentDisplayName
+                          : "Aggiungi il tuo nome",
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Bottone "Modifica"
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      nameController.text = currentDisplayName;
+                      setModalState(
+                        () => isEditingName = true,
+                      ); // Cambia pagina
+
+                      // Apre la tastiera solo DOPO che l'animazione della pagina è finita
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (ctx.mounted && nameFocusNode.canRequestFocus) {
+                          nameFocusNode.requestFocus();
+                        }
+                      });
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: onSurface,
+                      side: BorderSide(color: outlineVariant.withOpacity(0.5)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text(
+                      "Modifica Nome",
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // ── Card Integrata (Info Provider + Azioni) ──
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: surfaceLowest,
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: outlineVariant.withOpacity(0.3),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      ),
+                      child: Column(
+                        children: [
+                          // 1. Riga Informativa Ridisegnata e Bilanciata
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Icona Provider (Quadrato smussato o logo pulito)
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  // Rimuove lo sfondo se è Google o Facebook
+                                  color:
+                                      (providerName == "Google" ||
+                                          providerName == "Facebook")
+                                      ? Colors.transparent
+                                      : surfaceContainerHigh,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                alignment: Alignment.center,
+                                child: providerName == "Google"
+                                    ? Image.asset(
+                                        'assets/icons/google.png',
+                                        width: 28,
+                                        height: 28,
+                                      )
+                                    : providerName == "Facebook"
+                                    ? Image.asset(
+                                        'assets/icons/facebook.png',
+                                        width: 28,
+                                        height: 28,
+                                      )
+                                    : Icon(
+                                        providerIcon,
+                                        color: onSurfaceVariant,
+                                        size: 24,
+                                      ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Identificatore (Email/Telefono) come Titolo principale
+                                    Text(
+                                      identifier,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: onSurface,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+
+                                    const SizedBox(height: 2),
+                                    // Metodo di connessione come Sottotitolo
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.link,
+                                          size: 14,
+                                          color: onSurfaceVariant,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            "Collegato con $providerName",
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: onSurfaceVariant,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+                          // Divisorio per separare nettamente le info dalle azioni
+                          Divider(
+                            height: 1,
+                            color: outlineVariant.withOpacity(0.3),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // 2. Bottone Esci (Pieno e arrotondato)
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.tonalIcon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _handleLogout();
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: surfaceContainer,
+                                foregroundColor: onSurface,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
+                              icon: const Icon(Icons.logout, size: 20),
+                              label: const Text(
+                                "Esci dall'account",
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // 3. Bottone Elimina (Visivamente pericoloso)
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _handleDeleteAccount();
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: error,
+                                backgroundColor: errorContainer.withOpacity(
+                                  0.3,
+                                ),
+                                side: const BorderSide(color: errorContainer),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.person_remove_outlined,
+                                size: 20,
+                              ),
+                              label: const Text(
+                                "Elimina Account",
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32), // Spazio dal fondo del telefono
+                ],
+              );
+            }
+
+            // ── VISTA 2: EDIT NOME (Appare in fade) ───────────────────────
+            // ── VISTA 2: EDIT NOME (Appare in fade) ───────────────────────
+            Widget buildEditNameView() {
+              return Column(
+                key: const ValueKey("EditNameView"),
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 5,
+                      margin: const EdgeInsets.only(top: 16, bottom: 16),
+                      decoration: BoxDecoration(
+                        color: outlineVariant.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+
+                  // Header con Back Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: onSurfaceVariant,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: surfaceContainerHigh,
+                          ),
+                          onPressed: goBackToMenu, // Torna fluidamente
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          "Modifica Nome",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          "Scegli come vuoi farti chiamare. Questo nome sarà visibile all'interno dell'app.",
+                          style: TextStyle(
+                            color: onSurfaceVariant,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // ── TEXTFIELD AGGIORNATO (Stile SearchBar) ──
+                        TextField(
+                          controller: nameController,
+                          focusNode: nameFocusNode,
+                          textCapitalization: TextCapitalization.words,
+                          style: const TextStyle(
+                            fontSize:
+                                14, // Uniformato alla grandezza della search bar
+                            color: onSurface,
+                          ),
+                          cursorColor: primary,
+                          decoration: InputDecoration(
+                            hintText: "Es. Mario Rossi",
+                            hintStyle: TextStyle(
+                              color: onSurfaceVariant.withOpacity(0.6),
+                              fontSize: 14,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.badge_outlined,
+                              color: onSurfaceVariant,
+                            ),
+                            filled: true,
+                            fillColor: surfaceContainer, // Colore morbido M3
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical:
+                                  0, // 0 per bilanciarsi perfettamente con il prefixIcon
+                              horizontal: 16,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                999,
+                              ), // Forma a pillola
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Text(
-                              displayName.isNotEmpty
-                                  ? displayName
-                                  : "Aggiungi il tuo nome",
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                color: onSurface,
+                            TextButton(
+                              onPressed: goBackToMenu,
+                              style: TextButton.styleFrom(
+                                foregroundColor: onSurfaceVariant,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                              child: const Text(
+                                "Annulla",
+                                style: TextStyle(fontWeight: FontWeight.w600),
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Icon(
-                              Icons.edit_outlined,
-                              size: 18,
-                              color: primary,
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: nameController,
+                              builder: (context, value, child) {
+                                final bool isValid = value.text
+                                    .trim()
+                                    .isNotEmpty;
+                                return FilledButton(
+                                  onPressed: isValid
+                                      ? () async {
+                                          final newName = value.text.trim();
+                                          if (newName != currentDisplayName) {
+                                            // Optimistic Update visibile subito
+                                            setState(
+                                              () => _optimisticDisplayName =
+                                                  newName,
+                                            );
+                                            goBackToMenu(); // Torna al menu
+
+                                            // Salva nel cloud in background
+                                            try {
+                                              await currentUser
+                                                  .updateDisplayName(newName);
+                                            } catch (e) {
+                                              // Fallback silenzioso
+                                            }
+                                          } else {
+                                            goBackToMenu();
+                                          }
+                                        }
+                                      : null,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: primary,
+                                    foregroundColor: surfaceLowest,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    "Salva",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
+                  ),
+                ],
+              );
+            }
 
-                    const SizedBox(height: 24),
-                    const Divider(height: 1, indent: 16, endIndent: 16),
-                    const SizedBox(height: 16),
-
-                    _buildProviderInfoTile(currentUser),
-
-                    const SizedBox(height: 16),
-                    const Divider(height: 1, indent: 16, endIndent: 16),
-                    const SizedBox(height: 8),
-
-                    ListTile(
-                      leading: const Icon(
-                        Icons.logout,
-                        color: onSurfaceVariant,
-                      ),
-                      title: const Text(
-                        "Esci dall'account",
-                        style: TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _handleLogout();
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.person_remove_outlined,
-                        color: error,
-                      ),
-                      title: const Text(
-                        "Elimina Account",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: error,
-                        ),
-                      ),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _handleDeleteAccount();
-                      },
-                    ),
-                  ],
+            return Padding(
+              // isScrollControlled: true gestisce automaticamente la tastiera
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: AnimatedSize(
+                // AnimatedSize gestisce la variazione di altezza fra il menu e il form
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.fastOutSlowIn,
+                alignment: Alignment.topCenter,
+                child: AnimatedSwitcher(
+                  // AnimatedSwitcher dissolve la pagina A nella pagina B
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
+                  child: isEditingName ? buildEditNameView() : buildMenuView(),
                 ),
               ),
             );
           },
         );
       },
-    );
-  }
-
-  // ── Modifica Nome (Optimistic Update & Validazione live) ──────────────
-  Future<void> _updateDisplayName(
-    StateSetter setModalState,
-    String currentName,
-  ) async {
-    final controller = TextEditingController(text: currentName);
-
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: surfaceLowest,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        icon: const Icon(Icons.badge_outlined, color: primary, size: 32),
-        title: const Text(
-          "Modifica Nome",
-          style: TextStyle(
-            color: onSurface,
-            fontSize: 22,
-            fontWeight: FontWeight.w500,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              "Scegli come vuoi farti chiamare. Questo nome sarà visibile all'interno dell'app.",
-              style: TextStyle(
-                color: onSurfaceVariant,
-                fontSize: 14,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: controller,
-              textCapitalization: TextCapitalization.words,
-              autofocus: true,
-              style: const TextStyle(fontSize: 16, color: onSurface),
-              cursorColor: primary,
-              decoration: InputDecoration(
-                labelText: "Il tuo nome",
-                labelStyle: const TextStyle(color: onSurfaceVariant),
-                filled: true,
-                fillColor: surfaceContainerHigh,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: primary, width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actionsPadding: const EdgeInsets.only(bottom: 24, right: 24, left: 24),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: TextButton.styleFrom(
-              foregroundColor: onSurfaceVariant,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-            child: const Text(
-              "Annulla",
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          // Validazione in tempo reale sul testo inserito
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, child) {
-              final bool isValid = value.text
-                  .trim()
-                  .isNotEmpty; // Almeno 1 carattere
-
-              return FilledButton(
-                // Se non valido (vuoto), il bottone è null -> disabilitato automaticamente
-                onPressed: isValid
-                    ? () => Navigator.pop(ctx, value.text.trim())
-                    : null,
-                style: FilledButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: surfaceLowest,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: const Text(
-                  "Salva",
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-
-    // Se è stato inserito un nome valido e diverso dall'attuale
-    if (newName != null && newName.isNotEmpty && newName != currentName) {
-      // 1. UPDATE ISTANTANEO (Optimistic UI Update)
-      setState(() {
-        _optimisticDisplayName = newName;
-      });
-      setModalState(() {});
-
-      // 2. ESECUZIONE SILENZIOSA IN BACKGROUND
-      try {
-        await FirebaseAuth.instance.currentUser?.updateDisplayName(newName);
-        // Nessun messaggio di caricamento che interrompe l'utente:
-        // l'update al server è nascosto per massima fluidità.
-      } catch (e) {
-        // Fallback invisibile nel caso l'utente abbia un drop di connessione temporaneo
-      }
-    }
+    ).whenComplete(() {
+      // Pulizia quando l'intero Bottom Sheet viene trascinato via e chiuso
+      nameFocusNode.dispose();
+    });
   }
 
   // ── Gestione Azioni Account ─────────────────────────────────────────
@@ -967,9 +1155,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   DropdownMenuItem(value: 'dark', child: Text("Scuro")),
                 ],
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() => _selectedTheme = val);
-                  }
+                  if (val != null) setState(() => _selectedTheme = val);
                 },
               ),
             ),

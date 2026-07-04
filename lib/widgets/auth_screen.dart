@@ -307,9 +307,11 @@ class _AuthScreenState extends State<AuthScreen> {
                     else ...[
                       _buildSocialBtn(
                         text: "Continua con Google",
-                        icon: Icons
-                            .g_mobiledata, // Consigliato: pacchetto font_awesome_flutter in futuro
-                        iconColor: Colors.red,
+                        iconWidget: Image.asset(
+                          'assets/icons/google.png',
+                          width: 20,
+                          height: 20,
+                        ),
                         bgColor: primary,
                         textColor: onPrimary,
                         onTap: _signInWithGoogle,
@@ -318,8 +320,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
                       _buildSocialBtn(
                         text: "Continua con Facebook",
-                        icon: Icons.facebook,
-                        iconColor: const Color(0xFF1877F2),
+                        iconWidget: Image.asset(
+                          'assets/icons/facebook.png',
+                          width: 20,
+                          height: 20,
+                        ),
                         bgColor: Colors.white,
                         textColor: onSurface,
                         borderColor: surfaceVariant,
@@ -370,11 +375,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Widget _buildSocialBtn({
     required String text,
-    required IconData icon,
+    required Widget iconWidget,
     required Color bgColor,
     required Color textColor,
     required VoidCallback onTap,
-    Color? iconColor,
     Color? borderColor,
   }) {
     return InkWell(
@@ -408,7 +412,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       shape: BoxShape.circle,
                     )
                   : null,
-              child: Icon(icon, size: 22, color: iconColor),
+              child: iconWidget,
             ),
             const SizedBox(width: 12),
             Text(

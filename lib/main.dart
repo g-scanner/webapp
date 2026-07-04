@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gscanner/widgets/sync_data_screen.dart';
+import 'firebase_options.dart';
 
 import 'models/types.dart';
 import 'services/db_service.dart';
@@ -25,7 +26,7 @@ const Color onSurface = Color(0xFF1B1B1E);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -94,6 +95,7 @@ class _MainScreenState extends State<MainScreen> {
   bool scanningProgress = false;
   String? scanError;
   bool loadingApp = true;
+  bool _settingsAlreadySynced = false;
 
   bool _requiresSyncDecision = false;
   int _anonymousHistoryCount = 0;
@@ -133,6 +135,7 @@ class _MainScreenState extends State<MainScreen> {
         // Sincronizza le impostazioni con Firestore per utenti registrati
         if (!user.isAnonymous) {
           settings = await DbService.syncSettingsWithFirestore(settings);
+          _settingsAlreadySynced = true;
           if (mounted) setState(() => userSettings = settings);
         }
       }
@@ -147,9 +150,10 @@ class _MainScreenState extends State<MainScreen> {
   // 4. Estrai il caricamento dei dati in una funzione a parte (per richiamarla dopo la decisione)
   Future<void> _loadAllData() async {
     await Future.wait([_fetchHistory(), _fetchSettings()]);
+    if (mounted) setState(() => loadingApp = false);
+    // Carica prodotti e segnalazioni in background (non bloccanti)
     _fetchProducts();
     _fetchReports();
-    if (mounted) setState(() => loadingApp = false);
   }
 
   Future<void> _fetchProducts() async {
@@ -170,9 +174,10 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _fetchSettings() async {
     var data = await DbService.getLocalSettings();
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null && !user.isAnonymous) {
+    if (user != null && !user.isAnonymous && !_settingsAlreadySynced) {
       data = await DbService.syncSettingsWithFirestore(data);
     }
+    _settingsAlreadySynced = false;
     if (mounted) setState(() => userSettings = data);
   }
 
@@ -337,17 +342,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildBody() {
     if (loadingApp) {
       return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: Color(0xFF0D631B)),
-            SizedBox(height: 16),
-            Text(
-              "Inizializzazione Database...",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+        child: CircularProgressIndicator(color: Color(0xFF0D631B)),
       );
     }
 
