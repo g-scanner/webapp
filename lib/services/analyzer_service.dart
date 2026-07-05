@@ -32,39 +32,45 @@ class AnalyzerService {
   // ─── DIZIONARI KEYWORDS ──────────────────────────────────────────────────
 
   static const List<String> _dangerKeywords = [
-    "frumento",
-    "grano",
-    "orzo",
-    "segale",
-    "farro",
-    "kamut",
-    "spelta",
-    "glutine",
-    "tritordeum",
-    "couscous",
-    "bulgur",
-    "seitan",
-    "grano saraceno",
-    "wheat",
-    "barley",
-    "rye",
-    "spelt",
-    "gluten",
-    "semolina",
-    "triticale",
-    "blé",
-    "froment",
-    "orge",
-    "seigle",
-    "épeautre",
-    "trigo",
-    "cebada",
-    "centeno",
-    "espelta",
-    "weizen",
-    "gerste",
-    "roggen",
-    "dinkel",
+    // Italiano
+    "frumento", "grano", "orzo", "segale", "farro", "kamut",
+    "spelta", "glutine", "tritordeum", "couscous", "bulgur", "seitan",
+    // Inglese
+    "wheat", "barley", "rye", "spelt", "gluten", "semolina", "triticale",
+    // Francese
+    "blé", "froment", "orge", "seigle", "épeautre",
+    // Spagnolo
+    "trigo", "cebada", "centeno", "espelta",
+    // Tedesco
+    "weizen", "gerste", "roggen", "dinkel",
+    // Portoghese
+    "cevada", "centeio",
+    // Olandese
+    "tarwe", "gerst", "rogge",
+    // Polacco
+    "pszenica", "jęczmień", "żyto", "orkisz",
+    // Turco
+    "buğday", "arpa", "çavdar",
+    // Russo
+    "пшеница", "ячмень", "рожь", "глютен",
+    // Svedese
+    "vete", "korn", "råg",
+    // Danese/Norvegese
+    "hvede", "byg", "rug", "hvete",
+    // Ceco
+    "pšenice", "ječmen", "žito",
+    // Romeno
+    "grâu", "orz", "secară",
+    // Ungherese
+    "búza", "árpa", "rozs",
+    // Croato
+    "pšenica", "ječam", "raž",
+    // Greco
+    "σιτάρι", "κριθάρι", "σίκαλη", "γλουτένη",
+    // Arabo
+    "قمح", "شعير", "غلوتين",
+    // Giapponese
+    "小麦", "大麦", "ライ麦", "グルテン",
   ];
 
   static const List<String> _maltoKeywords = [
@@ -76,37 +82,64 @@ class AnalyzerService {
   ];
 
   static const List<String> _traceKeywords = [
-    "tracce di grano",
-    "tracce di frumento",
-    "tracce di cereali",
+    // Italiano
+    "tracce di grano", "tracce di frumento", "tracce di cereali",
     "stabilimento che lavora anche frumento",
-    "può contenere glutine",
-    "può contenere frumento",
-    "può contenere orzo",
-    "può contenere farro",
-    "traces of wheat",
-    "may contain wheat",
-    "may contain gluten",
-    "trazas de trigo",
-    "puede contener trigo",
-    "puede contener gluten",
-    "traces de blé",
-    "peut contenir du blé",
-    "peut contenir du gluten",
+    "può contenere glutine", "può contenere frumento",
+    "può contenere orzo", "può contenere farro",
+    // Inglese
+    "traces of wheat", "may contain wheat", "may contain gluten",
+    "may contain barley", "may contain rye",
+    // Francese
+    "traces de blé", "peut contenir du blé", "peut contenir du gluten",
+    // Spagnolo
+    "trazas de trigo", "puede contener trigo", "puede contener gluten",
+    // Tedesco
+    "kann weizen enthalten", "kann gluten enthalten", "spuren von weizen",
+    // Portoghese
+    "pode conter trigo", "pode conter glúten", "traços de trigo",
+    // Olandese
+    "kan tarwe bevatten", "kan gluten bevatten",
+    // Polacco
+    "może zawierać gluten", "może zawierać pszenicę", "śladowe ilości glutenu",
+    // Turco
+    "buğday içerebilir", "gluten içerebilir",
   ];
 
   static const List<String> _safeTextKeywords = [
-    "senza glutine",
-    "spiga sbarrata",
-    "spiga barrata",
-    "naturalmente privo di glutine",
-    "adatto ai celiaci",
-    "gluten free",
-    "gluten-free",
-    "suitable for celiacs",
-    "sin gluten",
-    "libre de gluten",
+    // Italiano
+    "senza glutine", "spiga sbarrata", "spiga barrata",
+    "naturalmente privo di glutine", "adatto ai celiaci",
+    // Inglese
+    "gluten free", "gluten-free", "suitable for celiacs",
+    // Spagnolo
+    "sin gluten", "libre de gluten",
+    // Francese
     "sans gluten",
+    // Tedesco
+    "glutenfrei",
+    // Portoghese
+    "sem glúten",
+    // Olandese
+    "glutenvrij",
+    // Polacco
+    "bezglutenowy", "bez glutenu",
+    // Turco
+    "glutensiz",
+    // Russo
+    "без глютена", "безглютеновый",
+    // Ceco
+    "bezlepkový", "bez lepku",
+    // Romeno
+    "fără gluten",
+    // Ungherese
+    "gluténmentes",
+    // Greco
+    "χωρίς γλουτένη",
+    // Arabo
+    "خالي من الغلوتين",
+    // Giapponese
+    "グルテンフリー",
   ];
 
   static const List<String> _doubtfulAdditives = [
@@ -242,8 +275,21 @@ class AnalyzerService {
         return lt.contains('gluten-free') ||
             lt.contains('senza-glutine') ||
             lt.contains('sans-gluten') ||
-            lt.contains('sin-gluten');
+            lt.contains('sin-gluten') ||
+            lt.contains('crossed-grain') ||
+            lt.contains('spiga-sbarrata') ||
+            lt.contains('free-from-gluten') ||
+            lt.contains('no-gluten') ||
+            lt.contains('without-gluten') ||
+            lt.contains('glutenfrei') ||
+            lt.contains('glutenvrij') ||
+            lt.contains('bezglutenowy') ||
+            lt.contains('glutensiz') ||
+            lt.contains('celiac');
       });
+      // ⚠️ NON usiamo ingredientsAnalysisTags 'en:gluten-free' per il bollino verde!
+      // OFF lo assegna semplicemente se non vede "grano" negli ingredienti,
+      // ma un prodotto lavorato senza grano potrebbe avere contaminazioni in fabbrica.
     }
 
     // ─── STEP 2: Controlla ingredienti PERICOLOSI (usando il testo pulito) ───
@@ -284,8 +330,10 @@ class AnalyzerService {
             lowerT.contains('kamut');
       }
 
-      hasOffGlutenAllergen = offTags.allergensTags.any(isGlutenTag);
-      hasOffGlutenTrace = offTags.tracesTags.any(isGlutenTag);
+      hasOffGlutenAllergen = offTags.allergensTags.any(isGlutenTag) ||
+          offTags.ingredientsAnalysisTags.any((t) => t == 'en:gluten' || t == 'en:contains-gluten');
+      hasOffGlutenTrace = offTags.tracesTags.any(isGlutenTag) ||
+          offTags.ingredientsAnalysisTags.any((t) => t == 'en:may-contain-gluten' || t == 'en:gluten-to-be-checked');
     }
 
     // ─── STEP 4: Controlla tracce testuali ──────────────────────────────────

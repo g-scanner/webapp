@@ -41,6 +41,19 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <!-- Popup tracker per rilevamento rapido chiusura popup auth -->
+  <script>
+    let _activePopup = null;
+    const _originalOpen = window.open;
+    window.open = function (...args) {
+      const popup = _originalOpen.apply(window, args);
+      _activePopup = popup;
+      return popup;
+    };
+    window.isLastPopupClosed = function () {
+      return _activePopup ? _activePopup.closed : false;
+    };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

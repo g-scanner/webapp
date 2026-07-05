@@ -68,6 +68,22 @@ class DbService {
     }
   }
 
+  static String _getFirstNonEmptyString(Map<String, dynamic> data, List<String> keys, String defaultValue) {
+    for (final key in keys) {
+      final val = data[key];
+      if (val == null) continue;
+      if (val is List && val.isNotEmpty) {
+        final firstVal = val[0].toString().trim();
+        if (firstVal.isNotEmpty) return firstVal;
+      } else if (val is String && val.trim().isNotEmpty) {
+        return val.trim();
+      } else if (val is! List && val.toString().trim().isNotEmpty) {
+        return val.toString().trim();
+      }
+    }
+    return defaultValue;
+  }
+
   static Future<Product> scanBarcodeClientSide(
     String barcode,
     UserSettings settings,
@@ -92,19 +108,45 @@ class DbService {
       if (response.statusCode == 200) {
         final offData = json.decode(response.body);
         if (offData != null && offData['status'] == 1) {
-          final pData = offData['product'];
-          offName =
-              pData['product_name_it'] ?? pData['product_name'] ?? offName;
-          offBrand =
-              pData['brands'] ??
-              (pData['brand_tags']?.isNotEmpty == true
-                  ? pData['brand_tags'][0]
-                  : null) ??
-              offBrand;
-          offIngredients =
-              pData['ingredients_text_it'] ??
-              pData['ingredients_text'] ??
-              offIngredients;
+          final pData = offData['product'] as Map<String, dynamic>;
+          offName = _getFirstNonEmptyString(pData, [
+            'product_name_it',
+            'product_name',
+            'product_name_en',
+            'product_name_fr',
+            'product_name_de',
+            'product_name_es',
+            'product_name_pt',
+            'product_name_nl',
+            'product_name_pl',
+            'product_name_ar',
+            'product_name_ja',
+            'product_name_zh',
+            'product_name_ko',
+            'product_name_ru',
+            'generic_name_it',
+            'generic_name',
+            'generic_name_en',
+            'generic_name_fr',
+            'abbreviated_product_name',
+          ], offName);
+          offBrand = _getFirstNonEmptyString(pData, [
+            'brands',
+            'brand_tags',
+            'brands_imported'
+          ], offBrand);
+          offIngredients = _getFirstNonEmptyString(pData, [
+            'ingredients_text_it',
+            'ingredients_text',
+            'ingredients_text_en',
+            'ingredients_text_fr',
+            'ingredients_text_de',
+            'ingredients_text_es',
+            'ingredients_text_pt',
+            'ingredients_text_pl',
+            'ingredients_text_ar',
+            'ingredients_text_nl',
+          ], offIngredients);
           offImage =
               pData['image_url'] ??
               pData['image_front_url'] ??

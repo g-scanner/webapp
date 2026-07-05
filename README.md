@@ -92,3 +92,50 @@ Per implementare questa logica serviranno:
 L'unione della classificazione basata sul contesto ("Naturalmente Sicuro") con il routing dinamico basato sulle preferenze utente ("Filtro Rigido") rappresenta **la soluzione definitiva e ottimale**. 
 
 Mantiene il rigore clinico necessario per la celiachia (prevenendo la trasformazione di prodotti lavorati incerti in "verdi"), ma libera l'utente dal fastidio di vedere segnalati come pericolosi prodotti di base assolutamente innocui. L'utilizzo esclusivo dei classici 4 colori rende il tutto elegante e immediatamente comprensibile.
+
+
+
+---
+
+
+
+🔍 Il Meccanismo di Analisi: Step by Step
+La categorizzazione si basa sull'uso combinato di due fonti: i testi grezzi dell'etichetta (ingredienti, nome prodotto, brand) e i tag strutturati forniti dall'IA di Open Food Facts.
+
+1. Preparazione e Sanitizzazione (Le fondamenta)
+Prima di cercare parole pericolose (es. "glutine"), l'algoritmo fa un "lavaggio" (sanitizzazione) del testo in input (in _sanitizeForGluten). Sostituisce frasi intere come "senza glutine", "privo di glutine", "gluten-free" (e varianti multilingua) con spazi vuoti. Perché? Se un prodotto si chiama "Pasta Senza Glutine", senza questa sanitizzazione il sistema scoverebbe la parola "Glutine" nel nome e darebbe bollino rosso immediato. Rimuovendo preventivamente la frase di sicurezza, evitiamo questo clamoroso falso positivo.
+
+2. La Ricerca delle Prove (Le 8 Fasi)
+L'algoritmo compila una lista di prove prima di prendere la decisione finale:
+
+Fase A (Il Bollino Verde Ufficiale): Cerca tra i labelsTags (etichette della confezione) la presenza di marchi ufficiali ("spiga sbarrata", "crossed-grain", "senza glutine" in 15 lingue). Se c'è, il prodotto è garantito dalla legge (< 20ppm). Cerca anche se nel testo compare la scritta "senza glutine".
+Fase B (I Pericoli Diretti): Usa espressioni regolari per cercare nel testo sanitizzato parole della lista NERA (_dangerKeywords), come "frumento", "orzo", "segale", "farro" in più di 15 lingue.
+Fase C (La trappola del Malto): Il malto solitamente deriva dall'orzo. L'algoritmo cerca "malto" (_maltoKeywords). Se lo trova, controlla che non sia specificato "malto di riso" o "rice malt", che invece sono sicuri. Altrimenti lo segna come dubbio.
+Fase D (I Dati di OFF): Guarda dentro ad allergensTags e ingredientsAnalysisTags di OFF. Se l'IA di OFF ha capito che c'è glutine o che ci sono "tracce di glutine", lo segna. (E qui è dove abbiamo rimosso il loro en:gluten-free ingannevole per la contaminazione!).
+Fase E (Le Tracce Testuali): Cerca diciture come "può contenere", "may contain" o "prodotto in uno stabilimento che usa...". E fa una genialata: se legge la lista allergens e trova "frumento" tra gli allergeni ma che non era stato esplicitamente inserito in lista ingredienti, lo segna come traccia/pericolo.
+Fase F (Naturalmente Sicuri): Controlla se la categoria assegnata è "acqua", "latte fresco", "frutta", "olio d'oliva", "sale", "caffè", ecc. (la lista _naturallySafeCategories). Se è così, non serve nemmeno leggere gli ingredienti.
+Fase G (Mono-ingrediente): Se la lista degli ingredienti ha 1 solo ingrediente (es. "Ceci"), lo considera automaticamente a basso rischio.
+⚖️ L'Albero Decisionale (Chi vince?)
+Una volta raccolte le prove, l'algoritmo passa alla sentenza finale (linee 410-560). La cosa geniale è che usa un sistema a Cascata di Priorità. L'ordine è vitale: chi è più in alto, vince.
+
+CASO 1: Le Segnalazioni della Community (Vince su tutto) → INCERTO 🟡
+
+Se c'è anche solo 1 report (reportCount > 0), non importa cosa c'è scritto, il sistema si ferma e dice: "Attenzione, la community ha rilevato incongruenze."
+CASO 2: Il Bollino Ufficiale → SICURO 🟢
+
+Se è stato trovato un claim "Senza Glutine" o un bollino "Spiga Barrata", il prodotto è verde.
+Nota geniale: Se trova il bollino, ignora eventuali diciture come "amido di frumento deglutinato" (che farebbero scattare il rosso) o "tracce di glutine", spiegando all'utente: "C'è traccia o ingrediente deglutinato, ma il bollino garantisce che le leggi dei < 20ppm sono state rispettate".
+CASO 3: Pericolo o Filtro Rigido → PERICOLOSO 🔴
+
+Se la lista nera ha trovato "frumento", o se OFF ha l'allergene ufficiale, è rosso.
+Oppure, se l'utente ha acceso il Filtro Rigido, e l'algoritmo ha rilevato la parola "tracce" / "può contenere", il prodotto diventa direttamente rosso e bloccato.
+CASO 4: Buio Totale → SCONOSCIUTO ⚪
+
+Se la lista ingredienti è vuota o ha meno di 5 caratteri e non c'è NESSUN bollino e NESSUNA altra info, si arrende saggiamente: "Non ho dati. Leggi tu l'etichetta". Non tira a indovinare rischiando la salute.
+CASO 5: Naturalmente Sicuri → SICURO 🟢
+
+Se rientra in acque, olii, frutti crudi e non ha malto, è verde.
+CASO 6: Il "Limbo" → INCERTO 🟡
+
+Se è arrivato fin qui, significa che NON c'è un bollino senza glutine, NON ci sono parole vietate evidenti, ma non è nemmeno "solo acqua".
+Questo è il fallback. Avverte l'utente: "Attenzione, è lavorato senza diciture senza glutine. Rischio contaminazione." E in questo stato elenca all'utente gli additivi ambigui (es. "aromi", "amido modificato") o l'eventuale presenza di "Tracce" se il filtro rigido era spento.

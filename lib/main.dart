@@ -17,6 +17,8 @@ import 'widgets/product_detail_card.dart';
 // IMPORTA LA NUOVA SCHERMATA
 import 'widgets/auth_screen.dart';
 
+import 'widgets/responsive_wrapper.dart';
+
 // --- Colori estratti dal tuo Tailwind HTML ---
 const Color surfaceContainerLow = Color(0xFFF5F3F7);
 const Color secondaryContainer = Color(0xFF54A0FE);
@@ -94,7 +96,7 @@ class _MainScreenState extends State<MainScreen> {
   List<String> reportedSessionBarcodes = [];
   bool scanningProgress = false;
   String? scanError;
-  bool loadingApp = true;
+  bool _isSyncing = false;
   bool _settingsAlreadySynced = false;
 
   bool _requiresSyncDecision = false;
@@ -127,7 +129,6 @@ class _MainScreenState extends State<MainScreen> {
               _anonymousHistoryCount =
                   localHistory.length + localReports.length;
               _requiresSyncDecision = true;
-              loadingApp = false;
             });
           }
           return;
@@ -143,14 +144,12 @@ class _MainScreenState extends State<MainScreen> {
       await _loadAllData();
     } catch (e) {
       print("Inizializzazione fallita: $e");
-      if (mounted) setState(() => loadingApp = false);
     }
   }
 
   // 4. Estrai il caricamento dei dati in una funzione a parte (per richiamarla dopo la decisione)
   Future<void> _loadAllData() async {
     await Future.wait([_fetchHistory(), _fetchSettings()]);
-    if (mounted) setState(() => loadingApp = false);
     // Carica prodotti e segnalazioni in background (non bloccanti)
     _fetchProducts();
     _fetchReports();
@@ -340,12 +339,6 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildBody() {
-    if (loadingApp) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF0D631B)),
-      );
-    }
-
     return IndexedStack(
       index: _currentIndex > 3 ? 3 : _currentIndex,
       children: [
@@ -439,17 +432,22 @@ class _MainScreenState extends State<MainScreen> {
                 Icons.qr_code_scanner,
                 "Scansione",
               ),
-              _buildNavItem(1, Icons.history, Icons.history, "Cronologia"),
+              _buildNavItem(
+                1,
+                Icons.history,
+                Icons.history,
+                "Cronologia",
+              ),
               _buildNavItem(
                 2,
-                Icons.report_problem,
-                Icons.report_problem_outlined,
-                "Segnalazioni",
+                Icons.search,
+                Icons.search,
+                "Prodotti",
               ),
               _buildNavItem(
                 3,
                 Icons.settings,
-                Icons.settings_outlined,
+                Icons.settings,
                 "Impostazioni",
               ),
             ],
@@ -465,57 +463,49 @@ class _MainScreenState extends State<MainScreen> {
     IconData inactiveIcon,
     String label,
   ) {
-    final activeIndex = _currentIndex > 3 ? 3 : _currentIndex;
-    final isSelected = activeIndex == index;
-
+    final bool isSelected = _currentIndex == index;
     return Expanded(
-      child: GestureDetector(
+      child: InkWell(
         onTap: () {
           setState(() {
             _currentIndex = index;
+            _isCameraActive = index == 0;
           });
         },
-        behavior: HitTestBehavior.opaque,
+        borderRadius: BorderRadius.circular(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
               decoration: BoxDecoration(
                 color: isSelected
                     ? secondaryContainer.withOpacity(0.2)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isSelected ? activeIcon : inactiveIcon,
-                    color: isSelected ? onSecondaryContainer : onSurfaceVariant,
-                    size: 26,
-                  ),
-                  const SizedBox(height: 4),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        color: isSelected
-                            ? onSecondaryContainer
-                            : onSurfaceVariant,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Icon(
+                isSelected ? activeIcon : inactiveIcon,
+                color: isSelected ? onSecondaryContainer : onSurfaceVariant,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected
+                      ? FontWeight.w600
+                      : FontWeight.w500,
+                  color: isSelected
+                      ? onSecondaryContainer
+                      : onSurfaceVariant,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ],
@@ -526,54 +516,65 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // SE L'UTENTE DEVE PRENDERE UNA DECISIONE, SOSTITUIAMO TUTTO LO SCHERMO
+    // SE L'UTENTE DEVE PRENDERE UNA DECISIONE DI SINCRONIZZAZIONE
     if (_requiresSyncDecision) {
       return Scaffold(
         backgroundColor: const Color(0xFFFAF9FC),
         body: SyncDataScreen(
           historyCount: _anonymousHistoryCount,
           onDecision: (bool wantToSync) async {
-            // L'utente ha premuto un pulsante, riattiviamo il caricamento
             setState(() {
               _requiresSyncDecision = false;
-              loadingApp = true;
+              _isSyncing = true;
             });
 
             if (wantToSync) {
-              // Ha scelto di UNIRE: migra cronologia, segnalazioni e barcode segnalati
               await DbService.migrateLocalDataToFirestore(userId!);
             } else {
-              // Ha scelto di CANCELLARE: Svuotiamo tutti i dati locali e assegniamo il nuovo ID
               await DbService.wipeAllLocalData();
             }
 
-            // Adesso riprendiamo il caricamento normale dei dati
             await _loadAllData();
+            setState(() {
+              _isSyncing = false;
+            });
           },
         ),
       );
     }
 
-    // ALTRIMENTI MOSTRA LA NORMALE APP
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF9FC),
-      appBar: AppBar(
-        title: const Text(
-          "G-Scanner",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 22,
-            letterSpacing: -0.5,
-            color: onSurface,
-          ),
+    // SE C'È UN PROCESSO DI SINCRONIZZAZIONE ATTIVO
+    if (_isSyncing) {
+      return const Scaffold(
+        backgroundColor: const Color(0xFFFAF9FC),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF0D631B)),
         ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFFFFFFFF),
-        elevation: 0,
-        scrolledUnderElevation: 0,
+      );
+    }
+
+    // ALTRIMENTI MOSTRA LA NORMALE APP RACCHIUSA NEL WRAPPER RESPONSIVE GLOBALE (STILE INSTAGRAM)
+    return ResponsiveMaxCardWidth(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFAF9FC),
+        appBar: AppBar(
+          title: const Text(
+            "G-Scanner",
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 22,
+              letterSpacing: -0.5,
+              color: onSurface,
+            ),
+          ),
+          centerTitle: true,
+          backgroundColor: const Color(0xFFFFFFFF),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+        ),
+        body: _buildBody(),
+        bottomNavigationBar: _currentIndex == 4 ? null : _buildCustomBottomNav(),
       ),
-      body: _buildBody(), // Il tuo IndexedStack originale
-      bottomNavigationBar: _currentIndex == 4 ? null : _buildCustomBottomNav(),
     );
   }
 }

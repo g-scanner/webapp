@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:gscanner/utils/popup_tracker_stub.dart'
+    if (dart.library.js_interop) 'package:gscanner/utils/popup_tracker_web.dart';
 
 const Color surfaceContainerLowest = Color(0xFFFFFFFF);
 const Color surfaceVariant = Color(0xFFE3E2E6);
@@ -44,21 +47,18 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   // ==========================================
-  // LOGICA ACCESSO CON GOOGLE (google_sign_in v7+)
+  // LOGICA ACCESSO CON GOOGLE
   // ==========================================
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
       if (kIsWeb) {
-        final provider = GoogleAuthProvider();
-        await FirebaseAuth.instance.signInWithPopup(provider);
+        await _signInWithPopupTracked(GoogleAuthProvider(), "Google");
         return;
       }
 
+      // Mobile: usa authenticate() direttamente per mostrare il bottom sheet nativo (Credential Manager)
       final googleSignIn = GoogleSignIn.instance;
-
-      // 1. Inizializza passando il WEB CLIENT ID (Obbligatorio per Android dalla v7)
-      // SOSTITUISCI LA STRINGA CON IL TUO ID CLIENT WEB DI FIREBASE!
       if (!_isGoogleSignInInitialized) {
         await googleSignIn.initialize(
           serverClientId:
@@ -67,57 +67,42 @@ class _AuthScreenState extends State<AuthScreen> {
         _isGoogleSignInInitialized = true;
       }
 
-      // 2. Avvia il flusso di login.
-      // Se il flusso esplicito fallisce per un problema di plugin/codec,
-      // proviamo il flusso leggero come fallback per non bloccare l'utente.
-      GoogleSignInAccount? googleUser;
-      if (googleSignIn.supportsAuthenticate()) {
-        try {
-          googleUser = await googleSignIn.authenticate();
-        } catch (e) {
-          final fallbackFuture = googleSignIn.attemptLightweightAuthentication(
-            reportAllExceptions: true,
-          );
-          if (fallbackFuture != null) {
-            googleUser = await fallbackFuture;
-          } else {
-            rethrow;
-          }
-        }
-      } else {
-        final fallbackFuture = googleSignIn.attemptLightweightAuthentication(
-          reportAllExceptions: true,
-        );
-        if (fallbackFuture != null) {
-          googleUser = await fallbackFuture;
-        }
-      }
+      final GoogleSignInAccount? googleUser = await googleSignIn.authenticate();
 
-      // Se l'utente chiude il popup senza fare login
       if (googleUser == null) {
+        _showInfo("Accesso con Google annullato.");
         if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      // 3. Recupera i dettagli di autenticazione
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
-
-      // 4. Crea la credenziale per Firebase passando SOLO l'idToken
-      // (Nelle nuove versioni accessToken non serve/non c'è per l'autenticazione standard)
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
-
-      // 5. Esegui l'accesso su Firebase
       await FirebaseAuth.instance.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      _showError("Errore Firebase: ${e.message}");
+      final errStr = (e.code + (e.message ?? '')).toLowerCase();
+      if (errStr.contains('popup-closed') ||
+          errStr.contains('cancel') ||
+          errStr.contains('abort')) {
+        _showInfo("Accesso con Google annullato.");
+      } else {
+        _showError("Errore Firebase: ${e.message}");
+      }
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       if (!mounted) return;
-      _showError("Errore Google Sign-In: $e");
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('12501') ||
+          errStr.contains('12502') ||
+          errStr.contains('cancel') ||
+          errStr.contains('abort')) {
+        _showInfo("Accesso con Google annullato.");
+      } else {
+        _showError("Errore Google Sign-In: $e");
+      }
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -129,8 +114,7 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
     try {
       if (kIsWeb) {
-        final provider = FacebookAuthProvider();
-        await FirebaseAuth.instance.signInWithPopup(provider);
+        await _signInWithPopupTracked(FacebookAuthProvider(), "Facebook");
         return;
       }
 
@@ -141,7 +125,9 @@ class _AuthScreenState extends State<AuthScreen> {
 
       // Se l'utente annulla l'operazione o c'è un errore
       if (result.status != LoginStatus.success) {
-        if (result.status == LoginStatus.failed) {
+        if (result.status == LoginStatus.cancelled) {
+          _showInfo("Accesso con Facebook annullato.");
+        } else if (result.status == LoginStatus.failed) {
           if (!mounted) return;
           _showError("Errore Facebook: ${result.message}");
         }
@@ -180,7 +166,11 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      _showError("Errore Firebase: ${e.message}");
+      if (e.code == 'popup-closed-by-user' || e.code == 'canceled') {
+        _showInfo("Accesso con Facebook annullato.");
+      } else {
+        _showError("Errore Firebase: ${e.message}");
+      }
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       if (!mounted) return;
@@ -189,6 +179,37 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  // ==========================================
+  // WEB: Login con popup e rilevamento rapido chiusura
+  // ==========================================
+  Future<void> _signInWithPopupTracked(AuthProvider provider, String providerName) async {
+    bool completed = false;
+
+    // Polling rapido: controlla ogni 150ms se il popup è stato chiuso dall'utente
+    final checkTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
+      if (_isPopupClosed() && !completed) {
+        timer.cancel();
+        if (mounted && _isLoading) {
+          setState(() => _isLoading = false);
+          _showInfo("Accesso con $providerName annullato.");
+        }
+      }
+    });
+
+    try {
+      await FirebaseAuth.instance.signInWithPopup(provider);
+      completed = true;
+    } catch (e) {
+      completed = true;
+      rethrow;
+    } finally {
+      checkTimer.cancel();
+    }
+  }
+
+  /// Chiama la funzione JS definita in index.html per verificare se il popup è chiuso
+  bool _isPopupClosed() => jsIsLastPopupClosed();
+
   // Helper per mostrare gli errori
   void _showError(String message) {
     if (!mounted) return;
@@ -196,6 +217,18 @@ class _AuthScreenState extends State<AuthScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red.shade800,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // Helper per mostrare informazioni generiche (non errori)
+  void _showInfo(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: onSurfaceVariant,
         behavior: SnackBarBehavior.floating,
       ),
     );

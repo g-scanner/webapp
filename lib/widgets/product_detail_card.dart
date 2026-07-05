@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/types.dart';
+import 'responsive_wrapper.dart';
 
 // --- Material 3 Design Colors (dal Tailwind Config) ---
 const Color bgBackground = Color(0xFFFAF9FC);
@@ -52,12 +53,10 @@ class ProductDetailCard extends StatefulWidget {
 }
 
 class _ProductDetailCardState extends State<ProductDetailCard> {
-  bool _isReporting = false;
   String _reportType = "label_unclear";
   final TextEditingController _reportCommentsController =
       TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _reportSubmitted = false;
   bool _submittingReport = false;
 
   @override
@@ -67,31 +66,205 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     super.dispose();
   }
 
-  Future<void> _handleReport() async {
-    setState(() => _submittingReport = true);
-    try {
-      await widget.onReportSubmit(widget.product.barcode, {
-        "type": _reportType,
-        "comments": _reportCommentsController.text,
-        "originalStatus": widget.product.status.name,
-      });
-      setState(() {
-        _reportSubmitted = true;
-      });
-      Future.delayed(const Duration(milliseconds: 2500), () {
-        if (mounted) {
-          setState(() {
-            _isReporting = false;
-            _reportSubmitted = false;
-            _reportCommentsController.clear();
-          });
-        }
-      });
-    } catch (err) {
-      print(err);
-    } finally {
-      if (mounted) setState(() => _submittingReport = false);
-    }
+  void _showReportBottomSheet(BuildContext parentContext) {
+    showModalBottomSheet(
+      context: parentContext,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext sheetCtx) {
+        return StatefulBuilder(
+          builder: (BuildContext ctx, StateSetter setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: bgBackground,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: 24),
+                        decoration: BoxDecoration(
+                          color: outlineVariant.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const Row(
+                      children: [
+                        Icon(Icons.warning, color: error),
+                        SizedBox(width: 8),
+                        Text(
+                          "Segnala Etichetta",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Aiuta la community segnalando dati errati o poco chiari.",
+                      style: TextStyle(fontSize: 14, color: onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "Motivo della segnalazione",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _reportType,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: surfaceLow,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: "label_unclear",
+                          child: Text("Etichetta poco chiara o ambigua"),
+                        ),
+                        DropdownMenuItem(
+                          value: "outdated",
+                          child: Text("Informazione obsoleta"),
+                        ),
+                        DropdownMenuItem(
+                          value: "incorrect_status",
+                          child: Text("Stato glutine errato"),
+                        ),
+                        DropdownMenuItem(
+                            value: "other", child: Text("Altro")),
+                      ],
+                      onChanged: (val) {
+                        setSheetState(() => _reportType = val!);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Dettagli (Opzionale)",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _reportCommentsController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText:
+                            "Es: Sulla confezione dice può contenere...",
+                        hintStyle: TextStyle(
+                          color: onSurfaceVariant.withOpacity(0.5),
+                        ),
+                        filled: true,
+                        fillColor: surfaceLow,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(sheetCtx),
+                          style: TextButton.styleFrom(
+                            foregroundColor: onSurfaceVariant,
+                          ),
+                          child: const Text("Annulla"),
+                        ),
+                        const SizedBox(width: 12),
+                        FilledButton(
+                          onPressed: _submittingReport
+                              ? null
+                              : () async {
+                                  setSheetState(
+                                      () => _submittingReport = true);
+                                  try {
+                                    await widget.onReportSubmit(
+                                        widget.product.barcode, {
+                                      "type": _reportType,
+                                      "comments":
+                                          _reportCommentsController.text,
+                                      "originalStatus":
+                                          widget.product.status.name,
+                                    });
+                                    if (sheetCtx.mounted) {
+                                      Navigator.pop(sheetCtx);
+                                    }
+                                    _reportCommentsController.clear();
+                                    if (parentContext.mounted) {
+                                      ScaffoldMessenger.of(parentContext)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              "Segnalazione inviata. Grazie!"),
+                                          backgroundColor: onSurfaceVariant,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  } catch (err) {
+                                    print(err);
+                                  } finally {
+                                    _submittingReport = false;
+                                  }
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: error,
+                            foregroundColor: surfaceLowest,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                          ),
+                          child: _submittingReport
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text("Invia"),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
 
@@ -140,7 +313,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     }
 
     // Utilizziamo uno Scaffold interno per gestire la sua AppBar personale
-    return Scaffold(
+    return ResponsiveMaxCardWidth(
+      child: Scaffold(
       backgroundColor: bgBackground,
       appBar: AppBar(
         backgroundColor: surfaceLowest,
@@ -557,68 +731,56 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
             ),
             const SizedBox(height: 24),
 
-            // ── Pulsante Segnalazione / Form ──────────────────────────
-            if (_isReporting) ...[
-              _buildReportForm(),
-            ] else ...[
-              if (widget.hasReportedThisSession ||
-                  (widget.product.reportCount ?? 0) > 0)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: errorContainer.withOpacity(0.5),
+            // ── Pulsante Segnalazione ──────────────────────────
+            if (widget.hasReportedThisSession ||
+                (widget.product.reportCount ?? 0) > 0)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: errorContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                alignment: Alignment.center,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle, color: error, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      "Prodotto già segnalato",
+                      style: TextStyle(
+                        color: error,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              OutlinedButton.icon(
+                onPressed: () => _showReportBottomSheet(context),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: error,
+                  side: const BorderSide(color: error, width: 1.5),
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(32),
                   ),
-                  alignment: Alignment.center,
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle, color: error, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        "Prodotto già segnalato",
-                        style: TextStyle(
-                          color: error,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: () {
-                    setState(() => _isReporting = true);
-                    Future.delayed(const Duration(milliseconds: 100), () {
-                      _scrollController.animateTo(
-                        _scrollController.position.maxScrollExtent,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: error,
-                    side: const BorderSide(color: error, width: 1.5),
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                  ),
-                  icon: const Icon(Icons.flag_outlined, size: 20),
-                  label: const Text(
-                    "Segnala dati errati o poco chiari",
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
                 ),
-            ],
+                icon: const Icon(Icons.flag_outlined, size: 20),
+                label: const Text(
+                  "Segnala dati errati o poco chiari",
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ),
 
             const SizedBox(height: 40),
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -678,165 +840,4 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     );
   }
 
-  Widget _buildReportForm() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: surfaceLowest,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: errorContainer),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: _reportSubmitted
-          ? const Column(
-              children: [
-                Icon(Icons.check_circle, color: primary, size: 48),
-                SizedBox(height: 16),
-                Text(
-                  "Segnalazione Inviata!",
-                  style: TextStyle(
-                    color: primary,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 18,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  "Grazie per aver reso sicuro il database per tutti.",
-                  style: TextStyle(fontSize: 14, color: onSurfaceVariant),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.warning, color: error),
-                    SizedBox(width: 8),
-                    Text(
-                      "Segnala Etichetta",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Aiuta la community aggiornando i dati errati.",
-                  style: TextStyle(fontSize: 14, color: onSurfaceVariant),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  "Motivo della segnalazione",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _reportType,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: surfaceLow,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: "label_unclear",
-                      child: Text("Etichetta poco chiara o ambigua"),
-                    ),
-                    DropdownMenuItem(
-                      value: "outdated",
-                      child: Text("Informazione obsoleta"),
-                    ),
-                    DropdownMenuItem(
-                      value: "incorrect_status",
-                      child: Text("Stato glutine errato"),
-                    ),
-                    DropdownMenuItem(value: "other", child: Text("Altro")),
-                  ],
-                  onChanged: (val) => setState(() => _reportType = val!),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Dettagli (Opzionale)",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _reportCommentsController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: "Es: Sulla confezione dice può contenere...",
-                    hintStyle: TextStyle(
-                      color: onSurfaceVariant.withOpacity(0.5),
-                    ),
-                    filled: true,
-                    fillColor: surfaceLow,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => setState(() => _isReporting = false),
-                      style: TextButton.styleFrom(
-                        foregroundColor: onSurfaceVariant,
-                      ),
-                      child: const Text("Annulla"),
-                    ),
-                    const SizedBox(width: 12),
-                    FilledButton(
-                      onPressed: _submittingReport ? null : _handleReport,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: error,
-                        foregroundColor: surfaceLowest,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                      ),
-                      child: _submittingReport
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                color: surfaceLowest,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text("Invia"),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-    );
-  }
 }
