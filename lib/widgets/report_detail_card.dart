@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/types.dart';
+import 'responsive_wrapper.dart';
 
 // --- Colori estratti dal tuo Tailwind Config ---
 const Color bgBackground = Color(0xFFFAF9FC);
@@ -142,179 +143,212 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     // Ora usa l'originalStatus passato via parametro e non il current status (che sarebbe in revisione/giallo)
     final oldStatusData = _getStatusData(widget.originalStatus);
 
-    return Scaffold(
-      backgroundColor: bgBackground,
-      appBar: AppBar(
-        backgroundColor: surfaceLowest,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: onSurface),
-          onPressed: widget.onBack,
-        ),
-        title: const Text(
-          "Revisione Segnalazione",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-            color: onSurface,
+    return ResponsiveMaxCardWidth(
+      child: Scaffold(
+        backgroundColor: bgBackground,
+        appBar: AppBar(
+          backgroundColor: surfaceLowest,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: onSurface),
+            onPressed: widget.onBack,
           ),
+          title: const Text(
+            "Revisione Segnalazione",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+              color: onSurface,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Hero Section ──────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Color(0xFFFFDCC6),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Color(0xFF884200).withOpacity(0.1),
-                      shape: BoxShape.circle,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Hero Section ──────────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: Color(0xFFFFDCC6),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF884200).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.warning,
+                        color: Color(0xFF884200),
+                        size: 48,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.warning,
-                      color: Color(0xFF884200),
-                      size: 48,
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.product.name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w500,
+                        color: onSurface,
+                        height: 1.2,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.product.name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w500,
-                      color: onSurface,
-                      height: 1.2,
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.product.brand,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.product.brand,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  // Pillola Barcode
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
+                    // Pillola Barcode
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF884200).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.qr_code,
+                            size: 16,
+                            color: Color(0xFF884200),
+                          ),
+                          const SizedBox(width: 8),
+                          SelectableText(
+                            widget.product.barcode,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF884200),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      color: Color(0xFF884200).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(24),
+
+                    // DATA AGGIUNTA DA RICHIESTA
+                    const SizedBox(height: 4),
+                    Text(
+                      "Segnalato il: ${widget.reportDate}",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: onSurfaceVariant.withOpacity(0.8),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── Vecchio Stato del Prodotto ────────────────────────────
+              _buildSectionCard(
+                title: "STATO PRECEDENTE",
+                icon: Icons.history,
+                child: Row(
+                  children: [
+                    Icon(
+                      oldStatusData["icon"],
+                      color: oldStatusData["color"],
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.qr_code, size: 16, color: Color(0xFF884200)),
-                        const SizedBox(width: 8),
                         Text(
-                          widget.product.barcode,
+                          oldStatusData["text"],
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: oldStatusData["color"],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          "Risultato registrato da Open Food Facts",
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF884200),
+                            color: onSurfaceVariant.withOpacity(0.7),
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
-                  // DATA AGGIUNTA DA RICHIESTA
-                  const SizedBox(height: 4),
-                  Text(
-                    "Segnalato il: ${widget.reportDate}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: onSurfaceVariant.withOpacity(0.8),
+              // ── Dettagli Segnalazione Utente (NUOVO DESIGN) ───────────
+              _buildSectionCard(
+                title: "DETTAGLI SEGNALAZIONE",
+                icon: Icons.chat_bubble_outline,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Informazioni compatte: Motivo e Data
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: onSurface,
+                                height: 1.3,
+                              ),
+                              children: [
+                                const TextSpan(
+                                  text: "Motivo: ",
+                                  style: TextStyle(color: onSurfaceVariant),
+                                ),
+                                TextSpan(
+                                  text: _translateReason(
+                                    widget.reportReasonKey,
+                                  ),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // ── Vecchio Stato del Prodotto ────────────────────────────
-            _buildSectionCard(
-              title: "STATO PRECEDENTE",
-              icon: Icons.history,
-              child: Row(
-                children: [
-                  Icon(
-                    oldStatusData["icon"],
-                    color: oldStatusData["color"],
-                    size: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        oldStatusData["text"],
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: oldStatusData["color"],
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "Risultato registrato da Open Food Facts",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: onSurfaceVariant.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // ── Dettagli Segnalazione Utente (NUOVO DESIGN) ───────────
-            _buildSectionCard(
-              title: "DETTAGLI SEGNALAZIONE",
-              icon: Icons.chat_bubble_outline,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Informazioni compatte: Motivo e Data
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: RichText(
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        RichText(
                           text: TextSpan(
                             style: const TextStyle(
                               fontSize: 14,
                               color: onSurface,
-                              height: 1.3,
                             ),
                             children: [
                               const TextSpan(
-                                text: "Motivo: ",
+                                text: "Data invio: ",
                                 style: TextStyle(color: onSurfaceVariant),
                               ),
                               TextSpan(
-                                text: _translateReason(widget.reportReasonKey),
+                                text: widget.reportDate,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -322,179 +356,160 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                             ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: onSurface,
-                          ),
-                          children: [
-                            const TextSpan(
-                              text: "Data invio: ",
-                              style: TextStyle(color: onSurfaceVariant),
-                            ),
-                            TextSpan(
-                              text: widget.reportDate,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Commento dell'utente stile "Blockquote"
-                  const Text(
-                    "Commento dell'utente",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: outlineVariant,
-                      letterSpacing: 0.5,
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.only(left: 14, top: 2, bottom: 2),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        left: BorderSide(
-                          color: outlineVariant.withOpacity(0.6),
-                          width: 4,
-                        ),
-                      ),
-                    ),
-                    child: Text(
-                      widget.reportComment.isEmpty
-                          ? "Nessun commento aggiuntivo fornito."
-                          : '\"${widget.reportComment}\"',
+
+                    const SizedBox(height: 20),
+
+                    // Commento dell'utente stile "Blockquote"
+                    const Text(
+                      "Commento dell'utente",
                       style: TextStyle(
-                        fontSize: 15,
-                        fontStyle: widget.reportComment.isEmpty
-                            ? FontStyle.normal
-                            : FontStyle.italic,
-                        color: onSurface,
-                        height: 1.4,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: outlineVariant,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(
+                        left: 14,
+                        top: 2,
+                        bottom: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          left: BorderSide(
+                            color: outlineVariant.withOpacity(0.6),
+                            width: 4,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        widget.reportComment.isEmpty
+                            ? "Nessun commento aggiuntivo fornito."
+                            : '\"${widget.reportComment}\"',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontStyle: widget.reportComment.isEmpty
+                              ? FontStyle.normal
+                              : FontStyle.italic,
+                          color: onSurface,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // ── Sistema di Voto (YouTube Style) ───────────────────────
-            Center(
-              child: Column(
-                children: [
-                  const Text(
-                    "Sei d'accordo con questa segnalazione?",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: onSurfaceVariant,
+              // ── Sistema di Voto (YouTube Style) ───────────────────────
+              Center(
+                child: Column(
+                  children: [
+                    const Text(
+                      "Sei d'accordo con questa segnalazione?",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(999),
-                              bottomLeft: Radius.circular(999),
-                            ),
-                            onTap: () => _handleVote(1),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
+                    const SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(999),
+                                bottomLeft: Radius.circular(999),
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    _currentVote == 1
-                                        ? Icons.thumb_up
-                                        : Icons.thumb_up_outlined,
-                                    size: 20,
-                                    color: _currentVote == 1
-                                        ? onSurface
-                                        : onSurfaceVariant,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _displayScore < 0 ? "0" : "$_displayScore",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: _currentVote == 1
-                                          ? FontWeight.bold
-                                          : FontWeight.w600,
+                              onTap: () => _handleVote(1),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _currentVote == 1
+                                          ? Icons.thumb_up
+                                          : Icons.thumb_up_outlined,
+                                      size: 20,
                                       color: _currentVote == 1
                                           ? onSurface
                                           : onSurfaceVariant,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _displayScore < 0
+                                          ? "0"
+                                          : "$_displayScore",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: _currentVote == 1
+                                            ? FontWeight.bold
+                                            : FontWeight.w600,
+                                        color: _currentVote == 1
+                                            ? onSurface
+                                            : onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 24,
-                          color: outlineVariant.withOpacity(0.5),
-                        ),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(999),
-                              bottomRight: Radius.circular(999),
-                            ),
-                            onTap: () => _handleVote(-1),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
+                          Container(
+                            width: 1,
+                            height: 24,
+                            color: outlineVariant.withOpacity(0.5),
+                          ),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(999),
+                                bottomRight: Radius.circular(999),
                               ),
-                              child: Icon(
-                                _currentVote == -1
-                                    ? Icons.thumb_down
-                                    : Icons.thumb_down_outlined,
-                                size: 20,
-                                color: _currentVote == -1
-                                    ? onSurface
-                                    : onSurfaceVariant,
+                              onTap: () => _handleVote(-1),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                child: Icon(
+                                  _currentVote == -1
+                                      ? Icons.thumb_down
+                                      : Icons.thumb_down_outlined,
+                                  size: 20,
+                                  color: _currentVote == -1
+                                      ? onSurface
+                                      : onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
-          ],
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );

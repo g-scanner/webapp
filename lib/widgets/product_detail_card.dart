@@ -58,6 +58,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _submittingReport = false;
+  bool _hasJustReported = false;
 
   @override
   void dispose() {
@@ -70,6 +71,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     showModalBottomSheet(
       context: parentContext,
       isScrollControlled: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       backgroundColor: Colors.transparent,
       builder: (BuildContext sheetCtx) {
         return StatefulBuilder(
@@ -214,21 +216,13 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                       "originalStatus":
                                           widget.product.status.name,
                                     });
+                                    setState(() {
+                                      _hasJustReported = true;
+                                    });
                                     if (sheetCtx.mounted) {
                                       Navigator.pop(sheetCtx);
                                     }
                                     _reportCommentsController.clear();
-                                    if (parentContext.mounted) {
-                                      ScaffoldMessenger.of(parentContext)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              "Segnalazione inviata. Grazie!"),
-                                          backgroundColor: onSurfaceVariant,
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                    }
                                   } catch (err) {
                                     print(err);
                                   } finally {
@@ -454,7 +448,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       children: [
                         Icon(Icons.qr_code, size: 16, color: heroTextColor),
                         const SizedBox(width: 8),
-                        Text(
+                        SelectableText(
                           widget.product.barcode,
                           style: TextStyle(
                             fontSize: 12,
@@ -733,6 +727,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
             // ── Pulsante Segnalazione ──────────────────────────
             if (widget.hasReportedThisSession ||
+                _hasJustReported ||
                 (widget.product.reportCount ?? 0) > 0)
               Container(
                 width: double.infinity,

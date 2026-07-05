@@ -100,7 +100,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             "Impostazioni",
             style: TextStyle(
               fontSize: 22,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.bold,
               color: onSurface,
             ),
           ),
@@ -464,6 +464,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       backgroundColor: surfaceLowest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),

@@ -177,7 +177,7 @@ class _HistoryListState extends State<HistoryList> {
               "Cronologia Scansioni",
               style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.bold,
                 color: onSurface,
               ),
             ),
