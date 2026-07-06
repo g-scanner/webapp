@@ -20,6 +20,7 @@ import 'widgets/auth_screen.dart';
 import 'widgets/responsive_wrapper.dart';
 
 // --- Colori estratti dal tuo Tailwind HTML ---
+const Color surfaceLowest = Color(0xFFFFFFFF);
 const Color surfaceContainerLow = Color(0xFFF5F3F7);
 const Color secondaryContainer = Color(0xFF54A0FE);
 const Color onSecondaryContainer = Color(0xFF003567);
@@ -413,7 +414,7 @@ class _MainScreenState extends State<MainScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -432,22 +433,17 @@ class _MainScreenState extends State<MainScreen> {
                 Icons.qr_code_scanner,
                 "Scansione",
               ),
-              _buildNavItem(
-                1,
-                Icons.history,
-                Icons.history,
-                "Cronologia",
-              ),
+              _buildNavItem(1, Icons.history, Icons.history, "Cronologia"),
               _buildNavItem(
                 2,
-                Icons.search,
-                Icons.search,
-                "Prodotti",
+                Icons.report_problem,
+                Icons.report_problem_outlined,
+                "Segnalazioni",
               ),
               _buildNavItem(
                 3,
                 Icons.settings,
-                Icons.settings,
+                Icons.settings_outlined,
                 "Impostazioni",
               ),
             ],
@@ -480,7 +476,7 @@ class _MainScreenState extends State<MainScreen> {
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? secondaryContainer.withOpacity(0.2)
+                    ? secondaryContainer.withValues(alpha: 0.2)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -498,12 +494,8 @@ class _MainScreenState extends State<MainScreen> {
                 maxLines: 1,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: isSelected
-                      ? FontWeight.w600
-                      : FontWeight.w500,
-                  color: isSelected
-                      ? onSecondaryContainer
-                      : onSurfaceVariant,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? onSecondaryContainer : onSurfaceVariant,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -546,35 +538,137 @@ class _MainScreenState extends State<MainScreen> {
     // SE C'È UN PROCESSO DI SINCRONIZZAZIONE ATTIVO
     if (_isSyncing) {
       return const Scaffold(
-        backgroundColor: const Color(0xFFFAF9FC),
+        backgroundColor: Color(0xFFFAF9FC),
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFF0D631B)),
         ),
       );
     }
 
-    // ALTRIMENTI MOSTRA LA NORMALE APP RACCHIUSA NEL WRAPPER RESPONSIVE GLOBALE (STILE INSTAGRAM)
-    return ResponsiveMaxCardWidth(
-      child: Scaffold(
+    final bool isWideScreen = MediaQuery.of(context).size.width > 720;
+
+    final scaffold = Scaffold(
+      backgroundColor: const Color(0xFFFAF9FC),
+      appBar: AppBar(
+        title: const Text(
+          "G-Scanner",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 22,
+            letterSpacing: -0.5,
+            color: onSurface,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: const Color(0xFFFFFFFF),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      body: _buildBody(),
+      bottomNavigationBar: (isWideScreen || _currentIndex == 4)
+          ? null
+          : _buildCustomBottomNav(),
+    );
+
+    if (isWideScreen) {
+      return Scaffold(
         backgroundColor: const Color(0xFFFAF9FC),
-        appBar: AppBar(
-          title: const Text(
-            "G-Scanner",
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 22,
-              letterSpacing: -0.5,
-              color: onSurface,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 800,
+            ), // Rail (approx 80) + gap (24) + content (600)
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_currentIndex != 4)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: 24,
+                      bottom: 24,
+                      left: 16,
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: surfaceLowest,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: NavigationRail(
+                        backgroundColor: Colors.transparent,
+                        groupAlignment: 0.0,
+                        selectedIndex: _currentIndex < 4 ? _currentIndex : 0,
+                        onDestinationSelected: (int index) {
+                          setState(() {
+                            _currentIndex = index;
+                            _isCameraActive = index == 0;
+                          });
+                        },
+                        selectedLabelTextStyle: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: onSecondaryContainer,
+                        ),
+                        unselectedLabelTextStyle: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: onSurfaceVariant,
+                        ),
+                        selectedIconTheme: const IconThemeData(
+                          color: onSecondaryContainer,
+                        ),
+                        unselectedIconTheme: const IconThemeData(
+                          color: onSurfaceVariant,
+                        ),
+                        indicatorColor: secondaryContainer,
+                        labelType: NavigationRailLabelType.all,
+                        destinations: const [
+                          NavigationRailDestination(
+                            padding: EdgeInsets.symmetric(vertical: 16.0),
+                            icon: Icon(Icons.qr_code_scanner),
+                            label: Text('Scansione'),
+                          ),
+                          NavigationRailDestination(
+                            padding: EdgeInsets.symmetric(vertical: 16.0),
+                            icon: Icon(Icons.history),
+                            label: Text('Cronologia'),
+                          ),
+                          NavigationRailDestination(
+                            padding: EdgeInsets.symmetric(vertical: 16.0),
+                            icon: Icon(Icons.report_problem),
+                            label: Text('Segnalazioni'),
+                          ),
+                          NavigationRailDestination(
+                            padding: EdgeInsets.symmetric(vertical: 16.0),
+                            icon: Icon(Icons.settings),
+                            label: Text('Impostazioni'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: ResponsiveMaxCardWidth(maxWidth: 600, child: scaffold),
+                ),
+              ],
             ),
           ),
-          centerTitle: true,
-          backgroundColor: const Color(0xFFFFFFFF),
-          elevation: 0,
-          scrolledUnderElevation: 0,
         ),
-        body: _buildBody(),
-        bottomNavigationBar: _currentIndex == 4 ? null : _buildCustomBottomNav(),
-      ),
-    );
+      );
+    }
+
+    return ResponsiveMaxCardWidth(child: scaffold);
   }
 }

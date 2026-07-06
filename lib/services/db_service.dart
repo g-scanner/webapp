@@ -68,7 +68,11 @@ class DbService {
     }
   }
 
-  static String _getFirstNonEmptyString(Map<String, dynamic> data, List<String> keys, String defaultValue) {
+  static String _getFirstNonEmptyString(
+    Map<String, dynamic> data,
+    List<String> keys,
+    String defaultValue,
+  ) {
     for (final key in keys) {
       final val = data[key];
       if (val == null) continue;
@@ -133,7 +137,7 @@ class DbService {
           offBrand = _getFirstNonEmptyString(pData, [
             'brands',
             'brand_tags',
-            'brands_imported'
+            'brands_imported',
           ], offBrand);
           offIngredients = _getFirstNonEmptyString(pData, [
             'ingredients_text_it',
@@ -242,7 +246,9 @@ class DbService {
                 .collection(productsCollection)
                 .doc(barcode)
                 .set(productToReturn.toJson());
-          } catch (e) {}
+          } catch (e) {
+            print("Error saving updated product to Firestore: $e");
+          }
         } else {
           // 2° CHIAMATA ANALYZER (Ricalcolo per prodotto con segnalazioni attive)
           final reanalysis = AnalyzerService.analyzeGlutenSafety(
@@ -279,7 +285,9 @@ class DbService {
               .collection(productsCollection)
               .doc(barcode)
               .set(productToReturn.toJson());
-        } catch (e) {}
+        } catch (e) {
+          print("Error saving new product to Firestore: $e");
+        }
       }
     } else {
       if (productDb != null) {
@@ -320,7 +328,9 @@ class DbService {
               .collection(productsCollection)
               .doc(barcode)
               .set(productToReturn.toJson());
-        } catch (e) {}
+        } catch (e) {
+          print("Error saving fallback product to Firestore: $e");
+        }
       }
     }
 
@@ -927,7 +937,7 @@ class DbService {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      bool _sameHistoryItem(ScanHistoryItem a, ScanHistoryItem b) {
+      bool sameHistoryItem(ScanHistoryItem a, ScanHistoryItem b) {
         if (a.barcode != b.barcode) return false;
         if (a.scannedAt == b.scannedAt) return true;
 
@@ -961,10 +971,10 @@ class DbService {
         for (var localItem in localHistory) {
           final isDuplicate =
               firestoreHistory.any(
-                (existing) => _sameHistoryItem(existing, localItem),
+                (existing) => sameHistoryItem(existing, localItem),
               ) ||
               pendingHistory.any(
-                (existing) => _sameHistoryItem(existing, localItem),
+                (existing) => sameHistoryItem(existing, localItem),
               );
 
           if (!isDuplicate) {

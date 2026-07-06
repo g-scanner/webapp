@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/types.dart';
 import '../services/db_service.dart';
@@ -100,7 +101,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             "Impostazioni",
             style: TextStyle(
               fontSize: 22,
-              fontWeight: FontWeight.bold,
+              fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
               color: onSurface,
             ),
           ),
@@ -136,7 +137,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             decoration: BoxDecoration(
               color: surfaceLowest,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: outlineVariant.withOpacity(0.3)),
+              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: [
@@ -180,7 +181,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             decoration: BoxDecoration(
               color: surfaceLowest,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: outlineVariant.withOpacity(0.3)),
+              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
             ),
             child: _buildThemeSelector(),
           ),
@@ -242,12 +243,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     }
                   },
             borderRadius: BorderRadius.circular(24),
-            splashColor: error.withOpacity(0.12),
-            highlightColor: error.withOpacity(0.08),
+            splashColor: error.withValues(alpha: 0.12),
+            highlightColor: error.withValues(alpha: 0.08),
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: errorContainer.withOpacity(0.3),
+                color: errorContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: errorContainer),
               ),
@@ -316,7 +317,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       decoration: BoxDecoration(
         color: surfaceLowest,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: outlineVariant.withOpacity(0.3)),
+        border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -377,7 +378,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     onPressed: () => _showAccountManagementMenu(context),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: onSurface,
-                      side: BorderSide(color: outlineVariant.withOpacity(0.5)),
+                      side: BorderSide(
+                        color: outlineVariant.withValues(alpha: 0.5),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     icon: const Icon(Icons.manage_accounts_outlined, size: 20),
@@ -412,7 +415,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: primary.withOpacity(0.1),
+          color: primary.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(Icons.person, color: primary, size: size * 0.5),
@@ -479,8 +482,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
             void goBackToMenu() {
               nameFocusNode.unfocus(); // Scende la tastiera
               Future.delayed(const Duration(milliseconds: 200), () {
-                if (ctx.mounted)
+                if (ctx.mounted) {
                   setModalState(() => isEditingName = false); // Animazione UI
+                }
               });
             }
 
@@ -497,7 +501,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       height: 5,
                       margin: const EdgeInsets.only(top: 16, bottom: 24),
                       decoration: BoxDecoration(
-                        color: outlineVariant.withOpacity(0.5),
+                        color: outlineVariant.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -543,7 +547,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: onSurface,
-                      side: BorderSide(color: outlineVariant.withOpacity(0.5)),
+                      side: BorderSide(
+                        color: outlineVariant.withValues(alpha: 0.5),
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 12,
@@ -567,7 +573,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                         color: surfaceLowest,
                         borderRadius: BorderRadius.circular(28),
                         border: Border.all(
-                          color: outlineVariant.withOpacity(0.3),
+                          color: outlineVariant.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
@@ -658,7 +664,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           // Divisorio per separare nettamente le info dalle azioni
                           Divider(
                             height: 1,
-                            color: outlineVariant.withOpacity(0.3),
+                            color: outlineVariant.withValues(alpha: 0.3),
                           ),
                           const SizedBox(height: 20),
 
@@ -697,8 +703,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                               },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: error,
-                                backgroundColor: errorContainer.withOpacity(
-                                  0.3,
+                                backgroundColor: errorContainer.withValues(
+                                  alpha: 0.3,
                                 ),
                                 side: const BorderSide(color: errorContainer),
                                 padding: const EdgeInsets.symmetric(
@@ -739,7 +745,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       height: 5,
                       margin: const EdgeInsets.only(top: 16, bottom: 16),
                       decoration: BoxDecoration(
-                        color: outlineVariant.withOpacity(0.5),
+                        color: outlineVariant.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -802,7 +808,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           decoration: InputDecoration(
                             hintText: "Es. Mario Rossi",
                             hintStyle: TextStyle(
-                              color: onSurfaceVariant.withOpacity(0.6),
+                              color: onSurfaceVariant.withValues(alpha: 0.6),
                               fontSize: 14,
                             ),
                             prefixIcon: const Icon(
@@ -1181,7 +1187,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
         border: isLast
             ? null
             : Border(
-                bottom: BorderSide(color: outlineVariant.withOpacity(0.2)),
+                bottom: BorderSide(
+                  color: outlineVariant.withValues(alpha: 0.2),
+                ),
               ),
       ),
       child: Row(
@@ -1215,9 +1223,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: surfaceLowest,
+            activeThumbColor: surfaceLowest,
             activeTrackColor: primary,
-            inactiveThumbColor: onSurfaceVariant.withOpacity(0.7),
+            inactiveThumbColor: onSurfaceVariant.withValues(alpha: 0.7),
             inactiveTrackColor: surfaceContainerHigh,
             trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
           ),

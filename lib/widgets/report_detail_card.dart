@@ -55,7 +55,6 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   // Stato del voto: 0 = nessun voto, 1 = upvote, -1 = downvote
   int _currentVote = 0;
   late int _displayScore;
-  late int _upvoteCount;
 
   @override
   void initState() {
@@ -81,8 +80,9 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
       if (_currentVote == vote) {
         // Rimuove il voto (se riclicca)
         if (vote == 1) _displayScore--;
-        if (vote == -1)
+        if (vote == -1) {
           _displayScore++; // Se toglie il downvote, il punteggio sale
+        }
         _currentVote = 0;
       } else {
         // Applica il nuovo voto
@@ -128,7 +128,6 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
         return {"text": "VIETATO", "color": error, "icon": Icons.cancel};
       case GlutenSafetyStatus.incerto:
         return {"text": "INCERTO", "color": warningText, "icon": Icons.warning};
-      case GlutenSafetyStatus.sconosciuto:
       default:
         return {
           "text": "SCONOSCIUTO",
@@ -182,7 +181,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: Color(0xFF884200).withOpacity(0.1),
+                        color: Color(0xFF884200).withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -219,7 +218,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Color(0xFF884200).withOpacity(0.1),
+                        color: Color(0xFF884200).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: Row(
@@ -249,7 +248,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       "Segnalato il: ${widget.reportDate}",
                       style: TextStyle(
                         fontSize: 12,
-                        color: onSurfaceVariant.withOpacity(0.8),
+                        color: onSurfaceVariant.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -285,7 +284,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                           "Risultato registrato da Open Food Facts",
                           style: TextStyle(
                             fontSize: 12,
-                            color: onSurfaceVariant.withOpacity(0.7),
+                            color: onSurfaceVariant.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -382,7 +381,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       decoration: BoxDecoration(
                         border: Border(
                           left: BorderSide(
-                            color: outlineVariant.withOpacity(0.6),
+                            color: outlineVariant.withValues(alpha: 0.6),
                             width: 4,
                           ),
                         ),
@@ -390,13 +389,13 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       child: Text(
                         widget.reportComment.isEmpty
                             ? "Nessun commento aggiuntivo fornito."
-                            : '\"${widget.reportComment}\"',
+                            : '"${widget.reportComment}"',
                         style: TextStyle(
                           fontSize: 15,
                           fontStyle: widget.reportComment.isEmpty
                               ? FontStyle.normal
                               : FontStyle.italic,
-                          color: onSurface,
+                          color: Colors.red,
                           height: 1.4,
                         ),
                       ),
@@ -474,7 +473,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                           Container(
                             width: 1,
                             height: 24,
-                            color: outlineVariant.withOpacity(0.5),
+                            color: outlineVariant.withValues(alpha: 0.5),
                           ),
                           Material(
                             color: Colors.transparent,
@@ -525,10 +524,10 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
       decoration: BoxDecoration(
         color: surfaceLowest,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: outlineVariant.withOpacity(0.3)),
+        border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: onSurface.withOpacity(0.02),
+            color: onSurface.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

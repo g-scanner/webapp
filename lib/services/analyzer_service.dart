@@ -330,10 +330,17 @@ class AnalyzerService {
             lowerT.contains('kamut');
       }
 
-      hasOffGlutenAllergen = offTags.allergensTags.any(isGlutenTag) ||
-          offTags.ingredientsAnalysisTags.any((t) => t == 'en:gluten' || t == 'en:contains-gluten');
-      hasOffGlutenTrace = offTags.tracesTags.any(isGlutenTag) ||
-          offTags.ingredientsAnalysisTags.any((t) => t == 'en:may-contain-gluten' || t == 'en:gluten-to-be-checked');
+      hasOffGlutenAllergen =
+          offTags.allergensTags.any(isGlutenTag) ||
+          offTags.ingredientsAnalysisTags.any(
+            (t) => t == 'en:gluten' || t == 'en:contains-gluten',
+          );
+      hasOffGlutenTrace =
+          offTags.tracesTags.any(isGlutenTag) ||
+          offTags.ingredientsAnalysisTags.any(
+            (t) =>
+                t == 'en:may-contain-gluten' || t == 'en:gluten-to-be-checked',
+          );
     }
 
     // ─── STEP 4: Controlla tracce testuali ──────────────────────────────────
@@ -380,8 +387,9 @@ class AnalyzerService {
               t.toLowerCase().contains('milk') ||
               t.toLowerCase().contains('lait'),
         );
-        if (hasMilk && foundLactose.isEmpty)
+        if (hasMilk && foundLactose.isEmpty) {
           foundLactose.add("Allergene Latte (OFF)");
+        }
       }
     }
 
@@ -480,7 +488,7 @@ class AnalyzerService {
           ),
         );
       }
-      if (hasOffGlutenAllergen)
+      if (hasOffGlutenAllergen) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
             ingredient: "Allergeni OFF",
@@ -488,7 +496,8 @@ class AnalyzerService {
             reason: "Glutine tra gli allergeni ufficiali.",
           ),
         );
-      if (hasAnyTrace && strictMode)
+      }
+      if (hasAnyTrace && strictMode) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
             ingredient: "Tracce",
@@ -496,6 +505,7 @@ class AnalyzerService {
             reason: "Bloccato dal Filtro Rigido Contaminazioni.",
           ),
         );
+      }
     }
     // CASO 4: GRIGIO
     else if (hasNoInfo) {
@@ -540,7 +550,7 @@ class AnalyzerService {
           ),
         );
       }
-      if (hasMalto)
+      if (hasMalto) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
             ingredient: "Malto",
@@ -548,6 +558,7 @@ class AnalyzerService {
             reason: "Possibile malto d'orzo. Origine non specificata.",
           ),
         );
+      }
       for (var d in foundDoubtful) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
@@ -575,43 +586,147 @@ class AnalyzerService {
     }
 
     final Map<String, String> allergenTranslations = {
-      "milk": "latte", "lait": "latte", "melk": "latte", "leche": "latte", "milch": "latte",
-      "wheat": "frumento", "blé": "frumento", "trigo": "frumento", "weizen": "frumento", "grano": "frumento",
-      "barley": "orzo", "orge": "orzo", "cebada": "orzo", "gerste": "orzo",
-      "rye": "segale", "seigle": "segale", "centeno": "segale", "roggen": "segale",
-      "oat": "avena", "avoine": "avena", "avena": "avena", "hafer": "avena", "oats": "avena",
-      "spelt": "farro", "épeautre": "farro", "espelta": "farro", "dinkel": "farro",
-      "soy": "soia", "soja": "soia", "soybeans": "soia",
-      "egg": "uovo", "eggs": "uova", "œuf": "uovo", "huevo": "uovo", "ei": "uovo", "uova": "uovo",
-      "peanut": "arachidi", "peanuts": "arachidi", "cacahuète": "arachidi", "cacahuete": "arachidi", "erdnuss": "arachidi", "arachidi": "arachidi",
-      "nut": "frutta a guscio", "nuts": "frutta a guscio", "fruits à coque": "frutta a guscio", "frutos de cáscara": "frutta a guscio", "schalenfrüchte": "frutta a guscio",
-      "almond": "mandorle", "almonds": "mandorle", "amande": "mandorle", "almendra": "mandorle", "mandel": "mandorle", "mandorle": "mandorle",
-      "hazelnut": "nocciole", "hazelnuts": "nocciole", "noisette": "nocciole", "avellana": "nocciole", "haselnuss": "nocciole", "nocciole": "nocciole",
-      "walnut": "noci", "walnuts": "noci", "noix": "noci", "nuez": "noci", "walnuss": "noci", "noci": "noci",
-      "cashew": "anacardi", "cashews": "anacardi", "noix de cajou": "anacardi", "anacardo": "anacardi", "cashewnuss": "anacardi", "anacardi": "anacardi",
-      "pecan": "noci pecan", "noix de pécan": "noci pecan", "nuez moscada": "noci pecan", "pekannuss": "noci pecan",
-      "brazil nut": "noci del brasile", "noix du brésil": "noci del brasile", "nuez de brasil": "noci del brasile", "paranuss": "noci del brasile",
-      "pistachio": "pistacchi", "pistachios": "pistacchi", "pistache": "pistacchi", "pistacho": "pistacchi", "pistazie": "pistacchi", "pistacchi": "pistacchi",
-      "macadamia": "noci macadamia", "noix de macadamia": "noci macadamia", "nuez de macadamia": "noci macadamia", "macadamianuss": "noci macadamia",
-      "celery": "sedano", "céleri": "sedano", "apio": "sedano", "sellerie": "sedano",
-      "mustard": "senape", "moutarde": "senape", "mostaza": "senape", "senf": "senape",
-      "sesame": "sesamo", "sésame": "sesamo", "sésamo": "sesamo", "sesam": "sesamo", "sesame seeds": "sesamo",
-      "sulphur dioxide": "anidride solforosa", "sulfites": "solfiti", "anhydride sulfureux": "anidride solforosa", "dióxido de azufre": "anidride solforosa", "schwefeldioxid": "anidride solforosa",
-      "lupin": "lupini", "lupins": "lupini", "altramuz": "lupini", "lupine": "lupini", "lupini": "lupini",
-      "mollusc": "molluschi", "molluscs": "molluschi", "mollusques": "molluschi", "moluscos": "molluschi", "weichtiere": "molluschi",
-      "fish": "pesce", "poisson": "pesce", "pescado": "pesce", "fisch": "pesce",
-      "crustacean": "crostacei", "crustaceans": "crostacei", "crustacés": "crostacei", "crustáceos": "crostacei", "krebstiere": "crostacei",
-      "gluten": "glutine", "glutine": "glutine",
+      "milk": "latte",
+      "lait": "latte",
+      "melk": "latte",
+      "leche": "latte",
+      "milch": "latte",
+      "wheat": "frumento",
+      "blé": "frumento",
+      "trigo": "frumento",
+      "weizen": "frumento",
+      "grano": "frumento",
+      "barley": "orzo",
+      "orge": "orzo",
+      "cebada": "orzo",
+      "gerste": "orzo",
+      "rye": "segale",
+      "seigle": "segale",
+      "centeno": "segale",
+      "roggen": "segale",
+      "oat": "avena",
+      "avoine": "avena",
+      "avena": "avena",
+      "hafer": "avena",
+      "oats": "avena",
+      "spelt": "farro",
+      "épeautre": "farro",
+      "espelta": "farro",
+      "dinkel": "farro",
+      "soy": "soia",
+      "soja": "soia",
+      "soybeans": "soia",
+      "egg": "uovo",
+      "eggs": "uova",
+      "œuf": "uovo",
+      "huevo": "uovo",
+      "ei": "uovo",
+      "uova": "uovo",
+      "peanut": "arachidi",
+      "peanuts": "arachidi",
+      "cacahuète": "arachidi",
+      "cacahuete": "arachidi",
+      "erdnuss": "arachidi",
+      "arachidi": "arachidi",
+      "nut": "frutta a guscio",
+      "nuts": "frutta a guscio",
+      "fruits à coque": "frutta a guscio",
+      "frutos de cáscara": "frutta a guscio",
+      "schalenfrüchte": "frutta a guscio",
+      "almond": "mandorle",
+      "almonds": "mandorle",
+      "amande": "mandorle",
+      "almendra": "mandorle",
+      "mandel": "mandorle",
+      "mandorle": "mandorle",
+      "hazelnut": "nocciole",
+      "hazelnuts": "nocciole",
+      "noisette": "nocciole",
+      "avellana": "nocciole",
+      "haselnuss": "nocciole",
+      "nocciole": "nocciole",
+      "walnut": "noci",
+      "walnuts": "noci",
+      "noix": "noci",
+      "nuez": "noci",
+      "walnuss": "noci",
+      "noci": "noci",
+      "cashew": "anacardi",
+      "cashews": "anacardi",
+      "noix de cajou": "anacardi",
+      "anacardo": "anacardi",
+      "cashewnuss": "anacardi",
+      "anacardi": "anacardi",
+      "pecan": "noci pecan",
+      "noix de pécan": "noci pecan",
+      "nuez moscada": "noci pecan",
+      "pekannuss": "noci pecan",
+      "brazil nut": "noci del brasile",
+      "noix du brésil": "noci del brasile",
+      "nuez de brasil": "noci del brasile",
+      "paranuss": "noci del brasile",
+      "pistachio": "pistacchi",
+      "pistachios": "pistacchi",
+      "pistache": "pistacchi",
+      "pistacho": "pistacchi",
+      "pistazie": "pistacchi",
+      "pistacchi": "pistacchi",
+      "macadamia": "noci macadamia",
+      "noix de macadamia": "noci macadamia",
+      "nuez de macadamia": "noci macadamia",
+      "macadamianuss": "noci macadamia",
+      "celery": "sedano",
+      "céleri": "sedano",
+      "apio": "sedano",
+      "sellerie": "sedano",
+      "mustard": "senape",
+      "moutarde": "senape",
+      "mostaza": "senape",
+      "senf": "senape",
+      "sesame": "sesamo",
+      "sésame": "sesamo",
+      "sésamo": "sesamo",
+      "sesam": "sesamo",
+      "sesame seeds": "sesamo",
+      "sulphur dioxide": "anidride solforosa",
+      "sulfites": "solfiti",
+      "anhydride sulfureux": "anidride solforosa",
+      "dióxido de azufre": "anidride solforosa",
+      "schwefeldioxid": "anidride solforosa",
+      "lupin": "lupini",
+      "lupins": "lupini",
+      "altramuz": "lupini",
+      "lupine": "lupini",
+      "lupini": "lupini",
+      "mollusc": "molluschi",
+      "molluscs": "molluschi",
+      "mollusques": "molluschi",
+      "moluscos": "molluschi",
+      "weichtiere": "molluschi",
+      "fish": "pesce",
+      "poisson": "pesce",
+      "pescado": "pesce",
+      "fisch": "pesce",
+      "crustacean": "crostacei",
+      "crustaceans": "crostacei",
+      "crustacés": "crostacei",
+      "crustáceos": "crostacei",
+      "krebstiere": "crostacei",
+      "gluten": "glutine",
+      "glutine": "glutine",
     };
 
-    List<String> translatedAllergens = allergensList.map((a) {
-      String clean = a.trim().toLowerCase();
-      // Rimuove eventuali prefissi lingua di OpenFoodFacts (es. "en:milk" -> "milk")
-      if (clean.contains(':')) {
-        clean = clean.split(':').last;
-      }
-      return allergenTranslations[clean] ?? clean;
-    }).toSet().toList();
+    List<String> translatedAllergens = allergensList
+        .map((a) {
+          String clean = a.trim().toLowerCase();
+          // Rimuove eventuali prefissi lingua di OpenFoodFacts (es. "en:milk" -> "milk")
+          if (clean.contains(':')) {
+            clean = clean.split(':').last;
+          }
+          return allergenTranslations[clean] ?? clean;
+        })
+        .toSet()
+        .toList();
 
     List<String> finalAllergens = translatedAllergens.map((a) {
       if (a.isEmpty) return a;

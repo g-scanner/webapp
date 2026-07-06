@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -113,9 +111,9 @@ class _CameraModuleState extends State<CameraModule> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: errorColor.withOpacity(0.08),
+                  color: errorColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: errorColor.withOpacity(0.2)),
+                  border: Border.all(color: errorColor.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -157,10 +155,15 @@ class _CameraModuleState extends State<CameraModule> {
       decoration: BoxDecoration(
         color: surfaceContainerLowest,
         borderRadius: BorderRadius.circular(36), // Raggio armonioso per M3
-        border: Border.all(color: outlineVariant.withOpacity(0.25), width: 1),
+        border: Border.all(
+          color: outlineVariant.withValues(alpha: 0.25),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: onSurface.withOpacity(0.04), // Ombra impalpabile e diffusa
+            color: onSurface.withValues(
+              alpha: 0.04,
+            ), // Ombra impalpabile e diffusa
             blurRadius: 28,
             spreadRadius: 0,
             offset: const Offset(0, 12),
@@ -222,7 +225,7 @@ class _CameraModuleState extends State<CameraModule> {
                       "Oppure",
                       style: TextStyle(
                         fontSize: 14,
-                        color: onSurfaceVariant.withOpacity(0.6),
+                        color: onSurfaceVariant.withValues(alpha: 0.6),
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
                       ),
@@ -315,7 +318,7 @@ class _CameraModuleState extends State<CameraModule> {
                       ),
                       if (widget.scanningProgress)
                         Container(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                           child: const Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -359,7 +362,7 @@ class _CameraModuleState extends State<CameraModule> {
                   color: isOn ? primaryContainer : surfaceContainerLowest,
                   elevation:
                       4, // Ombra definita per spiccare dal nero della fotocamera
-                  shadowColor: Colors.black.withOpacity(0.4),
+                  shadowColor: Colors.black.withValues(alpha: 0.4),
                   shape: const CircleBorder(),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
@@ -396,7 +399,7 @@ class _CameraModuleState extends State<CameraModule> {
             decoration: BoxDecoration(
               color: surfaceContainerLow,
               borderRadius: BorderRadius.circular(999), // Forma a pillola
-              border: Border.all(color: outlineVariant.withOpacity(0.3)),
+              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
             ),
             child: Center(
               child: TextField(
@@ -411,7 +414,7 @@ class _CameraModuleState extends State<CameraModule> {
                 decoration: InputDecoration(
                   hintText: "Manual Barcode",
                   hintStyle: TextStyle(
-                    color: onSurfaceVariant.withOpacity(0.5),
+                    color: onSurfaceVariant.withValues(alpha: 0.5),
                     letterSpacing: 0,
                     fontWeight: FontWeight.normal,
                   ),
@@ -427,7 +430,7 @@ class _CameraModuleState extends State<CameraModule> {
         FilledButton(
           onPressed: widget.scanningProgress ? null : _handleManualSearch,
           style: FilledButton.styleFrom(
-            backgroundColor: primaryContainer.withOpacity(0.1),
+            backgroundColor: primaryContainer.withValues(alpha: 0.1),
             foregroundColor: primaryContainer,
             elevation: 0,
             minimumSize: const Size(0, 56),
@@ -526,7 +529,7 @@ class _CameraModuleState extends State<CameraModule> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -622,16 +625,12 @@ class _CameraModuleState extends State<CameraModule> {
 
 class _CornerPainter extends CustomPainter {
   final Color color;
-  final double strokeWidth;
-  final double radius;
   final Alignment alignment;
 
-  _CornerPainter({
-    required this.color,
-    this.strokeWidth = 4,
-    this.radius = 12,
-    required this.alignment,
-  });
+  static const double strokeWidth = 4.0;
+  static const double radius = 12.0;
+
+  _CornerPainter({required this.color, required this.alignment});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -738,7 +737,7 @@ class _VignetteBorderPainter extends CustomPainter {
       layerAlpha = layerAlpha.clamp(0.0, 1.0);
 
       final Paint paint = Paint()
-        ..color = Colors.black.withOpacity(layerAlpha)
+        ..color = Colors.black.withValues(alpha: layerAlpha)
         ..style = PaintingStyle.fill;
 
       // Interpola la dimensione geometrica del livello

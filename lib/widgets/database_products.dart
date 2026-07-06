@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/widgets/report_detail_card.dart';
 import '../models/types.dart';
@@ -69,7 +70,6 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     // Estrai i prodotti con segnalazioni
@@ -84,7 +84,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
           p.brand.toLowerCase().contains(_searchTerm.toLowerCase()) ||
           p.barcode.contains(_searchTerm);
 
-      final filterMatches = _reportFilter == "Tutte" ? true : widget.reportedBarcodes.contains(p.barcode);
+      final filterMatches = _reportFilter == "Tutte"
+          ? true
+          : widget.reportedBarcodes.contains(p.barcode);
 
       return queryMatches && filterMatches;
     }).toList();
@@ -94,7 +96,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
     // --- Variabili di Stile Dinamiche per il Filtro ---
     final bool isMineSelected = _reportFilter == "Mie";
     final Color filterBgColor = isMineSelected
-        ? secondaryContainer.withOpacity(0.15)
+        ? secondaryContainer.withValues(alpha: 0.15)
         : surfaceContainer;
     final Color filterTextColor = isMineSelected
         ? onSecondaryContainer
@@ -119,7 +121,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
               "Segnalazioni",
               style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
                 color: onSurface,
               ),
             ),
@@ -144,10 +146,12 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 decoration: BoxDecoration(
                   color: surfaceLowest,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: outlineVariant.withOpacity(0.3)),
+                  border: Border.all(
+                    color: outlineVariant.withValues(alpha: 0.3),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: onSurface.withOpacity(0.02),
+                      color: onSurface.withValues(alpha: 0.02),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -158,7 +162,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: warningText.withOpacity(0.12),
+                        color: warningText.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -214,7 +218,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     decoration: InputDecoration(
                       hintText: "Cerca prodotto...",
                       hintStyle: TextStyle(
-                        color: onSurfaceVariant.withOpacity(0.6),
+                        color: onSurfaceVariant.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
                       prefixIcon: AnimatedSwitcher(
@@ -262,7 +266,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 Flexible(
                   flex: 2,
                   child: DropdownButtonFormField<String>(
-                    value: _reportFilter,
+                    initialValue: _reportFilter,
                     icon: Icon(
                       Icons.filter_list,
                       color: filterIconColor, // Colore Dinamico Icona
@@ -363,7 +367,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: outlineVariant.withOpacity(0.3)),
+        side: BorderSide(color: outlineVariant.withValues(alpha: 0.3)),
       ),
       child: InkWell(
         onTap: () {
@@ -431,7 +435,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           Icon(
                             Icons.storefront_outlined,
                             size: 16,
-                            color: onSurfaceVariant.withOpacity(0.6),
+                            color: onSurfaceVariant.withValues(alpha: 0.6),
                           ),
                           const SizedBox(width: 6),
                           Flexible(
@@ -441,7 +445,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: onSurfaceVariant.withOpacity(0.9),
+                                color: onSurfaceVariant.withValues(alpha: 0.9),
                               ),
                             ),
                           ),
@@ -453,14 +457,14 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           Icon(
                             Icons.calendar_today_outlined,
                             size: 14,
-                            color: onSurfaceVariant.withOpacity(0.5),
+                            color: onSurfaceVariant.withValues(alpha: 0.5),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             formatRelativeDate(prod.lastUpdated),
                             style: TextStyle(
                               fontSize: 12,
-                              color: onSurfaceVariant.withOpacity(0.7),
+                              color: onSurfaceVariant.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -471,7 +475,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           Icon(
                             Icons.qr_code_2,
                             size: 18,
-                            color: onSurfaceVariant.withOpacity(0.6),
+                            color: onSurfaceVariant.withValues(alpha: 0.6),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -479,7 +483,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: onSurfaceVariant.withOpacity(0.8),
+                              color: onSurfaceVariant.withValues(alpha: 0.8),
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -495,9 +499,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                color: warningText.withOpacity(0.04),
+                color: warningText.withValues(alpha: 0.04),
                 border: Border(
-                  top: BorderSide(color: outlineVariant.withOpacity(0.2)),
+                  top: BorderSide(color: outlineVariant.withValues(alpha: 0.2)),
                 ),
               ),
               child: Row(
@@ -516,7 +520,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     child: Icon(
                       Icons.chevron_right_rounded,
                       size: 18,
-                      color: warningText.withOpacity(0.8),
+                      color: warningText.withValues(alpha: 0.8),
                     ),
                   ),
                 ],

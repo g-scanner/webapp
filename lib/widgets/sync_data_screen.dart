@@ -33,7 +33,7 @@ class SyncDataScreen extends StatelessWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: primary.withOpacity(0.1),
+                color: primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

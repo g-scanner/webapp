@@ -67,16 +67,9 @@ class _AuthScreenState extends State<AuthScreen> {
         _isGoogleSignInInitialized = true;
       }
 
-      final GoogleSignInAccount? googleUser = await googleSignIn.authenticate();
+      final GoogleSignInAccount googleUser = await googleSignIn.authenticate();
 
-      if (googleUser == null) {
-        _showInfo("Accesso con Google annullato.");
-        if (mounted) setState(() => _isLoading = false);
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
@@ -182,11 +175,16 @@ class _AuthScreenState extends State<AuthScreen> {
   // ==========================================
   // WEB: Login con popup e rilevamento rapido chiusura
   // ==========================================
-  Future<void> _signInWithPopupTracked(AuthProvider provider, String providerName) async {
+  Future<void> _signInWithPopupTracked(
+    AuthProvider provider,
+    String providerName,
+  ) async {
     bool completed = false;
 
     // Polling rapido: controlla ogni 150ms se il popup è stato chiuso dall'utente
-    final checkTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
+    final checkTimer = Timer.periodic(const Duration(milliseconds: 150), (
+      timer,
+    ) {
       if (_isPopupClosed() && !completed) {
         timer.cancel();
         if (mounted && _isLoading) {
@@ -249,10 +247,10 @@ class _AuthScreenState extends State<AuthScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primaryContainer.withOpacity(0.15),
+                color: primaryContainer.withValues(alpha: 0.15),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryContainer.withOpacity(0.15),
+                    color: primaryContainer.withValues(alpha: 0.15),
                     blurRadius: 100,
                     spreadRadius: 50,
                   ),
@@ -269,10 +267,10 @@ class _AuthScreenState extends State<AuthScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: secondaryContainer.withOpacity(0.15),
+                color: secondaryContainer.withValues(alpha: 0.15),
                 boxShadow: [
                   BoxShadow(
-                    color: secondaryContainer.withOpacity(0.15),
+                    color: secondaryContainer.withValues(alpha: 0.15),
                     blurRadius: 120,
                     spreadRadius: 60,
                   ),
@@ -299,7 +297,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   border: Border.all(color: surfaceVariant),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -313,7 +311,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       width: 96,
                       height: 96,
                       decoration: BoxDecoration(
-                        color: surfaceVariant.withOpacity(0.5),
+                        color: surfaceVariant.withValues(alpha: 0.5),
                         shape: BoxShape.circle,
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -339,7 +337,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: onSurfaceVariant.withOpacity(0.8),
+                        color: onSurfaceVariant.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -405,7 +403,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
-                          color: onSurfaceVariant.withOpacity(0.7),
+                          color: onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -440,7 +438,7 @@ class _AuthScreenState extends State<AuthScreen> {
           boxShadow: bgColor == primary
               ? [
                   BoxShadow(
-                    color: primary.withOpacity(0.3),
+                    color: primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

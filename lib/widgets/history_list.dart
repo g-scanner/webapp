@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../models/types.dart';
 
 // --- Colori estratti dal tuo Tailwind Config ---
@@ -96,18 +97,16 @@ class _HistoryListState extends State<HistoryList> {
     );
   }
 
-
-
   Color _getFilterColor() {
     switch (_filter) {
       case GlutenSafetyStatus.adatto:
-        return primary.withOpacity(0.12);
+        return primary.withValues(alpha: 0.12);
       case GlutenSafetyStatus.incerto:
-        return warningText.withOpacity(0.12);
+        return warningText.withValues(alpha: 0.12);
       case GlutenSafetyStatus.nonAdatto:
-        return error.withOpacity(0.12);
+        return error.withValues(alpha: 0.12);
       case GlutenSafetyStatus.sconosciuto:
-        return outlineVariant.withOpacity(0.2);
+        return outlineVariant.withValues(alpha: 0.2);
       default:
         return surfaceContainer;
     }
@@ -177,7 +176,7 @@ class _HistoryListState extends State<HistoryList> {
               "Cronologia Scansioni",
               style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
                 color: onSurface,
               ),
             ),
@@ -234,7 +233,7 @@ class _HistoryListState extends State<HistoryList> {
                     decoration: InputDecoration(
                       hintText: "Cerca prodotto...",
                       hintStyle: TextStyle(
-                        color: onSurfaceVariant.withOpacity(0.6),
+                        color: onSurfaceVariant.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
                       prefixIcon: AnimatedSwitcher(
@@ -284,7 +283,7 @@ class _HistoryListState extends State<HistoryList> {
                 Flexible(
                   flex: 2,
                   child: DropdownButtonFormField<GlutenSafetyStatus?>(
-                    value: _filter,
+                    initialValue: _filter,
                     icon: const Icon(
                       Icons.filter_list,
                       color: onSurfaceVariant,
@@ -399,7 +398,7 @@ class _HistoryListState extends State<HistoryList> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
@@ -420,7 +419,7 @@ class _HistoryListState extends State<HistoryList> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: color.withOpacity(0.9),
+                color: color.withValues(alpha: 0.9),
               ),
             ),
           ],
@@ -437,25 +436,25 @@ class _HistoryListState extends State<HistoryList> {
 
     switch (status) {
       case GlutenSafetyStatus.adatto:
-        bgColor = primary.withOpacity(0.12);
+        bgColor = primary.withValues(alpha: 0.12);
         textColor = primary;
         label = "Sicuro - non contiene glutine";
         icon = Icons.check_circle_outline;
         break;
       case GlutenSafetyStatus.nonAdatto:
-        bgColor = error.withOpacity(0.12);
+        bgColor = error.withValues(alpha: 0.12);
         textColor = error;
         label = "Vietato - contiene glutine";
         icon = Icons.cancel_outlined;
         break;
       case GlutenSafetyStatus.incerto:
-        bgColor = warningText.withOpacity(0.12);
+        bgColor = warningText.withValues(alpha: 0.12);
         textColor = warningText;
         label = "Incerto - potrebbe contenere glutine";
         icon = Icons.help_outline;
         break;
       case GlutenSafetyStatus.sconosciuto:
-        bgColor = outlineVariant.withOpacity(0.2);
+        bgColor = outlineVariant.withValues(alpha: 0.2);
         textColor = onSurfaceVariant;
         label = "Sconosciuto - nessuna informazione disponibile";
         icon = Icons.search_off;
@@ -499,7 +498,7 @@ class _HistoryListState extends State<HistoryList> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: outlineVariant.withOpacity(0.3)),
+        side: BorderSide(color: outlineVariant.withValues(alpha: 0.3)),
       ),
       child: InkWell(
         onTap: () => widget.onSelectItem(item.barcode),
@@ -539,7 +538,7 @@ class _HistoryListState extends State<HistoryList> {
                             Icon(
                               Icons.storefront_outlined,
                               size: 14,
-                              color: onSurfaceVariant.withOpacity(0.6),
+                              color: onSurfaceVariant.withValues(alpha: 0.6),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
@@ -549,7 +548,9 @@ class _HistoryListState extends State<HistoryList> {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: onSurfaceVariant.withOpacity(0.9),
+                                  color: onSurfaceVariant.withValues(
+                                    alpha: 0.9,
+                                  ),
                                 ),
                               ),
                             ),
@@ -561,7 +562,7 @@ class _HistoryListState extends State<HistoryList> {
                             Icon(
                               Icons.calendar_month_outlined,
                               size: 14,
-                              color: onSurfaceVariant.withOpacity(0.4),
+                              color: onSurfaceVariant.withValues(alpha: 0.4),
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -569,7 +570,7 @@ class _HistoryListState extends State<HistoryList> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: onSurfaceVariant.withOpacity(0.6),
+                                color: onSurfaceVariant.withValues(alpha: 0.6),
                               ),
                             ),
                           ],
@@ -586,7 +587,7 @@ class _HistoryListState extends State<HistoryList> {
                   offset: const Offset(8, 0),
                   child: Icon(
                     Icons.chevron_right_rounded,
-                    color: onSurfaceVariant.withOpacity(0.3),
+                    color: onSurfaceVariant.withValues(alpha: 0.3),
                     size: 26,
                   ),
                 ),
