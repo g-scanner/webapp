@@ -18,6 +18,7 @@ import 'widgets/product_detail_card.dart';
 import 'widgets/auth_screen.dart';
 
 import 'widgets/responsive_wrapper.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 // --- Colori estratti dal tuo Tailwind HTML ---
 const Color surfaceLowest = Color(0xFFFFFFFF);
@@ -27,9 +28,30 @@ const Color onSecondaryContainer = Color(0xFF003567);
 const Color onSurfaceVariant = Color(0xFF40493D);
 const Color onSurface = Color(0xFF1B1B1E);
 
+final MobileScannerController globalScannerController = MobileScannerController(
+  detectionSpeed: DetectionSpeed.noDuplicates,
+  formats: const [
+    BarcodeFormat.ean13,
+    BarcodeFormat.ean8,
+    BarcodeFormat.qrCode,
+  ],
+  cameraResolution: const Size(480, 640),
+);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Avvia il warmup della fotocamera durante lo splash nativo se l'utente è già loggato
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    try {
+      globalScannerController.start();
+    } catch (e) {
+      print("Camera autostart in main failed: $e");
+    }
+  }
+  
   runApp(const MyApp());
 }
 
@@ -78,7 +100,7 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   bool _isCameraActive = true;
 
@@ -106,7 +128,34 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    try {
+      globalScannerController.start();
+    } catch (e) {
+      print("Camera start error in MainScreen initState: $e");
+    }
     _initApp();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_currentIndex == 0 && _isCameraActive) {
+        try {
+          globalScannerController.start();
+        } catch (_) {}
+      }
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      try {
+        globalScannerController.stop();
+      } catch (_) {}
+    }
   }
 
   Future<void> _initApp() async {
@@ -306,6 +355,13 @@ class _MainScreenState extends State<MainScreen> {
 
   void _navigateToProduct(Product match) async {
     setState(() => _isCameraActive = false);
+    try {
+      await globalScannerController.stop();
+    } catch (e) {
+      print("Error stopping camera on navigation: $e");
+    }
+
+    if (!mounted) return;
 
     final userReport = reports.cast<ProductReport?>().firstWhere(
       (r) => r?.barcode == match.barcode && r?.userId == userId,
@@ -336,6 +392,13 @@ class _MainScreenState extends State<MainScreen> {
 
     if (mounted) {
       setState(() => _isCameraActive = true);
+      if (_currentIndex == 0) {
+        try {
+          await globalScannerController.start();
+        } catch (e) {
+          print("Error starting camera on back navigation: $e");
+        }
+      }
     }
   }
 
@@ -344,6 +407,7 @@ class _MainScreenState extends State<MainScreen> {
       index: _currentIndex > 3 ? 3 : _currentIndex,
       children: [
         CameraModule(
+          controller: globalScannerController,
           isActive: _isCameraActive && _currentIndex == 0,
           onScanSuccess: handleScanSuccess,
           scanningProgress: scanningProgress,
@@ -462,11 +526,20 @@ class _MainScreenState extends State<MainScreen> {
     final bool isSelected = _currentIndex == index;
     return Expanded(
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           setState(() {
             _currentIndex = index;
             _isCameraActive = index == 0;
           });
+          if (index == 0) {
+            try {
+              await globalScannerController.start();
+            } catch (_) {}
+          } else {
+            try {
+              await globalScannerController.stop();
+            } catch (_) {}
+          }
         },
         borderRadius: BorderRadius.circular(20),
         child: Column(
@@ -545,7 +618,8 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    final bool isWideScreen = MediaQuery.of(context).size.width > 720;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isWideScreen = screenWidth > 960;
 
     final scaffold = Scaffold(
       backgroundColor: const Color(0xFFFAF9FC),
@@ -576,8 +650,9 @@ class _MainScreenState extends State<MainScreen> {
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(
-              maxWidth: 800,
-            ), // Rail (approx 80) + gap (24) + content (600)
+              maxWidth: 700,
+              maxHeight: 900,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -612,12 +687,22 @@ class _MainScreenState extends State<MainScreen> {
                         backgroundColor: Colors.transparent,
                         groupAlignment: 0.0,
                         selectedIndex: _currentIndex < 4 ? _currentIndex : 0,
-                        onDestinationSelected: (int index) {
+                        onDestinationSelected: (int index) async {
                           setState(() {
                             _currentIndex = index;
                             _isCameraActive = index == 0;
                           });
+                          if (index == 0) {
+                            try {
+                              await globalScannerController.start();
+                            } catch (_) {}
+                          } else {
+                            try {
+                              await globalScannerController.stop();
+                            } catch (_) {}
+                          }
                         },
+                        minWidth: 104,
                         selectedLabelTextStyle: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: onSecondaryContainer,
@@ -632,27 +717,31 @@ class _MainScreenState extends State<MainScreen> {
                         unselectedIconTheme: const IconThemeData(
                           color: onSurfaceVariant,
                         ),
-                        indicatorColor: secondaryContainer,
+                        indicatorColor: secondaryContainer.withValues(alpha: 0.2),
                         labelType: NavigationRailLabelType.all,
                         destinations: const [
                           NavigationRailDestination(
                             padding: EdgeInsets.symmetric(vertical: 16.0),
                             icon: Icon(Icons.qr_code_scanner),
+                            selectedIcon: Icon(Icons.qr_code_scanner),
                             label: Text('Scansione'),
                           ),
                           NavigationRailDestination(
                             padding: EdgeInsets.symmetric(vertical: 16.0),
                             icon: Icon(Icons.history),
+                            selectedIcon: Icon(Icons.history),
                             label: Text('Cronologia'),
                           ),
                           NavigationRailDestination(
                             padding: EdgeInsets.symmetric(vertical: 16.0),
-                            icon: Icon(Icons.report_problem),
+                            icon: Icon(Icons.report_problem_outlined),
+                            selectedIcon: Icon(Icons.report_problem),
                             label: Text('Segnalazioni'),
                           ),
                           NavigationRailDestination(
                             padding: EdgeInsets.symmetric(vertical: 16.0),
-                            icon: Icon(Icons.settings),
+                            icon: Icon(Icons.settings_outlined),
+                            selectedIcon: Icon(Icons.settings),
                             label: Text('Impostazioni'),
                           ),
                         ],
@@ -660,7 +749,7 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
                 Expanded(
-                  child: ResponsiveMaxCardWidth(maxWidth: 600, child: scaffold),
+                  child: ResponsiveMaxCardWidth(maxWidth: 500, child: scaffold),
                 ),
               ],
             ),
@@ -669,6 +758,6 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    return ResponsiveMaxCardWidth(child: scaffold);
+    return ResponsiveMaxCardWidth(maxWidth: 500, child: scaffold);
   }
 }

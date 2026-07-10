@@ -3,23 +3,48 @@ import 'package:flutter/material.dart';
 class ResponsiveMaxCardWidth extends StatelessWidget {
   final Widget child;
   final double maxWidth;
+  final double maxHeight;
   final Color? backgroundColor;
 
   const ResponsiveMaxCardWidth({
     super.key,
     required this.child,
-    this.maxWidth = 600,
+    this.maxWidth = 500,
+    this.maxHeight = 900,
     this.backgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
 
-    if (width > 720) {
-      return Center(
+    if (width > 600) {
+      final bool isLowHeight = height <= 500;
+
+      if (isLowHeight) {
+        final double constrainedWidth = maxWidth > 450 ? 450 : maxWidth;
+        return Container(
+          color: const Color(0xFFFAF9FC),
+          alignment: Alignment.center,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: constrainedWidth,
+              maxHeight: maxHeight,
+            ),
+            child: child,
+          ),
+        );
+      }
+
+      return Container(
+        color: const Color(0xFFFAF9FC),
+        alignment: Alignment.center,
         child: Container(
-          constraints: BoxConstraints(maxWidth: maxWidth),
+          constraints: BoxConstraints(
+            maxWidth: maxWidth,
+            maxHeight: maxHeight,
+          ),
           margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
           decoration: BoxDecoration(
             boxShadow: [

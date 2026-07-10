@@ -53,7 +53,10 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
     try {
       if (kIsWeb) {
-        await _signInWithPopupTracked(GoogleAuthProvider(), "Google");
+        final cred = await _signInWithPopupTracked(GoogleAuthProvider(), "Google");
+        if (cred == null && mounted) {
+          setState(() => _isLoading = false);
+        }
         return;
       }
 
@@ -79,8 +82,10 @@ class _AuthScreenState extends State<AuthScreen> {
       final errStr = (e.code + (e.message ?? '')).toLowerCase();
       if (errStr.contains('popup-closed') ||
           errStr.contains('cancel') ||
+          errStr.contains('already-opened') ||
+          errStr.contains('already-in-progress') ||
           errStr.contains('abort')) {
-        _showInfo("Accesso con Google annullato.");
+        _showInfo("Accesso con Google annullato o già in corso.");
       } else {
         _showError("Errore Firebase: ${e.message}");
       }
@@ -107,7 +112,10 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
     try {
       if (kIsWeb) {
-        await _signInWithPopupTracked(FacebookAuthProvider(), "Facebook");
+        final cred = await _signInWithPopupTracked(FacebookAuthProvider(), "Facebook");
+        if (cred == null && mounted) {
+          setState(() => _isLoading = false);
+        }
         return;
       }
 
@@ -159,8 +167,13 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      if (e.code == 'popup-closed-by-user' || e.code == 'canceled') {
-        _showInfo("Accesso con Facebook annullato.");
+      final errStr = (e.code + (e.message ?? '')).toLowerCase();
+      if (errStr.contains('popup-closed') ||
+          errStr.contains('cancel') ||
+          errStr.contains('already-opened') ||
+          errStr.contains('already-in-progress') ||
+          errStr.contains('abort')) {
+        _showInfo("Accesso con Facebook annullato o già in corso.");
       } else {
         _showError("Errore Firebase: ${e.message}");
       }
@@ -175,11 +188,12 @@ class _AuthScreenState extends State<AuthScreen> {
   // ==========================================
   // WEB: Login con popup e rilevamento rapido chiusura
   // ==========================================
-  Future<void> _signInWithPopupTracked(
+  Future<UserCredential?> _signInWithPopupTracked(
     AuthProvider provider,
     String providerName,
   ) async {
     bool completed = false;
+    bool timerHandled = false;
 
     // Polling rapido: controlla ogni 150ms se il popup è stato chiuso dall'utente
     final checkTimer = Timer.periodic(const Duration(milliseconds: 150), (
@@ -187,6 +201,7 @@ class _AuthScreenState extends State<AuthScreen> {
     ) {
       if (_isPopupClosed() && !completed) {
         timer.cancel();
+        timerHandled = true;
         if (mounted && _isLoading) {
           setState(() => _isLoading = false);
           _showInfo("Accesso con $providerName annullato.");
@@ -195,10 +210,15 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
-      await FirebaseAuth.instance.signInWithPopup(provider);
+      final cred = await FirebaseAuth.instance.signInWithPopup(provider);
       completed = true;
+      return cred;
     } catch (e) {
       completed = true;
+      if (timerHandled) {
+        // Se il timer ha già gestito la chiusura del popup, non facciamo rethrow
+        return null;
+      }
       rethrow;
     } finally {
       checkTimer.cancel();

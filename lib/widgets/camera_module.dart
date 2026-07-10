@@ -14,6 +14,7 @@ const Color errorColor = Color(0xFFBA1A1A);
 const Color tertiaryContainer = Color(0xFFAD5600);
 
 class CameraModule extends StatefulWidget {
+  final MobileScannerController controller;
   final Future<void> Function(String barcode) onScanSuccess;
   final bool scanningProgress;
   final String? scanError;
@@ -21,6 +22,7 @@ class CameraModule extends StatefulWidget {
 
   const CameraModule({
     super.key,
+    required this.controller,
     required this.onScanSuccess,
     required this.scanningProgress,
     this.scanError,
@@ -33,23 +35,17 @@ class CameraModule extends StatefulWidget {
 
 class _CameraModuleState extends State<CameraModule> {
   final TextEditingController _manualCodeController = TextEditingController();
-  final MobileScannerController _scannerController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.noDuplicates,
-    formats: const [
-      BarcodeFormat.ean13,
-      BarcodeFormat.ean8,
-      BarcodeFormat.qrCode,
-    ],
-    cameraResolution: const Size(480, 640),
-  );
-
   bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.isActive) {
-      _scannerController.start();
+      try {
+        widget.controller.start();
+      } catch (e) {
+        print("Camera start error in CameraModule initState: $e");
+      }
     }
   }
 
@@ -58,9 +54,17 @@ class _CameraModuleState extends State<CameraModule> {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive != oldWidget.isActive) {
       if (widget.isActive) {
-        _scannerController.start();
+        try {
+          widget.controller.start();
+        } catch (e) {
+          print("Camera start error in CameraModule didUpdateWidget: $e");
+        }
       } else {
-        _scannerController.stop();
+        try {
+          widget.controller.stop();
+        } catch (e) {
+          print("Camera stop error in CameraModule didUpdateWidget: $e");
+        }
       }
     }
   }
@@ -68,7 +72,6 @@ class _CameraModuleState extends State<CameraModule> {
   @override
   void dispose() {
     _manualCodeController.dispose();
-    _scannerController.dispose();
     super.dispose();
   }
 
@@ -78,6 +81,7 @@ class _CameraModuleState extends State<CameraModule> {
   }
 
   void _onDetect(BarcodeCapture capture) async {
+    if (!widget.isActive) return;
     if (_isProcessing || widget.scanningProgress) return;
     final List<Barcode> barcodes = capture.barcodes;
     if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
@@ -260,7 +264,7 @@ class _CameraModuleState extends State<CameraModule> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28.0), // Curve interne dolci
-              color: surfaceContainer,
+              color: Colors.black,
             ),
             clipBehavior: Clip.antiAlias,
             // ASPECT RATIO A RETTANGOLO (16/10)
@@ -278,7 +282,7 @@ class _CameraModuleState extends State<CameraModule> {
                     fit: StackFit.expand,
                     children: [
                       MobileScanner(
-                        controller: _scannerController,
+                        controller: widget.controller,
                         onDetect: _onDetect,
                       ),
                       CustomPaint(
@@ -354,7 +358,7 @@ class _CameraModuleState extends State<CameraModule> {
           right: 0,
           child: Center(
             child: ValueListenableBuilder<MobileScannerState>(
-              valueListenable: _scannerController,
+              valueListenable: widget.controller,
               builder: (context, state, child) {
                 final bool isOn = state.torchState == TorchState.on;
 
@@ -366,7 +370,7 @@ class _CameraModuleState extends State<CameraModule> {
                   shape: const CircleBorder(),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: () => _scannerController.toggleTorch(),
+                    onTap: () => widget.controller.toggleTorch(),
                     child: SizedBox(
                       width: 56,
                       height: 56,
