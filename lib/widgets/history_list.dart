@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../models/types.dart';
+import '../services/analyzer_service.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 // --- Colori estratti dal tuo Tailwind Config ---
 const Color bgBackground = Color(0xFFFAF9FC);
@@ -24,6 +26,8 @@ class HistoryList extends StatefulWidget {
   final Future<void> Function() onClearHistory;
   final Future<void> Function(String) onDeleteHistoryItem;
   final Future<void> Function() onRefresh;
+  final UserSettings userSettings;
+  final bool isSynced;
 
   const HistoryList({
     super.key,
@@ -33,6 +37,8 @@ class HistoryList extends StatefulWidget {
     required this.onClearHistory,
     required this.onDeleteHistoryItem,
     required this.onRefresh,
+    required this.userSettings,
+    required this.isSynced,
   });
 
   @override
@@ -96,6 +102,42 @@ class _HistoryListState extends State<HistoryList> {
       ),
     );
   }
+  bool _hasLactose(ScanHistoryItem item) {
+    if (item.hasLactose) return true;
+    final liveProd = widget.liveProducts.cast<Product?>().firstWhere(
+      (p) => p?.barcode == item.barcode,
+      orElse: () => null,
+    );
+    if (liveProd == null) return false;
+    return AnalyzerService.checkLactose(liveProd.ingredients, liveProd.allergens);
+  }
+
+  Widget _buildLactoseTag() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF54A0FE).withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.water_drop_outlined, size: 14, color: Color(0xFF003567)),
+          SizedBox(width: 4),
+          Text(
+            "Lattosio",
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF003567),
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Color _getFilterColor() {
     switch (_filter) {
@@ -122,21 +164,44 @@ class _HistoryListState extends State<HistoryList> {
         orElse: () => null,
       );
 
-      // Se troviamo il prodotto nel DB e lo stato è diverso, restituiamo un item aggiornato
-      if (liveProd != null && liveProd.status != item.status) {
+      // Se troviamo il prodotto nel DB e lo stato, nome o brand sono diversi, restituiamo un item aggiornato
+      if (liveProd != null && (liveProd.status != item.status || liveProd.name != item.productName || liveProd.brand != item.brand)) {
         return ScanHistoryItem(
           id: item.id,
           userId: item.userId,
           barcode: item.barcode,
-          productName: liveProd
-              .name, // Aggiorna anche il nome se la community lo ha corretto
+          productName: liveProd.name, // Aggiorna anche il nome se la community lo ha corretto
           brand: liveProd.brand,
           status: liveProd.status, // ECCO LA MAGIA: STATO AGGIORNATO AL LIVE
           scannedAt: item.scannedAt,
+          hasLactose: item.hasLactose,
         );
       }
       return item; // Se non lo trova o non è cambiato, lascia quello in cronologia
     }).toList();
+
+    final bool showSkeleton = widget.history.isEmpty && !widget.isSynced;
+
+    final List<ScanHistoryItem> displayHistory = showSkeleton
+        ? [
+            ScanHistoryItem(
+              id: 'dummy1',
+              barcode: '1234567890123',
+              productName: 'Nome Prodotto Esempio Molto Lungo',
+              brand: 'Marca Prodotto Esempio',
+              status: GlutenSafetyStatus.adatto,
+              scannedAt: DateTime.now().toIso8601String(),
+            ),
+            ScanHistoryItem(
+              id: 'dummy2',
+              barcode: '9876543210987',
+              productName: 'Nome Prodotto Esempio Secondo',
+              brand: 'Altra Marca Esempio',
+              status: GlutenSafetyStatus.nonAdatto,
+              scannedAt: DateTime.now().toIso8601String(),
+            ),
+          ]
+        : syncedHistory;
 
     // 2. USA IL SYNCED HISTORY PER IL RESTO DELLA LOGICA
     final filteredHistory = syncedHistory.where((item) {
@@ -148,15 +213,25 @@ class _HistoryListState extends State<HistoryList> {
       return matchesSearch && matchesFilter;
     }).toList();
 
-    int safeCount = syncedHistory
-        .where((h) => h.status == GlutenSafetyStatus.adatto)
-        .length;
-    int dangerCount = syncedHistory
-        .where((h) => h.status == GlutenSafetyStatus.nonAdatto)
-        .length;
-    int uncertainCount = syncedHistory
-        .where((h) => h.status == GlutenSafetyStatus.incerto)
-        .length;
+    int safeCount = 0;
+    int dangerCount = 0;
+    int uncertainCount = 0;
+
+    if (showSkeleton) {
+      safeCount = 99;
+      dangerCount = 99;
+      uncertainCount = 99;
+    } else {
+      safeCount = syncedHistory
+          .where((h) => h.status == GlutenSafetyStatus.adatto)
+          .length;
+      dangerCount = syncedHistory
+          .where((h) => h.status == GlutenSafetyStatus.nonAdatto)
+          .length;
+      uncertainCount = syncedHistory
+          .where((h) => h.status == GlutenSafetyStatus.incerto)
+          .length;
+    }
 
     final bool showClearIcon = _isSearchFocused && _search.isNotEmpty;
 
@@ -192,30 +267,33 @@ class _HistoryListState extends State<HistoryList> {
             const SizedBox(height: 24),
 
             // ── Bento Grid (Statistiche) ────────────────────────────────
-            if (syncedHistory.isNotEmpty) ...[
-              Row(
-                children: [
-                  _buildStatBox(
-                    count: safeCount.toString(),
-                    label: "Idonei",
-                    color: primary,
-                    icon: Icons.check_circle,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildStatBox(
-                    count: uncertainCount.toString(),
-                    label: "Incerti",
-                    color: warningText,
-                    icon: Icons.help,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildStatBox(
-                    count: dangerCount.toString(),
-                    label: "Vietati",
-                    color: error,
-                    icon: Icons.cancel,
-                  ),
-                ],
+            if (syncedHistory.isNotEmpty || showSkeleton) ...[
+              Skeletonizer(
+                enabled: showSkeleton,
+                child: Row(
+                  children: [
+                    _buildStatBox(
+                      count: safeCount.toString(),
+                      label: "Idonei",
+                      color: primary,
+                      icon: Icons.check_circle,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildStatBox(
+                      count: uncertainCount.toString(),
+                      label: "Incerti",
+                      color: warningText,
+                      icon: Icons.help,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildStatBox(
+                      count: dangerCount.toString(),
+                      label: "Vietati",
+                      color: error,
+                      icon: Icons.cancel,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
             ],
@@ -331,8 +409,32 @@ class _HistoryListState extends State<HistoryList> {
             ),
             const SizedBox(height: 24),
 
-            // ── Lista Prodotti ────────────────────────────────────────
-            if (filteredHistory.isEmpty)
+            if (showSkeleton)
+              Skeletonizer(
+                enabled: true,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: displayHistory.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final item = displayHistory[index];
+                    return _buildHistoryCard(item);
+                  },
+                ),
+              )
+            else if (filteredHistory.isNotEmpty)
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredHistory.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final item = filteredHistory[index];
+                  return _buildHistoryCard(item);
+                },
+              )
+            else
               Container(
                 padding: const EdgeInsets.symmetric(
                   vertical: 48,
@@ -370,17 +472,6 @@ class _HistoryListState extends State<HistoryList> {
                     ),
                   ],
                 ),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filteredHistory.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final item = filteredHistory[index];
-                  return _buildHistoryCard(item);
-                },
               ),
           ],
         ),
@@ -513,7 +604,16 @@ class _HistoryListState extends State<HistoryList> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildStatusTag(item.status),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _buildStatusTag(item.status),
+                        if (widget.userSettings.alertLactose && _hasLactose(item))
+                          _buildLactoseTag(),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       item.productName,

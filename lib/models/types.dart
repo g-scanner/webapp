@@ -116,6 +116,7 @@ class ScanHistoryItem {
   final String brand;
   final GlutenSafetyStatus status;
   final String scannedAt;
+  final bool hasLactose;
 
   ScanHistoryItem({
     required this.id,
@@ -125,6 +126,7 @@ class ScanHistoryItem {
     required this.brand,
     required this.status,
     required this.scannedAt,
+    this.hasLactose = false,
   });
 
   factory ScanHistoryItem.fromJson(Map<String, dynamic> json) {
@@ -139,6 +141,7 @@ class ScanHistoryItem {
         orElse: () => GlutenSafetyStatus.sconosciuto,
       ),
       scannedAt: json['scannedAt'] ?? DateTime.now().toIso8601String(),
+      hasLactose: json['hasLactose'] ?? false,
     );
   }
 
@@ -151,6 +154,7 @@ class ScanHistoryItem {
       'brand': brand,
       'status': status.name,
       'scannedAt': scannedAt,
+      'hasLactose': hasLactose,
     };
   }
 }

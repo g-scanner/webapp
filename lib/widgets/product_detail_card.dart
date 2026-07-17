@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/types.dart';
 import 'responsive_wrapper.dart';
+import '../services/analyzer_service.dart';
 
 // --- Material 3 Design Colors (dal Tailwind Config) ---
 const Color bgBackground = Color(0xFFFAF9FC);
@@ -71,8 +72,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     showModalBottomSheet(
       context: parentContext,
       isScrollControlled: true,
-      constraints: const BoxConstraints(maxWidth: 600),
-      backgroundColor: Colors.transparent,
+      useSafeArea: true, // Rispetta la status bar in M3
+      backgroundColor:
+          Colors.transparent, // Lo sfondo arrotondato lo diamo al Container
       builder: (BuildContext sheetCtx) {
         return StatefulBuilder(
           builder: (BuildContext ctx, StateSetter setSheetState) {
@@ -82,65 +84,98 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               ),
               child: Container(
                 decoration: const BoxDecoration(
-                  color: bgBackground,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                  color: surfaceLowest, // Sfondo bianco pulito M3
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(32),
+                  ), // Raggio M3 molto morbido
                 ),
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // --- M3 Drag Handle ---
                     Center(
                       child: Container(
-                        width: 36,
-                        height: 5,
+                        width: 32,
+                        height: 4,
                         margin: const EdgeInsets.only(bottom: 24),
                         decoration: BoxDecoration(
-                          color: outlineVariant.withValues(alpha: 0.5),
+                          color: outlineVariant.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
-                    const Row(
+
+                    // --- Intestazione ---
+                    Row(
                       children: [
-                        Icon(Icons.warning, color: error),
-                        SizedBox(width: 8),
-                        Text(
-                          "Segnala Etichetta",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                            color: onSurface,
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: error.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.flag_rounded,
+                            color: error,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Text(
+                            "Segnala dati errati",
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: onSurface,
+                              letterSpacing: -0.5,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      "Aiuta la community segnalando dati errati o poco chiari.",
-                      style: TextStyle(fontSize: 14, color: onSurfaceVariant),
+                      "Aiuta la community segnalando informazioni inesatte o etichette poco chiare.",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: onSurfaceVariant,
+                        height: 1.4,
+                      ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
+
+                    // --- Dropdown M3 ---
                     const Text(
                       "Motivo della segnalazione",
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: onSurfaceVariant,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       initialValue: _reportType,
+                      icon: const Icon(
+                        Icons.expand_more,
+                        color: onSurfaceVariant,
+                      ),
+                      dropdownColor: surfaceLowest,
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(24),
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: surfaceLow,
+                        fillColor: surfaceContainer, // Grigio morbido
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
+                          vertical: 16,
                         ),
                       ),
                       items: const [
@@ -159,36 +194,43 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         DropdownMenuItem(value: "other", child: Text("Altro")),
                       ],
                       onChanged: (val) {
-                        setSheetState(() => _reportType = val!);
+                        if (val != null) setSheetState(() => _reportType = val);
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
+
+                    // --- TextField M3 ---
                     const Text(
                       "Dettagli (Opzionale)",
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: onSurfaceVariant,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _reportCommentsController,
                       maxLines: 3,
+                      style: const TextStyle(fontSize: 15, color: onSurface),
                       decoration: InputDecoration(
-                        hintText: "Es: Sulla confezione dice può contenere...",
+                        hintText:
+                            "Es: Sulla confezione dice 'può contenere tracce'...",
                         hintStyle: TextStyle(
                           color: onSurfaceVariant.withValues(alpha: 0.5),
                         ),
                         filled: true,
-                        fillColor: surfaceLow,
+                        fillColor: surfaceContainer,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
                         ),
+                        contentPadding: const EdgeInsets.all(16),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
+
+                    // --- Azioni M3 (Pill Buttons) ---
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -196,8 +238,16 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           onPressed: () => Navigator.pop(sheetCtx),
                           style: TextButton.styleFrom(
                             foregroundColor: onSurfaceVariant,
+                            minimumSize: const Size(
+                              0,
+                              48,
+                            ), // Altezza touch target standard M3
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
                           ),
-                          child: const Text("Annulla"),
+                          child: const Text(
+                            "Annulla",
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         FilledButton(
@@ -232,24 +282,27 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           style: FilledButton.styleFrom(
                             backgroundColor: error,
                             foregroundColor: surfaceLowest,
+                            minimumSize: const Size(0, 48),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
+                              borderRadius: BorderRadius.circular(
+                                999,
+                              ), // Forma a pillola M3
                             ),
                           ),
                           child: _submittingReport
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
-                                    color: Colors.white,
+                                    color: surfaceLowest.withValues(alpha: 0.5),
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text("Invia"),
+                              : const Text(
+                                  "Invia segnalazione",
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
                         ),
                       ],
                     ),
@@ -265,11 +318,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   @override
   Widget build(BuildContext context) {
-    final bool containsLactose =
-        widget.product.ingredients.toLowerCase().contains("latte") ||
-        widget.product.ingredients.toLowerCase().contains("lattosio") ||
-        widget.product.ingredients.toLowerCase().contains("burro") ||
-        widget.product.ingredients.toLowerCase().contains("panna");
+    final bool containsLactose = AnalyzerService.checkLactose(
+      widget.product.ingredients,
+      widget.product.allergens,
+    );
 
     final bool showLactoseWarning =
         widget.userSettings.alertLactose && containsLactose;
@@ -487,59 +539,22 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
               // ── Avviso Lattosio (se presente) ─────────────────────────
               if (showLactoseWarning) ...[
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: surfaceLow,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: secondaryContainer.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.water_drop,
-                          color: onSecondaryContainer,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Avviso Lattosio",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                                color: onSurface,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              "Questo prodotto contiene ingredienti derivati dal latte non adatti agli intolleranti.",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: onSurfaceVariant,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                _buildSectionCard(
+                  title: "PRESENZA LATTOSIO",
+                  icon: Icons.water_drop,
+                  isLactose: true,
+                  bgColor: secondaryContainer.withValues(alpha: 0.08),
+                  child: Text(
+                    "Questo prodotto contiene ingredienti o allergeni che indicano la presenza di lattosio. Non adatto agli intolleranti.",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: onSurfaceVariant,
+                      height: 1.4,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
               ],
-
               // ── Allergeni Dichiarati ──────────────────────────────────
               _buildSectionCard(
                 title: "ALLERGENI DICHIARATI",
@@ -786,13 +801,14 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     required Widget child,
     Color? bgColor,
     bool isCaution = false,
+    bool isLactose = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: bgColor ?? (isCaution ? surfaceContainer : surfaceLowest),
         borderRadius: BorderRadius.circular(24),
-        border: isCaution
+        border: isCaution || isLactose
             ? null
             : Border.all(color: outlineVariant.withValues(alpha: 0.5)),
         boxShadow: [
@@ -814,7 +830,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 Icon(
                   icon,
                   size: 18,
-                  color: isCaution ? onSurface : onSurfaceVariant,
+                  color: isCaution
+                      ? onSurface
+                      : isLactose
+                      ? onSecondaryContainer
+                      : onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
               ],
@@ -824,7 +844,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.5,
-                  color: isCaution ? onSurface : onSurfaceVariant,
+                  color: isCaution
+                      ? onSurface
+                      : isLactose
+                      ? onSecondaryContainer
+                      : onSurfaceVariant,
                 ),
               ),
             ],

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/widgets/report_detail_card.dart';
 import '../models/types.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 // --- Colori estratti dal tuo Tailwind Config ---
 const Color bgBackground = Color(0xFFFAF9FC);
@@ -27,6 +28,7 @@ class DatabaseProducts extends StatefulWidget {
   final List<String> reportedBarcodes;
   final Function(String) onSelectItem;
   final Future<void> Function() onRefresh;
+  final bool isSynced;
 
   const DatabaseProducts({
     super.key,
@@ -34,6 +36,7 @@ class DatabaseProducts extends StatefulWidget {
     required this.reportedBarcodes,
     required this.onSelectItem,
     required this.onRefresh,
+    required this.isSynced,
   });
 
   @override
@@ -72,10 +75,13 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
 
   @override
   Widget build(BuildContext context) {
-    // Estrai i prodotti con segnalazioni
+    // Estrai i prodotti con segnalazioni, ordinati per data decrescente
     final reportedProducts = widget.products
         .where((p) => (p.reportCount ?? 0) > 0)
-        .toList();
+        .toList()
+      ..sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
+
+    final bool showSkeleton = reportedProducts.isEmpty && !widget.isSynced;
 
     // Filtra per ricerca testuale e tipo di segnalazione
     final filtered = reportedProducts.where((p) {
@@ -90,6 +96,33 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
 
       return queryMatches && filterMatches;
     }).toList();
+
+    final List<Product> displayProducts = showSkeleton
+        ? [
+            Product(
+              barcode: '1234567890123',
+              name: 'Nome Prodotto Segnalato Esempio',
+              brand: 'Marca Esempio',
+              ingredients: 'Dummy ingredients',
+              allergens: [],
+              status: GlutenSafetyStatus.incerto,
+              reason: 'Segnalazione in corso',
+              lastUpdated: DateTime.now().toIso8601String(),
+              reportCount: 3,
+            ),
+            Product(
+              barcode: '9876543210987',
+              name: 'Altro Prodotto Segnalato Esempio',
+              brand: 'Altra Marca Esempio',
+              ingredients: 'Dummy ingredients',
+              allergens: [],
+              status: GlutenSafetyStatus.nonAdatto,
+              reason: 'Segnalazione in corso',
+              lastUpdated: DateTime.now().toIso8601String(),
+              reportCount: 1,
+            ),
+          ]
+        : filtered;
 
     final bool showClearIcon = _isSearchFocused && _searchTerm.isNotEmpty;
 
@@ -137,69 +170,72 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
             const SizedBox(height: 24),
 
             // ── Card "In attesa" (Separata e indipendente) ───────────────
-            if (reportedProducts.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: surfaceLowest,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: outlineVariant.withValues(alpha: 0.3),
+            if (reportedProducts.isNotEmpty || showSkeleton) ...[
+              Skeletonizer(
+                enabled: showSkeleton,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: onSurface.withValues(alpha: 0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                  decoration: BoxDecoration(
+                    color: surfaceLowest,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: outlineVariant.withValues(alpha: 0.3),
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: warningText.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: onSurface.withValues(alpha: 0.02),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      child: const Icon(
-                        Icons.pending_actions,
-                        size: 20,
-                        color: warningText,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      "Segnalazioni attive",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: onSurface,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: warningText,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        "${reportedProducts.length}",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: surfaceLowest,
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: warningText.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.pending_actions,
+                          size: 20,
+                          color: warningText,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      const Text(
+                        "Segnalazioni attive",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: onSurface,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: warningText,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          "${showSkeleton ? 99 : reportedProducts.length}",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: surfaceLowest,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -301,8 +337,32 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
             ),
             const SizedBox(height: 24),
 
-            // ── Lista Prodotti ────────────────────────────────────────
-            if (filtered.isEmpty)
+            if (showSkeleton)
+              Skeletonizer(
+                enabled: true,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: displayProducts.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final prod = displayProducts[index];
+                    return _buildReportCard(prod);
+                  },
+                ),
+              )
+            else if (filtered.isNotEmpty)
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filtered.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final prod = filtered[index];
+                  return _buildReportCard(prod);
+                },
+              )
+            else
               Container(
                 padding: const EdgeInsets.symmetric(
                   vertical: 48,
@@ -340,17 +400,6 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     ),
                   ],
                 ),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filtered.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final prod = filtered[index];
-                  return _buildReportCard(prod);
-                },
               ),
           ],
         ),

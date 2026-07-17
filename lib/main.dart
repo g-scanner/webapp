@@ -41,7 +41,7 @@ final MobileScannerController globalScannerController = MobileScannerController(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
+
   // Avvia il warmup della fotocamera durante lo splash nativo se l'utente è già loggato
   final user = FirebaseAuth.instance.currentUser;
   if (user != null) {
@@ -51,7 +51,7 @@ void main() async {
       print("Camera autostart in main failed: $e");
     }
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -61,7 +61,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'GScan',
+      title: 'G-Scanner',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0D631B)),
         useMaterial3: true,
@@ -107,6 +107,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   List<Product> products = [];
   List<ScanHistoryItem> history = [];
   List<ProductReport> reports = [];
+  bool _isHistorySynced = false;
+  bool _isReportsSynced = false;
   UserSettings userSettings = UserSettings(
     strictMode: true,
     alertLactose: false,
@@ -120,7 +122,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   bool scanningProgress = false;
   String? scanError;
   bool _isSyncing = false;
-  bool _settingsAlreadySynced = false;
 
   bool _requiresSyncDecision = false;
   int _anonymousHistoryCount = 0;
@@ -151,7 +152,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           globalScannerController.start();
         } catch (_) {}
       }
-    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       try {
         globalScannerController.stop();
       } catch (_) {}
@@ -164,13 +166,14 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (mounted) setState(() => userId = user?.uid);
 
       if (user != null) {
+        // Carica impostazioni locali (istantaneo)
         var settings = await DbService.getLocalSettings();
+        if (mounted) setState(() => userSettings = settings);
 
-        // ATTENZIONE: Qui usiamo il NUOVO metodo per forzare la lettura locale!
+        // Controlla dati orfani per migrazione
         final localHistory = await DbService.getLocalUnsyncedHistory();
         final localReports = await DbService.getLocalUnsyncedReports();
 
-        // Se l'utente è Google/Facebook, ci sono dati locali "orfani" e l'ID è cambiato
         if (!user.isAnonymous &&
             (localHistory.isNotEmpty || localReports.isNotEmpty) &&
             settings.userId != user.uid) {
@@ -183,55 +186,146 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           }
           return;
         }
-        // Sincronizza le impostazioni con Firestore per utenti registrati
-        if (!user.isAnonymous) {
-          settings = await DbService.syncSettingsWithFirestore(settings);
-          _settingsAlreadySynced = true;
-          if (mounted) setState(() => userSettings = settings);
-        }
       }
 
-      await _loadAllData();
+      // FASE 1: Carica dati locali istantaneamente
+      await _loadAllLocalData();
+
+      // FASE 2: Sincronizza con Firestore in background (fire-and-forget)
+      _syncEverythingWithFirestore();
     } catch (e) {
       print("Inizializzazione fallita: $e");
     }
   }
 
-  // 4. Estrai il caricamento dei dati in una funzione a parte (per richiamarla dopo la decisione)
   Future<void> _loadAllData() async {
-    await Future.wait([_fetchHistory(), _fetchSettings()]);
-    // Carica prodotti e segnalazioni in background (non bloccanti)
-    _fetchProducts();
-    _fetchReports();
+    await _loadAllLocalData();
+    _syncEverythingWithFirestore();
+  }
+
+  Future<void> _loadAllLocalData() async {
+    await Future.wait([
+      _loadLocalHistory(),
+      _loadLocalReports(),
+      _loadLocalSettings(),
+      _loadLocalProducts(),
+    ]);
+  }
+
+  Future<void> _loadLocalProducts() async {
+    final localData = await DbService.getLocalProducts();
+    if (mounted) {
+      setState(() {
+        products = localData;
+      });
+    }
+  }
+
+  Future<void> _loadLocalHistory() async {
+    final localData = await DbService.getHistory();
+    if (mounted) {
+      setState(() {
+        history = localData;
+      });
+    }
+  }
+
+  Future<void> _loadLocalReports() async {
+    final localData = await DbService.fetchUserReports();
+    if (mounted) {
+      setState(() {
+        reports = localData;
+      });
+    }
+  }
+
+  Future<void> _loadLocalSettings() async {
+    final data = await DbService.getLocalSettings();
+    if (mounted) setState(() => userSettings = data);
+  }
+
+  void _syncEverythingWithFirestore() {
+    // Sincronizza prodotti in background (comune a tutti gli utenti, anche anonimi)
+    DbService.fetchAllProducts()
+        .then((remoteData) {
+          if (mounted) setState(() => products = remoteData);
+        })
+        .catchError((e) {
+          print("Failed to sync products from Firestore: $e");
+        });
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.isAnonymous) {
+      // Per utenti anonimi non c'è nulla da sincronizzare per cronologia e segnalazioni personali, segna come completato
+      if (mounted) {
+        setState(() {
+          _isHistorySynced = true;
+          _isReportsSynced = true;
+        });
+      }
+      return;
+    }
+
+    // Sincronizza impostazioni in background
+    DbService.syncSettingsWithFirestore(userSettings)
+        .then((syncedSettings) {
+          if (mounted) setState(() => userSettings = syncedSettings);
+        })
+        .catchError((e) {
+          print("Failed to sync settings from Firestore: $e");
+        });
+
+    // Sincronizza cronologia in background
+    DbService.syncHistoryWithFirestore()
+        .then((remoteData) {
+          if (mounted) {
+            setState(() {
+              history = remoteData;
+              _isHistorySynced = true;
+            });
+          }
+        })
+        .catchError((e) {
+          print("Failed to sync history from Firestore: $e");
+          if (mounted) setState(() => _isHistorySynced = true);
+        });
+
+    // Sincronizza segnalazioni in background
+    DbService.syncReportsWithFirestore()
+        .then((remoteData) {
+          if (mounted) {
+            setState(() {
+              reports = remoteData;
+              _isReportsSynced = true;
+            });
+          }
+        })
+        .catchError((e) {
+          print("Failed to sync reports from Firestore: $e");
+          if (mounted) setState(() => _isReportsSynced = true);
+        });
   }
 
   Future<void> _fetchProducts() async {
     final data = await DbService.fetchAllProducts();
-    if (mounted) setState(() => products = data);
-  }
-
-  Future<void> _fetchHistory() async {
-    final data = await DbService.getHistory();
-    if (mounted) setState(() => history = data);
-  }
-
-  Future<void> _fetchReports() async {
-    final data = await DbService.fetchUserReports();
-    if (mounted) setState(() => reports = data);
-  }
-
-  Future<void> _fetchSettings() async {
-    var data = await DbService.getLocalSettings();
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && !user.isAnonymous && !_settingsAlreadySynced) {
-      data = await DbService.syncSettingsWithFirestore(data);
+    if (mounted) {
+      setState(() {
+        products = data;
+      });
     }
-    _settingsAlreadySynced = false;
-    if (mounted) setState(() => userSettings = data);
   }
 
   Future<void> refreshAllData() async {
-    await Future.wait([_fetchProducts(), _fetchHistory(), _fetchReports()]);
+    setState(() {
+      _isHistorySynced = false;
+      _isReportsSynced = false;
+    });
+    await Future.wait([
+      _loadLocalHistory(),
+      _loadLocalReports(),
+      _loadLocalProducts(),
+    ]);
+    _syncEverythingWithFirestore();
   }
 
   Future<void> handleScanSuccess(String barcode) async {
@@ -245,7 +339,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         barcode,
         userSettings,
       );
-      _fetchHistory();
+      _loadLocalHistory();
       _fetchProducts();
 
       if (mounted) {
@@ -309,7 +403,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       });
       await DbService.saveSettings(userSettings);
 
-      await Future.wait([_fetchReports(), _fetchProducts()]);
+      await Future.wait([_loadLocalReports(), _fetchProducts()]);
     } catch (e) {
       print("Segnalazione fallita: $e");
     }
@@ -343,13 +437,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Future<void> handleDeleteHistoryByBarcode(String barcode) async {
     await DbService.deleteHistoryByBarcodeLocal(barcode);
-    await _fetchHistory();
+    await _loadLocalHistory();
   }
 
   Future<void> handleDeleteReport(String reportId) async {
     await DbService.deleteReportFromDb(reportId);
     setState(() {}); // Forza l'aggiornamento
-    await _fetchReports();
+    await _loadLocalReports();
     await _fetchProducts();
   }
 
@@ -417,6 +511,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           history: history,
           liveProducts: products,
           onRefresh: refreshAllData,
+          userSettings: userSettings,
+          isSynced: _isHistorySynced,
           onSelectItem: (barcode) {
             final match = products.cast<Product?>().firstWhere(
               (p) => p?.barcode == barcode,
@@ -428,17 +524,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           },
           onClearHistory: () async {
             await DbService.wipeHistoryLocal();
-            await _fetchHistory();
+            await _loadLocalHistory();
           },
           onDeleteHistoryItem: (id) async {
             await DbService.deleteHistoryItemLocal(id);
-            await _fetchHistory();
+            await _loadLocalHistory();
           },
         ),
         DatabaseProducts(
           products: products,
           reportedBarcodes: userSettings.reportedBarcodes,
           onRefresh: refreshAllData,
+          isSynced: _isReportsSynced,
           onSelectItem: (barcode) {
             final match = products.cast<Product?>().firstWhere(
               (p) => p?.barcode == barcode,
@@ -464,7 +561,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           },
           onClearHistory: () async {
             await DbService.wipeHistoryLocal();
-            await _fetchHistory();
+            await _loadLocalHistory();
           },
         ),
       ],
@@ -649,10 +746,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         backgroundColor: const Color(0xFFFAF9FC),
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 700,
-              maxHeight: 900,
-            ),
+            constraints: const BoxConstraints(maxWidth: 700, maxHeight: 900),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -717,7 +811,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                         unselectedIconTheme: const IconThemeData(
                           color: onSurfaceVariant,
                         ),
-                        indicatorColor: secondaryContainer.withValues(alpha: 0.2),
+                        indicatorColor: secondaryContainer.withValues(
+                          alpha: 0.2,
+                        ),
                         labelType: NavigationRailLabelType.all,
                         destinations: const [
                           NavigationRailDestination(

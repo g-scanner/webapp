@@ -30,41 +30,93 @@ class DbService {
     }
   }
 
+  static const String _productsKey = 'celiac_products_cache';
+
+  static Future<List<Product>> getLocalProducts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList(_productsKey) ?? [];
+      return list.map((e) => Product.fromJson(json.decode(e))).toList();
+    } catch (e) {
+      print("Error loading local products: $e");
+      return [];
+    }
+  }
+
   static Future<List<Product>> fetchAllProducts() async {
     try {
       final snap = await db.collection(productsCollection).limit(100).get();
-      return snap.docs.map((d) => Product.fromJson(d.data())).toList();
+      final products = snap.docs.map((d) => Product.fromJson(d.data())).toList();
+      // Salva in locale per il prossimo avvio
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList(
+          _productsKey,
+          products.map((p) => json.encode(p.toJson())).toList(),
+        );
+      } catch (_) {}
+      return products;
     } catch (e) {
       print("Error fetching products: $e");
       return [];
     }
   }
 
+  static String _getHistoryKey() {
+    final user = auth.currentUser;
+    if (user != null && !user.isAnonymous) {
+      return 'celiac_history_${user.uid}';
+    }
+    return 'celiac_history';
+  }
+
+  static String _getReportsKey() {
+    final user = auth.currentUser;
+    if (user != null && !user.isAnonymous) {
+      return 'celiac_reports_${user.uid}';
+    }
+    return 'celiac_reports';
+  }
+
   static Future<List<ProductReport>> fetchUserReports() async {
+    try {
+      final key = _getReportsKey();
+      final prefs = await SharedPreferences.getInstance();
+      List<String> reportsStr = prefs.getStringList(key) ?? [];
+      return reportsStr
+          .map((e) => ProductReport.fromJson(json.decode(e)))
+          .toList();
+    } catch (e) {
+      print("Error fetching local user reports: $e");
+      return [];
+    }
+  }
+
+  static Future<List<ProductReport>> syncReportsWithFirestore() async {
     final user = auth.currentUser;
     if (user == null || user.isAnonymous) {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        List<String> reportsStr = prefs.getStringList('celiac_reports') ?? [];
-        return reportsStr
-            .map((e) => ProductReport.fromJson(json.decode(e)))
-            .toList();
-      } catch (e) {
-        print("Error fetching local user reports: $e");
-        return [];
-      }
+      return fetchUserReports();
     }
     try {
       final snap = await db
           .collection(reportsCollection)
           .where("userId", isEqualTo: user.uid)
-          .orderBy("submittedAt", descending: true)
-          .limit(50)
           .get();
-      return snap.docs.map((d) => ProductReport.fromJson(d.data())).toList();
+      final remoteReports = snap.docs.map((d) => ProductReport.fromJson(d.data())).toList();
+
+      // Ordina in memoria per data decrescente
+      remoteReports.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+
+      final key = _getReportsKey();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        key,
+        remoteReports.map((e) => json.encode(e.toJson())).toList(),
+      );
+      return remoteReports;
     } catch (e) {
-      print("Error fetching user reports: $e");
-      return [];
+      print("Error syncing user reports: $e");
+      return fetchUserReports();
     }
   }
 
@@ -139,12 +191,14 @@ class DbService {
             'brand_tags',
             'brands_imported',
           ], offBrand);
+          final prefLang = settings.preferredLanguage;
           offIngredients = _getFirstNonEmptyString(pData, [
+            'ingredients_text_$prefLang',
             'ingredients_text_it',
-            'ingredients_text',
             'ingredients_text_en',
-            'ingredients_text_fr',
             'ingredients_text_de',
+            'ingredients_text_fr',
+            'ingredients_text',
             'ingredients_text_es',
             'ingredients_text_pt',
             'ingredients_text_pl',
@@ -344,144 +398,146 @@ class DbService {
   static Future<void> _saveHistoryItem(Product product) async {
     final user = auth.currentUser;
     final now = DateTime.now();
+    final key = _getHistoryKey();
 
-    if (user != null && !user.isAnonymous) {
-      final userId = user.uid;
-      try {
-        final q = await db
-            .collection("users/$userId/history")
-            .orderBy("scannedAt", descending: true)
-            .limit(5)
-            .get();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> histStr = prefs.getStringList(key) ?? [];
+      List<dynamic> localHist = histStr.map((e) => json.decode(e)).toList();
 
-        bool isDuplicate = false;
-        for (var doc in q.docs) {
-          final data = doc.data();
-          if (data['barcode'] == product.barcode) {
-            final scannedAtStr = data['scannedAt'] as String?;
-            if (scannedAtStr != null) {
-              final scannedAt = DateTime.tryParse(scannedAtStr);
-              if (scannedAt != null) {
-                final diff = now.difference(scannedAt).inSeconds.abs();
-                if (diff <= 10) {
-                  isDuplicate = true;
-                  break;
-                }
+      bool isDuplicate = false;
+      for (var item in localHist) {
+        if (item['barcode'] == product.barcode) {
+          final scannedAtStr = item['scannedAt'] as String?;
+          if (scannedAtStr != null) {
+            final scannedAt = DateTime.tryParse(scannedAtStr);
+            if (scannedAt != null) {
+              final diff = now.difference(scannedAt).inSeconds.abs();
+              if (diff <= 10) {
+                isDuplicate = true;
+                break;
               }
             }
           }
         }
-
-        if (!isDuplicate) {
-          final historyRef = db.collection("users/$userId/history").doc();
-          final historyItem = ScanHistoryItem(
-            id: historyRef.id,
-            userId: userId,
-            barcode: product.barcode,
-            productName: product.name,
-            brand: product.brand,
-            status: product.status,
-            scannedAt: now.toIso8601String(),
-          );
-          await historyRef.set(historyItem.toJson());
-        }
-      } catch (error) {
-        print("Failed saving history to Firestore: $error");
       }
-    } else {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        List<String> histStr = prefs.getStringList('celiac_history') ?? [];
-        List<dynamic> localHist = histStr.map((e) => json.decode(e)).toList();
 
-        bool isDuplicate = false;
-        for (var item in localHist) {
-          if (item['barcode'] == product.barcode) {
-            final scannedAtStr = item['scannedAt'] as String?;
-            if (scannedAtStr != null) {
-              final scannedAt = DateTime.tryParse(scannedAtStr);
-              if (scannedAt != null) {
-                final diff = now.difference(scannedAt).inSeconds.abs();
-                if (diff <= 10) {
-                  isDuplicate = true;
-                  break;
-                }
-              }
-            }
-          }
+      if (!isDuplicate) {
+        final id = user != null && !user.isAnonymous
+            ? db.collection("users/${user.uid}/history").doc().id
+            : now.millisecondsSinceEpoch.toString();
+
+        final hasLactose = AnalyzerService.checkLactose(product.ingredients, product.allergens);
+
+        final historyItem = ScanHistoryItem(
+          id: id,
+          userId: user?.uid,
+          barcode: product.barcode,
+          productName: product.name,
+          brand: product.brand,
+          status: product.status,
+          scannedAt: now.toIso8601String(),
+          hasLactose: hasLactose,
+        );
+
+        localHist.insert(0, historyItem.toJson());
+        if (localHist.length > 50) localHist.removeLast();
+
+        await prefs.setStringList(
+          key,
+          localHist.map((e) => json.encode(e)).toList(),
+        );
+
+        if (user != null && !user.isAnonymous) {
+          await db
+              .collection("users/${user.uid}/history")
+              .doc(id)
+              .set(historyItem.toJson());
         }
-
-        if (!isDuplicate) {
-          final id = DateTime.now().millisecondsSinceEpoch.toString();
-          localHist.insert(0, {
-            'id': id,
-            'barcode': product.barcode,
-            'productName': product.name,
-            'brand': product.brand,
-            'status': product.status.name,
-            'scannedAt': now.toIso8601String(),
-          });
-
-          if (localHist.length > 50) localHist.removeLast();
-
-          await prefs.setStringList(
-            'celiac_history',
-            localHist.map((e) => json.encode(e)).toList(),
-          );
-        }
-      } catch (e) {
-        print("Failed saving history locally: $e");
       }
+    } catch (e) {
+      print("Failed saving history: $e");
     }
   }
 
   static Future<List<ScanHistoryItem>> getHistory() async {
-    final user = auth.currentUser;
-
-    if (user != null && !user.isAnonymous) {
-      try {
-        final snap = await db
-            .collection("users/${user.uid}/history")
-            .orderBy("scannedAt", descending: true)
-            .limit(50)
-            .get();
-        return snap.docs
-            .map((d) => ScanHistoryItem.fromJson(d.data()))
-            .toList();
-      } catch (e) {
-        print("Failed fetching Firestore history: $e");
-        return [];
-      }
+    try {
+      final key = _getHistoryKey();
+      final prefs = await SharedPreferences.getInstance();
+      List<String> histStr = prefs.getStringList(key) ?? [];
+      return histStr
+          .map((e) => ScanHistoryItem.fromJson(json.decode(e)))
+          .toList();
+    } catch (e) {
+      print("Failed fetching local history: $e");
+      return [];
     }
+  }
 
-    final prefs = await SharedPreferences.getInstance();
-    List<String> histStr = prefs.getStringList('celiac_history') ?? [];
-    return histStr
-        .map((e) => ScanHistoryItem.fromJson(json.decode(e)))
-        .toList();
+  static Future<List<ScanHistoryItem>> syncHistoryWithFirestore() async {
+    final user = auth.currentUser;
+    if (user == null || user.isAnonymous) {
+      return getHistory();
+    }
+    try {
+      final snap = await db
+          .collection("users/${user.uid}/history")
+          .orderBy("scannedAt", descending: true)
+          .limit(50)
+          .get();
+      final remoteHistory = snap.docs
+          .map((d) => ScanHistoryItem.fromJson(d.data()))
+          .toList();
+
+      final key = _getHistoryKey();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        key,
+        remoteHistory.map((e) => json.encode(e.toJson())).toList(),
+      );
+      return remoteHistory;
+    } catch (e) {
+      print("Failed syncing Firestore history: $e");
+      return getHistory();
+    }
   }
 
   static Future<void> wipeHistoryLocal() async {
     final user = auth.currentUser;
-    if (user != null && !user.isAnonymous) {
-      try {
-        final q = await db.collection("users/${user.uid}/history").get();
-        for (var d in q.docs) {
-          await d.reference.delete();
-        }
-      } catch (e) {
-        print("Could not wipe server history $e");
-      }
-    } else {
+    final key = _getHistoryKey();
+
+    try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('celiac_history', []);
+      await prefs.setStringList(key, []);
+
+      if (user != null && !user.isAnonymous) {
+        final q = await db.collection("users/${user.uid}/history").get();
+        final batch = db.batch();
+        for (var d in q.docs) {
+          batch.delete(d.reference);
+        }
+        await batch.commit();
+      }
+    } catch (e) {
+      print("Could not wipe history: $e");
     }
   }
 
   static Future<void> deleteHistoryByBarcodeLocal(String barcode) async {
     final user = auth.currentUser;
-    if (user != null && !user.isAnonymous) {
-      try {
+    final key = _getHistoryKey();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> histStr = prefs.getStringList(key) ?? [];
+      List<dynamic> localHist = histStr.map((e) => json.decode(e)).toList();
+      localHist.removeWhere((item) => item['barcode'] == barcode);
+      await prefs.setStringList(
+        key,
+        localHist.map((e) => json.encode(e)).toList(),
+      );
+
+      if (user != null && !user.isAnonymous) {
         final snapshot = await db
             .collection("users/${user.uid}/history")
             .where("barcode", isEqualTo: barcode)
@@ -491,38 +547,31 @@ class DbService {
           batch.delete(doc.reference);
         }
         await batch.commit();
-      } catch (e) {
-        print("Could not delete server history items by barcode $e");
       }
-    } else {
-      final prefs = await SharedPreferences.getInstance();
-      List<String> histStr = prefs.getStringList('celiac_history') ?? [];
-      List<dynamic> localHist = histStr.map((e) => json.decode(e)).toList();
-      localHist.removeWhere((item) => item['barcode'] == barcode);
-      await prefs.setStringList(
-        'celiac_history',
-        localHist.map((e) => json.encode(e)).toList(),
-      );
+    } catch (e) {
+      print("Could not delete history items by barcode: $e");
     }
   }
 
   static Future<void> deleteHistoryItemLocal(String id) async {
     final user = auth.currentUser;
-    if (user != null && !user.isAnonymous) {
-      try {
-        await db.collection("users/${user.uid}/history").doc(id).delete();
-      } catch (e) {
-        print("Could not delete server history item $e");
-      }
-    } else {
+    final key = _getHistoryKey();
+
+    try {
       final prefs = await SharedPreferences.getInstance();
-      List<String> histStr = prefs.getStringList('celiac_history') ?? [];
+      List<String> histStr = prefs.getStringList(key) ?? [];
       List<dynamic> localHist = histStr.map((e) => json.decode(e)).toList();
       localHist.removeWhere((item) => item['id'] == id);
       await prefs.setStringList(
-        'celiac_history',
+        key,
         localHist.map((e) => json.encode(e)).toList(),
       );
+
+      if (user != null && !user.isAnonymous) {
+        await db.collection("users/${user.uid}/history").doc(id).delete();
+      }
+    } catch (e) {
+      print("Could not delete history item: $e");
     }
   }
 
@@ -590,6 +639,7 @@ class DbService {
     final user = auth.currentUser;
     final isAnonymous = user == null || user.isAnonymous;
     final userId = user?.uid ?? "anonymous";
+    final key = _getReportsKey();
 
     try {
       GlutenSafetyStatus? originalStatus;
@@ -600,21 +650,35 @@ class DbService {
         );
       }
 
-      if (!isAnonymous) {
-        final docRef = db.collection(reportsCollection).doc();
-        final finalReport = ProductReport(
-          id: docRef.id,
-          barcode: barcode,
-          productName: productName,
-          brand: brand,
-          type: reportData['type'] ?? "label_unclear",
-          comments: reportData['comments'] ?? "Etichetta poco chiara.",
-          submittedAt: DateTime.now().toIso8601String(),
-          status: "open",
-          userId: userId,
-          originalStatus: originalStatus,
-        );
+      final prefs = await SharedPreferences.getInstance();
+      List<String> reportsStr = prefs.getStringList(key) ?? [];
+      List<dynamic> localReports = reportsStr.map((e) => json.decode(e)).toList();
 
+      final id = !isAnonymous
+          ? db.collection(reportsCollection).doc().id
+          : DateTime.now().millisecondsSinceEpoch.toString();
+
+      final finalReport = ProductReport(
+        id: id,
+        barcode: barcode,
+        productName: productName,
+        brand: brand,
+        type: reportData['type'] ?? "label_unclear",
+        comments: reportData['comments'] ?? "Etichetta poco chiara.",
+        submittedAt: DateTime.now().toIso8601String(),
+        status: "open",
+        userId: userId,
+        originalStatus: originalStatus,
+      );
+
+      localReports.insert(0, finalReport.toJson());
+      await prefs.setStringList(
+        key,
+        localReports.map((e) => json.encode(e)).toList(),
+      );
+
+      if (!isAnonymous) {
+        final docRef = db.collection(reportsCollection).doc(id);
         await docRef.set(finalReport.toJson());
 
         await db.collection("users").doc(userId).set({
@@ -622,34 +686,7 @@ class DbService {
         }, SetOptions(merge: true));
 
         await _updateProductStatusOnReport(barcode, finalReport);
-        return finalReport;
       } else {
-        final prefs = await SharedPreferences.getInstance();
-        List<String> reportsStr = prefs.getStringList('celiac_reports') ?? [];
-        List<dynamic> localReports = reportsStr
-            .map((e) => json.decode(e))
-            .toList();
-
-        final id = DateTime.now().millisecondsSinceEpoch.toString();
-        final finalReport = ProductReport(
-          id: id,
-          barcode: barcode,
-          productName: productName,
-          brand: brand,
-          type: reportData['type'] ?? "label_unclear",
-          comments: reportData['comments'] ?? "Etichetta poco chiara.",
-          submittedAt: DateTime.now().toIso8601String(),
-          status: "open",
-          userId: "anonymous",
-          originalStatus: originalStatus,
-        );
-
-        localReports.insert(0, finalReport.toJson());
-        await prefs.setStringList(
-          'celiac_reports',
-          localReports.map((e) => json.encode(e)).toList(),
-        );
-
         List<String> reportedBarcodes =
             prefs.getStringList('celiac_reported_barcodes') ?? [];
         if (!reportedBarcodes.contains(barcode)) {
@@ -659,9 +696,9 @@ class DbService {
             reportedBarcodes,
           );
         }
-
-        return finalReport;
       }
+
+      return finalReport;
     } catch (error) {
       print("Error submit report: $error");
       rethrow;
@@ -1069,6 +1106,12 @@ class DbService {
       await prefs.remove('celiac_reports');
       await prefs.remove('celiac_reported_barcodes');
       await prefs.remove('celiac_settings');
+
+      final user = auth.currentUser;
+      if (user != null) {
+        await prefs.remove('celiac_history_${user.uid}');
+        await prefs.remove('celiac_reports_${user.uid}');
+      }
       print("Tutti i dati locali sono stati eliminati con successo!");
     } catch (e) {
       print("Errore durante il wipe dei dati locali: $e");

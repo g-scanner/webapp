@@ -746,4 +746,23 @@ class AnalyzerService {
       ingredientsAnalyzed: ingredientsAnalyzed,
     );
   }
+
+  static bool checkLactose(String ingredients, List<String> allergens) {
+    final String lowerIng = ingredients.toLowerCase();
+    final String safeLactoseIng = _sanitizeForLactose(lowerIng);
+    for (String l in _lactoseKeywords) {
+      final regex = RegExp(
+        r'\b' + RegExp.escape(l) + r'\b',
+        caseSensitive: false,
+      );
+      if (regex.hasMatch(safeLactoseIng)) return true;
+    }
+    for (String a in allergens) {
+      final lowerA = a.toLowerCase();
+      if (lowerA == "latte" || lowerA.contains("milk") || lowerA.contains("lait") || lowerA.contains("lattosio")) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

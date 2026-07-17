@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../models/types.dart';
 import 'responsive_wrapper.dart';
 
@@ -55,6 +56,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   // Stato del voto: 0 = nessun voto, 1 = upvote, -1 = downvote
   int _currentVote = 0;
   late int _displayScore;
+  bool _isVoteLoading = true;
 
   @override
   void initState() {
@@ -70,6 +72,13 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
         setState(() {
           _displayScore = data['score'] ?? widget.score;
           _currentVote = data['userVote'] ?? 0;
+          _isVoteLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isVoteLoading = false;
         });
       }
     }
@@ -406,106 +415,148 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
               const SizedBox(height: 24),
 
               // ── Sistema di Voto (YouTube Style) ───────────────────────
-              Center(
-                child: Column(
-                  children: [
-                    const Text(
-                      "Sei d'accordo con questa segnalazione?",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: onSurfaceVariant,
-                      ),
+              if (_isVoteLoading)
+                Skeletonizer(
+                  enabled: true,
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Text(
+                          "Sei d'accordo con questa segnalazione?",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.thumb_up_outlined, size: 20, color: onSurfaceVariant),
+                              const SizedBox(width: 8),
+                              const Text("0", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: onSurfaceVariant)),
+                              const SizedBox(width: 20),
+                              Container(width: 1, height: 24, color: outlineVariant),
+                              const SizedBox(width: 20),
+                              const Icon(Icons.thumb_down_outlined, size: 20, color: onSurfaceVariant),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(999),
+                  ),
+                )
+              else
+                Center(
+                  child: Column(
+                    children: [
+                      const Text(
+                        "Sei d'accordo con questa segnalazione?",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: onSurfaceVariant,
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(999),
-                                bottomLeft: Radius.circular(999),
-                              ),
-                              onTap: () => _handleVote(1),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
+                      const SizedBox(height: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(999),
+                                  bottomLeft: Radius.circular(999),
                                 ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _currentVote == 1
-                                          ? Icons.thumb_up
-                                          : Icons.thumb_up_outlined,
-                                      size: 20,
-                                      color: _currentVote == 1
-                                          ? onSurface
-                                          : onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _displayScore < 0
-                                          ? "0"
-                                          : "$_displayScore",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: _currentVote == 1
-                                            ? FontWeight.bold
-                                            : FontWeight.w600,
+                                onTap: () => _handleVote(1),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        _currentVote == 1
+                                            ? Icons.thumb_up
+                                            : Icons.thumb_up_outlined,
+                                        size: 20,
                                         color: _currentVote == 1
                                             ? onSurface
                                             : onSurfaceVariant,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _displayScore < 0
+                                            ? "0"
+                                            : "$_displayScore",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: _currentVote == 1
+                                              ? FontWeight.bold
+                                              : FontWeight.w600,
+                                          color: _currentVote == 1
+                                              ? onSurface
+                                              : onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 24,
-                            color: outlineVariant.withValues(alpha: 0.5),
-                          ),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(999),
-                                bottomRight: Radius.circular(999),
-                              ),
-                              onTap: () => _handleVote(-1),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
+                            Container(
+                              width: 1,
+                              height: 24,
+                              color: outlineVariant.withValues(alpha: 0.5),
+                            ),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(999),
+                                  bottomRight: Radius.circular(999),
                                 ),
-                                child: Icon(
-                                  _currentVote == -1
-                                      ? Icons.thumb_down
-                                      : Icons.thumb_down_outlined,
-                                  size: 20,
-                                  color: _currentVote == -1
-                                      ? onSurface
-                                      : onSurfaceVariant,
+                                onTap: () => _handleVote(-1),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  child: Icon(
+                                    _currentVote == -1
+                                        ? Icons.thumb_down
+                                        : Icons.thumb_down_outlined,
+                                    size: 20,
+                                    color: _currentVote == -1
+                                        ? onSurface
+                                        : onSurfaceVariant,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
               const SizedBox(height: 40),
             ],
           ),
