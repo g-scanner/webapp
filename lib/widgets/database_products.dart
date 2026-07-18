@@ -76,10 +76,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
   @override
   Widget build(BuildContext context) {
     // Estrai i prodotti con segnalazioni, ordinati per data decrescente
-    final reportedProducts = widget.products
-        .where((p) => (p.reportCount ?? 0) > 0)
-        .toList()
-      ..sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
+    final reportedProducts =
+        widget.products.where((p) => (p.reportCount ?? 0) > 0).toList()
+          ..sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
 
     final bool showSkeleton = reportedProducts.isEmpty && !widget.isSynced;
 
@@ -222,15 +221,17 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: warningText,
+                          color: showSkeleton
+                              ? warningText.withValues(alpha: 0.18)
+                              : warningText,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           "${showSkeleton ? 99 : reportedProducts.length}",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: surfaceLowest,
+                            color: showSkeleton ? warningText : surfaceLowest,
                           ),
                         ),
                       ),

@@ -102,6 +102,7 @@ class _HistoryListState extends State<HistoryList> {
       ),
     );
   }
+
   bool _hasLactose(ScanHistoryItem item) {
     if (item.hasLactose) return true;
     final liveProd = widget.liveProducts.cast<Product?>().firstWhere(
@@ -109,7 +110,10 @@ class _HistoryListState extends State<HistoryList> {
       orElse: () => null,
     );
     if (liveProd == null) return false;
-    return AnalyzerService.checkLactose(liveProd.ingredients, liveProd.allergens);
+    return AnalyzerService.checkLactose(
+      liveProd.ingredients,
+      liveProd.allergens,
+    );
   }
 
   Widget _buildLactoseTag() {
@@ -138,7 +142,6 @@ class _HistoryListState extends State<HistoryList> {
     );
   }
 
-
   Color _getFilterColor() {
     switch (_filter) {
       case GlutenSafetyStatus.adatto:
@@ -165,12 +168,16 @@ class _HistoryListState extends State<HistoryList> {
       );
 
       // Se troviamo il prodotto nel DB e lo stato, nome o brand sono diversi, restituiamo un item aggiornato
-      if (liveProd != null && (liveProd.status != item.status || liveProd.name != item.productName || liveProd.brand != item.brand)) {
+      if (liveProd != null &&
+          (liveProd.status != item.status ||
+              liveProd.name != item.productName ||
+              liveProd.brand != item.brand)) {
         return ScanHistoryItem(
           id: item.id,
           userId: item.userId,
           barcode: item.barcode,
-          productName: liveProd.name, // Aggiorna anche il nome se la community lo ha corretto
+          productName: liveProd
+              .name, // Aggiorna anche il nome se la community lo ha corretto
           brand: liveProd.brand,
           status: liveProd.status, // ECCO LA MAGIA: STATO AGGIORNATO AL LIVE
           scannedAt: item.scannedAt,
@@ -610,7 +617,8 @@ class _HistoryListState extends State<HistoryList> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         _buildStatusTag(item.status),
-                        if (widget.userSettings.alertLactose && _hasLactose(item))
+                        if (widget.userSettings.alertLactose &&
+                            _hasLactose(item))
                           _buildLactoseTag(),
                       ],
                     ),

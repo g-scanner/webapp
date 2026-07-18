@@ -654,9 +654,7 @@ class DbService {
       List<String> reportsStr = prefs.getStringList(key) ?? [];
       List<dynamic> localReports = reportsStr.map((e) => json.decode(e)).toList();
 
-      final id = !isAnonymous
-          ? db.collection(reportsCollection).doc().id
-          : DateTime.now().millisecondsSinceEpoch.toString();
+      final id = db.collection(reportsCollection).doc().id;
 
       final finalReport = ProductReport(
         id: id,
@@ -677,16 +675,18 @@ class DbService {
         localReports.map((e) => json.encode(e)).toList(),
       );
 
-      if (!isAnonymous) {
-        final docRef = db.collection(reportsCollection).doc(id);
-        await docRef.set(finalReport.toJson());
+      final docRef = db.collection(reportsCollection).doc(id);
+      await docRef.set(finalReport.toJson());
 
+      await _updateProductStatusOnReport(barcode, finalReport);
+
+      if (user != null) {
         await db.collection("users").doc(userId).set({
           'reportedBarcodes': FieldValue.arrayUnion([barcode]),
         }, SetOptions(merge: true));
+      }
 
-        await _updateProductStatusOnReport(barcode, finalReport);
-      } else {
+      if (isAnonymous) {
         List<String> reportedBarcodes =
             prefs.getStringList('celiac_reported_barcodes') ?? [];
         if (!reportedBarcodes.contains(barcode)) {
