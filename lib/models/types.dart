@@ -42,6 +42,10 @@ class Product {
   final String lastUpdated;
   final int? reportCount;
   final GlutenSafetyStatus? originalStatus;
+  final Map<String, String>? ingredientsMap;
+  final Map<String, List<String>>? allergensMap;
+  final Map<String, String>? reasonsMap;
+  final Map<String, List<IngredientAnalyzed>>? ingredientsAnalyzedMap;
 
   Product({
     required this.barcode,
@@ -57,6 +61,10 @@ class Product {
     required this.lastUpdated,
     this.reportCount,
     this.originalStatus,
+    this.ingredientsMap,
+    this.allergensMap,
+    this.reasonsMap,
+    this.ingredientsAnalyzedMap,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -84,6 +92,27 @@ class Product {
               orElse: () => GlutenSafetyStatus.sconosciuto,
             )
           : null,
+      ingredientsMap: json['ingredients_map'] != null
+          ? Map<String, String>.from(json['ingredients_map'])
+          : null,
+      allergensMap: json['allergens_map'] != null
+          ? (json['allergens_map'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)),
+            )
+          : null,
+      reasonsMap: json['reasons_map'] != null
+          ? Map<String, String>.from(json['reasons_map'])
+          : null,
+      ingredientsAnalyzedMap: json['ingredients_analyzed_map'] != null
+          ? (json['ingredients_analyzed_map'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(
+                k,
+                (v as List)
+                    .map((e) => IngredientAnalyzed.fromJson(e))
+                    .toList(),
+              ),
+            )
+          : null,
     );
   }
 
@@ -104,6 +133,12 @@ class Product {
       'lastUpdated': lastUpdated,
       'reportCount': reportCount,
       'originalStatus': originalStatus?.name,
+      'ingredients_map': ingredientsMap,
+      'allergens_map': allergensMap,
+      'reasons_map': reasonsMap,
+      'ingredients_analyzed_map': ingredientsAnalyzedMap?.map(
+        (k, v) => MapEntry(k, v.map((e) => e.toJson()).toList()),
+      ),
     };
   }
 }

@@ -205,6 +205,26 @@ class DbService {
             'ingredients_text_ar',
             'ingredients_text_nl',
           ], offIngredients);
+
+          // Fallback dinamico su qualsiasi lingua disponibile se ancora vuoto
+          if (offIngredients.trim().isEmpty) {
+            for (final key in pData.keys) {
+              if (key.startsWith('ingredients_text_') && key != 'ingredients_text_with_allergens') {
+                final val = pData[key];
+                if (val is String && val.trim().isNotEmpty) {
+                  offIngredients = val.trim();
+                  break;
+                }
+              }
+            }
+          }
+
+          // Rimuove gli underscore usati da OpenFoodFacts per formattare gli allergeni (_frumento_ -> frumento)
+          // e pulisce gli spazi prima dei segni di punteggiatura (es: "frumento , acqua" -> "frumento, acqua")
+          offIngredients = offIngredients
+              .replaceAll('_', '')
+              .replaceAll(RegExp(r'\s+([,.;])'), r'$1')
+              .trim();
           offImage =
               pData['image_url'] ??
               pData['image_front_url'] ??
@@ -214,12 +234,24 @@ class DbService {
             offLastModified = (pData['last_modified_t'] as int) * 1000;
           }
 
-          if (pData['allergens_from_ingredients'] != null &&
+          // Sorgente primaria: allergens_tags contiene tag canonici tipo "en:gluten", "en:milk"
+          // indipendenti dalla lingua del prodotto. translateAllergens rimuove il prefisso e
+          // traduce nella lingua giusta seguendo il pattern preferenze.
+          if (pData['allergens_tags'] != null) {
+            final rawTags = List<String>.from(pData['allergens_tags']);
+            if (rawTags.isNotEmpty) {
+              offAllergens = rawTags;
+            }
+          }
+          // Fallback: allergens_from_ingredients se i tag strutturati sono vuoti
+          if (offAllergens.isEmpty &&
+              pData['allergens_from_ingredients'] != null &&
               pData['allergens_from_ingredients'].toString().isNotEmpty) {
             offAllergens = pData['allergens_from_ingredients']
                 .toString()
                 .split(",")
-                .map((a) => a.trim().replaceAll("en:", ""))
+                .map((a) => a.trim())
+                .where((a) => a.isNotEmpty)
                 .toList();
           }
 
@@ -237,6 +269,65 @@ class DbService {
             ),
           );
 
+          // Calcola i dati localizzati solo per la lingua richiesta dall'utente.
+          // La lingua già presente nel DB verrà gestita dopo (merge), qui costruiamo
+          // solo i valori per la sessione corrente.
+          // (prefLang è già definito sopra come settings.preferredLanguage)
+
+          // Risolvi il testo degli ingredienti per la lingua richiesta:
+          // 1) Prova il campo specifico per lingua su OFF
+          // 2) Se vuoto, cerca la prima lingua disponibile in pData (stesso fallback della UI)
+          // 3) Se ancora vuoto, usa offIngredients (che già ha il suo fallback)
+          String langIng = _getFirstNonEmptyString(pData, ['ingredients_text_$prefLang'], '');
+          if (langIng.trim().isEmpty) {
+            // Cerca la prima chiave ingredients_text_* disponibile
+            for (final key in pData.keys) {
+              if (key.startsWith('ingredients_text_') &&
+                  key != 'ingredients_text_with_allergens') {
+                final val = pData[key];
+                if (val is String && val.trim().isNotEmpty) {
+                  langIng = val.trim();
+                  break;
+                }
+              }
+            }
+          }
+          if (langIng.trim().isNotEmpty) {
+            langIng = langIng
+                .replaceAll('_', '')
+                .replaceAll(RegExp(r'\s+([,.;])'), r'$1')
+                .trim();
+          }
+          final String langIngFinal = langIng.isEmpty ? offIngredients : langIng;
+
+          final langAnalysis = AnalyzerService.analyzeGlutenSafety(
+            name: offName,
+            brand: offBrand,
+            ingredients: langIngFinal.isEmpty ? "Non disponibile" : langIngFinal,
+            allergensList: offAllergens,
+            reportCount: 0,
+            offTags: offTags,
+            categoriesTags: offCategories,
+            strictMode: settings.strictMode,
+            warnAdditives: settings.warnAdditives,
+            alertLactose: settings.alertLactose,
+            preferredLanguage: prefLang,
+          );
+
+          // Mappe parziali con solo la lingua corrente: verranno fuse con il DB dopo
+          final Map<String, String> ingredientsMap = {
+            prefLang: langIngFinal.isEmpty ? "Non disponibile" : langIngFinal,
+          };
+          final Map<String, List<String>> allergensMap = {
+            prefLang: langAnalysis.allergens,
+          };
+          final Map<String, String> reasonsMap = {
+            prefLang: langAnalysis.reason,
+          };
+          final Map<String, List<IngredientAnalyzed>> ingredientsAnalyzedMap = {
+            prefLang: langAnalysis.ingredientsAnalyzed,
+          };
+
           // 1° CHIAMATA ANALYZER (Prodotti Nuovi / Aggiornati)
           final analysis = AnalyzerService.analyzeGlutenSafety(
             name: offName,
@@ -250,6 +341,7 @@ class DbService {
             warnAdditives: settings.warnAdditives,
             alertLactose:
                 settings.alertLactose, // Passo l'impostazione lattosio
+            preferredLanguage: settings.preferredLanguage,
           );
 
           productApi = Product(
@@ -266,6 +358,10 @@ class DbService {
             imageUrl: offImage,
             lastUpdated: DateTime.now().toIso8601String(),
             reportCount: 0,
+            ingredientsMap: ingredientsMap,
+            allergensMap: allergensMap,
+            reasonsMap: reasonsMap,
+            ingredientsAnalyzedMap: ingredientsAnalyzedMap,
           );
         }
       }
@@ -277,6 +373,59 @@ class DbService {
     Product productToReturn;
 
     if (productApi != null) {
+      // Fondi le mappe localizzate del DB (se esistente) con la nuova lingua calcolata,
+      // senza sovrascrivere le chiavi già presenti.
+      final String prefLang = settings.preferredLanguage;
+      final existingIngMap = productDb?.ingredientsMap ?? {};
+      final existingAlgMap = productDb?.allergensMap ?? {};
+      final existingRsnMap = productDb?.reasonsMap ?? {};
+      final existingIaMap = productDb?.ingredientsAnalyzedMap ?? {};
+
+      // Nuovo entry per la lingua corrente (da productApi)
+      final newIngEntry = productApi.ingredientsMap?[prefLang];
+      final newAlgEntry = productApi.allergensMap?[prefLang];
+      final newRsnEntry = productApi.reasonsMap?[prefLang];
+      final newIaEntry = productApi.ingredientsAnalyzedMap?[prefLang];
+
+      // Mappe fuse: mantiene le lingue già nel DB, aggiunge quella nuova
+      final mergedIngMap = Map<String, String>.from(existingIngMap);
+      final mergedAlgMap = Map<String, List<String>>.from(existingAlgMap);
+      final mergedRsnMap = Map<String, String>.from(existingRsnMap);
+      final mergedIaMap = Map<String, List<IngredientAnalyzed>>.from(existingIaMap);
+
+      if (newIngEntry != null) mergedIngMap[prefLang] = newIngEntry;
+      if (newAlgEntry != null) mergedAlgMap[prefLang] = newAlgEntry;
+      if (newRsnEntry != null) mergedRsnMap[prefLang] = newRsnEntry;
+      if (newIaEntry != null) mergedIaMap[prefLang] = newIaEntry;
+
+      // Aggiorna productApi con le mappe fuse
+      productApi = Product(
+        barcode: productApi.barcode,
+        name: productApi.name,
+        brand: productApi.brand,
+        ingredients: productApi.ingredients,
+        allergens: productApi.allergens,
+        status: productApi.status,
+        reason: productApi.reason,
+        ingredientsAnalyzed: productApi.ingredientsAnalyzed,
+        imageUrl: productApi.imageUrl,
+        lastUpdated: productApi.lastUpdated,
+        reportCount: productApi.reportCount,
+        ingredientsMap: mergedIngMap,
+        allergensMap: mergedAlgMap,
+        reasonsMap: mergedRsnMap,
+        ingredientsAnalyzedMap: mergedIaMap,
+      );
+
+      // Delta da salvare su Firestore: solo le chiavi mappa nuove/aggiornate
+      // Usiamo set con merge: true per non toccare gli altri campi del documento
+      final Map<String, dynamic> langDelta = {};
+      langDelta['ingredients_map.$prefLang'] = mergedIngMap[prefLang];
+      langDelta['allergens_map.$prefLang'] = mergedAlgMap[prefLang];
+      langDelta['reasons_map.$prefLang'] = mergedRsnMap[prefLang];
+      langDelta['ingredients_analyzed_map.$prefLang'] =
+          mergedIaMap[prefLang]?.map((e) => e.toJson()).toList();
+
       if (productDb != null && (productDb.reportCount ?? 0) > 0) {
         int dbReportTime = DateTime.parse(
           productDb.lastUpdated,
@@ -294,8 +443,13 @@ class DbService {
             imageUrl: productApi.imageUrl,
             lastUpdated: DateTime.now().toIso8601String(),
             reportCount: 0,
+            ingredientsMap: mergedIngMap,
+            allergensMap: mergedAlgMap,
+            reasonsMap: mergedRsnMap,
+            ingredientsAnalyzedMap: mergedIaMap,
           );
           try {
+            // Set completo perché il prodotto OFF è stato aggiornato dopo le segnalazioni
             await db
                 .collection(productsCollection)
                 .doc(barcode)
@@ -317,6 +471,7 @@ class DbService {
             warnAdditives: settings.warnAdditives,
             alertLactose:
                 settings.alertLactose, // Passo l'impostazione lattosio
+            preferredLanguage: settings.preferredLanguage,
           );
           productToReturn = Product(
             barcode: productApi.barcode,
@@ -330,17 +485,39 @@ class DbService {
             imageUrl: productApi.imageUrl,
             lastUpdated: productDb.lastUpdated,
             reportCount: productDb.reportCount,
+            ingredientsMap: mergedIngMap,
+            allergensMap: mergedAlgMap,
+            reasonsMap: mergedRsnMap,
+            ingredientsAnalyzedMap: mergedIaMap,
           );
+          // Merge solo le mappe lingua senza toccare il resto (segnalazioni, status, etc.)
+          try {
+            await db
+                .collection(productsCollection)
+                .doc(barcode)
+                .update(langDelta);
+          } catch (e) {
+            print("Error updating lang maps on Firestore: $e");
+          }
         }
       } else {
         productToReturn = productApi;
         try {
-          await db
-              .collection(productsCollection)
-              .doc(barcode)
-              .set(productToReturn.toJson());
+          if (productDb == null) {
+            // Prodotto nuovo: set completo
+            await db
+                .collection(productsCollection)
+                .doc(barcode)
+                .set(productToReturn.toJson());
+          } else {
+            // Prodotto già nel DB senza segnalazioni: merge solo delle mappe lingua
+            await db
+                .collection(productsCollection)
+                .doc(barcode)
+                .update(langDelta);
+          }
         } catch (e) {
-          print("Error saving new product to Firestore: $e");
+          print("Error saving product to Firestore: $e");
         }
       }
     } else {
@@ -359,6 +536,7 @@ class DbService {
           strictMode: settings.strictMode,
           warnAdditives: settings.warnAdditives,
           alertLactose: settings.alertLactose, // Passo l'impostazione lattosio
+          preferredLanguage: settings.preferredLanguage,
         );
 
         productToReturn = Product(

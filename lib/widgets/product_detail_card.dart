@@ -318,9 +318,17 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   @override
   Widget build(BuildContext context) {
+    final String currentLang = widget.userSettings.preferredLanguage;
+    final String displayedIngredients = widget.product.ingredientsMap?[currentLang] ?? widget.product.ingredients;
+    final List<String> displayedAllergens = widget.product.allergensMap?[currentLang] ?? 
+        AnalyzerService.translateAllergens(widget.product.allergens, currentLang);
+    final String displayedReason = widget.product.reasonsMap?[currentLang] ?? widget.product.reason;
+    final List<IngredientAnalyzed> displayedIngredientsAnalyzed = widget.product.ingredientsAnalyzedMap?[currentLang] ?? 
+        widget.product.ingredientsAnalyzed ?? [];
+
     final bool containsLactose = AnalyzerService.checkLactose(
-      widget.product.ingredients,
-      widget.product.allergens,
+      displayedIngredients,
+      displayedAllergens,
     );
 
     final bool showLactoseWarning =
@@ -531,7 +539,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 title: "VALUTAZIONE GLUTINE",
                 icon: Icons.leaderboard,
                 child: Text(
-                  widget.product.reason,
+                  displayedReason,
                   style: const TextStyle(fontSize: 16, color: onSurface),
                 ),
               ),
@@ -562,8 +570,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: widget.product.allergens.isNotEmpty
-                      ? widget.product.allergens.map((alg) {
+                  children: displayedAllergens.isNotEmpty
+                      ? displayedAllergens.map((alg) {
                           return Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -615,17 +623,16 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.product.ingredients,
+                      displayedIngredients,
                       style: const TextStyle(
                         fontSize: 14,
                         color: onSurface,
                         height: 1.5,
                       ),
                     ),
-                    if (widget.product.ingredientsAnalyzed != null &&
-                        widget.product.ingredientsAnalyzed!.isNotEmpty) ...[
+                    if (displayedIngredientsAnalyzed.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      ...widget.product.ingredientsAnalyzed!.map((item) {
+                      ...displayedIngredientsAnalyzed.map((item) {
                         Color pillBg;
                         Color pillText;
                         String pillLabel;

@@ -352,97 +352,97 @@ class _SettingsPanelState extends State<SettingsPanel> {
             ),
             child: Column(
               children: [
-                  _buildLegalItem(
-                    title: "Fonte Dati",
-                    subtitle: Text.rich(
-                      TextSpan(
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: onSurfaceVariant,
-                          height: 1.4, // Leggermente aumentato per respiro
+                _buildLegalItem(
+                  title: "Fonte Dati",
+                  subtitle: Text.rich(
+                    TextSpan(
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: onSurfaceVariant,
+                        height: 1.4, // Leggermente aumentato per respiro
+                      ),
+                      children: const [
+                        TextSpan(
+                          text: "I dati sono forniti dalla community di ",
                         ),
-                        children: const [
-                          TextSpan(
-                            text: "I dati sono forniti dalla community di ",
-                          ),
-                          TextSpan(
-                            text: "Open Food Facts",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          TextSpan(
-                            text:
-                                ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico.",
-                          ),
-                        ],
-                      ),
+                        TextSpan(
+                          text: "Open Food Facts",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text:
+                              ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico.",
+                        ),
+                      ],
                     ),
-                    showTrailingArrow: false,
                   ),
-                  _buildLegalItem(
-                    title: "Termini e Condizioni",
-                    subtitle: const Text(
-                      "Consulta le regole di utilizzo dell'applicazione e dei servizi offerti.",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: onSurfaceVariant,
-                        height: 1.3,
-                      ),
+                  showTrailingArrow: false,
+                ),
+                _buildLegalItem(
+                  title: "Termini e Condizioni",
+                  subtitle: const Text(
+                    "Consulta le regole di utilizzo dell'applicazione e dei servizi offerti.",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: onSurfaceVariant,
+                      height: 1.3,
                     ),
-                    onTap: () {
-                      _showLegalBottomSheet(
-                        context,
-                        "Termini e Condizioni d'Uso (ToS)",
-                        _buildNativeTos(onSurfaceVariant),
-                      );
-                    },
-                    showTrailingArrow: true,
                   ),
-                  _buildLegalItem(
-                    title: "Privacy Policy",
-                    subtitle: const Text(
-                      "Scopri come raccogliamo, gestiamo e proteggiamo i tuoi dati personali.",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: onSurfaceVariant,
-                        height: 1.3,
-                      ),
+                  onTap: () {
+                    _showLegalBottomSheet(
+                      context,
+                      "Termini e Condizioni d'Uso (ToS)",
+                      _buildNativeTos(onSurfaceVariant),
+                    );
+                  },
+                  showTrailingArrow: true,
+                ),
+                _buildLegalItem(
+                  title: "Privacy Policy",
+                  subtitle: const Text(
+                    "Scopri come raccogliamo, gestiamo e proteggiamo i tuoi dati personali.",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: onSurfaceVariant,
+                      height: 1.3,
                     ),
-                    onTap: () {
-                      _showLegalBottomSheet(
-                        context,
-                        "Privacy Policy",
-                        _buildNativePrivacyPolicy(onSurfaceVariant),
-                      );
-                    },
-                    showTrailingArrow: true,
                   ),
+                  onTap: () {
+                    _showLegalBottomSheet(
+                      context,
+                      "Privacy Policy",
+                      _buildNativePrivacyPolicy(onSurfaceVariant),
+                    );
+                  },
+                  showTrailingArrow: true,
+                ),
 
-                  _buildLegalItem(
-                    title: "Licenze ",
-                    subtitle: const Text(
-                      "Consulta le licenze open source dei pacchetti e delle librerie utilizzate in questa app.",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: onSurfaceVariant,
-                        height: 1.3,
-                      ),
+                _buildLegalItem(
+                  title: "Licenze",
+                  subtitle: const Text(
+                    "Consulta le licenze open source dei pacchetti e delle librerie utilizzate in questa app.",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: onSurfaceVariant,
+                      height: 1.3,
                     ),
-                    onTap: () {
-                      showLicensePage(
-                        context: context,
-                        applicationName: 'G-Scanner',
-                        applicationVersion: '1.0.0',
-                        applicationLegalese: '© 2026 Emanuele Ciotola',
-                      );
-                    },
-                    showTrailingArrow: true,
-                    isLast: true,
                   ),
-                ],
-              ),
+                  onTap: () {
+                    showLicensePage(
+                      context: context,
+                      applicationName: 'G-Scanner',
+                      applicationVersion: '1.0.0',
+                      applicationLegalese: '© 2026 Emanuele Ciotola',
+                    );
+                  },
+                  showTrailingArrow: true,
+                  isLast: true,
+                ),
+              ],
             ),
+          ),
 
-            const SizedBox(height: 40),
+          const SizedBox(height: 40),
         ],
       ),
     );

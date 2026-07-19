@@ -423,6 +423,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         imageUrl: updatedProduct.imageUrl,
         lastUpdated: DateTime.now().toIso8601String(),
         reportCount: updatedProduct.reportCount,
+        ingredientsMap: updatedProduct.ingredientsMap,
+        allergensMap: updatedProduct.allergensMap,
+        reasonsMap: updatedProduct.reasonsMap,
+        ingredientsAnalyzedMap: updatedProduct.ingredientsAnalyzedMap,
       );
       await DbService.db
           .collection('products')
@@ -549,8 +553,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         SettingsPanel(
           settings: userSettings,
           onSettingsChange: (newSet) async {
-            await DbService.saveSettings(newSet);
             setState(() => userSettings = newSet);
+            await DbService.saveLocalSettings(newSet);
+            // Salva su Firestore in background senza bloccare la UI
+            DbService.saveSettings(newSet);
           },
           onResetDB: () async {
             await DbService.wipeHistoryLocal();
