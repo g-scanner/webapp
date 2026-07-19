@@ -219,12 +219,8 @@ class DbService {
             }
           }
 
-          // Rimuove gli underscore usati da OpenFoodFacts per formattare gli allergeni (_frumento_ -> frumento)
-          // e pulisce gli spazi prima dei segni di punteggiatura (es: "frumento , acqua" -> "frumento, acqua")
-          offIngredients = offIngredients
-              .replaceAll('_', '')
-              .replaceAll(RegExp(r'\s+([,.;])'), r'$1')
-              .trim();
+          // Ripulisce il testo degli ingredienti con l'helper dedicato
+          offIngredients = _cleanIngredientsText(offIngredients);
           offImage =
               pData['image_url'] ??
               pData['image_front_url'] ??
@@ -293,10 +289,7 @@ class DbService {
             }
           }
           if (langIng.trim().isNotEmpty) {
-            langIng = langIng
-                .replaceAll('_', '')
-                .replaceAll(RegExp(r'\s+([,.;])'), r'$1')
-                .trim();
+            langIng = _cleanIngredientsText(langIng);
           }
           final String langIngFinal = langIng.isEmpty ? offIngredients : langIng;
 
@@ -380,6 +373,13 @@ class DbService {
       final existingAlgMap = productDb?.allergensMap ?? {};
       final existingRsnMap = productDb?.reasonsMap ?? {};
       final existingIaMap = productDb?.ingredientsAnalyzedMap ?? {};
+
+      // Controlla se la lingua è già registrata nel DB per tutte le mappe localizzate
+      final bool alreadyHasLang = productDb != null &&
+          existingIngMap.containsKey(prefLang) &&
+          existingAlgMap.containsKey(prefLang) &&
+          existingRsnMap.containsKey(prefLang) &&
+          existingIaMap.containsKey(prefLang);
 
       // Nuovo entry per la lingua corrente (da productApi)
       final newIngEntry = productApi.ingredientsMap?[prefLang];
@@ -491,13 +491,15 @@ class DbService {
             ingredientsAnalyzedMap: mergedIaMap,
           );
           // Merge solo le mappe lingua senza toccare il resto (segnalazioni, status, etc.)
-          try {
-            await db
-                .collection(productsCollection)
-                .doc(barcode)
-                .update(langDelta);
-          } catch (e) {
-            print("Error updating lang maps on Firestore: $e");
+          if (!alreadyHasLang) {
+            try {
+              await db
+                  .collection(productsCollection)
+                  .doc(barcode)
+                  .update(langDelta);
+            } catch (e) {
+              print("Error updating lang maps on Firestore: $e");
+            }
           }
         }
       } else {
@@ -511,10 +513,12 @@ class DbService {
                 .set(productToReturn.toJson());
           } else {
             // Prodotto già nel DB senza segnalazioni: merge solo delle mappe lingua
-            await db
-                .collection(productsCollection)
-                .doc(barcode)
-                .update(langDelta);
+            if (!alreadyHasLang) {
+              await db
+                  .collection(productsCollection)
+                  .doc(barcode)
+                  .update(langDelta);
+            }
           }
         } catch (e) {
           print("Error saving product to Firestore: $e");
@@ -813,6 +817,7 @@ class DbService {
     String productName,
     String brand,
     Map<String, dynamic> reportData,
+    Product? productSnapshot,
   ) async {
     final user = auth.currentUser;
     final isAnonymous = user == null || user.isAnonymous;
@@ -845,6 +850,7 @@ class DbService {
         status: "open",
         userId: userId,
         originalStatus: originalStatus,
+        productSnapshot: productSnapshot,
       );
 
       localReports.insert(0, finalReport.toJson());
@@ -1293,6 +1299,87 @@ class DbService {
       print("Tutti i dati locali sono stati eliminati con successo!");
     } catch (e) {
       print("Errore durante il wipe dei dati locali: $e");
+    }
+  }
+
+  static String _cleanIngredientsText(String text) {
+    if (text.trim().isEmpty) return text;
+    return text
+        .replaceAll('_', '')
+        .replaceAll('{', '')
+        .replaceAll('}', '')
+        // Gestione parentesi tonde doppie: (A (B)) -> (A, B)
+        .replaceAllMapped(RegExp(r'\(([^()]+)\(([^()]+)\)\)'), (m) {
+          return '(${m[1]!.trim()}, ${m[2]!.trim()})';
+        })
+        // Gestione parentesi tonde doppie con spazi: ( A ( B ) ) -> (A, B)
+        .replaceAllMapped(RegExp(r'\(\s*([^()]+)\s*\(\s*([^()]+)\s*\)\s*\)'), (m) {
+          return '(${m[1]!.trim()}, ${m[2]!.trim()})';
+        })
+        // Rimuove spazi prima dei segni di punteggiatura
+        .replaceAll(RegExp(r'\s+([,.;])'), r'$1')
+        // Collassa spazi multipli
+        .replaceAll(RegExp(r'  +'), ' ')
+        .trim();
+  }
+
+  static Future<void> deleteUserHistory(String userId) async {
+    try {
+      final historyRef = db.collection("users/$userId/history");
+      final snap = await historyRef.get();
+      final batch = db.batch();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      print("User cloud history deleted successfully.");
+    } catch (e) {
+      print("Error deleting user history: $e");
+    }
+  }
+
+  static Future<void> deleteUserSettings(String userId) async {
+    try {
+      await db.collection("users").doc(userId).delete();
+      print("User cloud settings deleted successfully.");
+    } catch (e) {
+      print("Error deleting user settings: $e");
+    }
+  }
+
+  static Future<void> anonymizeUserReports(String userId) async {
+    try {
+      final snap = await db
+          .collection(reportsCollection)
+          .where('userId', isEqualTo: userId)
+          .get();
+      final batch = db.batch();
+      for (final doc in snap.docs) {
+        batch.update(doc.reference, {'userId': 'deleted_user'});
+      }
+      await batch.commit();
+      print("User reports anonymized successfully.");
+    } catch (e) {
+      print("Error anonymizing user reports: $e");
+    }
+  }
+
+  static Future<void> wipeCurrentUserLocalData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final user = auth.currentUser;
+      if (user != null) {
+        await prefs.remove('celiac_history_${user.uid}');
+        await prefs.remove('celiac_reports_${user.uid}');
+      } else {
+        await prefs.remove('celiac_history');
+        await prefs.remove('celiac_reports');
+        await prefs.remove('celiac_reported_barcodes');
+      }
+      await prefs.remove('celiac_settings');
+      print("Dati locali dell'utente eliminati con successo!");
+    } catch (e) {
+      print("Errore durante il wipe dei dati locali dell'utente: $e");
     }
   }
 }

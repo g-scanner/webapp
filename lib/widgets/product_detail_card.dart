@@ -73,6 +73,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       context: parentContext,
       isScrollControlled: true,
       useSafeArea: true, // Rispetta la status bar in M3
+      constraints: const BoxConstraints(maxWidth: 600),
       backgroundColor:
           Colors.transparent, // Lo sfondo arrotondato lo diamo al Container
       builder: (BuildContext sheetCtx) {

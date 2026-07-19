@@ -207,6 +207,7 @@ class ProductReport {
   final GlutenSafetyStatus?
   originalStatus; // Lo stato del prodotto al momento della segnalazione
   final int score;
+  final Product? productSnapshot; // Snapshot completo del prodotto al momento della segnalazione
 
   ProductReport({
     required this.id,
@@ -220,6 +221,7 @@ class ProductReport {
     required this.status,
     this.originalStatus,
     this.score = 0,
+    this.productSnapshot,
   });
 
   factory ProductReport.fromJson(Map<String, dynamic> json) {
@@ -240,6 +242,9 @@ class ProductReport {
             )
           : null,
       score: json['score'] ?? 0,
+      productSnapshot: json['productSnapshot'] != null
+          ? Product.fromJson(Map<String, dynamic>.from(json['productSnapshot']))
+          : null,
     );
   }
 
@@ -256,6 +261,7 @@ class ProductReport {
       'status': status,
       'originalStatus': originalStatus?.name,
       'score': score,
+      'productSnapshot': productSnapshot?.toJson(),
     };
   }
 }

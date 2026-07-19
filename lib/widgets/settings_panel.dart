@@ -1161,6 +1161,64 @@ class _SettingsPanelState extends State<SettingsPanel> {
   }
 
   Future<void> _handleDeleteAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final lastSignIn = user.metadata.lastSignInTime;
+    final bool needsReauth = lastSignIn == null ||
+        DateTime.now().difference(lastSignIn).inMinutes > 5;
+
+    if (needsReauth) {
+      // CASO 2: Serve riautenticazione/re-login per motivi di sicurezza
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: surfaceLowest,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: outlineVariant, width: 1.5),
+          ),
+          icon: const Icon(Icons.security_rounded, color: primary, size: 36),
+          title: const Text(
+            "Accesso richiesto per sicurezza",
+            style: TextStyle(color: onSurface, fontSize: 20, fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+          ),
+          content: const Text(
+            "Per motivi di sicurezza, prima di procedere all'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo 'Procedi' verrai disconnesso per poter rientrare e completare l'operazione.",
+            style: TextStyle(color: onSurfaceVariant, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+              child: const Text("Annulla"),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Procedi"),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        await FirebaseAuth.instance.signOut();
+        if (mounted) {
+          Navigator.pop(context); // Chiude il Bottom Sheet settings
+        }
+      }
+      return;
+    }
+
+    // CASO 1: Può procedere immediatamente
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1173,11 +1231,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
         icon: const Icon(Icons.warning_amber_rounded, color: error, size: 36),
         title: const Text(
           "Eliminazione Definitiva",
-          style: TextStyle(color: error, fontSize: 20),
+          style: TextStyle(color: error, fontSize: 20, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
         ),
         content: const Text(
-          "Sei sicuro di voler eliminare il tuo account e tutti i dati cloud? Questa azione è IRREVERSIBILE.\n\nNota: Per motivi di sicurezza potrebbe esserti richiesto di effettuare nuovamente l'accesso.",
-          style: TextStyle(color: onSurface),
+          "Sei sicuro di voler eliminare il tuo account e tutti i dati cloud? Questa azione è IRREVERSIBILE.\n\nSaranno eliminati:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nI tuoi report inseriti rimarranno ma verranno anonimizzati.",
+          style: TextStyle(color: onSurface, fontSize: 14),
           textAlign: TextAlign.center,
         ),
         actionsAlignment: MainAxisAlignment.center,
@@ -1193,26 +1252,41 @@ class _SettingsPanelState extends State<SettingsPanel> {
               backgroundColor: error,
               foregroundColor: Colors.white,
             ),
-            child: const Text("Elimina"),
+            child: const Text("Elimina definitivamente"),
           ),
         ],
       ),
     );
 
     if (confirm == true) {
-      if (mounted) _triggerToast("Tentativo di eliminazione account...");
+      if (mounted) _triggerToast("Eliminazione account in corso...");
       try {
-        await DbService.wipeAllLocalData();
-        await FirebaseAuth.instance.currentUser?.delete();
+        final String uid = user.uid;
+        // 1. Elimina impostazioni cloud
+        await DbService.deleteUserSettings(uid);
+        // 2. Elimina cronologia cloud
+        await DbService.deleteUserHistory(uid);
+        // 3. Anonimizza i report
+        await DbService.anonymizeUserReports(uid);
+        // 4. Wipe della cache locale dell'utente corrente e settings
+        await DbService.wipeCurrentUserLocalData();
+        // 5. Elimina account Firebase Auth
+        await user.delete();
+        // 6. Sign out di sicurezza
         await FirebaseAuth.instance.signOut();
+        
+        if (mounted) {
+          Navigator.pop(context); // Chiude il Bottom Sheet settings
+        }
       } on FirebaseAuthException catch (e) {
         if (e.code == 'requires-recent-login') {
           if (mounted) {
             _triggerToast(
-              "Sicurezza: Uscita forzata. Esegui un nuovo accesso e riprova ad eliminare l'account.",
+              "Sicurezza: Uscita forzata. Esegui un nuovo accesso e riprova.",
             );
           }
           await FirebaseAuth.instance.signOut();
+          if (mounted) Navigator.pop(context);
         } else {
           if (mounted) _triggerToast("Errore: ${e.message}");
         }
@@ -1231,6 +1305,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return DraggableScrollableSheet(

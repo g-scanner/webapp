@@ -385,6 +385,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         product.name,
         product.brand,
         reportData,
+        product,
       );
 
       setState(() {
@@ -540,6 +541,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           reportedBarcodes: userSettings.reportedBarcodes,
           onRefresh: refreshAllData,
           isSynced: _isReportsSynced,
+          userSettings: userSettings,
           onSelectItem: (barcode) {
             final match = products.cast<Product?>().firstWhere(
               (p) => p?.barcode == barcode,

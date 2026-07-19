@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/types.dart';
 import 'responsive_wrapper.dart';
+import 'product_detail_card.dart';
 
 // --- Colori estratti dal tuo Tailwind Config ---
 const Color bgBackground = Color(0xFFFAF9FC);
@@ -16,6 +18,7 @@ const Color outlineVariant = Color(0xFFBFCABA);
 const Color primary = Color(0xFF0D631B);
 const Color error = Color(0xFFBA1A1A);
 const Color warningText = Color(0xFF884200);
+const Color warningContainer = Color(0xFFFFDCC6);
 
 class ReportDetailCard extends StatefulWidget {
   final Product product;
@@ -33,6 +36,7 @@ class ReportDetailCard extends StatefulWidget {
 
   final Future<void> Function(int voteDirection)? onVote;
   final Future<Map<String, int>> Function()? onInitVote;
+  final UserSettings? userSettings; // Aggiunto
 
   const ReportDetailCard({
     super.key,
@@ -46,6 +50,7 @@ class ReportDetailCard extends StatefulWidget {
     this.onVote,
     this.score = 0,
     this.onInitVote,
+    this.userSettings, // Aggiunto
   });
 
   @override
@@ -58,6 +63,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   late int _displayScore;
   bool _isVoteLoading = true;
 
+  ProductReport? _activeReport;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +73,25 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   }
 
   Future<void> _loadInitialData() async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .where('barcode', isEqualTo: widget.product.barcode)
+          .where('status', isEqualTo: 'open')
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty && mounted) {
+        setState(() {
+          _activeReport = ProductReport.fromJson(
+            querySnapshot.docs.first.data(),
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint("Errore nel caricamento del report da Firestore: $e");
+    }
+
     if (widget.onInitVote != null) {
       final data = await widget.onInitVote!();
       if (mounted) {
@@ -181,7 +207,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
               Container(
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: Color(0xFFFFDCC6),
+                  color: warningContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Column(
@@ -265,6 +291,103 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
               ),
               const SizedBox(height: 24),
 
+              // ── NUOVO BOTTONE NEUTRO: Scheda Prodotto ────────────────
+              InkWell(
+                onTap: () {
+                  final productToShow =
+                      _activeReport?.productSnapshot ?? widget.product;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetailCard(
+                        product: productToShow,
+                        onBack: () => Navigator.pop(context),
+                        // Sola lettura: la segnalazione è già stata inviata,
+                        // questi callback non verranno mai chiamati da qui.
+                        onReportSubmit: (_, _) async {},
+                        onProductUpdate: (_) async {},
+                        userSettings:
+                            widget.userSettings ??
+                            UserSettings(
+                              strictMode: true,
+                              alertLactose: false,
+                              warnAdditives: true,
+                              autoSaveHistory: true,
+                              preferredLanguage: 'it',
+                            ),
+                      ),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: surfaceLowest,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: outlineVariant.withValues(alpha: 0.5),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: onSurface.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Icona neutra a sinistra
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: surfaceContainerHigh,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.inventory_2_outlined,
+                          size: 20,
+                          color: onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Testo
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Mostra scheda prodotto",
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: onSurface,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              "Ingredienti, allergeni e note.",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Freccia a destra per indicare la navigazione
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 24,
+                        color: outlineVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // ── Vecchio Stato del Prodotto ────────────────────────────
               _buildSectionCard(
                 title: "STATO PRECEDENTE",
@@ -310,7 +433,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Informazioni compatte: Motivo e Data
+                    // Informazioni compatte: Motivo
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -329,7 +452,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                                 ),
                                 TextSpan(
                                   text: _translateReason(
-                                    widget.reportReasonKey,
+                                    _activeReport?.type ??
+                                        widget.reportReasonKey,
                                   ),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
@@ -341,33 +465,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: onSurface,
-                            ),
-                            children: [
-                              const TextSpan(
-                                text: "Data invio: ",
-                                style: TextStyle(color: onSurfaceVariant),
-                              ),
-                              TextSpan(
-                                text: widget.reportDate,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
 
                     // Commento dell'utente stile "Blockquote"
                     const Text(
@@ -396,15 +495,18 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         ),
                       ),
                       child: Text(
-                        widget.reportComment.isEmpty
+                        (_activeReport?.comments ?? widget.reportComment)
+                                .isEmpty
                             ? "Nessun commento aggiuntivo fornito."
-                            : '"${widget.reportComment}"',
+                            : '"${_activeReport?.comments ?? widget.reportComment}"',
                         style: TextStyle(
                           fontSize: 15,
-                          fontStyle: widget.reportComment.isEmpty
+                          fontStyle:
+                              (_activeReport?.comments ?? widget.reportComment)
+                                  .isEmpty
                               ? FontStyle.normal
                               : FontStyle.italic,
-                          color: Colors.red,
+                          color: onSurface,
                           height: 1.4,
                         ),
                       ),
@@ -442,13 +544,32 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.thumb_up_outlined, size: 20, color: onSurfaceVariant),
+                              const Icon(
+                                Icons.thumb_up_outlined,
+                                size: 20,
+                                color: onSurfaceVariant,
+                              ),
                               const SizedBox(width: 8),
-                              const Text("0", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: onSurfaceVariant)),
+                              const Text(
+                                "0",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: onSurfaceVariant,
+                                ),
+                              ),
                               const SizedBox(width: 20),
-                              Container(width: 1, height: 24, color: outlineVariant),
+                              Container(
+                                width: 1,
+                                height: 24,
+                                color: outlineVariant,
+                              ),
                               const SizedBox(width: 20),
-                              const Icon(Icons.thumb_down_outlined, size: 20, color: onSurfaceVariant),
+                              const Icon(
+                                Icons.thumb_down_outlined,
+                                size: 20,
+                                color: onSurfaceVariant,
+                              ),
                             ],
                           ),
                         ),

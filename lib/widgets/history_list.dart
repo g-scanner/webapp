@@ -290,7 +290,7 @@ class _HistoryListState extends State<HistoryList> {
                       count: uncertainCount.toString(),
                       label: "Incerti",
                       color: warningText,
-                      icon: Icons.help,
+                      icon: Icons.warning_rounded,
                     ),
                     const SizedBox(width: 12),
                     _buildStatBox(

@@ -29,6 +29,7 @@ class DatabaseProducts extends StatefulWidget {
   final Function(String) onSelectItem;
   final Future<void> Function() onRefresh;
   final bool isSynced;
+  final UserSettings? userSettings;
 
   const DatabaseProducts({
     super.key,
@@ -37,6 +38,7 @@ class DatabaseProducts extends StatefulWidget {
     required this.onSelectItem,
     required this.onRefresh,
     required this.isSynced,
+    this.userSettings,
   });
 
   @override
@@ -442,6 +444,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     prod.barcode,
                   );
                 },
+                userSettings: widget.userSettings,
               ),
             ),
           );
