@@ -17,6 +17,20 @@
         "medical"
     ],
     "prefer_related_applications": false,
+    "shortcuts": [
+        {
+            "name": "Start a new scan",
+            "short_name": "Scan Now",
+            "description": "Quickly scan a new barcode",
+            "url": "/webapp/",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ],
     "icons": [
         {
             "src": "icons/Icon-192.png",
@@ -39,20 +53,6 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
-        }
-    ],
-    "shortcuts": [
-        {
-            "name": "Start a new scan",
-            "short_name": "Scan Now",
-            "description": "Quickly scan a new barcode",
-            "url": "/webapp/",
-            "icons": [
-                {
-                    "src": "icons/Icon-192.png",
-                    "sizes": "192x192"
-                }
-            ]
         }
     ]
 }
