@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Evita che i bot sovraccarichino il sistema
+Crawl-delay: 10
+
+# Blocca bot noti per lo scraping intensivo di codice/dati
+User-agent: CCBot
+Disallow: /
+User-agent: GPTBot
+Disallow: /
+
+Sitemap: https://gscanner.github.io/sitemap.xml

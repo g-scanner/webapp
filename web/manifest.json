@@ -1,12 +1,21 @@
 {
-    "name": "gscanner",
-    "short_name": "gscanner",
-    "start_url": ".",
+    "id": "/webapp/",
+    "name": "G-Scanner | Food Scanner",
+    "short_name": "G-Scanner",
+    "description": "Scan food barcodes with G-Scanner. Instantly discover gluten, suspicious additives, or lactose. Free and ad-free!",
+    "lang": "en",
+    "dir": "ltr",
+    "start_url": "/webapp/",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
     "orientation": "portrait-primary",
+    "background_color": "#BFDEB4",
+    "theme_color": "#0D631B",
+    "categories": [
+        "health",
+        "food",
+        "lifestyle",
+        "medical"
+    ],
     "prefer_related_applications": false,
     "icons": [
         {
@@ -30,6 +39,20 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Start a new scan",
+            "short_name": "Scan Now",
+            "description": "Quickly scan a new barcode",
+            "url": "/webapp/",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
         }
     ]
 }

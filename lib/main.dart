@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gscanner/widgets/sync_data_screen.dart';
 import 'firebase_options.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'models/types.dart';
 import 'services/db_service.dart';
@@ -51,6 +52,8 @@ void main() async {
       print("Camera autostart in main failed: $e");
     }
   }
+
+  usePathUrlStrategy();
 
   runApp(const MyApp());
 }

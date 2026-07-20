@@ -8,6 +8,7 @@ import 'package:gscanner/utils/popup_tracker_stub.dart'
     if (dart.library.js_interop) 'package:gscanner/utils/popup_tracker_web.dart';
 
 const Color surfaceContainerLowest = Color(0xFFFFFFFF);
+const Color iconForeground = Color(0xFFBFDEB4);
 const Color surfaceVariant = Color(0xFFE3E2E6);
 const Color primary = Color(0xFF0D631B);
 const Color onPrimary = Color(0xFFFFFFFF);
@@ -53,7 +54,10 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
     try {
       if (kIsWeb) {
-        final cred = await _signInWithPopupTracked(GoogleAuthProvider(), "Google");
+        final cred = await _signInWithPopupTracked(
+          GoogleAuthProvider(),
+          "Google",
+        );
         if (cred == null && mounted) {
           setState(() => _isLoading = false);
         }
@@ -112,7 +116,10 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
     try {
       if (kIsWeb) {
-        final cred = await _signInWithPopupTracked(FacebookAuthProvider(), "Facebook");
+        final cred = await _signInWithPopupTracked(
+          FacebookAuthProvider(),
+          "Facebook",
+        );
         if (cred == null && mounted) {
           setState(() => _isLoading = false);
         }
@@ -267,10 +274,10 @@ class _AuthScreenState extends State<AuthScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primaryContainer.withValues(alpha: 0.15),
+                color: secondaryContainer.withValues(alpha: 0.15),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryContainer.withValues(alpha: 0.15),
+                    color: secondaryContainer.withValues(alpha: 0.15),
                     blurRadius: 100,
                     spreadRadius: 50,
                   ),
@@ -287,10 +294,10 @@ class _AuthScreenState extends State<AuthScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: secondaryContainer.withValues(alpha: 0.15),
+                color: primaryContainer.withValues(alpha: 0.15),
                 boxShadow: [
                   BoxShadow(
-                    color: secondaryContainer.withValues(alpha: 0.15),
+                    color: primaryContainer.withValues(alpha: 0.15),
                     blurRadius: 120,
                     spreadRadius: 60,
                   ),
@@ -330,15 +337,17 @@ class _AuthScreenState extends State<AuthScreen> {
                     Container(
                       width: 96,
                       height: 96,
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: surfaceVariant.withValues(alpha: 0.5),
+                        color: iconForeground,
                         shape: BoxShape.circle,
                       ),
                       clipBehavior: Clip.antiAlias,
-                      child: const Icon(
-                        Icons.qr_code_scanner,
-                        size: 48,
-                        color: primary,
+                      child: const Image(
+                        image: AssetImage(
+                          'assets/logo/app_icon_foreground.png',
+                        ),
+                        fit: BoxFit.contain,
                       ),
                     ),
                     const SizedBox(height: 16),
