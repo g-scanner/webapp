@@ -75,6 +75,10 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
     });
   }
 
+  TextStyle _dropdownItemTextStyle(Color color) {
+    return TextStyle(color: color, fontWeight: FontWeight.w600);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Estrai i prodotti con segnalazioni, ordinati per data decrescente
@@ -137,7 +141,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
         : onSurface;
     final Color filterIconColor = isMineSelected
         ? onSecondaryContainer
-        : onSurfaceVariant;
+        : onSurfaceVariant.withValues(alpha: 0.6);
 
     return RefreshIndicator(
       onRefresh: widget.onRefresh,
@@ -260,33 +264,43 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                         color: onSurfaceVariant.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
-                      prefixIcon: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        transitionBuilder:
-                            (Widget child, Animation<double> animation) {
-                              return ScaleTransition(
-                                scale: animation,
-                                child: child,
-                              );
-                            },
-                        child: showClearIcon
-                            ? IconButton(
-                                key: const ValueKey('clearIcon'),
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: onSurfaceVariant,
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 48,
+                        maxWidth: 48,
+                        minHeight: 48,
+                      ),
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 4.0),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                                return ScaleTransition(
+                                  scale: animation,
+                                  child: child,
+                                );
+                              },
+                          child: showClearIcon
+                              ? IconButton(
+                                  key: const ValueKey('clearIcon'),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: onSurfaceVariant,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _searchTerm = "");
+                                    _searchFocusNode.requestFocus();
+                                  },
+                                )
+                              : Icon(
+                                  key: const ValueKey('searchIcon'),
+                                  Icons.search,
+                                  color: _searchTerm.isNotEmpty
+                                      ? onSurfaceVariant
+                                      : onSurfaceVariant.withValues(alpha: 0.6),
                                 ),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() => _searchTerm = "");
-                                  _searchFocusNode.requestFocus();
-                                },
-                              )
-                            : const Icon(
-                                key: ValueKey('searchIcon'),
-                                Icons.search,
-                                color: onSurfaceVariant,
-                              ),
+                        ),
                       ),
                       filled: true,
                       fillColor: surfaceContainer,
@@ -327,9 +341,23 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: "Tutte", child: Text("Tutte")),
-                      DropdownMenuItem(value: "Mie", child: Text("Le mie")),
+                    items: [
+                      DropdownMenuItem(
+                        value: "Tutte",
+                        child: Text(
+                          "Tutte",
+                          style: _dropdownItemTextStyle(
+                            onSurfaceVariant.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: "Mie",
+                        child: Text(
+                          "Le mie",
+                          style: _dropdownItemTextStyle(onSecondaryContainer),
+                        ),
+                      ),
                     ],
                     onChanged: (val) {
                       if (val != null) setState(() => _reportFilter = val);

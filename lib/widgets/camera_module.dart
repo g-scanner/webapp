@@ -35,11 +35,19 @@ class CameraModule extends StatefulWidget {
 
 class _CameraModuleState extends State<CameraModule> {
   final TextEditingController _manualCodeController = TextEditingController();
+  late FocusNode _manualFocusNode; // 1. Aggiunto il FocusNode
+
   bool _isProcessing = false;
+  bool _isManualFocused = false; // 2. Stato per tracciare il focus
 
   @override
   void initState() {
     super.initState();
+
+    // Inizializzo il focus e l'ascoltatore (identico alla cronologia)
+    _manualFocusNode = FocusNode();
+    _manualFocusNode.addListener(_onManualFocusChange);
+
     if (widget.isActive) {
       try {
         widget.controller.start();
@@ -47,6 +55,12 @@ class _CameraModuleState extends State<CameraModule> {
         print("Camera start error in CameraModule initState: $e");
       }
     }
+  }
+
+  void _onManualFocusChange() {
+    setState(() {
+      _isManualFocused = _manualFocusNode.hasFocus;
+    });
   }
 
   @override
@@ -71,6 +85,8 @@ class _CameraModuleState extends State<CameraModule> {
 
   @override
   void dispose() {
+    _manualFocusNode.removeListener(_onManualFocusChange);
+    _manualFocusNode.dispose();
     _manualCodeController.dispose();
     super.dispose();
   }
@@ -96,7 +112,6 @@ class _CameraModuleState extends State<CameraModule> {
     return Container(
       color: surfaceContainerLowest,
       child: SingleChildScrollView(
-        // Margini esterni alla card
         padding: const EdgeInsets.only(
           left: 20.0,
           right: 20.0,
@@ -106,10 +121,8 @@ class _CameraModuleState extends State<CameraModule> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Card Integrata (Testo + Fotocamera + Inserimento Manuale) ───
             _buildIntegratedCard(),
 
-            // Errore eventuale scansione
             if (widget.scanError != null) ...[
               const SizedBox(height: 24),
               Container(
@@ -144,8 +157,6 @@ class _CameraModuleState extends State<CameraModule> {
             ],
 
             const SizedBox(height: 32),
-
-            // ── Guide Indicatori Bento ──────────────────────────────────────
             _buildSafetyGuide(),
           ],
         ),
@@ -153,21 +164,18 @@ class _CameraModuleState extends State<CameraModule> {
     );
   }
 
-  /// ── Card Unica Material 3: Spaziosa, Rotonda e Pulita ────────────────────
   Widget _buildIntegratedCard() {
     return Container(
       decoration: BoxDecoration(
         color: surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(36), // Raggio armonioso per M3
+        borderRadius: BorderRadius.circular(36),
         border: Border.all(
           color: outlineVariant.withValues(alpha: 0.25),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: onSurface.withValues(
-              alpha: 0.04,
-            ), // Ombra impalpabile e diffusa
+            color: onSurface.withValues(alpha: 0.04),
             blurRadius: 28,
             spreadRadius: 0,
             offset: const Offset(0, 12),
@@ -175,12 +183,10 @@ class _CameraModuleState extends State<CameraModule> {
         ],
       ),
       child: Padding(
-        // Spaziature interne perfette
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Intestazione ───────────────────────────────────────────
             const Text(
               "Scan Product",
               textAlign: TextAlign.center,
@@ -205,15 +211,13 @@ class _CameraModuleState extends State<CameraModule> {
                 ),
               ),
             ),
-            const SizedBox(height: 32), // Respiro tra testo e fotocamera
-            // 1. Area Fotocamera
+            const SizedBox(height: 32),
             _buildCameraArea(),
 
-            // 2. Divisore "oppure" spazioso
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 8.0,
-                vertical: 24.0, // Respiro verticale bilanciato
+                vertical: 24.0,
               ),
               child: Row(
                 children: [
@@ -245,7 +249,7 @@ class _CameraModuleState extends State<CameraModule> {
               ),
             ),
 
-            // 3. Inserimento Manuale
+            // 3. Inserimento Manuale Totalmente Ricostruito
             _buildManualInput(),
           ],
         ),
@@ -258,23 +262,20 @@ class _CameraModuleState extends State<CameraModule> {
 
     return Stack(
       children: [
-        // Riquadro Fotocamera Principale
         Padding(
           padding: const EdgeInsets.only(bottom: buttonOverflow),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28.0), // Curve interne dolci
+              borderRadius: BorderRadius.circular(28.0),
               color: Colors.black,
             ),
             clipBehavior: Clip.antiAlias,
-            // ASPECT RATIO A RETTANGOLO (16/10)
             child: AspectRatio(
               aspectRatio: 16 / 10,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final w = constraints.maxWidth;
                   final h = constraints.maxHeight;
-
                   final double frameW = w * 0.85;
                   final double frameH = h * 0.65;
 
@@ -350,8 +351,6 @@ class _CameraModuleState extends State<CameraModule> {
             ),
           ),
         ),
-
-        // ── Pulsante Flash Ricostruito M3 Perfettamente Centrato ──
         Positioned(
           bottom: 0,
           left: 0,
@@ -364,8 +363,7 @@ class _CameraModuleState extends State<CameraModule> {
 
                 return Material(
                   color: isOn ? primaryContainer : surfaceContainerLowest,
-                  elevation:
-                      4, // Ombra definita per spiccare dal nero della fotocamera
+                  elevation: 4,
                   shadowColor: Colors.black.withValues(alpha: 0.4),
                   shape: const CircleBorder(),
                   clipBehavior: Clip.antiAlias,
@@ -376,7 +374,6 @@ class _CameraModuleState extends State<CameraModule> {
                       height: 56,
                       child: Center(
                         child: Icon(
-                          // La torcia è un'icona perfettamente simmetrica
                           isOn ? Icons.flashlight_on : Icons.flashlight_off,
                           size: 24,
                           color: isOn ? surfaceContainerLowest : onSurface,
@@ -393,62 +390,141 @@ class _CameraModuleState extends State<CameraModule> {
     );
   }
 
+  // 👇 LA NUOVA BARRA DI RICERCA 1:1 CON LA CRONOLOGIA 👇
   Widget _buildManualInput() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: surfaceContainerLow,
-              borderRadius: BorderRadius.circular(999), // Forma a pillola
-              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
-            ),
-            child: Center(
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _manualCodeController,
+      builder: (context, value, child) {
+        final bool hasText = value.text.trim().isNotEmpty;
+
+        // Identico a cronologia: mostra l'icona X solo se c'è testo ED è in focus
+        final bool showClearIcon = _isManualFocused && hasText;
+
+        return Row(
+          children: [
+            Expanded(
               child: TextField(
                 controller: _manualCodeController,
+                focusNode: _manualFocusNode, // Assegnato il nuovo FocusNode
                 keyboardType: TextInputType.number,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
                   color: onSurface,
                   fontWeight: FontWeight.w500,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.0,
                 ),
                 decoration: InputDecoration(
-                  hintText: "Manual Barcode",
+                  hintText: "Manual Barcode...",
                   hintStyle: TextStyle(
-                    color: onSurfaceVariant.withValues(alpha: 0.5),
-                    letterSpacing: 0,
-                    fontWeight: FontWeight.normal,
+                    color: onSurfaceVariant.withValues(alpha: 0.6),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
                   ),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 48,
+                    maxWidth: 48,
+                    minHeight: 48,
+                  ),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                            return ScaleTransition(
+                              scale: animation,
+                              child: child,
+                            );
+                          },
+                      child: showClearIcon
+                          ? IconButton(
+                              key: const ValueKey('clearIcon'),
+                              icon: const Icon(
+                                Icons.close,
+                                color: onSurfaceVariant,
+                                size: 22,
+                              ),
+                              onPressed: () {
+                                _manualCodeController.clear();
+                                _manualFocusNode.requestFocus();
+                              },
+                            )
+                          : Icon(
+                              Icons
+                                  .qr_code_scanner_rounded, // Icona barcode invece della lente
+                              key: ValueKey('barcodeIcon'),
+                              color: hasText
+                                  ? onSurfaceVariant
+                                  : onSurfaceVariant.withValues(alpha: 0.6),
+                              size: 22,
+                            ),
+                    ),
+                  ),
+                  filled: true,
+                  fillColor:
+                      surfaceContainer, // Stesso background della cronologia
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 15,
+                    horizontal: 16,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        FilledButton(
-          onPressed: widget.scanningProgress ? null : _handleManualSearch,
-          style: FilledButton.styleFrom(
-            backgroundColor: primaryContainer.withValues(alpha: 0.1),
-            foregroundColor: primaryContainer,
-            elevation: 0,
-            minimumSize: const Size(0, 56),
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
+
+            const SizedBox(width: 12),
+
+            // Bottone Rotondo Dinamico
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                // IL SEGRETO È QUI: Usa il verde (primaryContainer) al 12% di opacità.
+                // Resta un blocco solido, ma chiaramente "spento".
+                color: hasText ? primaryContainer : surfaceContainer,
+                boxShadow: hasText
+                    ? [
+                        BoxShadow(
+                          color: primaryContainer.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [BoxShadow(color: Colors.transparent)],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: (hasText && !widget.scanningProgress)
+                      ? _handleManualSearch
+                      : null,
+                  child: Center(
+                    child: Transform.translate(
+                      offset: const Offset(0.5, 0),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 22,
+                        // Anche l'icona usa il verde (al 35-40%) per restare in tema
+                        // e staccarsi leggermente dal fondo chiaro.
+                        color: hasText
+                            ? surfaceContainerLowest
+                            : onSurfaceVariant.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-          child: const Text(
-            "Search",
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 

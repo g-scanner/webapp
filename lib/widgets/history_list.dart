@@ -157,6 +157,40 @@ class _HistoryListState extends State<HistoryList> {
     }
   }
 
+  Color _getFilterTextColor() {
+    switch (_filter) {
+      case GlutenSafetyStatus.adatto:
+        return primary;
+      case GlutenSafetyStatus.incerto:
+        return warningText;
+      case GlutenSafetyStatus.nonAdatto:
+        return error;
+      case GlutenSafetyStatus.sconosciuto:
+        return onSurfaceVariant;
+      default:
+        return onSurfaceVariant.withValues(alpha: 0.6);
+    }
+  }
+
+  Color _getFilterIconColor() {
+    switch (_filter) {
+      case GlutenSafetyStatus.adatto:
+        return primary;
+      case GlutenSafetyStatus.incerto:
+        return warningText;
+      case GlutenSafetyStatus.nonAdatto:
+        return error;
+      case GlutenSafetyStatus.sconosciuto:
+        return onSurfaceVariant;
+      default:
+        return onSurfaceVariant.withValues(alpha: 0.6);
+    }
+  }
+
+  TextStyle _dropdownItemTextStyle(Color color) {
+    return TextStyle(color: color, fontWeight: FontWeight.w600);
+  }
+
   @override
   Widget build(BuildContext context) {
     // 1. SINCRONIZZAZIONE LIVE DEGLI STATI
@@ -321,35 +355,45 @@ class _HistoryListState extends State<HistoryList> {
                         color: onSurfaceVariant.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
-                      prefixIcon: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        transitionBuilder:
-                            (Widget child, Animation<double> animation) {
-                              return ScaleTransition(
-                                scale: animation,
-                                child: child,
-                              );
-                            },
-                        child: showClearIcon
-                            ? IconButton(
-                                key: const ValueKey('clearIcon'),
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: onSurfaceVariant,
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 48,
+                        maxWidth: 48,
+                        minHeight: 48,
+                      ),
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 4.0),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                                return ScaleTransition(
+                                  scale: animation,
+                                  child: child,
+                                );
+                              },
+                          child: showClearIcon
+                              ? IconButton(
+                                  key: const ValueKey('clearIcon'),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: onSurfaceVariant,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _search = "";
+                                    });
+                                    _searchFocusNode.requestFocus();
+                                  },
+                                )
+                              : Icon(
+                                  key: ValueKey('searchIcon'),
+                                  Icons.search,
+                                  color: _search.isNotEmpty
+                                      ? onSurfaceVariant
+                                      : onSurfaceVariant.withValues(alpha: 0.6),
                                 ),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() {
-                                    _search = "";
-                                  });
-                                  _searchFocusNode.requestFocus();
-                                },
-                              )
-                            : const Icon(
-                                key: ValueKey('searchIcon'),
-                                Icons.search,
-                                color: onSurfaceVariant,
-                              ),
+                        ),
                       ),
                       filled: true,
                       fillColor: surfaceContainer,
@@ -369,15 +413,15 @@ class _HistoryListState extends State<HistoryList> {
                   flex: 2,
                   child: DropdownButtonFormField<GlutenSafetyStatus?>(
                     initialValue: _filter,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.filter_list,
-                      color: onSurfaceVariant,
+                      color: _getFilterIconColor(),
                       size: 20,
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: onSurface,
+                      color: _getFilterTextColor(),
                     ),
                     decoration: InputDecoration(
                       filled: true,
@@ -390,23 +434,43 @@ class _HistoryListState extends State<HistoryList> {
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: null, child: Text("Tutti")),
+                    items: [
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text(
+                          "Tutti",
+                          style: _dropdownItemTextStyle(
+                            onSurfaceVariant.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.adatto,
-                        child: Text("Sicuri"),
+                        child: Text(
+                          "Sicuri",
+                          style: _dropdownItemTextStyle(primary),
+                        ),
                       ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.incerto,
-                        child: Text("Incerti"),
+                        child: Text(
+                          "Incerti",
+                          style: _dropdownItemTextStyle(warningText),
+                        ),
                       ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.nonAdatto,
-                        child: Text("Vietati"),
+                        child: Text(
+                          "Vietati",
+                          style: _dropdownItemTextStyle(error),
+                        ),
                       ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.sconosciuto,
-                        child: Text("Scon."),
+                        child: Text(
+                          "Scon.",
+                          style: _dropdownItemTextStyle(onSurfaceVariant),
+                        ),
                       ),
                     ],
                     onChanged: (val) => setState(() => _filter = val),

@@ -952,21 +952,26 @@ class _SettingsPanelState extends State<SettingsPanel> {
                               color: onSurfaceVariant.withValues(alpha: 0.6),
                               fontSize: 14,
                             ),
-                            prefixIcon: const Icon(
-                              Icons.badge_outlined,
-                              color: onSurfaceVariant,
+                            prefixIconConstraints: const BoxConstraints(
+                              minWidth: 48,
+                              maxWidth: 48,
+                              minHeight: 48,
+                            ),
+                            prefixIcon: Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: Icon(
+                                Icons.badge_outlined,
+                                color: onSurfaceVariant,
+                              ),
                             ),
                             filled: true,
-                            fillColor: surfaceContainer, // Colore morbido M3
+                            fillColor: surfaceContainer,
                             contentPadding: const EdgeInsets.symmetric(
-                              vertical:
-                                  0, // 0 per bilanciarsi perfettamente con il prefixIcon
+                              vertical: 0,
                               horizontal: 16,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(
-                                999,
-                              ), // Forma a pillola
+                              borderRadius: BorderRadius.circular(999),
                               borderSide: BorderSide.none,
                             ),
                           ),
@@ -1165,7 +1170,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
     if (user == null) return;
 
     final lastSignIn = user.metadata.lastSignInTime;
-    final bool needsReauth = lastSignIn == null ||
+    final bool needsReauth =
+        lastSignIn == null ||
         DateTime.now().difference(lastSignIn).inMinutes > 5;
 
     if (needsReauth) {
@@ -1182,7 +1188,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
           icon: const Icon(Icons.security_rounded, color: primary, size: 36),
           title: const Text(
             "Accesso richiesto per sicurezza",
-            style: TextStyle(color: onSurface, fontSize: 20, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
             textAlign: TextAlign.center,
           ),
           content: const Text(
@@ -1231,7 +1241,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
         icon: const Icon(Icons.warning_amber_rounded, color: error, size: 36),
         title: const Text(
           "Eliminazione Definitiva",
-          style: TextStyle(color: error, fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: error,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
           textAlign: TextAlign.center,
         ),
         content: const Text(
@@ -1274,7 +1288,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
         await user.delete();
         // 6. Sign out di sicurezza
         await FirebaseAuth.instance.signOut();
-        
+
         if (mounted) {
           Navigator.pop(context); // Chiude il Bottom Sheet settings
         }
