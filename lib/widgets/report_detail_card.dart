@@ -36,13 +36,16 @@ class ReportDetailCard extends StatefulWidget {
 
   final Future<void> Function(int voteDirection)? onVote;
   final Future<Map<String, int>> Function()? onInitVote;
-  final UserSettings? userSettings; // Aggiunto
+  final UserSettings? userSettings;
+  final bool isOwnReport;
+  final String? reportId;
+  final Future<void> Function(String reportId)? onDeleteReport;
 
   const ReportDetailCard({
     super.key,
     required this.product,
     required this.onBack,
-    required this.originalStatus, // Passalo dal DB quando chiami questa pagina
+    required this.originalStatus,
     required this.reportReasonKey,
     required this.reportComment,
     required this.reportDate,
@@ -50,7 +53,10 @@ class ReportDetailCard extends StatefulWidget {
     this.onVote,
     this.score = 0,
     this.onInitVote,
-    this.userSettings, // Aggiunto
+    this.userSettings,
+    this.isOwnReport = false,
+    this.reportId,
+    this.onDeleteReport,
   });
 
   @override
@@ -197,6 +203,64 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             ),
           ),
           centerTitle: true,
+          actions: [
+            if (widget.isOwnReport && widget.onDeleteReport != null)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: onSurfaceVariant),
+                color: surfaceLowest,
+                onSelected: (value) {
+                  if (value == 'delete_report') {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: surfaceLowest,
+                        title: const Text("Eliminare segnalazione?"),
+                        content: const Text(
+                          "Sei sicuro di voler eliminare questa segnalazione?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: TextButton.styleFrom(
+                              foregroundColor: onSurfaceVariant,
+                            ),
+                            child: const Text("Annulla"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.pop(ctx);
+                              final targetId =
+                                  widget.reportId ?? _activeReport?.id;
+                              if (targetId != null) {
+                                await widget.onDeleteReport!(targetId);
+                              }
+                              if (mounted) widget.onBack();
+                            },
+                            style: TextButton.styleFrom(foregroundColor: error),
+                            child: const Text("Elimina"),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'delete_report',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: error, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          "Elimina segnalazione",
+                          style: TextStyle(color: error),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          ],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),

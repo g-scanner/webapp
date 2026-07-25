@@ -30,6 +30,8 @@ class DatabaseProducts extends StatefulWidget {
   final Future<void> Function() onRefresh;
   final bool isSynced;
   final UserSettings? userSettings;
+  final List<ProductReport>? userReports;
+  final Future<void> Function(String reportId)? onDeleteReport;
 
   const DatabaseProducts({
     super.key,
@@ -39,6 +41,8 @@ class DatabaseProducts extends StatefulWidget {
     required this.onRefresh,
     required this.isSynced,
     this.userSettings,
+    this.userReports,
+    this.onDeleteReport,
   });
 
   @override
@@ -440,6 +444,12 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
 
   // ── Costruzione Card Prodotto Segnalato ──
   Widget _buildReportCard(Product prod) {
+    final bool isOwnReport = widget.reportedBarcodes.contains(prod.barcode);
+    final userReport = widget.userReports?.cast<ProductReport?>().firstWhere(
+          (r) => r?.barcode == prod.barcode,
+          orElse: () => null,
+        );
+
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -473,10 +483,47 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                   );
                 },
                 userSettings: widget.userSettings,
+                isOwnReport: isOwnReport,
+                reportId: userReport?.id,
+                onDeleteReport: widget.onDeleteReport,
               ),
             ),
           );
         },
+        onLongPress: (isOwnReport && widget.onDeleteReport != null)
+            ? () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: surfaceLowest,
+                    title: const Text("Eliminare segnalazione?"),
+                    content: const Text(
+                      "Sei sicuro di voler eliminare la tua segnalazione per questo prodotto?",
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: TextButton.styleFrom(
+                          foregroundColor: onSurfaceVariant,
+                        ),
+                        child: const Text("Annulla"),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          final reportId = userReport?.id;
+                          if (reportId != null) {
+                            await widget.onDeleteReport!(reportId);
+                          }
+                        },
+                        style: TextButton.styleFrom(foregroundColor: error),
+                        child: const Text("Elimina"),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            : null,
         hoverColor: surfaceContainerHigh,
         highlightColor: surfaceContainerLow,
         child: Column(

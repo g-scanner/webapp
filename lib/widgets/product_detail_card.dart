@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../models/types.dart';
 import 'responsive_wrapper.dart';
 import '../services/analyzer_service.dart';
@@ -26,6 +27,8 @@ const Color onSecondaryContainer = Color(0xFF003567);
 
 class ProductDetailCard extends StatefulWidget {
   final Product product;
+  final ValueNotifier<Product?>? productNotifier;
+  final bool isLoading;
   final VoidCallback onBack;
   final Future<void> Function(String barcode, Map<String, dynamic> reportData)
   onReportSubmit;
@@ -39,6 +42,8 @@ class ProductDetailCard extends StatefulWidget {
   const ProductDetailCard({
     super.key,
     required this.product,
+    this.productNotifier,
+    this.isLoading = false,
     required this.onBack,
     required this.onReportSubmit,
     required this.onProductUpdate,
@@ -61,11 +66,24 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   bool _submittingReport = false;
   bool _hasJustReported = false;
 
+  Product get currentProduct => widget.productNotifier?.value ?? widget.product;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.productNotifier?.addListener(_onProductNotifierChanged);
+  }
+
   @override
   void dispose() {
+    widget.productNotifier?.removeListener(_onProductNotifierChanged);
     _reportCommentsController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onProductNotifierChanged() {
+    if (mounted) setState(() {});
   }
 
   void _showReportBottomSheet(BuildContext parentContext) {
@@ -73,7 +91,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       context: parentContext,
       isScrollControlled: true,
       useSafeArea: true, // Rispetta la status bar in M3
-      constraints: const BoxConstraints(maxWidth: 600),
+      useRootNavigator: false,
+      constraints: const BoxConstraints(maxWidth: 500),
       backgroundColor:
           Colors.transparent, // Lo sfondo arrotondato lo diamo al Container
       builder: (BuildContext sheetCtx) {
@@ -236,13 +255,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
-                          onPressed: () => Navigator.pop(sheetCtx),
+                          onPressed: _submittingReport
+                              ? null
+                              : () => Navigator.pop(sheetCtx),
                           style: TextButton.styleFrom(
                             foregroundColor: onSurfaceVariant,
                             minimumSize: const Size(
                               0,
                               48,
-                            ), // Altezza touch target standard M3
+                            ), // Touch target standard M3
                             padding: const EdgeInsets.symmetric(horizontal: 24),
                           ),
                           child: const Text(
@@ -251,59 +272,62 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        FilledButton(
-                          onPressed: _submittingReport
-                              ? null
-                              : () async {
-                                  setSheetState(() => _submittingReport = true);
-                                  try {
-                                    await widget.onReportSubmit(
-                                      widget.product.barcode,
-                                      {
-                                        "type": _reportType,
-                                        "comments":
-                                            _reportCommentsController.text,
-                                        "originalStatus":
-                                            widget.product.status.name,
-                                      },
-                                    );
-                                    setState(() {
-                                      _hasJustReported = true;
-                                    });
-                                    if (sheetCtx.mounted) {
-                                      Navigator.pop(sheetCtx);
+                        SizedBox(
+                          width: 185,
+                          height: 48,
+                          child: FilledButton(
+                            onPressed: _submittingReport
+                                ? null
+                                : () async {
+                                    setSheetState(() => _submittingReport = true);
+                                    try {
+                                      await widget.onReportSubmit(
+                                        currentProduct.barcode,
+                                        {
+                                          "type": _reportType,
+                                          "comments":
+                                              _reportCommentsController.text,
+                                          "originalStatus":
+                                              currentProduct.status.name,
+                                        },
+                                      );
+                                      setState(() {
+                                        _hasJustReported = true;
+                                      });
+                                      if (sheetCtx.mounted) {
+                                        Navigator.pop(sheetCtx);
+                                      }
+                                      _reportCommentsController.clear();
+                                    } catch (err) {
+                                      print(err);
+                                    } finally {
+                                      setSheetState(() => _submittingReport = false);
                                     }
-                                    _reportCommentsController.clear();
-                                  } catch (err) {
-                                    print(err);
-                                  } finally {
-                                    _submittingReport = false;
-                                  }
-                                },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: error,
-                            foregroundColor: surfaceLowest,
-                            minimumSize: const Size(0, 48),
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                999,
-                              ), // Forma a pillola M3
+                                  },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: error,
+                              foregroundColor: surfaceLowest,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  999,
+                                ), // Pill shape M3
+                              ),
                             ),
-                          ),
-                          child: _submittingReport
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: surfaceLowest.withValues(alpha: 0.5),
-                                    strokeWidth: 2,
+                            child: _submittingReport
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: surfaceLowest.withValues(alpha: 0.5),
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    "Invia segnalazione",
+                                    style: TextStyle(fontWeight: FontWeight.w600),
                                   ),
-                                )
-                              : const Text(
-                                  "Invia segnalazione",
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
+                          ),
                         ),
                       ],
                     ),
@@ -319,13 +343,37 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   @override
   Widget build(BuildContext context) {
+    final Product currentProduct = widget.productNotifier?.value ?? widget.product;
+    final bool showSkeleton = widget.isLoading && widget.productNotifier?.value == null;
+
     final String currentLang = widget.userSettings.preferredLanguage;
-    final String displayedIngredients = widget.product.ingredientsMap?[currentLang] ?? widget.product.ingredients;
-    final List<String> displayedAllergens = widget.product.allergensMap?[currentLang] ?? 
-        AnalyzerService.translateAllergens(widget.product.allergens, currentLang);
-    final String displayedReason = widget.product.reasonsMap?[currentLang] ?? widget.product.reason;
-    final List<IngredientAnalyzed> displayedIngredientsAnalyzed = widget.product.ingredientsAnalyzedMap?[currentLang] ?? 
-        widget.product.ingredientsAnalyzed ?? [];
+    final String rawIngredients = currentProduct.ingredientsMap?[currentLang] ?? currentProduct.ingredients;
+    final String displayedIngredients = rawIngredients.replaceAll('\$', '').trim();
+    final List<String> rawAllergens = currentProduct.allergensMap?[currentLang] ?? 
+        AnalyzerService.translateAllergens(currentProduct.allergens, currentLang);
+    final List<String> displayedAllergens = rawAllergens.map((a) => a.replaceAll('\$', '').trim()).toList();
+    final String rawReason = currentProduct.reasonsMap?[currentLang] ?? currentProduct.reason;
+    final String displayedReason = rawReason.replaceAll('\$', '').trim();
+    final List<IngredientAnalyzed> rawIngredientsAnalyzed = currentProduct.ingredientsAnalyzedMap?[currentLang] ?? 
+        currentProduct.ingredientsAnalyzed ?? [];
+
+    final List<IngredientAnalyzed> displayedIngredientsAnalyzed = [];
+    final Set<String> seenIngredients = {};
+    for (var item in rawIngredientsAnalyzed) {
+      final cleanName = item.ingredient.replaceAll('\$', '').trim();
+      final cleanReason = item.reason.replaceAll('\$', '').trim();
+      final key = cleanName.toLowerCase();
+      if (!seenIngredients.contains(key) && cleanName.isNotEmpty) {
+        seenIngredients.add(key);
+        displayedIngredientsAnalyzed.add(
+          IngredientAnalyzed(
+            ingredient: cleanName,
+            dangerLevel: item.dangerLevel,
+            reason: cleanReason,
+          ),
+        );
+      }
+    }
 
     final bool containsLactose = AnalyzerService.checkLactose(
       displayedIngredients,
@@ -340,7 +388,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     String statusBigText;
     IconData statusIcon;
 
-    switch (widget.product.status) {
+    switch (currentProduct.status) {
       case GlutenSafetyStatus.adatto:
         heroBgColor = primary.withValues(alpha: 0.05);
         heroTextColor = primary;
@@ -398,10 +446,64 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 color: surfaceLowest,
                 onSelected: (value) {
                   if (value == 'delete_history') {
-                    widget.onDeleteHistoryByBarcode!(widget.product.barcode);
-                    widget.onBack();
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: surfaceLowest,
+                        title: const Text("Eliminare scansione?"),
+                        content: const Text(
+                          "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: TextButton.styleFrom(
+                              foregroundColor: onSurfaceVariant,
+                            ),
+                            child: const Text("Annulla"),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              widget.onDeleteHistoryByBarcode!(
+                                currentProduct.barcode,
+                              );
+                              widget.onBack();
+                            },
+                            style: TextButton.styleFrom(foregroundColor: error),
+                            child: const Text("Elimina"),
+                          ),
+                        ],
+                      ),
+                    );
                   } else if (value == 'delete_report') {
-                    widget.onDeleteReport!(widget.userReportId!);
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: surfaceLowest,
+                        title: const Text("Eliminare segnalazione?"),
+                        content: const Text(
+                          "Sei sicuro di voler eliminare questa segnalazione?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: TextButton.styleFrom(
+                              foregroundColor: onSurfaceVariant,
+                            ),
+                            child: const Text("Annulla"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.pop(ctx);
+                              await widget.onDeleteReport!(widget.userReportId!);
+                            },
+                            style: TextButton.styleFrom(foregroundColor: error),
+                            child: const Text("Elimina"),
+                          ),
+                        ],
+                      ),
+                    );
                   }
                 },
                 itemBuilder: (BuildContext context) => [
@@ -420,6 +522,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       ),
                     ),
                   if (widget.userReportId != null &&
+                      widget.userReportId!.isNotEmpty &&
                       widget.onDeleteReport != null)
                     const PopupMenuItem(
                       value: 'delete_report',
@@ -438,7 +541,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               ),
           ],
         ),
-        body: SingleChildScrollView(
+        body: Skeletonizer(
+          enabled: showSkeleton,
+          child: SingleChildScrollView(
           controller: _scrollController,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Column(
@@ -475,7 +580,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.product.name,
+                      currentProduct.name,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 28,
@@ -486,7 +591,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      widget.product.brand,
+                      currentProduct.brand,
                       style: const TextStyle(
                         fontSize: 16,
                         color: onSurfaceVariant,
@@ -510,7 +615,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           Icon(Icons.qr_code, size: 16, color: heroTextColor),
                           const SizedBox(width: 8),
                           SelectableText(
-                            widget.product.barcode,
+                            currentProduct.barcode,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -524,7 +629,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     // DATA AGGIUNTA DA RICHIESTA
                     const SizedBox(height: 4),
                     Text(
-                      "Scansionato il: ${formatRelativeDate(widget.product.lastUpdated)}",
+                      "Scansionato il: ${formatRelativeDate(currentProduct.lastUpdated)}",
                       style: TextStyle(
                         fontSize: 12,
                         color: onSurfaceVariant.withValues(alpha: 0.8),
@@ -752,7 +857,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               // ── Pulsante Segnalazione ──────────────────────────
               if (widget.hasReportedThisSession ||
                   _hasJustReported ||
-                  (widget.product.reportCount ?? 0) > 0)
+                  (currentProduct.reportCount ?? 0) > 0)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -798,6 +903,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               const SizedBox(height: 40),
             ],
           ),
+        ),
         ),
       ),
     );

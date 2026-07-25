@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // --- Material 3 Design Colors ---
 const Color primaryContainer = Color(0xFF2E7D32);
@@ -39,6 +41,12 @@ class _CameraModuleState extends State<CameraModule> {
 
   bool _isProcessing = false;
   bool _isManualFocused = false; // 2. Stato per tracciare il focus
+  bool _webPermissionDenied = false;
+
+  bool get _isMobile => !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+
+  PermissionStatus _permissionStatus = PermissionStatus.provisional;
+  bool _hasCheckedPermission = false;
 
   @override
   void initState() {
@@ -48,12 +56,93 @@ class _CameraModuleState extends State<CameraModule> {
     _manualFocusNode = FocusNode();
     _manualFocusNode.addListener(_onManualFocusChange);
 
-    if (widget.isActive) {
-      try {
-        widget.controller.start();
-      } catch (e) {
-        print("Camera start error in CameraModule initState: $e");
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    if (kIsWeb) {
+      if (widget.isActive) {
+        try {
+          await widget.controller.start();
+          if (mounted) {
+            setState(() {
+              _webPermissionDenied = false;
+              _permissionStatus = PermissionStatus.granted;
+              _hasCheckedPermission = true;
+            });
+          }
+        } catch (e) {
+          print("Web camera start failed: $e");
+          if (mounted) {
+            setState(() {
+              _webPermissionDenied = true;
+              _permissionStatus = PermissionStatus.denied;
+              _hasCheckedPermission = true;
+            });
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _hasCheckedPermission = true;
+          });
+        }
       }
+      return;
+    }
+
+    final status = await Permission.camera.status;
+    if (mounted) {
+      setState(() {
+        _permissionStatus = status;
+        _hasCheckedPermission = true;
+      });
+    }
+    if (status.isGranted) {
+      if (widget.isActive) {
+        try {
+          await widget.controller.start();
+        } catch (_) {}
+      }
+    } else if (status.isDenied) {
+      await _requestPermission();
+    }
+  }
+
+  Future<void> _requestPermission() async {
+    if (kIsWeb) {
+      if (widget.isActive) {
+        try {
+          await widget.controller.start();
+          if (mounted) {
+            setState(() {
+              _webPermissionDenied = false;
+              _permissionStatus = PermissionStatus.granted;
+            });
+          }
+        } catch (e) {
+          print("Web camera request start failed: $e");
+          if (mounted) {
+            setState(() {
+              _webPermissionDenied = true;
+              _permissionStatus = PermissionStatus.denied;
+            });
+          }
+        }
+      }
+      return;
+    }
+
+    final status = await Permission.camera.request();
+    if (mounted) {
+      setState(() {
+        _permissionStatus = status;
+      });
+    }
+    if (status.isGranted && widget.isActive) {
+      try {
+        await widget.controller.start();
+      } catch (_) {}
     }
   }
 
@@ -68,20 +157,21 @@ class _CameraModuleState extends State<CameraModule> {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive != oldWidget.isActive) {
       if (widget.isActive) {
-        try {
-          widget.controller.start();
-        } catch (e) {
-          print("Camera start error in CameraModule didUpdateWidget: $e");
+        final bool isGranted = kIsWeb ? !_webPermissionDenied : _permissionStatus.isGranted;
+        if (isGranted) {
+          try {
+            widget.controller.start();
+          } catch (_) {}
         }
       } else {
         try {
           widget.controller.stop();
-        } catch (e) {
-          print("Camera stop error in CameraModule didUpdateWidget: $e");
-        }
+        } catch (_) {}
       }
     }
   }
+
+
 
   @override
   void dispose() {
@@ -258,135 +348,287 @@ class _CameraModuleState extends State<CameraModule> {
   }
 
   Widget _buildCameraArea() {
-    const double buttonOverflow = 28.0;
-
-    return Stack(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: buttonOverflow),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28.0),
-              color: Colors.black,
+    if (!_hasCheckedPermission) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 0.0),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28.0),
+            color: Colors.black,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: const AspectRatio(
+            aspectRatio: 16 / 10,
+            child: Center(
+              child: CircularProgressIndicator(color: primaryContainer),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: AspectRatio(
-              aspectRatio: 16 / 10,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final w = constraints.maxWidth;
-                  final h = constraints.maxHeight;
-                  final double frameW = w * 0.85;
-                  final double frameH = h * 0.65;
+          ),
+        ),
+      );
+    }
 
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      MobileScanner(
-                        controller: widget.controller,
-                        onDetect: _onDetect,
+    final bool isPermissionDenied = kIsWeb
+        ? _webPermissionDenied
+        : (_permissionStatus.isDenied ||
+            _permissionStatus.isPermanentlyDenied ||
+            _permissionStatus.isRestricted);
+
+    if (isPermissionDenied) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 0.0),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28.0),
+            color: Colors.black,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: AspectRatio(
+            aspectRatio: 16 / 10,
+            child: Container(
+              color: Colors.black,
+              width: double.infinity,
+              height: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 12.0,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Fotocamera non disponibile",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Concedi l'accesso alla fotocamera per scansionare i codici a barre.",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white70,
+                      height: 1.3,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton.icon(
+                    onPressed: () async {
+                      if (kIsWeb) {
+                        try {
+                          await widget.controller.start();
+                          if (mounted) {
+                            setState(() {
+                              _webPermissionDenied = false;
+                              _permissionStatus = PermissionStatus.granted;
+                            });
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            setState(() {
+                              _webPermissionDenied = true;
+                              _permissionStatus = PermissionStatus.denied;
+                            });
+                          }
+                        }
+                        return;
+                      }
+
+                      final status = await Permission.camera.request();
+                      if (mounted) {
+                        setState(() {
+                          _permissionStatus = status;
+                        });
+                      }
+                      if (status.isGranted) {
+                        if (widget.isActive) {
+                          try {
+                            await widget.controller.start();
+                          } catch (_) {}
+                        }
+                      } else {
+                        await openAppSettings();
+                        final updatedStatus = await Permission.camera.status;
+                        if (mounted) {
+                          setState(() {
+                            _permissionStatus = updatedStatus;
+                          });
+                          if (updatedStatus.isGranted && widget.isActive) {
+                            try {
+                              await widget.controller.start();
+                            } catch (_) {}
+                          }
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.security, size: 16),
+                    label: const Text(
+                      "Richiedi Accesso",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
-                      CustomPaint(
-                        size: Size(w, h),
-                        painter: _VignetteBorderPainter(
-                          frameWidth: frameW,
-                          frameHeight: frameH,
-                        ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: primaryContainer,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                      Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                width: 2,
-                                height: 24,
-                                color: primaryContainer,
-                              ),
-                              Container(
-                                width: 24,
-                                height: 2,
-                                color: primaryContainer,
-                              ),
-                            ],
-                          ),
-                        ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
                       ),
-                      Center(
-                        child: SizedBox(
-                          width: frameW,
-                          height: frameH,
-                          child: _buildCorners(),
-                        ),
-                      ),
-                      if (widget.scanningProgress)
-                        Container(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          child: const Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircularProgressIndicator(
-                                  color: primaryContainer,
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  "Analyzing...",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: ValueListenableBuilder<MobileScannerState>(
-              valueListenable: widget.controller,
-              builder: (context, state, child) {
-                final bool isOn = state.torchState == TorchState.on;
+      );
+    }
 
-                return Material(
-                  color: isOn ? primaryContainer : surfaceContainerLowest,
-                  elevation: 4,
-                  shadowColor: Colors.black.withValues(alpha: 0.4),
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () => widget.controller.toggleTorch(),
-                    child: SizedBox(
-                      width: 56,
-                      height: 56,
-                      child: Center(
-                        child: Icon(
-                          isOn ? Icons.flashlight_on : Icons.flashlight_off,
-                          size: 24,
-                          color: isOn ? surfaceContainerLowest : onSurface,
+    return ValueListenableBuilder<MobileScannerState>(
+      valueListenable: widget.controller,
+      builder: (context, state, child) {
+        final bool hasTorch = _isMobile;
+        final double buttonOverflow = hasTorch ? 28.0 : 0.0;
+
+        return Stack(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(bottom: buttonOverflow),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28.0),
+                  color: Colors.black,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: AspectRatio(
+                  aspectRatio: 16 / 10,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final w = constraints.maxWidth;
+                      final h = constraints.maxHeight;
+                      final double frameW = w * 0.85;
+                      final double frameH = h * 0.65;
+
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          MobileScanner(
+                            controller: widget.controller,
+                            onDetect: _onDetect,
+                          ),
+                          CustomPaint(
+                            size: Size(w, h),
+                            painter: _VignetteBorderPainter(
+                              frameWidth: frameW,
+                              frameHeight: frameH,
+                            ),
+                          ),
+                          Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    width: 2,
+                                    height: 24,
+                                    color: primaryContainer,
+                                  ),
+                                  Container(
+                                    width: 24,
+                                    height: 2,
+                                    color: primaryContainer,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Center(
+                            child: SizedBox(
+                              width: frameW,
+                              height: frameH,
+                              child: _buildCorners(),
+                            ),
+                          ),
+                          if (widget.scanningProgress)
+                            Container(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              child: const Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircularProgressIndicator(
+                                      color: primaryContainer,
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      "Analisi in corso...",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            if (hasTorch)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Material(
+                    color: state.torchState == TorchState.on
+                        ? primaryContainer
+                        : surfaceContainerLowest,
+                    elevation: 4,
+                    shadowColor: Colors.black.withValues(alpha: 0.4),
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () => widget.controller.toggleTorch(),
+                      child: SizedBox(
+                        width: 56,
+                        height: 56,
+                        child: Center(
+                          child: Icon(
+                            state.torchState == TorchState.on
+                                ? Icons.flashlight_on
+                                : Icons.flashlight_off,
+                            size: 24,
+                            color: state.torchState == TorchState.on
+                                ? surfaceContainerLowest
+                                : onSurface,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

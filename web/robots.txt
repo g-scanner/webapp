@@ -8,4 +8,4 @@ Disallow: /
 User-agent: GPTBot
 Disallow: /
 
-Sitemap: https://gscanner.github.io/sitemap.xml
+Sitemap: https://g-scanner.github.io/sitemap.xml

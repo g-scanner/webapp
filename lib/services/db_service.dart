@@ -1021,6 +1021,36 @@ class DbService {
     }
   }
 
+  static Future<void> deleteLocalReport(String reportId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = _getReportsKey();
+      List<String> reportsStr = prefs.getStringList(key) ?? [];
+      List<ProductReport> reports = reportsStr
+          .map((e) => ProductReport.fromJson(json.decode(e)))
+          .toList();
+
+      final index = reports.indexWhere((r) => r.id == reportId);
+      if (index != -1) {
+        final reportToDelete = reports[index];
+        reports.removeAt(index);
+        await prefs.setStringList(
+          key,
+          reports.map((e) => json.encode(e.toJson())).toList(),
+        );
+
+        if (reportToDelete.barcode.isNotEmpty) {
+          List<String> reportedBarcodes =
+              prefs.getStringList('celiac_reported_barcodes') ?? [];
+          reportedBarcodes.remove(reportToDelete.barcode);
+          await prefs.setStringList('celiac_reported_barcodes', reportedBarcodes);
+        }
+      }
+    } catch (e) {
+      print("Error deleting local report: $e");
+    }
+  }
+
   static Future<UserSettings> getLocalSettings() async {
     final prefs = await SharedPreferences.getInstance();
     String? settingsStr = prefs.getString('celiac_settings');
@@ -1305,9 +1335,16 @@ class DbService {
   static String _cleanIngredientsText(String text) {
     if (text.trim().isEmpty) return text;
     return text
+        // 1. Rimuove markup allergenico OFF: _testo_ -> testo
+        .replaceAllMapped(RegExp(r'_([^_]+)_'), (m) => m[1]!)
         .replaceAll('_', '')
+        // 2. Rimuove tag localizzazione OFF: {it:testo} -> testo
+        .replaceAllMapped(RegExp(r'\{[a-z]{2}:([^}]+)\}'), (m) => m[1]!)
+        // 3. Rimuove tag di provenienza o graffe vuote: {} o {it:} -> ''
+        .replaceAll(RegExp(r'\{[^}]*\}'), '')
         .replaceAll('{', '')
         .replaceAll('}', '')
+        .replaceAll('\$', '')
         // Gestione parentesi tonde doppie: (A (B)) -> (A, B)
         .replaceAllMapped(RegExp(r'\(([^()]+)\(([^()]+)\)\)'), (m) {
           return '(${m[1]!.trim()}, ${m[2]!.trim()})';
@@ -1316,9 +1353,16 @@ class DbService {
         .replaceAllMapped(RegExp(r'\(\s*([^()]+)\s*\(\s*([^()]+)\s*\)\s*\)'), (m) {
           return '(${m[1]!.trim()}, ${m[2]!.trim()})';
         })
-        // Rimuove spazi prima dei segni di punteggiatura
-        .replaceAll(RegExp(r'\s+([,.;])'), r'$1')
-        // Collassa spazi multipli
+        // 4. Trim spazi subito dentro parentesi: ( testo ) -> (testo)
+        .replaceAll(RegExp(r'\(\s+'), '(')
+        .replaceAll(RegExp(r'\s+\)'), ')')
+        // 5. Rimuove parentesi vuote o con sola punteggiatura/trattini: () (-) ( - ) -> ''
+        .replaceAll(RegExp(r'\([^a-zA-Z0-9À-ÿ]*\)'), '')
+        // 6. Rimuove doppie chiusure residue
+        .replaceAll('))', ')')
+        // 7. Rimuove spazi prima dei segni di punteggiatura
+        .replaceAllMapped(RegExp(r'\s+([,.;])'), (m) => m[1]!)
+        // 8. Collassa spazi multipli
         .replaceAll(RegExp(r'  +'), ' ')
         .trim();
   }

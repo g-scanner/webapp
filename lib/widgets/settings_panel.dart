@@ -608,7 +608,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      constraints: const BoxConstraints(maxWidth: 600),
+      useRootNavigator: false,
+      constraints: const BoxConstraints(maxWidth: 500),
       backgroundColor: surfaceLowest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -1229,85 +1230,119 @@ class _SettingsPanelState extends State<SettingsPanel> {
     }
 
     // CASO 1: Può procedere immediatamente
-    final confirm = await showDialog<bool>(
+    bool isDeletingAccount = false;
+    await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: surfaceLowest,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: errorContainer, width: 2),
-        ),
-        icon: const Icon(Icons.warning_amber_rounded, color: error, size: 36),
-        title: const Text(
-          "Eliminazione Definitiva",
-          style: TextStyle(
-            color: error,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) => AlertDialog(
+          backgroundColor: surfaceLowest,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: errorContainer, width: 2),
           ),
-          textAlign: TextAlign.center,
-        ),
-        content: const Text(
-          "Sei sicuro di voler eliminare il tuo account e tutti i dati cloud? Questa azione è IRREVERSIBILE.\n\nSaranno eliminati:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nI tuoi report inseriti rimarranno ma verranno anonimizzati.",
-          style: TextStyle(color: onSurface, fontSize: 14),
-          textAlign: TextAlign.center,
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
-            child: const Text("Annulla"),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: error,
-              foregroundColor: Colors.white,
+          icon: const Icon(Icons.warning_amber_rounded, color: error, size: 36),
+          title: const Text(
+            "Eliminazione Definitiva",
+            style: TextStyle(
+              color: error,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
-            child: const Text("Elimina definitivamente"),
+            textAlign: TextAlign.center,
           ),
-        ],
+          content: const Text(
+            "Sei sicuro di voler eliminare il tuo account e tutti i dati cloud? Questa azione è IRREVERSIBILE.\n\nSaranno eliminati:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nI tuoi report inseriti rimarranno ma verranno anonimizzati.",
+            style: TextStyle(color: onSurface, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: isDeletingAccount
+                  ? null
+                  : () => Navigator.pop(dialogCtx),
+              style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+              child: const Text("Annulla"),
+            ),
+            FilledButton(
+              onPressed: isDeletingAccount
+                  ? null
+                  : () async {
+                      setDialogState(() {
+                        isDeletingAccount = true;
+                      });
+                      try {
+                        final String uid = user.uid;
+                        await Future.wait([
+                          DbService.deleteUserSettings(uid),
+                          DbService.deleteUserHistory(uid),
+                          DbService.anonymizeUserReports(uid),
+                          DbService.wipeCurrentUserLocalData(),
+                        ]);
+
+                        // Chiude il popup e la bottom sheet tornando a MainScreen
+                        if (dialogCtx.mounted) {
+                          Navigator.of(
+                            dialogCtx,
+                          ).popUntil((route) => route.isFirst);
+                        }
+
+                        await user.delete();
+                        await FirebaseAuth.instance.signOut();
+                      } on FirebaseAuthException catch (e) {
+                        if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                        if (e.code == 'requires-recent-login') {
+                          if (mounted) {
+                            _triggerToast(
+                              "Sicurezza: Uscita forzata. Esegui un nuovo accesso e riprova.",
+                            );
+                          }
+                          await FirebaseAuth.instance.signOut();
+                        } else {
+                          if (mounted) _triggerToast("Errore: ${e.message}");
+                        }
+                      } catch (e) {
+                        if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                        if (mounted) _triggerToast("Errore imprevisto: $e");
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                backgroundColor: error,
+                foregroundColor: surfaceLowest,
+                minimumSize: const Size(0, 48),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Opacity(
+                    opacity: isDeletingAccount ? 0.0 : 1.0,
+                    child: const Text(
+                      "Elimina definitivamente",
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  if (isDeletingAccount)
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: surfaceLowest.withValues(alpha: 0.7),
+                        strokeWidth: 2,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
-
-    if (confirm == true) {
-      if (mounted) _triggerToast("Eliminazione account in corso...");
-      try {
-        final String uid = user.uid;
-        // 1. Elimina impostazioni cloud
-        await DbService.deleteUserSettings(uid);
-        // 2. Elimina cronologia cloud
-        await DbService.deleteUserHistory(uid);
-        // 3. Anonimizza i report
-        await DbService.anonymizeUserReports(uid);
-        // 4. Wipe della cache locale dell'utente corrente e settings
-        await DbService.wipeCurrentUserLocalData();
-        // 5. Elimina account Firebase Auth
-        await user.delete();
-        // 6. Sign out di sicurezza
-        await FirebaseAuth.instance.signOut();
-
-        if (mounted) {
-          Navigator.pop(context); // Chiude il Bottom Sheet settings
-        }
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'requires-recent-login') {
-          if (mounted) {
-            _triggerToast(
-              "Sicurezza: Uscita forzata. Esegui un nuovo accesso e riprova.",
-            );
-          }
-          await FirebaseAuth.instance.signOut();
-          if (mounted) Navigator.pop(context);
-        } else {
-          if (mounted) _triggerToast("Errore: ${e.message}");
-        }
-      } catch (e) {
-        if (mounted) _triggerToast("Errore imprevisto: $e");
-      }
-    }
   }
 
   // ── Bottom Sheet Legale M3 ──────────────────────────────────────────
@@ -1319,59 +1354,55 @@ class _SettingsPanelState extends State<SettingsPanel> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      constraints: const BoxConstraints(maxWidth: 600),
+      useRootNavigator: false,
+      constraints: const BoxConstraints(maxWidth: 500),
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.85, // Si apre all'85% dello schermo
-          minChildSize: 0.5,
-          maxChildSize: 0.95, // Trascinabile fino al 95%
-          builder: (_, controller) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: surfaceLowest,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        final double sheetHeight = MediaQuery.of(ctx).size.height * 0.85;
+        return Container(
+          height: sheetHeight,
+          decoration: const BoxDecoration(
+            color: surfaceLowest,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Maniglia M3
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 5,
+                  margin: const EdgeInsets.only(top: 16, bottom: 24),
+                  decoration: BoxDecoration(
+                    color: outlineVariant.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
               ),
-              child: Column(
-                children: [
-                  // Maniglia M3
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 5,
-                      margin: const EdgeInsets.only(top: 16, bottom: 24),
-                      decoration: BoxDecoration(
-                        color: outlineVariant.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
+              // Titolo e pulsante chiudi
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: onSurface,
+                    letterSpacing: -0.5,
                   ),
-                  // Titolo e pulsante chiudi
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: onSurface,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Contenuto scrollabile
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: controller,
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
-                      child: SafeArea(top: false, child: content),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            );
-          },
+              const SizedBox(height: 32),
+              // Contenuto scrollabile
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                  child: SafeArea(top: false, child: content),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -2408,7 +2439,13 @@ Widget _buildNativeTos(Color textColor) {
           ),
           divider(),
 
-          h1("18. Disposizioni Finali"),
+          h1("18. Lingua dei Termini e delle Informative"),
+          p(
+            "I presenti Termini e Condizioni d'Uso, nonché la Privacy Policy e gli eventuali ulteriori documenti legali relativi all'Applicazione, sono redatti originariamente in **lingua italiana**. Eventuali traduzioni in altre lingue sono fornite esclusivamente a fini di cortesia e per agevolare la comprensione da parte degli Utenti. In caso di discrepanze, incongruenze, ambiguità o conflitti interpretativi tra la versione in lingua italiana e qualsiasi versione tradotta, prevarrà la versione in lingua italiana, nei limiti massimi consentiti dalla normativa applicabile.",
+          ),
+          divider(),
+
+          h1("19. Disposizioni Finali"),
           p(
             "Qualora una qualsiasi disposizione dei presenti Termini venga dichiarata nulla, invalida o inefficace da un'autorità competente, tale circostanza non comprometterà la validità delle restanti disposizioni.",
           ),
@@ -2423,7 +2460,7 @@ Widget _buildNativeTos(Color textColor) {
           ),
           divider(),
 
-          h1("19. Legge Applicabile e Foro Competente"),
+          h1("20. Legge Applicabile e Foro Competente"),
           p(
             "I presenti Termini sono disciplinati dalla **legge italiana**, fatto salvo quanto previsto dalle norme imperative applicabili dell'Unione Europea e dalla normativa italiana a tutela dei consumatori.",
           ),
@@ -3067,6 +3104,12 @@ Widget _buildNativePrivacyPolicy(Color textColor) {
           ),
           p(
             "**L'applicazione non effettua processi decisionali automatizzati aventi effetti giuridici o analogamente significativi sull'utente ai sensi dell'art. 22 GDPR.**",
+          ),
+          divider(),
+
+          h1("16. Lingua delle Informative e dei Termini"),
+          p(
+            "La presente Privacy Policy, nonché i Termini e Condizioni d'Uso e gli eventuali ulteriori documenti legali relativi all'Applicazione, sono redatti originariamente in **lingua italiana**. Eventuali traduzioni in altre lingue sono fornite esclusivamente a fini di cortesia e per agevolare la comprensione da parte dell'Utente. In caso di discrepanze, incongruenze o difformità interpretative tra la versione in lingua italiana e qualsiasi versione tradotta, prevarrà la versione in lingua italiana, nei limiti massimi consentiti dalla normativa applicabile.",
           ),
           divider(),
 
