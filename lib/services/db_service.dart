@@ -1065,9 +1065,20 @@ class DbService {
         }
       }
 
+      // Leggiamo tutti i voti associati al report per poterli cancellare nel batch
+      final votesQuery = await reportRef.collection('votes').get();
+
       // Tutto in un unico WriteBatch — atomico: tutto o niente
       final batch = db.batch();
+      
+      // Cancelliamo prima i singoli voti
+      for (var doc in votesQuery.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Cancelliamo il report
       batch.delete(reportRef);
+
       if (barcode != null && productUpdates != null) {
         batch.update(db.collection(productsCollection).doc(barcode), productUpdates);
       }

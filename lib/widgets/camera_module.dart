@@ -166,9 +166,9 @@ class _CameraModuleState extends State<CameraModule>
         });
       }
       if (widget.isActive) {
-        Future.microtask(() async {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          try { await widget.controller.start(); } catch (_) {}
+          widget.controller.start().catchError((_) {});
         });
       }
     } else if (status.isDenied || status.isProvisional) {
@@ -179,9 +179,9 @@ class _CameraModuleState extends State<CameraModule>
           _hasCheckedPermission = true;
         });
         if (reqStatus.isGranted && widget.isActive) {
-          Future.microtask(() async {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            try { await widget.controller.start(); } catch (_) {}
+            widget.controller.start().catchError((_) {});
           });
         }
       }
@@ -227,9 +227,9 @@ class _CameraModuleState extends State<CameraModule>
         _hasCheckedPermission = true;
       });
       if (status.isGranted && widget.isActive) {
-        Future.microtask(() async {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          try { await widget.controller.start(); } catch (_) {}
+          widget.controller.start().catchError((_) {});
         });
       }
     }
@@ -256,9 +256,9 @@ class _CameraModuleState extends State<CameraModule>
           }
         } else {
           if (_permissionStatus.isGranted) {
-            Future.microtask(() async {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
-              try { await widget.controller.start(); } catch (_) {}
+              widget.controller.start().catchError((_) {});
             });
           }
         }
