@@ -47,6 +47,7 @@ class ResponsiveMaxCardWidth extends StatelessWidget {
           ),
           margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
           decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.06),
@@ -55,20 +56,24 @@ class ResponsiveMaxCardWidth extends StatelessWidget {
               ),
             ],
           ),
-          child: Card(
-            elevation: 0,
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: BorderSide(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outlineVariant.withValues(alpha: 0.5),
-                width: 1,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Card(
+              elevation: 0,
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  width: 1,
+                ),
               ),
+              color: backgroundColor ?? Theme.of(context).colorScheme.surface,
+              child: child,
             ),
-            color: backgroundColor ?? Theme.of(context).colorScheme.surface,
-            child: child,
           ),
         ),
       );

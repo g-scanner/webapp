@@ -28,6 +28,7 @@ const Color onSecondaryContainer = Color(0xFF003567);
 class ProductDetailCard extends StatefulWidget {
   final Product product;
   final ValueNotifier<Product?>? productNotifier;
+  final ValueNotifier<String?>? reportIdNotifier;
   final bool isLoading;
   final VoidCallback onBack;
   final Future<void> Function(String barcode, Map<String, dynamic> reportData)
@@ -38,11 +39,15 @@ class ProductDetailCard extends StatefulWidget {
   final bool hasReportedThisSession;
   final String? userReportId;
   final Future<void> Function(String reportId)? onDeleteReport;
+  final bool useResponsiveWrapper;
+  final bool showReportLink;
+  final void Function(Product product)? onViewReport;
 
   const ProductDetailCard({
     super.key,
     required this.product,
     this.productNotifier,
+    this.reportIdNotifier,
     this.isLoading = false,
     required this.onBack,
     required this.onReportSubmit,
@@ -52,6 +57,9 @@ class ProductDetailCard extends StatefulWidget {
     this.hasReportedThisSession = false,
     this.userReportId,
     this.onDeleteReport,
+    this.useResponsiveWrapper = true,
+    this.showReportLink = true,
+    this.onViewReport,
   });
 
   @override
@@ -68,15 +76,31 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   Product get currentProduct => widget.productNotifier?.value ?? widget.product;
 
+  bool get _hasUserReported {
+    if (widget.reportIdNotifier != null) {
+      return widget.reportIdNotifier!.value != null;
+    }
+    return widget.hasReportedThisSession || _hasJustReported;
+  }
+
+  String? get _effectiveUserReportId {
+    if (widget.reportIdNotifier != null) {
+      return widget.reportIdNotifier!.value;
+    }
+    return widget.userReportId;
+  }
+
   @override
   void initState() {
     super.initState();
     widget.productNotifier?.addListener(_onProductNotifierChanged);
+    widget.reportIdNotifier?.addListener(_onReportIdNotifierChanged);
   }
 
   @override
   void dispose() {
     widget.productNotifier?.removeListener(_onProductNotifierChanged);
+    widget.reportIdNotifier?.removeListener(_onReportIdNotifierChanged);
     _reportCommentsController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -84,6 +108,23 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   void _onProductNotifierChanged() {
     if (mounted) setState(() {});
+  }
+
+  void _onReportIdNotifierChanged() {
+    if (mounted) setState(() {});
+  }
+
+  String _translateGlutenStatus(GlutenSafetyStatus status) {
+    switch (status) {
+      case GlutenSafetyStatus.adatto:
+        return "Sicuro";
+      case GlutenSafetyStatus.nonAdatto:
+        return "Vietato";
+      case GlutenSafetyStatus.incerto:
+        return "Incerto";
+      case GlutenSafetyStatus.sconosciuto:
+        return "Sconosciuto";
+    }
   }
 
   void _showReportBottomSheet(BuildContext parentContext) {
@@ -352,7 +393,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     final List<String> rawAllergens = currentProduct.allergensMap?[currentLang] ?? 
         AnalyzerService.translateAllergens(currentProduct.allergens, currentLang);
     final List<String> displayedAllergens = rawAllergens.map((a) => a.replaceAll('\$', '').trim()).toList();
-    final String rawReason = currentProduct.reasonsMap?[currentLang] ?? currentProduct.reason;
+    final bool isReported = (currentProduct.reportCount ?? 0) > 0 || _hasUserReported;
+    final String rawReason = isReported
+        ? currentProduct.reason
+        : (currentProduct.reasonsMap?[currentLang] ?? currentProduct.reason);
     final String displayedReason = rawReason.replaceAll('\$', '').trim();
     final List<IngredientAnalyzed> rawIngredientsAnalyzed = currentProduct.ingredientsAnalyzedMap?[currentLang] ?? 
         currentProduct.ingredientsAnalyzed ?? [];
@@ -416,8 +460,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     }
 
     // Utilizziamo uno Scaffold interno per gestire la sua AppBar personale
-    return ResponsiveMaxCardWidth(
-      child: Scaffold(
+    final scaffold = Scaffold(
         backgroundColor: bgBackground,
         appBar: AppBar(
           backgroundColor: surfaceLowest,
@@ -440,7 +483,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           actions: [
             // I Tre Puntini per le impostazioni
             if (widget.onDeleteHistoryByBarcode != null ||
-                widget.userReportId != null)
+                _effectiveUserReportId != null)
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: onSurfaceVariant),
                 color: surfaceLowest,
@@ -496,7 +539,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           TextButton(
                             onPressed: () async {
                               Navigator.pop(ctx);
-                              await widget.onDeleteReport!(widget.userReportId!);
+                              if (_effectiveUserReportId != null) {
+                                await widget.onDeleteReport!(_effectiveUserReportId!);
+                              }
                             },
                             style: TextButton.styleFrom(foregroundColor: error),
                             child: const Text("Elimina"),
@@ -521,8 +566,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         ],
                       ),
                     ),
-                  if (widget.userReportId != null &&
-                      widget.userReportId!.isNotEmpty &&
+                  if (_effectiveUserReportId != null &&
+                      _effectiveUserReportId!.isNotEmpty &&
                       widget.onDeleteReport != null)
                     const PopupMenuItem(
                       value: 'delete_report',
@@ -641,13 +686,119 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               const SizedBox(height: 24),
 
               // ── Valutazione Glutine ───────────────────────────────────
-              _buildSectionCard(
-                title: "VALUTAZIONE GLUTINE",
-                icon: Icons.leaderboard,
-                child: Text(
-                  displayedReason,
-                  style: const TextStyle(fontSize: 16, color: onSurface),
-                ),
+              Builder(
+                builder: (context) {
+                  final bool hasActiveReport = widget.showReportLink &&
+                      widget.onViewReport != null &&
+                      ((currentProduct.reportCount ?? 0) > 0 || _hasUserReported);
+
+                  // Costruiamo la stringa con il vecchio stato se presente
+                  String displayedReasonWithOldStatus = displayedReason;
+                  if (hasActiveReport &&
+                      currentProduct.originalStatus != null &&
+                      currentProduct.originalStatus != currentProduct.status) {
+                    final String oldStatusTranslated = _translateGlutenStatus(currentProduct.originalStatus!);
+                    String cleanReason = displayedReason.trim();
+                    if (cleanReason.endsWith('.')) {
+                      cleanReason = cleanReason.substring(0, cleanReason.length - 1);
+                    }
+                    displayedReasonWithOldStatus = "$cleanReason. Stato precedente alla segnalazione: $oldStatusTranslated.";
+                  }
+
+                  final Widget cardContent = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.leaderboard,
+                              size: 18,
+                              color: onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              "VALUTAZIONE GLUTINE",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
+                                color: onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: 24,
+                          right: 24,
+                          bottom: hasActiveReport ? 20 : 24,
+                        ),
+                        child: Text(
+                          displayedReasonWithOldStatus,
+                          style: const TextStyle(fontSize: 16, color: onSurface),
+                        ),
+                      ),
+                      if (hasActiveReport) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: warningText.withValues(alpha: 0.04),
+                            border: Border(
+                              top: BorderSide(color: outlineVariant.withValues(alpha: 0.2)),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "Vai alla segnalazione",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: warningText,
+                                ),
+                              ),
+                              Transform.translate(
+                                offset: const Offset(6, 0),
+                                child: const Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 18,
+                                  color: warningText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: surfaceLowest,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: outlineVariant.withValues(alpha: 0.5)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: hasActiveReport
+                        ? InkWell(
+                            onTap: () => widget.onViewReport!(currentProduct),
+                            child: cardContent,
+                          )
+                        : cardContent,
+                  );
+                }
               ),
               const SizedBox(height: 24),
 
@@ -855,8 +1006,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               const SizedBox(height: 24),
 
               // ── Pulsante Segnalazione ──────────────────────────
-              if (widget.hasReportedThisSession ||
-                  _hasJustReported ||
+              if (_hasUserReported ||
                   (currentProduct.reportCount ?? 0) > 0)
                 Container(
                   width: double.infinity,
@@ -905,8 +1055,12 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           ),
         ),
         ),
-      ),
-    );
+      );
+
+    if (widget.useResponsiveWrapper) {
+      return ResponsiveMaxCardWidth(child: scaffold);
+    }
+    return scaffold;
   }
 
   Widget _buildSectionCard({

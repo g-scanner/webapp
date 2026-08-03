@@ -757,7 +757,11 @@ class DbService {
     }
   }
 
-  static Future<void> _updateProductStatusOnReport(
+  static bool productDataHasOriginal(Map<String, dynamic> data, String key) {
+    return data.containsKey(key) && data[key] != null;
+  }
+
+  static Future<Map<String, dynamic>?> _buildProductUpdateOnReport(
     String barcode,
     ProductReport finalReport,
   ) async {
@@ -773,7 +777,7 @@ class DbService {
           Uri.parse(
             'https://world.openfoodfacts.org/api/v2/product/$barcode.json?fields=last_modified_t',
           ),
-        );
+        ).timeout(const Duration(seconds: 3));
         if (offRes.statusCode == 200) {
           final offData = json.decode(offRes.body);
           if (offData['product'] != null &&
@@ -790,26 +794,41 @@ class DbService {
         finalReport.submittedAt,
       ).millisecondsSinceEpoch;
 
+      final String? origStatus = productDataHasOriginal(prodSnap.data()!, 'originalStatus')
+          ? prodSnap.data()!['originalStatus']
+          : (finalReport.originalStatus?.name ?? p.status.name);
+      final String? origReason = productDataHasOriginal(prodSnap.data()!, 'originalReason')
+          ? prodSnap.data()!['originalReason']
+          : p.reason;
+      final Map<String, dynamic>? origReasonsMap = productDataHasOriginal(prodSnap.data()!, 'originalReasons_map')
+          ? prodSnap.data()!['originalReasons_map']
+          : p.reasonsMap;
+
       if (offLastModified > 0 && reportTime > offLastModified) {
-        await prodRef.update({
+        return {
           'status': GlutenSafetyStatus.incerto.name,
           'reason':
               '''ATTENZIONE: La tua segnalazione ("${finalReport.comments}") è più recente dell'ultimo aggiornamento del database Open Food Facts. La ricetta in fabbrica potrebbe essere cambiata. Risulta INCERTO.''',
           'reportCount': (p.reportCount ?? 0) + 1,
           'lastUpdated': DateTime.now().toIso8601String(),
-          'originalStatus': finalReport.originalStatus?.name,
-        });
+          'originalStatus': origStatus,
+          'originalReason': origReason,
+          'originalReasons_map': origReasonsMap,
+        };
       } else {
-        await prodRef.update({
+        return {
           'status': GlutenSafetyStatus.incerto.name,
           'reason':
               'ATTENZIONE: Segnalata etichetta incongruente. Note: ${finalReport.comments}',
           'reportCount': (p.reportCount ?? 0) + 1,
           'lastUpdated': DateTime.now().toIso8601String(),
-          'originalStatus': finalReport.originalStatus?.name,
-        });
+          'originalStatus': origStatus,
+          'originalReason': origReason,
+          'originalReasons_map': origReasonsMap,
+        };
       }
     }
+    return null;
   }
 
   static Future<ProductReport> submitProductReportClientSide(
@@ -860,15 +879,24 @@ class DbService {
       );
 
       final docRef = db.collection(reportsCollection).doc(id);
-      await docRef.set(finalReport.toJson());
+      final productUpdate = await _buildProductUpdateOnReport(barcode, finalReport);
 
-      await _updateProductStatusOnReport(barcode, finalReport);
+      final batch = db.batch();
+      batch.set(docRef, finalReport.toJson());
+
+      if (productUpdate != null) {
+        final prodRef = db.collection(productsCollection).doc(barcode);
+        batch.update(prodRef, productUpdate);
+      }
 
       if (user != null) {
-        await db.collection("users").doc(userId).set({
+        final userRef = db.collection("users").doc(userId);
+        batch.set(userRef, {
           'reportedBarcodes': FieldValue.arrayUnion([barcode]),
         }, SetOptions(merge: true));
       }
+
+      await batch.commit();
 
       if (isAnonymous) {
         List<String> reportedBarcodes =
@@ -909,22 +937,23 @@ class DbService {
       final reportRef = reportDoc.reference;
       final userVoteRef = reportRef.collection('votes').doc(userId);
 
-      await db.runTransaction((transaction) async {
-        final voteSnap = await transaction.get(userVoteRef);
+      final voteSnap = await userVoteRef.get();
+      int oldVote = 0;
+      if (voteSnap.exists) {
+        oldVote = voteSnap.data()?['val'] ?? 0;
+      }
 
-        int oldVote = 0;
-        if (voteSnap.exists) {
-          oldVote = voteSnap.data()?['val'] ?? 0;
-        }
+      if (oldVote == newVote) return;
 
-        if (oldVote == newVote) return;
+      final scoreDiff = newVote - oldVote;
 
-        final scoreDiff = newVote - oldVote;
-        transaction.set(userVoteRef, {'val': newVote});
-        transaction.update(reportRef, {
-          'score': FieldValue.increment(scoreDiff),
-        });
+      final batch = db.batch();
+      batch.set(userVoteRef, {'val': newVote});
+      batch.update(reportRef, {
+        'score': FieldValue.increment(scoreDiff),
       });
+      await batch.commit();
+
       print("Voto $newVote salvato con successo per il barcode $barcode!");
     } catch (e) {
       print("Errore durante il salvataggio del voto: $e");
@@ -975,23 +1004,23 @@ class DbService {
     final userVoteRef = reportRef.collection('votes').doc(userId);
 
     try {
-      await db.runTransaction((transaction) async {
-        final voteSnap = await transaction.get(userVoteRef);
+      final voteSnap = await userVoteRef.get();
 
-        int oldVote = 0;
-        if (voteSnap.exists) {
-          oldVote = voteSnap.data()?['val'] ?? 0;
-        }
+      int oldVote = 0;
+      if (voteSnap.exists) {
+        oldVote = voteSnap.data()?['val'] ?? 0;
+      }
 
-        if (oldVote == newVote) return;
+      if (oldVote == newVote) return;
 
-        final scoreDiff = newVote - oldVote;
+      final scoreDiff = newVote - oldVote;
 
-        transaction.set(userVoteRef, {'val': newVote});
-        transaction.update(reportRef, {
-          'score': FieldValue.increment(scoreDiff),
-        });
+      final batch = db.batch();
+      batch.set(userVoteRef, {'val': newVote});
+      batch.update(reportRef, {
+        'score': FieldValue.increment(scoreDiff),
       });
+      await batch.commit();
     } catch (e) {
       print("Errore durante il voto: $e");
     }
@@ -1009,11 +1038,39 @@ class DbService {
           final productRef = db.collection(productsCollection).doc(barcode);
           final productSnap = await productRef.get();
           if (productSnap.exists) {
-            final currentCount = productSnap.data()?['reportCount'] ?? 0;
-            await productRef.update({
-              'reportCount': (currentCount - 1) < 0 ? 0 : currentCount - 1,
-            });
+            final productData = productSnap.data()!;
+            final currentCount = productData['reportCount'] ?? 0;
+            final int newCount = (currentCount - 1) < 0 ? 0 : currentCount - 1;
+
+            if (newCount == 0) {
+              final String? originalStatus = productData['originalStatus'] ?? reportSnap.data()?['originalStatus'];
+              final String? originalReason = productData['originalReason'] ?? reportSnap.data()?['originalReason'] ?? '';
+
+              Map<String, dynamic> updates = {
+                'status': originalStatus ?? GlutenSafetyStatus.sconosciuto.name,
+                'reason': originalReason,
+                'reportCount': 0,
+                'originalStatus': FieldValue.delete(),
+                'originalReason': FieldValue.delete(),
+              };
+
+              await productRef.update(updates);
+            } else {
+              await productRef.update({
+                'reportCount': newCount,
+              });
+            }
           }
+        }
+
+        // Rimuovere il barcode da reportedBarcodes dell'utente su Firestore
+        final user = auth.currentUser;
+        if (user != null && !user.isAnonymous && barcode != null) {
+          await db.collection("users").doc(user.uid).update({
+            'reportedBarcodes': FieldValue.arrayRemove([barcode]),
+          }).catchError((e) {
+            print("Error removing barcode from users reportedBarcodes list on Firestore: $e");
+          });
         }
       }
     } catch (error) {
@@ -1289,7 +1346,11 @@ class DbService {
         if (hasReportsToMigrate) {
           await reportsBatch.commit();
           for (final report in migratedReports) {
-            await _updateProductStatusOnReport(report.barcode, report);
+            final productUpdate = await _buildProductUpdateOnReport(report.barcode, report);
+            if (productUpdate != null) {
+              final prodRef = db.collection(productsCollection).doc(report.barcode);
+              await prodRef.update(productUpdate);
+            }
           }
         }
       }

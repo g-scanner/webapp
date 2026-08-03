@@ -42,6 +42,8 @@ class Product {
   final String lastUpdated;
   final int? reportCount;
   final GlutenSafetyStatus? originalStatus;
+  final String? originalReason;
+  final Map<String, String>? originalReasonsMap;
   final Map<String, String>? ingredientsMap;
   final Map<String, List<String>>? allergensMap;
   final Map<String, String>? reasonsMap;
@@ -61,6 +63,8 @@ class Product {
     required this.lastUpdated,
     this.reportCount,
     this.originalStatus,
+    this.originalReason,
+    this.originalReasonsMap,
     this.ingredientsMap,
     this.allergensMap,
     this.reasonsMap,
@@ -91,6 +95,10 @@ class Product {
               (e) => e.name == json['originalStatus'],
               orElse: () => GlutenSafetyStatus.sconosciuto,
             )
+          : null,
+      originalReason: json['originalReason'],
+      originalReasonsMap: json['originalReasons_map'] != null
+          ? Map<String, String>.from(json['originalReasons_map'])
           : null,
       ingredientsMap: json['ingredients_map'] != null
           ? Map<String, String>.from(json['ingredients_map'])
@@ -125,6 +133,7 @@ class Product {
       'allergens': allergens,
       'status': status.name,
       'reason': reason,
+      'ingredients_colored': null, // Deprecated or kept for compatibility
       'ingredients_analyzed': ingredientsAnalyzed
           ?.map((e) => e.toJson())
           .toList(),
@@ -133,6 +142,8 @@ class Product {
       'lastUpdated': lastUpdated,
       'reportCount': reportCount,
       'originalStatus': originalStatus?.name,
+      'originalReason': originalReason,
+      'originalReasons_map': originalReasonsMap,
       'ingredients_map': ingredientsMap,
       'allergens_map': allergensMap,
       'reasons_map': reasonsMap,

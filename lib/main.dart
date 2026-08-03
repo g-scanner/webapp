@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,6 +15,7 @@ import 'widgets/history_list.dart';
 import 'widgets/database_products.dart';
 import 'widgets/settings_panel.dart';
 import 'widgets/product_detail_card.dart';
+import 'widgets/report_detail_card.dart';
 
 // IMPORTA LA NUOVA SCHERMATA
 import 'widgets/auth_screen.dart';
@@ -45,7 +47,7 @@ void main() async {
 
   // Avvia il warmup della fotocamera durante lo splash nativo se l'utente è già loggato
   final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
+  if (user != null && !kIsWeb) {
     try {
       globalScannerController.start();
     } catch (e) {
@@ -128,6 +130,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   final GlobalKey<NavigatorState> _contentNavigatorKey =
       GlobalKey<NavigatorState>();
+  final Map<String, ValueNotifier<Product?>> _openProductNotifiers = {};
+  final Map<String, ValueNotifier<String?>> _openReportIdNotifiers = {};
 
   bool _requiresSyncDecision = false;
   int _anonymousHistoryCount = 0;
@@ -136,11 +140,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    try {
-      globalScannerController.start();
-    } catch (e) {
-      print("Camera start error in MainScreen initState: $e");
-    }
+    // Non avviamo globalScannerController.start() qui per evitare race-condition su web:
+    // l'avvio della fotocamera viene ora interamente demandato a CameraModule.
     _initApp();
   }
 
@@ -153,16 +154,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      if (_currentIndex == 0 && _isCameraActive) {
+      if (_currentIndex == 0 && _isCameraActive && !kIsWeb) {
         try {
           globalScannerController.start();
         } catch (_) {}
       }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      try {
-        globalScannerController.stop();
-      } catch (_) {}
+      if (!kIsWeb) {
+        try {
+          globalScannerController.stop();
+        } catch (_) {}
+      }
     }
   }
 
@@ -317,6 +320,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (mounted) {
       setState(() {
         products = data;
+        for (var barcode in _openProductNotifiers.keys) {
+          final prod = products.cast<Product?>().firstWhere(
+            (p) => p?.barcode == barcode,
+            orElse: () => null,
+          );
+          if (prod != null) {
+            _openProductNotifiers[barcode]!.value = prod;
+          }
+        }
       });
     }
   }
@@ -341,11 +353,14 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _isCameraActive = false;
     });
 
-    try {
-      await globalScannerController.stop();
-    } catch (_) {}
+    if (!kIsWeb) {
+      try {
+        await globalScannerController.stop();
+      } catch (_) {}
+    }
 
     final productNotifier = ValueNotifier<Product?>(null);
+    _openProductNotifiers[barcode] = productNotifier;
     final placeholderProduct = Product(
       barcode: barcode,
       name: "Caricamento prodotto...",
@@ -364,37 +379,100 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
       final isInHistory = history.any((h) => h.barcode == barcode);
 
+      final reportIdNotifier = _openReportIdNotifiers.putIfAbsent(
+        barcode,
+        () => ValueNotifier<String?>(userReport?.id),
+      );
+      reportIdNotifier.value = userReport?.id;
+
       final route = MaterialPageRoute(
         builder: (context) => ProductDetailCard(
           product: placeholderProduct,
           productNotifier: productNotifier,
+          reportIdNotifier: reportIdNotifier,
           isLoading: true,
           onBack: () => Navigator.pop(context),
           onReportSubmit: handleReportSubmit,
           onProductUpdate: handleProductUpdate,
           userSettings: userSettings,
-          onDeleteHistoryByBarcode:
-              isInHistory ? handleDeleteHistoryByBarcode : null,
+          onDeleteHistoryByBarcode: isInHistory
+              ? handleDeleteHistoryByBarcode
+              : null,
           hasReportedThisSession:
-              reportedSessionBarcodes.contains(barcode) ||
-              userReport != null,
+              reportedSessionBarcodes.contains(barcode) || userReport != null,
           userReportId: userReport?.id,
           onDeleteReport: handleDeleteReport,
+          useResponsiveWrapper: MediaQuery.of(context).size.width <= 960,
+          onViewReport: (loadedProduct) {
+            final double screenWidth = MediaQuery.of(context).size.width;
+            final bool isWideScreen = screenWidth > 960;
+            final reportOfProduct = reports.cast<ProductReport?>().firstWhere(
+              (r) => r?.barcode == loadedProduct.barcode && r?.userId == userId,
+              orElse: () => null,
+            );
+            final bool isOwn =
+                reportedSessionBarcodes.contains(loadedProduct.barcode) ||
+                reportOfProduct != null;
+            final String comment =
+                reportOfProduct?.comments ?? loadedProduct.reason;
+            final String rDate = reportOfProduct != null
+                ? formatRelativeDate(reportOfProduct.submittedAt)
+                : formatRelativeDate(loadedProduct.lastUpdated);
+
+            final routeReport = MaterialPageRoute(
+              builder: (context) => ReportDetailCard(
+                product: loadedProduct,
+                originalStatus:
+                    loadedProduct.originalStatus ??
+                    GlutenSafetyStatus.sconosciuto,
+                onBack: () => Navigator.pop(context),
+                reportReasonKey: reportOfProduct?.type ?? "label_unclear",
+                reportComment: comment.isNotEmpty ? comment : "Nessun commento",
+                reportDate: rDate,
+                onVote: (vote) async {
+                  await DbService.voteOnReportByBarcode(
+                    loadedProduct.barcode,
+                    vote,
+                  );
+                },
+                onInitVote: () async {
+                  return await DbService.getReportVoteDataByBarcode(
+                    loadedProduct.barcode,
+                  );
+                },
+                userSettings: userSettings,
+                isOwnReport: isOwn,
+                reportId: reportOfProduct?.id,
+                onDeleteReport: handleDeleteReport,
+                showProductLink: false,
+                useResponsiveWrapper: !isWideScreen,
+              ),
+            );
+
+            if (isWideScreen) {
+              _contentNavigatorKey.currentState?.push(routeReport);
+            } else {
+              Navigator.push(context, routeReport);
+            }
+          },
         ),
       );
 
       final isWideScreen = MediaQuery.of(context).size.width > 960;
       final Future<void> pushFuture;
       if (isWideScreen) {
-        pushFuture = _contentNavigatorKey.currentState?.push(route) ?? Future.value();
+        pushFuture =
+            _contentNavigatorKey.currentState?.push(route) ?? Future.value();
       } else {
         pushFuture = Navigator.push(context, route);
       }
 
       pushFuture.then((_) async {
+        _openProductNotifiers.remove(barcode);
+        _openReportIdNotifiers.remove(barcode);
         if (mounted) {
           setState(() => _isCameraActive = true);
-          if (_currentIndex == 0) {
+          if (_currentIndex == 0 && !kIsWeb) {
             try {
               await globalScannerController.start();
             } catch (_) {}
@@ -448,13 +526,37 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         ),
       );
 
-      await DbService.submitProductReportClientSide(
-        barcode,
-        product.name,
-        product.brand,
-        reportData,
-        product,
-      );
+      final pIdx = products.indexWhere((p) => p.barcode == barcode);
+      if (pIdx != -1) {
+        final p = products[pIdx];
+        products[pIdx] = Product(
+          barcode: p.barcode,
+          name: p.name,
+          brand: p.brand,
+          ingredients: p.ingredients,
+          allergens: p.allergens,
+          status: GlutenSafetyStatus.incerto,
+          reason:
+              'ATTENZIONE: Segnalata etichetta incongruente. Note: ${reportData['comments'] ?? ''}',
+          ingredientsAnalyzed: p.ingredientsAnalyzed,
+          imageUrl: p.imageUrl,
+          isManual: p.isManual,
+          lastUpdated: DateTime.now().toIso8601String(),
+          reportCount: (p.reportCount ?? 0) + 1,
+          originalStatus: p.originalStatus ?? p.status,
+          originalReason: p.originalReason ?? p.reason,
+          originalReasonsMap: p.originalReasonsMap ?? p.reasonsMap,
+          ingredientsMap: p.ingredientsMap,
+          allergensMap: p.allergensMap,
+          reasonsMap: p.reasonsMap,
+          ingredientsAnalyzedMap: p.ingredientsAnalyzedMap,
+        );
+      }
+      if (pIdx != -1) {
+        if (_openProductNotifiers.containsKey(barcode)) {
+          _openProductNotifiers[barcode]!.value = products[pIdx];
+        }
+      }
 
       setState(() {
         reportedSessionBarcodes.add(barcode);
@@ -470,8 +572,20 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           );
         }
       });
-      await DbService.saveSettings(userSettings);
 
+      final newReport = await DbService.submitProductReportClientSide(
+        barcode,
+        product.name,
+        product.brand,
+        reportData,
+        product,
+      );
+
+      if (_openReportIdNotifiers.containsKey(barcode)) {
+        _openReportIdNotifiers[barcode]!.value = newReport.id;
+      }
+
+      await DbService.saveSettings(userSettings);
       await Future.wait([_loadLocalReports(), _fetchProducts()]);
     } catch (e) {
       print("Segnalazione fallita: $e");
@@ -502,6 +616,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           .doc(finalProduct.barcode)
           .set(finalProduct.toJson(), SetOptions(merge: true));
 
+      if (_openProductNotifiers.containsKey(finalProduct.barcode)) {
+        _openProductNotifiers[finalProduct.barcode]!.value = finalProduct;
+      }
       await _fetchProducts();
     } catch (e) {
       print("Aggiornamento fallito: $e");
@@ -514,19 +631,82 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> handleDeleteReport(String reportId) async {
+    final report = reports.cast<ProductReport?>().firstWhere(
+      (r) => r?.id == reportId,
+      orElse: () => null,
+    );
+    final String? barcode = report?.barcode;
+
+    if (mounted) {
+      setState(() {
+        if (barcode != null) {
+          reportedSessionBarcodes.remove(barcode);
+
+          final pIdx = products.indexWhere((p) => p.barcode == barcode);
+          if (pIdx != -1) {
+            final p = products[pIdx];
+            final restoredStatus =
+                p.originalStatus ?? GlutenSafetyStatus.sconosciuto;
+            products[pIdx] = Product(
+              barcode: p.barcode,
+              name: p.name,
+              brand: p.brand,
+              ingredients: p.ingredients,
+              allergens: p.allergens,
+              status: restoredStatus,
+              reason: p.originalReason ?? p.reason,
+              ingredientsAnalyzed: p.ingredientsAnalyzed,
+              imageUrl: p.imageUrl,
+              isManual: p.isManual,
+              lastUpdated: DateTime.now().toIso8601String(),
+              reportCount: 0,
+              originalStatus: null,
+              originalReason: null,
+              originalReasonsMap: null,
+              ingredientsMap: p.ingredientsMap,
+              allergensMap: p.allergensMap,
+              reasonsMap: p.originalReasonsMap ?? p.reasonsMap,
+              ingredientsAnalyzedMap: p.ingredientsAnalyzedMap,
+            );
+            if (_openProductNotifiers.containsKey(barcode)) {
+              _openProductNotifiers[barcode]!.value = products[pIdx];
+            }
+            if (_openReportIdNotifiers.containsKey(barcode)) {
+              _openReportIdNotifiers[barcode]!.value = null;
+            }
+          }
+
+          final updatedBarcodes = List<String>.from(
+            userSettings.reportedBarcodes,
+          )..remove(barcode);
+          userSettings = UserSettings(
+            userId: userSettings.userId,
+            strictMode: userSettings.strictMode,
+            alertLactose: userSettings.alertLactose,
+            warnAdditives: userSettings.warnAdditives,
+            autoSaveHistory: userSettings.autoSaveHistory,
+            preferredLanguage: userSettings.preferredLanguage,
+            reportedBarcodes: updatedBarcodes,
+          );
+        }
+      });
+    }
+
     await DbService.deleteReportFromDb(reportId);
     await DbService.deleteLocalReport(reportId);
-    setState(() {}); // Forza l'aggiornamento
-    await _loadLocalReports();
-    await _fetchProducts();
+    DbService.saveLocalSettings(userSettings);
+    DbService.saveSettings(userSettings);
+    await Future.wait([_loadLocalReports(), _fetchProducts()]);
   }
 
   void _navigateToProduct(Product match) async {
     setState(() => _isCameraActive = false);
-    try {
-      await globalScannerController.stop();
-    } catch (e) {
-      print("Error stopping camera on navigation: $e");
+    if (!kIsWeb) {
+      try {
+        await globalScannerController.stop();
+      } catch (e) {
+        print("Error stopping camera on navigation: $e");
+      }
     }
 
     if (!mounted) return;
@@ -537,9 +717,23 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
     final isInHistory = history.any((h) => h.barcode == match.barcode);
 
+    final notifier = _openProductNotifiers.putIfAbsent(
+      match.barcode,
+      () => ValueNotifier<Product?>(match),
+    );
+    notifier.value = match;
+
+    final reportIdNotifier = _openReportIdNotifiers.putIfAbsent(
+      match.barcode,
+      () => ValueNotifier<String?>(userReport?.id),
+    );
+    reportIdNotifier.value = userReport?.id;
+
     final route = MaterialPageRoute(
       builder: (context) => ProductDetailCard(
         product: match,
+        productNotifier: notifier,
+        reportIdNotifier: reportIdNotifier,
         onBack: () => Navigator.pop(context),
         onReportSubmit: handleReportSubmit,
         onProductUpdate: handleProductUpdate,
@@ -552,22 +746,78 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             userReport != null,
         userReportId: userReport?.id,
         onDeleteReport: handleDeleteReport,
+        useResponsiveWrapper: MediaQuery.of(context).size.width <= 960,
+        onViewReport: (loadedProduct) {
+          final double screenWidth = MediaQuery.of(context).size.width;
+          final bool isWideScreen = screenWidth > 960;
+          final reportOfProduct = reports.cast<ProductReport?>().firstWhere(
+            (r) => r?.barcode == loadedProduct.barcode && r?.userId == userId,
+            orElse: () => null,
+          );
+          final bool isOwn =
+              reportedSessionBarcodes.contains(loadedProduct.barcode) ||
+              reportOfProduct != null;
+          final String comment =
+              reportOfProduct?.comments ?? loadedProduct.reason;
+          final String rDate = reportOfProduct != null
+              ? formatRelativeDate(reportOfProduct.submittedAt)
+              : formatRelativeDate(loadedProduct.lastUpdated);
+
+          final routeReport = MaterialPageRoute(
+            builder: (context) => ReportDetailCard(
+              product: loadedProduct,
+              originalStatus:
+                  loadedProduct.originalStatus ??
+                  GlutenSafetyStatus.sconosciuto,
+              onBack: () => Navigator.pop(context),
+              reportReasonKey: reportOfProduct?.type ?? "label_unclear",
+              reportComment: comment.isNotEmpty ? comment : "Nessun commento",
+              reportDate: rDate,
+              onVote: (vote) async {
+                await DbService.voteOnReportByBarcode(
+                  loadedProduct.barcode,
+                  vote,
+                );
+              },
+              onInitVote: () async {
+                return await DbService.getReportVoteDataByBarcode(
+                  loadedProduct.barcode,
+                );
+              },
+              userSettings: userSettings,
+              isOwnReport: isOwn,
+              reportId: reportOfProduct?.id,
+              onDeleteReport: handleDeleteReport,
+              showProductLink: false,
+              useResponsiveWrapper: !isWideScreen,
+            ),
+          );
+
+          if (isWideScreen) {
+            _contentNavigatorKey.currentState?.push(routeReport);
+          } else {
+            Navigator.push(context, routeReport);
+          }
+        },
       ),
     );
 
     final isWideScreen = MediaQuery.of(context).size.width > 960;
     final Future<void> pushFuture;
     if (isWideScreen) {
-      pushFuture = _contentNavigatorKey.currentState?.push(route) ?? Future.value();
+      pushFuture =
+          _contentNavigatorKey.currentState?.push(route) ?? Future.value();
     } else {
       pushFuture = Navigator.push(context, route);
     }
 
     await pushFuture;
+    _openProductNotifiers.remove(match.barcode);
+    _openReportIdNotifiers.remove(match.barcode);
 
     if (mounted) {
       setState(() => _isCameraActive = true);
-      if (_currentIndex == 0) {
+      if (_currentIndex == 0 && !kIsWeb) {
         try {
           await globalScannerController.start();
         } catch (e) {
@@ -715,13 +965,17 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             _isCameraActive = index == 0;
           });
           if (index == 0) {
-            try {
-              await globalScannerController.start();
-            } catch (_) {}
+            if (!kIsWeb) {
+              try {
+                await globalScannerController.start();
+              } catch (_) {}
+            }
           } else {
-            try {
-              await globalScannerController.stop();
-            } catch (_) {}
+            if (!kIsWeb) {
+              try {
+                await globalScannerController.stop();
+              } catch (_) {}
+            }
           }
         },
         borderRadius: BorderRadius.circular(20),
@@ -849,7 +1103,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                       padding: const EdgeInsets.only(
                         top: 24,
                         bottom: 24,
-                        left: 16,
+                        left: 24,
+                        right: 12,
                       ),
                       child: Container(
                         decoration: BoxDecoration(
@@ -869,73 +1124,86 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                             ),
                           ],
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: NavigationRail(
-                          backgroundColor: Colors.transparent,
-                          groupAlignment: 0.0,
-                          selectedIndex: _currentIndex < 4 ? _currentIndex : 0,
-                          onDestinationSelected: (int index) async {
-                            _contentNavigatorKey.currentState
-                                ?.popUntil((route) => route.isFirst);
-                            setState(() {
-                              _currentIndex = index;
-                              _isCameraActive = index == 0;
-                            });
-                            if (index == 0) {
-                              try {
-                                await globalScannerController.start();
-                              } catch (_) {}
-                            } else {
-                              try {
-                                await globalScannerController.stop();
-                              } catch (_) {}
-                            }
-                          },
-                          minWidth: 104,
-                          selectedLabelTextStyle: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: onSecondaryContainer,
-                          ),
-                          unselectedLabelTextStyle: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: onSurfaceVariant,
-                          ),
-                          selectedIconTheme: const IconThemeData(
-                            color: onSecondaryContainer,
-                          ),
-                          unselectedIconTheme: const IconThemeData(
-                            color: onSurfaceVariant,
-                          ),
-                          indicatorColor: secondaryContainer.withValues(
-                            alpha: 0.2,
-                          ),
-                          labelType: NavigationRailLabelType.all,
-                          destinations: const [
-                            NavigationRailDestination(
-                              padding: EdgeInsets.symmetric(vertical: 16.0),
-                              icon: Icon(Icons.qr_code_scanner),
-                              selectedIcon: Icon(Icons.qr_code_scanner),
-                              label: Text('Scansione'),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(23),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
                             ),
-                            NavigationRailDestination(
-                              padding: EdgeInsets.symmetric(vertical: 16.0),
-                              icon: Icon(Icons.history),
-                              selectedIcon: Icon(Icons.history),
-                              label: Text('Cronologia'),
+                            child: NavigationRail(
+                              backgroundColor: Colors.transparent,
+                              groupAlignment: 0.0,
+                              selectedIndex: _currentIndex < 4
+                                  ? _currentIndex
+                                  : 0,
+                              onDestinationSelected: (int index) async {
+                                _contentNavigatorKey.currentState?.popUntil(
+                                  (route) => route.isFirst,
+                                );
+                                setState(() {
+                                  _currentIndex = index;
+                                  _isCameraActive = index == 0;
+                                });
+                                if (index == 0) {
+                                  if (!kIsWeb) {
+                                    try {
+                                      await globalScannerController.start();
+                                    } catch (_) {}
+                                  }
+                                } else {
+                                  if (!kIsWeb) {
+                                    try {
+                                      await globalScannerController.stop();
+                                    } catch (_) {}
+                                  }
+                                }
+                              },
+                              selectedLabelTextStyle: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: onSecondaryContainer,
+                              ),
+                              unselectedLabelTextStyle: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: onSurfaceVariant,
+                              ),
+                              selectedIconTheme: const IconThemeData(
+                                color: onSecondaryContainer,
+                              ),
+                              unselectedIconTheme: const IconThemeData(
+                                color: onSurfaceVariant,
+                              ),
+                              indicatorColor: secondaryContainer.withValues(
+                                alpha: 0.2,
+                              ),
+                              labelType: NavigationRailLabelType.all,
+                              destinations: const [
+                                NavigationRailDestination(
+                                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                                  icon: Icon(Icons.qr_code_scanner),
+                                  selectedIcon: Icon(Icons.qr_code_scanner),
+                                  label: Text('Scansione'),
+                                ),
+                                NavigationRailDestination(
+                                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                                  icon: Icon(Icons.history),
+                                  selectedIcon: Icon(Icons.history),
+                                  label: Text('Cronologia'),
+                                ),
+                                NavigationRailDestination(
+                                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                                  icon: Icon(Icons.report_problem_outlined),
+                                  selectedIcon: Icon(Icons.report_problem),
+                                  label: Text('Segnalazioni'),
+                                ),
+                                NavigationRailDestination(
+                                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                                  icon: Icon(Icons.settings_outlined),
+                                  selectedIcon: Icon(Icons.settings),
+                                  label: Text('Impostazioni'),
+                                ),
+                              ],
                             ),
-                            NavigationRailDestination(
-                              padding: EdgeInsets.symmetric(vertical: 16.0),
-                              icon: Icon(Icons.report_problem_outlined),
-                              selectedIcon: Icon(Icons.report_problem),
-                              label: Text('Segnalazioni'),
-                            ),
-                            NavigationRailDestination(
-                              padding: EdgeInsets.symmetric(vertical: 16.0),
-                              icon: Icon(Icons.settings_outlined),
-                              selectedIcon: Icon(Icons.settings),
-                              label: Text('Impostazioni'),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -945,8 +1213,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                         padding: const EdgeInsets.only(
                           top: 24,
                           bottom: 24,
-                          left: 16,
-                          right: 16,
+                          left: 12,
+                          right: 24,
                         ),
                         child: Container(
                           width: 500,
@@ -954,9 +1222,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                             color: surfaceLowest,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outlineVariant
+                                  .withValues(alpha: 0.5),
                               width: 1,
                             ),
                             boxShadow: [
@@ -967,18 +1236,20 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                               ),
                             ],
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Navigator(
-                            key: _contentNavigatorKey,
-                            pages: [
-                              MaterialPage(
-                                key: ValueKey(_currentIndex),
-                                child: scaffold,
-                              ),
-                            ],
-                            onPopPage: (route, result) {
-                              return route.didPop(result);
-                            },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(23),
+                            child: Navigator(
+                              key: _contentNavigatorKey,
+                              pages: [
+                                MaterialPage(
+                                  key: ValueKey(_currentIndex),
+                                  child: scaffold,
+                                ),
+                              ],
+                              onPopPage: (route, result) {
+                                return route.didPop(result);
+                              },
+                            ),
                           ),
                         ),
                       ),

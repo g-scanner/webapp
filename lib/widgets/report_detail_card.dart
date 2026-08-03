@@ -40,6 +40,8 @@ class ReportDetailCard extends StatefulWidget {
   final bool isOwnReport;
   final String? reportId;
   final Future<void> Function(String reportId)? onDeleteReport;
+  final bool useResponsiveWrapper;
+  final bool showProductLink;
 
   const ReportDetailCard({
     super.key,
@@ -57,6 +59,8 @@ class ReportDetailCard extends StatefulWidget {
     this.isOwnReport = false,
     this.reportId,
     this.onDeleteReport,
+    this.useResponsiveWrapper = true,
+    this.showProductLink = true,
   });
 
   @override
@@ -80,34 +84,37 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
   Future<void> _loadInitialData() async {
     try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('reports')
-          .where('barcode', isEqualTo: widget.product.barcode)
-          .where('status', isEqualTo: 'open')
-          .limit(1)
-          .get();
+      final results = await Future.wait([
+        FirebaseFirestore.instance
+            .collection('reports')
+            .where('barcode', isEqualTo: widget.product.barcode)
+            .where('status', isEqualTo: 'open')
+            .limit(1)
+            .get(),
+        widget.onInitVote != null
+            ? widget.onInitVote!()
+            : Future.value(<String, int>{}),
+      ]);
 
-      if (querySnapshot.docs.isNotEmpty && mounted) {
+      final querySnapshot = results[0] as QuerySnapshot<Map<String, dynamic>>;
+      final voteData = results[1] as Map<String, int>;
+
+      if (mounted) {
         setState(() {
-          _activeReport = ProductReport.fromJson(
-            querySnapshot.docs.first.data(),
-          );
+          if (querySnapshot.docs.isNotEmpty) {
+            _activeReport = ProductReport.fromJson(
+              querySnapshot.docs.first.data(),
+            );
+          }
+          if (voteData.isNotEmpty) {
+            _displayScore = voteData['score'] ?? widget.score;
+            _currentVote = voteData['userVote'] ?? 0;
+          }
+          _isVoteLoading = false;
         });
       }
     } catch (e) {
       debugPrint("Errore nel caricamento del report da Firestore: $e");
-    }
-
-    if (widget.onInitVote != null) {
-      final data = await widget.onInitVote!();
-      if (mounted) {
-        setState(() {
-          _displayScore = data['score'] ?? widget.score;
-          _currentVote = data['userVote'] ?? 0;
-          _isVoteLoading = false;
-        });
-      }
-    } else {
       if (mounted) {
         setState(() {
           _isVoteLoading = false;
@@ -183,8 +190,15 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     // Ora usa l'originalStatus passato via parametro e non il current status (che sarebbe in revisione/giallo)
     final oldStatusData = _getStatusData(widget.originalStatus);
 
-    return ResponsiveMaxCardWidth(
-      child: Scaffold(
+    return widget.useResponsiveWrapper
+      ? ResponsiveMaxCardWidth(
+          child: _buildContent(context, oldStatusData),
+        )
+      : _buildContent(context, oldStatusData);
+  }
+
+  Widget _buildContent(BuildContext context, Map<String, dynamic> oldStatusData) {
+    return Scaffold(
         backgroundColor: bgBackground,
         appBar: AppBar(
           backgroundColor: surfaceLowest,
@@ -355,102 +369,106 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
               ),
               const SizedBox(height: 24),
 
-              // ── NUOVO BOTTONE NEUTRO: Scheda Prodotto ────────────────
-              InkWell(
-                onTap: () {
-                  final productToShow =
-                      _activeReport?.productSnapshot ?? widget.product;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetailCard(
-                        product: productToShow,
-                        onBack: () => Navigator.pop(context),
-                        // Sola lettura: la segnalazione è già stata inviata,
-                        // questi callback non verranno mai chiamati da qui.
-                        onReportSubmit: (_, _) async {},
-                        onProductUpdate: (_) async {},
-                        userSettings:
-                            widget.userSettings ??
-                            UserSettings(
-                              strictMode: true,
-                              alertLactose: false,
-                              warnAdditives: true,
-                              autoSaveHistory: true,
-                              preferredLanguage: 'it',
-                            ),
-                      ),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: surfaceLowest,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: outlineVariant.withValues(alpha: 0.5),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: onSurface.withValues(alpha: 0.03),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Icona neutra a sinistra
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                          color: surfaceContainerHigh,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.inventory_2_outlined,
-                          size: 20,
-                          color: onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Testo
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Mostra scheda prodotto",
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: onSurface,
+              // ── BOTTONE NEUTRO: Scheda Prodotto (anti-loop) ────────────
+              if (widget.showProductLink)
+                InkWell(
+                  onTap: () {
+                    final productToShow =
+                        _activeReport?.productSnapshot ?? widget.product;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProductDetailCard(
+                          product: productToShow,
+                          onBack: () => Navigator.pop(context),
+                          // Sola lettura: la segnalazione è già stata inviata,
+                          // questi callback non verranno mai chiamati da qui.
+                          onReportSubmit: (_, _) async {},
+                          onProductUpdate: (_) async {},
+                          userSettings:
+                              widget.userSettings ??
+                              UserSettings(
+                                strictMode: true,
+                                alertLactose: false,
+                                warnAdditives: true,
+                                autoSaveHistory: true,
+                                preferredLanguage: 'it',
                               ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              "Ingredienti, allergeni e note.",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                          showReportLink: false,
+                          useResponsiveWrapper: widget.useResponsiveWrapper,
                         ),
                       ),
-                      // Freccia a destra per indicare la navigazione
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 24,
-                        color: outlineVariant,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: surfaceLowest,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: outlineVariant.withValues(alpha: 0.5),
                       ),
-                    ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: onSurface.withValues(alpha: 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // Icona neutra a sinistra
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                            color: surfaceContainerHigh,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.inventory_2_outlined,
+                            size: 20,
+                            color: onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Testo
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Mostra scheda prodotto",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: onSurface,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                "Ingredienti, allergeni e note.",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Freccia a destra per indicare la navigazione
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          size: 24,
+                          color: outlineVariant,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
+              if (widget.showProductLink)
+                const SizedBox(height: 24),
 
               // ── Vecchio Stato del Prodotto ────────────────────────────
               _buildSectionCard(
@@ -558,20 +576,22 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                           ),
                         ),
                       ),
-                      child: Text(
-                        (_activeReport?.comments ?? widget.reportComment)
-                                .isEmpty
-                            ? "Nessun commento aggiuntivo fornito."
-                            : '"${_activeReport?.comments ?? widget.reportComment}"',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontStyle:
-                              (_activeReport?.comments ?? widget.reportComment)
-                                  .isEmpty
-                              ? FontStyle.normal
-                              : FontStyle.italic,
-                          color: onSurface,
-                          height: 1.4,
+                      child: Skeletonizer(
+                        enabled: _isVoteLoading,
+                        child: Text(
+                          _isVoteLoading
+                              ? "Questo è un commento segnaposto utilizzato per visualizzare lo scheletro di caricamento."
+                              : (_activeReport?.comments ?? "").isEmpty
+                                  ? "Nessun commento aggiuntivo fornito."
+                                  : '"${_activeReport!.comments}"',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontStyle: _isVoteLoading || (_activeReport?.comments ?? "").isEmpty
+                                ? FontStyle.normal
+                                : FontStyle.italic,
+                            color: onSurface,
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     ),
@@ -746,8 +766,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildSectionCard({

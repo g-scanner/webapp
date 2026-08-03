@@ -362,7 +362,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Il tuo assistente affidabile per le scelte senza glutine.",
+                      "Il tuo assistente affidabile per le scelte senza\u00A0glutine.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -403,10 +403,39 @@ class _AuthScreenState extends State<AuthScreen> {
                         borderColor: surfaceVariant,
                         onTap: _signInWithFacebook,
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
 
                       // --- GUEST ENTRY ---
-                      const Divider(color: surfaceVariant),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Divider(
+                              color: surfaceVariant,
+                              thickness: 1.5,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: Text(
+                              "Oppure",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: onSurfaceVariant.withValues(alpha: 0.6),
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const Expanded(
+                            child: Divider(
+                              color: surfaceVariant,
+                              thickness: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 24),
                       TextButton.icon(
                         onPressed: _signInAnonymously,

@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:gscanner/utils/camera_permission_stub.dart'
+    if (dart.library.js_interop) 'package:gscanner/utils/camera_permission_web.dart';
 
 // --- Material 3 Design Colors ---
 const Color primaryContainer = Color(0xFF2E7D32);
@@ -35,7 +37,8 @@ class CameraModule extends StatefulWidget {
   State<CameraModule> createState() => _CameraModuleState();
 }
 
-class _CameraModuleState extends State<CameraModule> {
+class _CameraModuleState extends State<CameraModule>
+    with WidgetsBindingObserver {
   final TextEditingController _manualCodeController = TextEditingController();
   late FocusNode _manualFocusNode; // 1. Aggiunto il FocusNode
 
@@ -43,7 +46,10 @@ class _CameraModuleState extends State<CameraModule> {
   bool _isManualFocused = false; // 2. Stato per tracciare il focus
   bool _webPermissionDenied = false;
 
-  bool get _isMobile => !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+  bool get _isMobile =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   PermissionStatus _permissionStatus = PermissionStatus.provisional;
   bool _hasCheckedPermission = false;
@@ -51,6 +57,7 @@ class _CameraModuleState extends State<CameraModule> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // Inizializzo il focus e l'ascoltatore (identico alla cronologia)
     _manualFocusNode = FocusNode();
@@ -61,6 +68,23 @@ class _CameraModuleState extends State<CameraModule> {
 
   Future<void> _checkPermission() async {
     if (kIsWeb) {
+      // --- WEB: usa la Permissions API per non avviare la camera a ciechi ---
+      final permState = await queryWebCameraPermission();
+
+      if (permState == 'denied') {
+        // Permesso già negato in modo permanente → mostra avviso senza tentare
+        if (mounted) {
+          setState(() {
+            _webPermissionDenied = true;
+            _permissionStatus = PermissionStatus.denied;
+            _hasCheckedPermission = true;
+          });
+        }
+        return;
+      }
+
+      // 'granted' oppure 'prompt'/'unknown' → tentiamo start()
+      // 'prompt' farà apparire il dialog nativo del browser
       if (widget.isActive) {
         try {
           await widget.controller.start();
@@ -72,7 +96,7 @@ class _CameraModuleState extends State<CameraModule> {
             });
           }
         } catch (e) {
-          print("Web camera start failed: $e");
+          debugPrint("Web camera start failed: $e");
           if (mounted) {
             setState(() {
               _webPermissionDenied = true;
@@ -82,6 +106,7 @@ class _CameraModuleState extends State<CameraModule> {
           }
         }
       } else {
+        // Tab non attiva: non avviamo, ma segniamo che abbiamo controllato
         if (mounted) {
           setState(() {
             _hasCheckedPermission = true;
@@ -91,58 +116,57 @@ class _CameraModuleState extends State<CameraModule> {
       return;
     }
 
+    // --- NATIVE (Android / iOS) ---
+    final status = await Permission.camera.status;
+    if (status.isGranted) {
+      if (mounted) {
+        setState(() {
+          _permissionStatus = status;
+          _hasCheckedPermission = true;
+        });
+      }
+      if (widget.isActive) {
+        try {
+          await widget.controller.start();
+        } catch (_) {}
+      }
+    } else if (status.isDenied || status.isProvisional) {
+      // Richiesta automatica del permesso all'avvio
+      final reqStatus = await Permission.camera.request();
+      if (mounted) {
+        setState(() {
+          _permissionStatus = reqStatus;
+          _hasCheckedPermission = true;
+        });
+        if (reqStatus.isGranted && widget.isActive) {
+          try {
+            await widget.controller.start();
+          } catch (_) {}
+        }
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _permissionStatus = status;
+          _hasCheckedPermission = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _checkPermissionOnResume() async {
+    if (kIsWeb) return;
     final status = await Permission.camera.status;
     if (mounted) {
       setState(() {
         _permissionStatus = status;
         _hasCheckedPermission = true;
       });
-    }
-    if (status.isGranted) {
-      if (widget.isActive) {
+      if (status.isGranted && widget.isActive) {
         try {
           await widget.controller.start();
         } catch (_) {}
       }
-    } else if (status.isDenied) {
-      await _requestPermission();
-    }
-  }
-
-  Future<void> _requestPermission() async {
-    if (kIsWeb) {
-      if (widget.isActive) {
-        try {
-          await widget.controller.start();
-          if (mounted) {
-            setState(() {
-              _webPermissionDenied = false;
-              _permissionStatus = PermissionStatus.granted;
-            });
-          }
-        } catch (e) {
-          print("Web camera request start failed: $e");
-          if (mounted) {
-            setState(() {
-              _webPermissionDenied = true;
-              _permissionStatus = PermissionStatus.denied;
-            });
-          }
-        }
-      }
-      return;
-    }
-
-    final status = await Permission.camera.request();
-    if (mounted) {
-      setState(() {
-        _permissionStatus = status;
-      });
-    }
-    if (status.isGranted && widget.isActive) {
-      try {
-        await widget.controller.start();
-      } catch (_) {}
     }
   }
 
@@ -157,11 +181,18 @@ class _CameraModuleState extends State<CameraModule> {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive != oldWidget.isActive) {
       if (widget.isActive) {
-        final bool isGranted = kIsWeb ? !_webPermissionDenied : _permissionStatus.isGranted;
-        if (isGranted) {
-          try {
-            widget.controller.start();
-          } catch (_) {}
+        if (kIsWeb) {
+          // Su Web, quando diventiamo attivi, resettiamo il flag e ricontrolliamo
+          // il permesso ogni volta (gestisce il caso di navigazione avanti/indietro).
+          if (mounted) setState(() => _hasCheckedPermission = false);
+          _checkPermission();
+        } else {
+          final bool isGranted = _permissionStatus.isGranted;
+          if (isGranted) {
+            try {
+              widget.controller.start();
+            } catch (_) {}
+          }
         }
       } else {
         try {
@@ -171,10 +202,16 @@ class _CameraModuleState extends State<CameraModule> {
     }
   }
 
-
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkPermissionOnResume();
+    }
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _manualFocusNode.removeListener(_onManualFocusChange);
     _manualFocusNode.dispose();
     _manualCodeController.dispose();
@@ -370,8 +407,8 @@ class _CameraModuleState extends State<CameraModule> {
     final bool isPermissionDenied = kIsWeb
         ? _webPermissionDenied
         : (_permissionStatus.isDenied ||
-            _permissionStatus.isPermanentlyDenied ||
-            _permissionStatus.isRestricted);
+              _permissionStatus.isPermanentlyDenied ||
+              _permissionStatus.isRestricted);
 
     if (isPermissionDenied) {
       return Padding(
@@ -396,6 +433,7 @@ class _CameraModuleState extends State<CameraModule> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  const SizedBox(height: 16),
                   const Text(
                     "Fotocamera non disponibile",
                     style: TextStyle(
@@ -407,7 +445,7 @@ class _CameraModuleState extends State<CameraModule> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    "Concedi l'accesso alla fotocamera per scansionare i codici a barre.",
+                    "Concedi l'accesso alla fotocamera per\nscansionare i codici a barre.",
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white70,
@@ -420,11 +458,15 @@ class _CameraModuleState extends State<CameraModule> {
                     onPressed: () async {
                       if (kIsWeb) {
                         try {
+                          try {
+                            await widget.controller.stop();
+                          } catch (_) {}
                           await widget.controller.start();
                           if (mounted) {
                             setState(() {
                               _webPermissionDenied = false;
                               _permissionStatus = PermissionStatus.granted;
+                              _hasCheckedPermission = true;
                             });
                           }
                         } catch (e) {
@@ -432,32 +474,23 @@ class _CameraModuleState extends State<CameraModule> {
                             setState(() {
                               _webPermissionDenied = true;
                               _permissionStatus = PermissionStatus.denied;
+                              _hasCheckedPermission = true;
                             });
                           }
                         }
                         return;
                       }
 
-                      final status = await Permission.camera.request();
-                      if (mounted) {
-                        setState(() {
-                          _permissionStatus = status;
-                        });
-                      }
-                      if (status.isGranted) {
-                        if (widget.isActive) {
-                          try {
-                            await widget.controller.start();
-                          } catch (_) {}
-                        }
-                      } else {
+                      final status = await Permission.camera.status;
+                      if (status.isPermanentlyDenied) {
                         await openAppSettings();
-                        final updatedStatus = await Permission.camera.status;
+                      } else {
+                        final reqStatus = await Permission.camera.request();
                         if (mounted) {
                           setState(() {
-                            _permissionStatus = updatedStatus;
+                            _permissionStatus = reqStatus;
                           });
-                          if (updatedStatus.isGranted && widget.isActive) {
+                          if (reqStatus.isGranted && widget.isActive) {
                             try {
                               await widget.controller.start();
                             } catch (_) {}

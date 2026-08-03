@@ -486,6 +486,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 isOwnReport: isOwnReport,
                 reportId: userReport?.id,
                 onDeleteReport: widget.onDeleteReport,
+                useResponsiveWrapper: MediaQuery.of(context).size.width <= 960,
               ),
             ),
           );
