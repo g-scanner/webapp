@@ -32,6 +32,7 @@ const Color onSurfaceVariant = Color(0xFF40493D);
 const Color onSurface = Color(0xFF1B1B1E);
 
 final MobileScannerController globalScannerController = MobileScannerController(
+  autoStart: false,
   detectionSpeed: DetectionSpeed.noDuplicates,
   formats: const [
     BarcodeFormat.ean13,

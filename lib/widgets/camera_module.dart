@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -63,55 +64,64 @@ class _CameraModuleState extends State<CameraModule>
     _manualFocusNode = FocusNode();
     _manualFocusNode.addListener(_onManualFocusChange);
 
-    _checkPermission();
+    // Aspettiamo il primo frame: il widget MobileScanner deve essere
+    // già montato nell'albero prima di chiamare controller.start().
+    // Senza questo, su web si ottiene controllerNotAttached.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkPermission();
+    });
   }
 
   Future<void> _checkPermission() async {
     if (kIsWeb) {
-      // --- WEB: usa la Permissions API per non avviare la camera a ciechi ---
+      // --- WEB ---
       final permState = await queryWebCameraPermission();
 
       if (permState == 'denied') {
-        // Permesso già negato in modo permanente → mostra avviso senza tentare
+        // Permanentemente negato: mostriamo subito la UI con MobileScanner
+        // in albero (necessario per il controller attachment)
         if (mounted) {
           setState(() {
             _webPermissionDenied = true;
             _permissionStatus = PermissionStatus.denied;
-            _hasCheckedPermission = true;
+            _hasCheckedPermission = true; // MobileScanner entra nell'albero
           });
         }
         return;
       }
 
-      // 'granted' oppure 'prompt'/'unknown' → tentiamo start()
-      // 'prompt' farà apparire il dialog nativo del browser
+      // 'granted' o 'prompt': impostiamo hasCheckedPermission = true PRIMA
+      // di chiamare start(), così MobileScanner viene renderizzato e il
+      // controller risulta attached quando start() viene eseguito.
+      if (mounted) {
+        setState(() {
+          _webPermissionDenied = false;
+          _hasCheckedPermission = true; // ← MobileScanner entra nell'albero
+        });
+      }
+
       if (widget.isActive) {
-        try {
-          await widget.controller.start();
-          if (mounted) {
-            setState(() {
-              _webPermissionDenied = false;
-              _permissionStatus = PermissionStatus.granted;
-              _hasCheckedPermission = true;
-            });
-          }
-        } catch (e) {
-          debugPrint("Web camera start failed: $e");
-          if (mounted) {
-            setState(() {
-              _webPermissionDenied = true;
-              _permissionStatus = PermissionStatus.denied;
-              _hasCheckedPermission = true;
-            });
-          }
-        }
-      } else {
-        // Tab non attiva: non avviamo, ma segniamo che abbiamo controllato
-        if (mounted) {
-          setState(() {
-            _hasCheckedPermission = true;
+        // Aspettiamo il frame successivo (MobileScanner è ora nell'albero)
+        // poi chiamiamo start(). Qui il controller è garantito attached.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          widget.controller.start().then((_) {
+            if (mounted) {
+              setState(() {
+                _webPermissionDenied = false;
+                _permissionStatus = PermissionStatus.granted;
+              });
+            }
+          }).catchError((e) {
+            debugPrint('Web camera start failed: $e');
+            if (mounted) {
+              setState(() {
+                _webPermissionDenied = true;
+                _permissionStatus = PermissionStatus.denied;
+              });
+            }
           });
-        }
+        });
       }
       return;
     }
@@ -126,12 +136,12 @@ class _CameraModuleState extends State<CameraModule>
         });
       }
       if (widget.isActive) {
-        try {
-          await widget.controller.start();
-        } catch (_) {}
+        Future.microtask(() async {
+          if (!mounted) return;
+          try { await widget.controller.start(); } catch (_) {}
+        });
       }
     } else if (status.isDenied || status.isProvisional) {
-      // Richiesta automatica del permesso all'avvio
       final reqStatus = await Permission.camera.request();
       if (mounted) {
         setState(() {
@@ -139,9 +149,10 @@ class _CameraModuleState extends State<CameraModule>
           _hasCheckedPermission = true;
         });
         if (reqStatus.isGranted && widget.isActive) {
-          try {
-            await widget.controller.start();
-          } catch (_) {}
+          Future.microtask(() async {
+            if (!mounted) return;
+            try { await widget.controller.start(); } catch (_) {}
+          });
         }
       }
     } else {
@@ -155,7 +166,29 @@ class _CameraModuleState extends State<CameraModule>
   }
 
   Future<void> _checkPermissionOnResume() async {
-    if (kIsWeb) return;
+    if (kIsWeb) {
+      // Su web, l'utente potrebbe aver concesso il permesso dal lucchetto
+      // del browser mentre era su un'altra tab. Al resume ricontrolliamo.
+      final permState = await queryWebCameraPermission();
+      if (!mounted) return;
+      if (permState == 'granted' && widget.isActive) {
+        setState(() {
+          _webPermissionDenied = false;
+          _permissionStatus = PermissionStatus.granted;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          widget.controller.start().catchError((_) {});
+        });
+      } else if (permState == 'denied') {
+        setState(() {
+          _webPermissionDenied = true;
+          _permissionStatus = PermissionStatus.denied;
+        });
+      }
+      return;
+    }
+    // --- NATIVE ---
     final status = await Permission.camera.status;
     if (mounted) {
       setState(() {
@@ -163,9 +196,10 @@ class _CameraModuleState extends State<CameraModule>
         _hasCheckedPermission = true;
       });
       if (status.isGranted && widget.isActive) {
-        try {
-          await widget.controller.start();
-        } catch (_) {}
+        Future.microtask(() async {
+          if (!mounted) return;
+          try { await widget.controller.start(); } catch (_) {}
+        });
       }
     }
   }
@@ -182,22 +216,34 @@ class _CameraModuleState extends State<CameraModule>
     if (widget.isActive != oldWidget.isActive) {
       if (widget.isActive) {
         if (kIsWeb) {
-          // Su Web, quando diventiamo attivi, resettiamo il flag e ricontrolliamo
-          // il permesso ogni volta (gestisce il caso di navigazione avanti/indietro).
-          if (mounted) setState(() => _hasCheckedPermission = false);
-          _checkPermission();
+          // Su Web NON resettiamo _hasCheckedPermission: MobileScanner deve
+          // restare nell'albero. Tentiamo semplicemente di riavviare lo stream.
+          if (!_webPermissionDenied) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              widget.controller.start().then((_) {
+                if (mounted) setState(() {
+                  _webPermissionDenied = false;
+                  _permissionStatus = PermissionStatus.granted;
+                });
+              }).catchError((e) {
+                if (mounted) setState(() {
+                  _webPermissionDenied = true;
+                  _permissionStatus = PermissionStatus.denied;
+                });
+              });
+            });
+          }
         } else {
-          final bool isGranted = _permissionStatus.isGranted;
-          if (isGranted) {
-            try {
-              widget.controller.start();
-            } catch (_) {}
+          if (_permissionStatus.isGranted) {
+            Future.microtask(() async {
+              if (!mounted) return;
+              try { await widget.controller.start(); } catch (_) {}
+            });
           }
         }
       } else {
-        try {
-          widget.controller.stop();
-        } catch (_) {}
+        unawaited(widget.controller.stop().catchError((_) {}));
       }
     }
   }
@@ -385,147 +431,34 @@ class _CameraModuleState extends State<CameraModule>
   }
 
   Widget _buildCameraArea() {
+    // Fase di caricamento: controlliamo ancora il permesso, mostriamo spinner.
+    // MobileScanner NON è ancora nell'albero — ok perché non chiamiamo start().
     if (!_hasCheckedPermission) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 0.0),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28.0),
-            color: Colors.black,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: const AspectRatio(
-            aspectRatio: 16 / 10,
-            child: Center(
-              child: CircularProgressIndicator(color: primaryContainer),
-            ),
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28.0),
+          color: Colors.black,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: const AspectRatio(
+          aspectRatio: 16 / 10,
+          child: Center(
+            child: CircularProgressIndicator(color: primaryContainer),
           ),
         ),
       );
     }
 
+    // Una volta che _hasCheckedPermission = true, MobileScanner entra
+    // nell'albero e rimane SEMPRE lì — anche quando il permesso è negato.
+    // La UI di errore è un overlay che copre il widget camera, non un
+    // sostituto: questo garantisce che il controller sia sempre attached
+    // e che start() possa essere chiamato dal bottone senza controllerNotAttached.
     final bool isPermissionDenied = kIsWeb
         ? _webPermissionDenied
         : (_permissionStatus.isDenied ||
               _permissionStatus.isPermanentlyDenied ||
               _permissionStatus.isRestricted);
-
-    if (isPermissionDenied) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 0.0),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28.0),
-            color: Colors.black,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: AspectRatio(
-            aspectRatio: 16 / 10,
-            child: Container(
-              color: Colors.black,
-              width: double.infinity,
-              height: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 12.0,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Fotocamera non disponibile",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Concedi l'accesso alla fotocamera per\nscansionare i codici a barre.",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white70,
-                      height: 1.3,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 14),
-                  FilledButton.icon(
-                    onPressed: () async {
-                      if (kIsWeb) {
-                        try {
-                          try {
-                            await widget.controller.stop();
-                          } catch (_) {}
-                          await widget.controller.start();
-                          if (mounted) {
-                            setState(() {
-                              _webPermissionDenied = false;
-                              _permissionStatus = PermissionStatus.granted;
-                              _hasCheckedPermission = true;
-                            });
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            setState(() {
-                              _webPermissionDenied = true;
-                              _permissionStatus = PermissionStatus.denied;
-                              _hasCheckedPermission = true;
-                            });
-                          }
-                        }
-                        return;
-                      }
-
-                      final status = await Permission.camera.status;
-                      if (status.isPermanentlyDenied) {
-                        await openAppSettings();
-                      } else {
-                        final reqStatus = await Permission.camera.request();
-                        if (mounted) {
-                          setState(() {
-                            _permissionStatus = reqStatus;
-                          });
-                          if (reqStatus.isGranted && widget.isActive) {
-                            try {
-                              await widget.controller.start();
-                            } catch (_) {}
-                          }
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.security, size: 16),
-                    label: const Text(
-                      "Richiedi Accesso",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: primaryContainer,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 36),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
 
     return ValueListenableBuilder<MobileScannerState>(
       valueListenable: widget.controller,
@@ -535,6 +468,7 @@ class _CameraModuleState extends State<CameraModule>
 
         return Stack(
           children: [
+            // ── Camera container (SEMPRE nell'albero) ──────────────────────
             Padding(
               padding: EdgeInsets.only(bottom: buttonOverflow),
               child: Container(
@@ -559,64 +493,57 @@ class _CameraModuleState extends State<CameraModule>
                             controller: widget.controller,
                             onDetect: _onDetect,
                           ),
-                          CustomPaint(
-                            size: Size(w, h),
-                            painter: _VignetteBorderPainter(
-                              frameWidth: frameW,
-                              frameHeight: frameH,
-                            ),
-                          ),
-                          Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    width: 2,
-                                    height: 24,
-                                    color: primaryContainer,
-                                  ),
-                                  Container(
-                                    width: 24,
-                                    height: 2,
-                                    color: primaryContainer,
-                                  ),
-                                ],
+                          // Overlay UI scanner (solo se permesso concesso)
+                          if (!isPermissionDenied) ...[
+                            CustomPaint(
+                              size: Size(w, h),
+                              painter: _VignetteBorderPainter(
+                                frameWidth: frameW,
+                                frameHeight: frameH,
                               ),
                             ),
-                          ),
-                          Center(
-                            child: SizedBox(
-                              width: frameW,
-                              height: frameH,
-                              child: _buildCorners(),
-                            ),
-                          ),
-                          if (widget.scanningProgress)
-                            Container(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              child: const Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
+                            Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Stack(
+                                  alignment: Alignment.center,
                                   children: [
-                                    CircularProgressIndicator(
-                                      color: primaryContainer,
-                                    ),
-                                    SizedBox(height: 16),
-                                    Text(
-                                      "Analisi in corso...",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 16,
-                                      ),
-                                    ),
+                                    Container(width: 2, height: 24, color: primaryContainer),
+                                    Container(width: 24, height: 2, color: primaryContainer),
                                   ],
                                 ),
                               ),
                             ),
+                            Center(
+                              child: SizedBox(
+                                width: frameW,
+                                height: frameH,
+                                child: _buildCorners(),
+                              ),
+                            ),
+                            if (widget.scanningProgress)
+                              Container(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                child: const Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircularProgressIndicator(color: primaryContainer),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'Analisi in corso...',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
                         ],
                       );
                     },
@@ -624,7 +551,8 @@ class _CameraModuleState extends State<CameraModule>
                 ),
               ),
             ),
-            if (hasTorch)
+            // ── Torch button ───────────────────────────────────────────────
+            if (hasTorch && !isPermissionDenied)
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -656,6 +584,96 @@ class _CameraModuleState extends State<CameraModule>
                         ),
                       ),
                     ),
+                  ),
+                ),
+              ),
+            // ── Overlay permesso negato (copre la camera, non la sostituisce) ──
+            if (isPermissionDenied)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28.0),
+                    color: Colors.black,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 12.0,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Fotocamera non disponibile',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Concedi l\'accesso alla fotocamera per\nscansionare i codici a barre.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                          height: 1.3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 14),
+                      FilledButton.icon(
+                        onPressed: () async {
+                          if (kIsWeb) {
+                            // MobileScanner è già nell'albero → controller attached.
+                            // start() diretto preserva il contesto del gesto utente
+                            // e fa apparire il dialog del browser.
+                            try {
+                              await widget.controller.start();
+                              if (mounted) {
+                                setState(() {
+                                  _webPermissionDenied = false;
+                                  _permissionStatus = PermissionStatus.granted;
+                                });
+                              }
+                            } catch (_) {}
+                            return;
+                          }
+                          // --- NATIVE ---
+                          final status = await Permission.camera.status;
+                          if (status.isPermanentlyDenied) {
+                            await openAppSettings();
+                          } else {
+                            final reqStatus = await Permission.camera.request();
+                            if (mounted) {
+                              setState(() { _permissionStatus = reqStatus; });
+                              if (reqStatus.isGranted && widget.isActive) {
+                                Future.microtask(() async {
+                                  if (!mounted) return;
+                                  try { await widget.controller.start(); } catch (_) {}
+                                });
+                              }
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.security, size: 16),
+                        label: const Text(
+                          'Richiedi Accesso',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: primaryContainer,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 36),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

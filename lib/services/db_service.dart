@@ -1030,49 +1030,54 @@ class DbService {
     try {
       final reportRef = db.collection(reportsCollection).doc(reportId);
       final reportSnap = await reportRef.get();
-      if (reportSnap.exists) {
-        final barcode = reportSnap.data()?['barcode'];
-        await reportRef.delete();
+      if (!reportSnap.exists) return;
 
-        if (barcode != null) {
-          final productRef = db.collection(productsCollection).doc(barcode);
-          final productSnap = await productRef.get();
-          if (productSnap.exists) {
-            final productData = productSnap.data()!;
-            final currentCount = productData['reportCount'] ?? 0;
-            final int newCount = (currentCount - 1) < 0 ? 0 : currentCount - 1;
+      final barcode = reportSnap.data()?['barcode'] as String?;
 
-            if (newCount == 0) {
-              final String? originalStatus = productData['originalStatus'] ?? reportSnap.data()?['originalStatus'];
-              final String? originalReason = productData['originalReason'] ?? reportSnap.data()?['originalReason'] ?? '';
+      // Leggiamo i dati necessari PRIMA di aprire il batch
+      Map<String, dynamic>? productUpdates;
+      if (barcode != null) {
+        final productRef = db.collection(productsCollection).doc(barcode);
+        final productSnap = await productRef.get();
+        if (productSnap.exists) {
+          final productData = productSnap.data()!;
+          final currentCount = (productData['reportCount'] ?? 0) as int;
+          final int newCount = (currentCount - 1) < 0 ? 0 : currentCount - 1;
 
-              Map<String, dynamic> updates = {
-                'status': originalStatus ?? GlutenSafetyStatus.sconosciuto.name,
-                'reason': originalReason,
-                'reportCount': 0,
-                'originalStatus': FieldValue.delete(),
-                'originalReason': FieldValue.delete(),
-              };
-
-              await productRef.update(updates);
-            } else {
-              await productRef.update({
-                'reportCount': newCount,
-              });
-            }
+          if (newCount == 0) {
+            final String? originalStatus =
+                productData['originalStatus'] as String? ??
+                reportSnap.data()?['originalStatus'] as String?;
+            final String originalReason =
+                (productData['originalReason'] as String? ??
+                    reportSnap.data()?['originalReason'] as String? ??
+                    '');
+            productUpdates = {
+              'status': originalStatus ?? GlutenSafetyStatus.sconosciuto.name,
+              'reason': originalReason,
+              'reportCount': 0,
+              'originalStatus': FieldValue.delete(),
+              'originalReason': FieldValue.delete(),
+            };
+          } else {
+            productUpdates = {'reportCount': newCount};
           }
         }
-
-        // Rimuovere il barcode da reportedBarcodes dell'utente su Firestore
-        final user = auth.currentUser;
-        if (user != null && !user.isAnonymous && barcode != null) {
-          await db.collection("users").doc(user.uid).update({
-            'reportedBarcodes': FieldValue.arrayRemove([barcode]),
-          }).catchError((e) {
-            print("Error removing barcode from users reportedBarcodes list on Firestore: $e");
-          });
-        }
       }
+
+      // Tutto in un unico WriteBatch — atomico: tutto o niente
+      final batch = db.batch();
+      batch.delete(reportRef);
+      if (barcode != null && productUpdates != null) {
+        batch.update(db.collection(productsCollection).doc(barcode), productUpdates);
+      }
+      final user = auth.currentUser;
+      if (user != null && !user.isAnonymous && barcode != null) {
+        batch.update(db.collection("users").doc(user.uid), {
+          'reportedBarcodes': FieldValue.arrayRemove([barcode]),
+        });
+      }
+      await batch.commit();
     } catch (error) {
       print("Could not delete report $error");
     }
