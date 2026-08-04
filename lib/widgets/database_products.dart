@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gscanner/services/db_service.dart';
@@ -446,9 +448,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
   Widget _buildReportCard(Product prod) {
     final bool isOwnReport = widget.reportedBarcodes.contains(prod.barcode);
     final userReport = widget.userReports?.cast<ProductReport?>().firstWhere(
-          (r) => r?.barcode == prod.barcode,
-          orElse: () => null,
-        );
+      (r) => r?.barcode == prod.barcode,
+      orElse: () => null,
+    );
 
     return Card(
       elevation: 0,

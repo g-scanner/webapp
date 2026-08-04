@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -46,7 +48,9 @@ class DbService {
   static Future<List<Product>> fetchAllProducts() async {
     try {
       final snap = await db.collection(productsCollection).limit(100).get();
-      final products = snap.docs.map((d) => Product.fromJson(d.data())).toList();
+      final products = snap.docs
+          .map((d) => Product.fromJson(d.data()))
+          .toList();
       // Salva in locale per il prossimo avvio
       try {
         final prefs = await SharedPreferences.getInstance();
@@ -102,7 +106,9 @@ class DbService {
           .collection(reportsCollection)
           .where("userId", isEqualTo: user.uid)
           .get();
-      final remoteReports = snap.docs.map((d) => ProductReport.fromJson(d.data())).toList();
+      final remoteReports = snap.docs
+          .map((d) => ProductReport.fromJson(d.data()))
+          .toList();
 
       // Ordina in memoria per data decrescente
       remoteReports.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
@@ -209,7 +215,8 @@ class DbService {
           // Fallback dinamico su qualsiasi lingua disponibile se ancora vuoto
           if (offIngredients.trim().isEmpty) {
             for (final key in pData.keys) {
-              if (key.startsWith('ingredients_text_') && key != 'ingredients_text_with_allergens') {
+              if (key.startsWith('ingredients_text_') &&
+                  key != 'ingredients_text_with_allergens') {
                 final val = pData[key];
                 if (val is String && val.trim().isNotEmpty) {
                   offIngredients = val.trim();
@@ -274,7 +281,9 @@ class DbService {
           // 1) Prova il campo specifico per lingua su OFF
           // 2) Se vuoto, cerca la prima lingua disponibile in pData (stesso fallback della UI)
           // 3) Se ancora vuoto, usa offIngredients (che già ha il suo fallback)
-          String langIng = _getFirstNonEmptyString(pData, ['ingredients_text_$prefLang'], '');
+          String langIng = _getFirstNonEmptyString(pData, [
+            'ingredients_text_$prefLang',
+          ], '');
           if (langIng.trim().isEmpty) {
             // Cerca la prima chiave ingredients_text_* disponibile
             for (final key in pData.keys) {
@@ -291,12 +300,16 @@ class DbService {
           if (langIng.trim().isNotEmpty) {
             langIng = _cleanIngredientsText(langIng);
           }
-          final String langIngFinal = langIng.isEmpty ? offIngredients : langIng;
+          final String langIngFinal = langIng.isEmpty
+              ? offIngredients
+              : langIng;
 
           final langAnalysis = AnalyzerService.analyzeGlutenSafety(
             name: offName,
             brand: offBrand,
-            ingredients: langIngFinal.isEmpty ? "Non disponibile" : langIngFinal,
+            ingredients: langIngFinal.isEmpty
+                ? "Non disponibile"
+                : langIngFinal,
             allergensList: offAllergens,
             reportCount: 0,
             offTags: offTags,
@@ -375,7 +388,8 @@ class DbService {
       final existingIaMap = productDb?.ingredientsAnalyzedMap ?? {};
 
       // Controlla se la lingua è già registrata nel DB per tutte le mappe localizzate
-      final bool alreadyHasLang = productDb != null &&
+      final bool alreadyHasLang =
+          productDb != null &&
           existingIngMap.containsKey(prefLang) &&
           existingAlgMap.containsKey(prefLang) &&
           existingRsnMap.containsKey(prefLang) &&
@@ -391,7 +405,9 @@ class DbService {
       final mergedIngMap = Map<String, String>.from(existingIngMap);
       final mergedAlgMap = Map<String, List<String>>.from(existingAlgMap);
       final mergedRsnMap = Map<String, String>.from(existingRsnMap);
-      final mergedIaMap = Map<String, List<IngredientAnalyzed>>.from(existingIaMap);
+      final mergedIaMap = Map<String, List<IngredientAnalyzed>>.from(
+        existingIaMap,
+      );
 
       if (newIngEntry != null) mergedIngMap[prefLang] = newIngEntry;
       if (newAlgEntry != null) mergedAlgMap[prefLang] = newAlgEntry;
@@ -423,8 +439,9 @@ class DbService {
       langDelta['ingredients_map.$prefLang'] = mergedIngMap[prefLang];
       langDelta['allergens_map.$prefLang'] = mergedAlgMap[prefLang];
       langDelta['reasons_map.$prefLang'] = mergedRsnMap[prefLang];
-      langDelta['ingredients_analyzed_map.$prefLang'] =
-          mergedIaMap[prefLang]?.map((e) => e.toJson()).toList();
+      langDelta['ingredients_analyzed_map.$prefLang'] = mergedIaMap[prefLang]
+          ?.map((e) => e.toJson())
+          .toList();
 
       if (productDb != null && (productDb.reportCount ?? 0) > 0) {
         int dbReportTime = DateTime.parse(
@@ -609,7 +626,10 @@ class DbService {
             ? db.collection("users/${user.uid}/history").doc().id
             : now.millisecondsSinceEpoch.toString();
 
-        final hasLactose = AnalyzerService.checkLactose(product.ingredients, product.allergens);
+        final hasLactose = AnalyzerService.checkLactose(
+          product.ingredients,
+          product.allergens,
+        );
 
         final historyItem = ScanHistoryItem(
           id: id,
@@ -773,11 +793,13 @@ class DbService {
 
       int offLastModified = 0;
       try {
-        final offRes = await http.get(
-          Uri.parse(
-            'https://world.openfoodfacts.org/api/v2/product/$barcode.json?fields=last_modified_t',
-          ),
-        ).timeout(const Duration(seconds: 3));
+        final offRes = await http
+            .get(
+              Uri.parse(
+                'https://world.openfoodfacts.org/api/v2/product/$barcode.json?fields=last_modified_t',
+              ),
+            )
+            .timeout(const Duration(seconds: 3));
         if (offRes.statusCode == 200) {
           final offData = json.decode(offRes.body);
           if (offData['product'] != null &&
@@ -794,13 +816,16 @@ class DbService {
         finalReport.submittedAt,
       ).millisecondsSinceEpoch;
 
-      final String? origStatus = productDataHasOriginal(prodSnap.data()!, 'originalStatus')
+      final String? origStatus =
+          productDataHasOriginal(prodSnap.data()!, 'originalStatus')
           ? prodSnap.data()!['originalStatus']
           : (finalReport.originalStatus?.name ?? p.status.name);
-      final String? origReason = productDataHasOriginal(prodSnap.data()!, 'originalReason')
+      final String? origReason =
+          productDataHasOriginal(prodSnap.data()!, 'originalReason')
           ? prodSnap.data()!['originalReason']
           : p.reason;
-      final Map<String, dynamic>? origReasonsMap = productDataHasOriginal(prodSnap.data()!, 'originalReasons_map')
+      final Map<String, dynamic>? origReasonsMap =
+          productDataHasOriginal(prodSnap.data()!, 'originalReasons_map')
           ? prodSnap.data()!['originalReasons_map']
           : p.reasonsMap;
 
@@ -854,7 +879,9 @@ class DbService {
 
       final prefs = await SharedPreferences.getInstance();
       List<String> reportsStr = prefs.getStringList(key) ?? [];
-      List<dynamic> localReports = reportsStr.map((e) => json.decode(e)).toList();
+      List<dynamic> localReports = reportsStr
+          .map((e) => json.decode(e))
+          .toList();
 
       final id = db.collection(reportsCollection).doc().id;
 
@@ -879,7 +906,10 @@ class DbService {
       );
 
       final docRef = db.collection(reportsCollection).doc(id);
-      final productUpdate = await _buildProductUpdateOnReport(barcode, finalReport);
+      final productUpdate = await _buildProductUpdateOnReport(
+        barcode,
+        finalReport,
+      );
 
       final batch = db.batch();
       batch.set(docRef, finalReport.toJson());
@@ -949,9 +979,7 @@ class DbService {
 
       final batch = db.batch();
       batch.set(userVoteRef, {'val': newVote});
-      batch.update(reportRef, {
-        'score': FieldValue.increment(scoreDiff),
-      });
+      batch.update(reportRef, {'score': FieldValue.increment(scoreDiff)});
       await batch.commit();
 
       print("Voto $newVote salvato con successo per il barcode $barcode!");
@@ -1017,9 +1045,7 @@ class DbService {
 
       final batch = db.batch();
       batch.set(userVoteRef, {'val': newVote});
-      batch.update(reportRef, {
-        'score': FieldValue.increment(scoreDiff),
-      });
+      batch.update(reportRef, {'score': FieldValue.increment(scoreDiff)});
       await batch.commit();
     } catch (e) {
       print("Errore durante il voto: $e");
@@ -1050,8 +1076,8 @@ class DbService {
                 reportSnap.data()?['originalStatus'] as String?;
             final String originalReason =
                 (productData['originalReason'] as String? ??
-                    reportSnap.data()?['originalReason'] as String? ??
-                    '');
+                reportSnap.data()?['originalReason'] as String? ??
+                '');
             productUpdates = {
               'status': originalStatus ?? GlutenSafetyStatus.sconosciuto.name,
               'reason': originalReason,
@@ -1070,7 +1096,7 @@ class DbService {
 
       // Tutto in un unico WriteBatch — atomico: tutto o niente
       final batch = db.batch();
-      
+
       // Cancelliamo prima i singoli voti
       for (var doc in votesQuery.docs) {
         batch.delete(doc.reference);
@@ -1080,7 +1106,10 @@ class DbService {
       batch.delete(reportRef);
 
       if (barcode != null && productUpdates != null) {
-        batch.update(db.collection(productsCollection).doc(barcode), productUpdates);
+        batch.update(
+          db.collection(productsCollection).doc(barcode),
+          productUpdates,
+        );
       }
       final user = auth.currentUser;
       if (user != null && !user.isAnonymous && barcode != null) {
@@ -1116,7 +1145,10 @@ class DbService {
           List<String> reportedBarcodes =
               prefs.getStringList('celiac_reported_barcodes') ?? [];
           reportedBarcodes.remove(reportToDelete.barcode);
-          await prefs.setStringList('celiac_reported_barcodes', reportedBarcodes);
+          await prefs.setStringList(
+            'celiac_reported_barcodes',
+            reportedBarcodes,
+          );
         }
       }
     } catch (e) {
@@ -1362,9 +1394,14 @@ class DbService {
         if (hasReportsToMigrate) {
           await reportsBatch.commit();
           for (final report in migratedReports) {
-            final productUpdate = await _buildProductUpdateOnReport(report.barcode, report);
+            final productUpdate = await _buildProductUpdateOnReport(
+              report.barcode,
+              report,
+            );
             if (productUpdate != null) {
-              final prodRef = db.collection(productsCollection).doc(report.barcode);
+              final prodRef = db
+                  .collection(productsCollection)
+                  .doc(report.barcode);
               await prodRef.update(productUpdate);
             }
           }
@@ -1427,7 +1464,9 @@ class DbService {
           return '(${m[1]!.trim()}, ${m[2]!.trim()})';
         })
         // Gestione parentesi tonde doppie con spazi: ( A ( B ) ) -> (A, B)
-        .replaceAllMapped(RegExp(r'\(\s*([^()]+)\s*\(\s*([^()]+)\s*\)\s*\)'), (m) {
+        .replaceAllMapped(RegExp(r'\(\s*([^()]+)\s*\(\s*([^()]+)\s*\)\s*\)'), (
+          m,
+        ) {
           return '(${m[1]!.trim()}, ${m[2]!.trim()})';
         })
         // 4. Trim spazi subito dentro parentesi: ( testo ) -> (testo)

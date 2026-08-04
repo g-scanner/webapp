@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -533,8 +535,16 @@ class _CameraModuleState extends State<CameraModule>
                                 child: Stack(
                                   alignment: Alignment.center,
                                   children: [
-                                    Container(width: 2, height: 24, color: primaryContainer),
-                                    Container(width: 24, height: 2, color: primaryContainer),
+                                    Container(
+                                      width: 2,
+                                      height: 24,
+                                      color: primaryContainer,
+                                    ),
+                                    Container(
+                                      width: 24,
+                                      height: 2,
+                                      color: primaryContainer,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -553,7 +563,9 @@ class _CameraModuleState extends State<CameraModule>
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      CircularProgressIndicator(color: primaryContainer),
+                                      CircularProgressIndicator(
+                                        color: primaryContainer,
+                                      ),
                                       SizedBox(height: 16),
                                       Text(
                                         'Analisi in corso...',
@@ -669,13 +681,18 @@ class _CameraModuleState extends State<CameraModule>
                             if (status.isPermanentlyDenied) {
                               await openAppSettings();
                             } else {
-                              final reqStatus = await Permission.camera.request();
+                              final reqStatus = await Permission.camera
+                                  .request();
                               if (mounted) {
-                                setState(() { _permissionStatus = reqStatus; });
+                                setState(() {
+                                  _permissionStatus = reqStatus;
+                                });
                                 if (reqStatus.isGranted && widget.isActive) {
                                   Future.microtask(() async {
                                     if (!mounted) return;
-                                    try { await widget.controller.start(); } catch (_) {}
+                                    try {
+                                      await widget.controller.start();
+                                    } catch (_) {}
                                   });
                                 }
                               }
@@ -684,13 +701,19 @@ class _CameraModuleState extends State<CameraModule>
                           icon: const Icon(Icons.security, size: 16),
                           label: const Text(
                             'Richiedi Accesso',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           style: FilledButton.styleFrom(
                             backgroundColor: primaryContainer,
                             foregroundColor: Colors.white,
                             minimumSize: const Size(0, 36),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(999),
                             ),

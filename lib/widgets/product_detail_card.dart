@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../models/types.dart';
@@ -320,7 +322,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             onPressed: _submittingReport
                                 ? null
                                 : () async {
-                                    setSheetState(() => _submittingReport = true);
+                                    setSheetState(
+                                      () => _submittingReport = true,
+                                    );
                                     try {
                                       await widget.onReportSubmit(
                                         currentProduct.barcode,
@@ -342,13 +346,17 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                     } catch (err) {
                                       print(err);
                                     } finally {
-                                      setSheetState(() => _submittingReport = false);
+                                      setSheetState(
+                                        () => _submittingReport = false,
+                                      );
                                     }
                                   },
                             style: FilledButton.styleFrom(
                               backgroundColor: error,
                               foregroundColor: surfaceLowest,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                   999,
@@ -360,13 +368,17 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
-                                      color: surfaceLowest.withValues(alpha: 0.5),
+                                      color: surfaceLowest.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       strokeWidth: 2,
                                     ),
                                   )
                                 : const Text(
                                     "Invia segnalazione",
-                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                           ),
                         ),
@@ -384,22 +396,37 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   @override
   Widget build(BuildContext context) {
-    final Product currentProduct = widget.productNotifier?.value ?? widget.product;
-    final bool showSkeleton = widget.isLoading && widget.productNotifier?.value == null;
+    final Product currentProduct =
+        widget.productNotifier?.value ?? widget.product;
+    final bool showSkeleton =
+        widget.isLoading && widget.productNotifier?.value == null;
 
     final String currentLang = widget.userSettings.preferredLanguage;
-    final String rawIngredients = currentProduct.ingredientsMap?[currentLang] ?? currentProduct.ingredients;
-    final String displayedIngredients = rawIngredients.replaceAll('\$', '').trim();
-    final List<String> rawAllergens = currentProduct.allergensMap?[currentLang] ?? 
-        AnalyzerService.translateAllergens(currentProduct.allergens, currentLang);
-    final List<String> displayedAllergens = rawAllergens.map((a) => a.replaceAll('\$', '').trim()).toList();
-    final bool isReported = (currentProduct.reportCount ?? 0) > 0 || _hasUserReported;
+    final String rawIngredients =
+        currentProduct.ingredientsMap?[currentLang] ??
+        currentProduct.ingredients;
+    final String displayedIngredients = rawIngredients
+        .replaceAll('\$', '')
+        .trim();
+    final List<String> rawAllergens =
+        currentProduct.allergensMap?[currentLang] ??
+        AnalyzerService.translateAllergens(
+          currentProduct.allergens,
+          currentLang,
+        );
+    final List<String> displayedAllergens = rawAllergens
+        .map((a) => a.replaceAll('\$', '').trim())
+        .toList();
+    final bool isReported =
+        (currentProduct.reportCount ?? 0) > 0 || _hasUserReported;
     final String rawReason = isReported
         ? currentProduct.reason
         : (currentProduct.reasonsMap?[currentLang] ?? currentProduct.reason);
     final String displayedReason = rawReason.replaceAll('\$', '').trim();
-    final List<IngredientAnalyzed> rawIngredientsAnalyzed = currentProduct.ingredientsAnalyzedMap?[currentLang] ?? 
-        currentProduct.ingredientsAnalyzed ?? [];
+    final List<IngredientAnalyzed> rawIngredientsAnalyzed =
+        currentProduct.ingredientsAnalyzedMap?[currentLang] ??
+        currentProduct.ingredientsAnalyzed ??
+        [];
 
     final List<IngredientAnalyzed> displayedIngredientsAnalyzed = [];
     final Set<String> seenIngredients = {};
@@ -461,134 +488,136 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
     // Utilizziamo uno Scaffold interno per gestire la sua AppBar personale
     final scaffold = Scaffold(
-        backgroundColor: bgBackground,
-        appBar: AppBar(
-          backgroundColor: surfaceLowest,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: onSurface),
-            onPressed: widget.onBack,
-          ),
-          title: Center(
-            child: const Text(
-              "Dettaglio scansione",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-                color: onSurface,
-              ),
+      backgroundColor: bgBackground,
+      appBar: AppBar(
+        backgroundColor: surfaceLowest,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: onSurface),
+          onPressed: widget.onBack,
+        ),
+        title: Center(
+          child: const Text(
+            "Dettaglio scansione",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+              color: onSurface,
             ),
           ),
-          actions: [
-            // I Tre Puntini per le impostazioni
-            if (widget.onDeleteHistoryByBarcode != null ||
-                _effectiveUserReportId != null)
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: onSurfaceVariant),
-                color: surfaceLowest,
-                onSelected: (value) {
-                  if (value == 'delete_history') {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: surfaceLowest,
-                        title: const Text("Eliminare scansione?"),
-                        content: const Text(
-                          "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            style: TextButton.styleFrom(
-                              foregroundColor: onSurfaceVariant,
-                            ),
-                            child: const Text("Annulla"),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              widget.onDeleteHistoryByBarcode!(
-                                currentProduct.barcode,
-                              );
-                              widget.onBack();
-                            },
-                            style: TextButton.styleFrom(foregroundColor: error),
-                            child: const Text("Elimina"),
-                          ),
-                        ],
-                      ),
-                    );
-                  } else if (value == 'delete_report') {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: surfaceLowest,
-                        title: const Text("Eliminare segnalazione?"),
-                        content: const Text(
-                          "Sei sicuro di voler eliminare questa segnalazione?",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            style: TextButton.styleFrom(
-                              foregroundColor: onSurfaceVariant,
-                            ),
-                            child: const Text("Annulla"),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              Navigator.pop(ctx);
-                              if (_effectiveUserReportId != null) {
-                                await widget.onDeleteReport!(_effectiveUserReportId!);
-                              }
-                            },
-                            style: TextButton.styleFrom(foregroundColor: error),
-                            child: const Text("Elimina"),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                },
-                itemBuilder: (BuildContext context) => [
-                  if (widget.onDeleteHistoryByBarcode != null)
-                    const PopupMenuItem(
-                      value: 'delete_history',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, color: error, size: 20),
-                          SizedBox(width: 12),
-                          Text(
-                            "Elimina dalla cronologia",
-                            style: TextStyle(color: error),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (_effectiveUserReportId != null &&
-                      _effectiveUserReportId!.isNotEmpty &&
-                      widget.onDeleteReport != null)
-                    const PopupMenuItem(
-                      value: 'delete_report',
-                      child: Row(
-                        children: [
-                          Icon(Icons.warning, color: error, size: 20),
-                          SizedBox(width: 12),
-                          Text(
-                            "Elimina segnalazione",
-                            style: TextStyle(color: error),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-          ],
         ),
-        body: Skeletonizer(
-          enabled: showSkeleton,
-          child: SingleChildScrollView(
+        actions: [
+          // I Tre Puntini per le impostazioni
+          if (widget.onDeleteHistoryByBarcode != null ||
+              _effectiveUserReportId != null)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: onSurfaceVariant),
+              color: surfaceLowest,
+              onSelected: (value) {
+                if (value == 'delete_history') {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: surfaceLowest,
+                      title: const Text("Eliminare scansione?"),
+                      content: const Text(
+                        "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: TextButton.styleFrom(
+                            foregroundColor: onSurfaceVariant,
+                          ),
+                          child: const Text("Annulla"),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            widget.onDeleteHistoryByBarcode!(
+                              currentProduct.barcode,
+                            );
+                            widget.onBack();
+                          },
+                          style: TextButton.styleFrom(foregroundColor: error),
+                          child: const Text("Elimina"),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (value == 'delete_report') {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: surfaceLowest,
+                      title: const Text("Eliminare segnalazione?"),
+                      content: const Text(
+                        "Sei sicuro di voler eliminare questa segnalazione?",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: TextButton.styleFrom(
+                            foregroundColor: onSurfaceVariant,
+                          ),
+                          child: const Text("Annulla"),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            if (_effectiveUserReportId != null) {
+                              await widget.onDeleteReport!(
+                                _effectiveUserReportId!,
+                              );
+                            }
+                          },
+                          style: TextButton.styleFrom(foregroundColor: error),
+                          child: const Text("Elimina"),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              },
+              itemBuilder: (BuildContext context) => [
+                if (widget.onDeleteHistoryByBarcode != null)
+                  const PopupMenuItem(
+                    value: 'delete_history',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: error, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          "Elimina dalla cronologia",
+                          style: TextStyle(color: error),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_effectiveUserReportId != null &&
+                    _effectiveUserReportId!.isNotEmpty &&
+                    widget.onDeleteReport != null)
+                  const PopupMenuItem(
+                    value: 'delete_report',
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning, color: error, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          "Elimina segnalazione",
+                          style: TextStyle(color: error),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
+      body: Skeletonizer(
+        enabled: showSkeleton,
+        child: SingleChildScrollView(
           controller: _scrollController,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Column(
@@ -688,28 +717,40 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               // ── Valutazione Glutine ───────────────────────────────────
               Builder(
                 builder: (context) {
-                  final bool hasActiveReport = widget.showReportLink &&
+                  final bool hasActiveReport =
+                      widget.showReportLink &&
                       widget.onViewReport != null &&
-                      ((currentProduct.reportCount ?? 0) > 0 || _hasUserReported);
+                      ((currentProduct.reportCount ?? 0) > 0 ||
+                          _hasUserReported);
 
                   // Costruiamo la stringa con il vecchio stato se presente
                   String displayedReasonWithOldStatus = displayedReason;
                   if (hasActiveReport &&
                       currentProduct.originalStatus != null &&
                       currentProduct.originalStatus != currentProduct.status) {
-                    final String oldStatusTranslated = _translateGlutenStatus(currentProduct.originalStatus!);
+                    final String oldStatusTranslated = _translateGlutenStatus(
+                      currentProduct.originalStatus!,
+                    );
                     String cleanReason = displayedReason.trim();
                     if (cleanReason.endsWith('.')) {
-                      cleanReason = cleanReason.substring(0, cleanReason.length - 1);
+                      cleanReason = cleanReason.substring(
+                        0,
+                        cleanReason.length - 1,
+                      );
                     }
-                    displayedReasonWithOldStatus = "$cleanReason. Stato precedente alla segnalazione: $oldStatusTranslated.";
+                    displayedReasonWithOldStatus =
+                        "$cleanReason. Stato precedente alla segnalazione: $oldStatusTranslated.";
                   }
 
                   final Widget cardContent = Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
+                        padding: const EdgeInsets.only(
+                          top: 24,
+                          left: 24,
+                          right: 24,
+                        ),
                         child: Row(
                           children: [
                             const Icon(
@@ -739,16 +780,24 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         ),
                         child: Text(
                           displayedReasonWithOldStatus,
-                          style: const TextStyle(fontSize: 16, color: onSurface),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: onSurface,
+                          ),
                         ),
                       ),
                       if (hasActiveReport) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: warningText.withValues(alpha: 0.04),
                             border: Border(
-                              top: BorderSide(color: outlineVariant.withValues(alpha: 0.2)),
+                              top: BorderSide(
+                                color: outlineVariant.withValues(alpha: 0.2),
+                              ),
                             ),
                           ),
                           child: Row(
@@ -781,7 +830,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     decoration: BoxDecoration(
                       color: surfaceLowest,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: outlineVariant.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: outlineVariant.withValues(alpha: 0.5),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.02),
@@ -798,7 +849,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           )
                         : cardContent,
                   );
-                }
+                },
               ),
               const SizedBox(height: 24),
 
@@ -1006,8 +1057,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               const SizedBox(height: 24),
 
               // ── Pulsante Segnalazione ──────────────────────────
-              if (_hasUserReported ||
-                  (currentProduct.reportCount ?? 0) > 0)
+              if (_hasUserReported || (currentProduct.reportCount ?? 0) > 0)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1054,8 +1104,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
             ],
           ),
         ),
-        ),
-      );
+      ),
+    );
 
     if (widget.useResponsiveWrapper) {
       return ResponsiveMaxCardWidth(child: scaffold);

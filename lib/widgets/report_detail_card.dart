@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -191,478 +193,413 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     final oldStatusData = _getStatusData(widget.originalStatus);
 
     return widget.useResponsiveWrapper
-      ? ResponsiveMaxCardWidth(
-          child: _buildContent(context, oldStatusData),
-        )
-      : _buildContent(context, oldStatusData);
+        ? ResponsiveMaxCardWidth(child: _buildContent(context, oldStatusData))
+        : _buildContent(context, oldStatusData);
   }
 
-  Widget _buildContent(BuildContext context, Map<String, dynamic> oldStatusData) {
+  Widget _buildContent(
+    BuildContext context,
+    Map<String, dynamic> oldStatusData,
+  ) {
     return Scaffold(
-        backgroundColor: bgBackground,
-        appBar: AppBar(
-          backgroundColor: surfaceLowest,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: onSurface),
-            onPressed: widget.onBack,
+      backgroundColor: bgBackground,
+      appBar: AppBar(
+        backgroundColor: surfaceLowest,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: onSurface),
+          onPressed: widget.onBack,
+        ),
+        title: const Text(
+          "Revisione Segnalazione",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            color: onSurface,
           ),
-          title: const Text(
-            "Revisione Segnalazione",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w500,
-              color: onSurface,
-            ),
-          ),
-          centerTitle: true,
-          actions: [
-            if (widget.isOwnReport && widget.onDeleteReport != null)
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: onSurfaceVariant),
-                color: surfaceLowest,
-                onSelected: (value) {
-                  if (value == 'delete_report') {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: surfaceLowest,
-                        title: const Text("Eliminare segnalazione?"),
-                        content: const Text(
-                          "Sei sicuro di voler eliminare questa segnalazione?",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            style: TextButton.styleFrom(
-                              foregroundColor: onSurfaceVariant,
-                            ),
-                            child: const Text("Annulla"),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              Navigator.pop(ctx);
-                              final targetId =
-                                  widget.reportId ?? _activeReport?.id;
-                              if (targetId != null) {
-                                await widget.onDeleteReport!(targetId);
-                              }
-                              if (mounted) widget.onBack();
-                            },
-                            style: TextButton.styleFrom(foregroundColor: error),
-                            child: const Text("Elimina"),
-                          ),
-                        ],
+        ),
+        centerTitle: true,
+        actions: [
+          if (widget.isOwnReport && widget.onDeleteReport != null)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: onSurfaceVariant),
+              color: surfaceLowest,
+              onSelected: (value) {
+                if (value == 'delete_report') {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: surfaceLowest,
+                      title: const Text("Eliminare segnalazione?"),
+                      content: const Text(
+                        "Sei sicuro di voler eliminare questa segnalazione?",
                       ),
-                    );
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'delete_report',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, color: error, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          "Elimina segnalazione",
-                          style: TextStyle(color: error),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: TextButton.styleFrom(
+                            foregroundColor: onSurfaceVariant,
+                          ),
+                          child: const Text("Annulla"),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            final targetId =
+                                widget.reportId ?? _activeReport?.id;
+                            if (targetId != null) {
+                              await widget.onDeleteReport!(targetId);
+                            }
+                            if (mounted) widget.onBack();
+                          },
+                          style: TextButton.styleFrom(foregroundColor: error),
+                          child: const Text("Elimina"),
                         ),
                       ],
+                    ),
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'delete_report',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, color: error, size: 20),
+                      SizedBox(width: 12),
+                      Text(
+                        "Elimina segnalazione",
+                        style: TextStyle(color: error),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Hero Section ──────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: warningContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Color(0xFF884200).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.warning,
+                      color: Color(0xFF884200),
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    widget.product.name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w500,
+                      color: onSurface,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.product.brand,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Pillola Barcode
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF884200).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.qr_code, size: 16, color: Color(0xFF884200)),
+                        const SizedBox(width: 8),
+                        SelectableText(
+                          widget.product.barcode,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF884200),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // DATA AGGIUNTA DA RICHIESTA
+                  const SizedBox(height: 4),
+                  Text(
+                    "Segnalato il: ${widget.reportDate}",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: onSurfaceVariant.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
               ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Hero Section ──────────────────────────────────────────
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: warningContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF884200).withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.warning,
-                        color: Color(0xFF884200),
-                        size: 48,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.product.name,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w500,
-                        color: onSurface,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.product.brand,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 24),
 
-                    // Pillola Barcode
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF884200).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.qr_code,
-                            size: 16,
-                            color: Color(0xFF884200),
-                          ),
-                          const SizedBox(width: 8),
-                          SelectableText(
-                            widget.product.barcode,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF884200),
+            // ── BOTTONE NEUTRO: Scheda Prodotto (anti-loop) ────────────
+            if (widget.showProductLink)
+              InkWell(
+                onTap: () {
+                  final productToShow =
+                      _activeReport?.productSnapshot ?? widget.product;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetailCard(
+                        product: productToShow,
+                        onBack: () => Navigator.pop(context),
+                        // Sola lettura: la segnalazione è già stata inviata,
+                        // questi callback non verranno mai chiamati da qui.
+                        onReportSubmit: (_, _) async {},
+                        onProductUpdate: (_) async {},
+                        userSettings:
+                            widget.userSettings ??
+                            UserSettings(
+                              strictMode: true,
+                              alertLactose: false,
+                              warnAdditives: true,
+                              autoSaveHistory: true,
+                              preferredLanguage: 'it',
                             ),
-                          ),
-                        ],
+                        showReportLink: false,
+                        useResponsiveWrapper: widget.useResponsiveWrapper,
                       ),
                     ),
-
-                    // DATA AGGIUNTA DA RICHIESTA
-                    const SizedBox(height: 4),
-                    Text(
-                      "Segnalato il: ${widget.reportDate}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: onSurfaceVariant.withValues(alpha: 0.8),
-                      ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: surfaceLowest,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: outlineVariant.withValues(alpha: 0.5),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // ── BOTTONE NEUTRO: Scheda Prodotto (anti-loop) ────────────
-              if (widget.showProductLink)
-                InkWell(
-                  onTap: () {
-                    final productToShow =
-                        _activeReport?.productSnapshot ?? widget.product;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetailCard(
-                          product: productToShow,
-                          onBack: () => Navigator.pop(context),
-                          // Sola lettura: la segnalazione è già stata inviata,
-                          // questi callback non verranno mai chiamati da qui.
-                          onReportSubmit: (_, _) async {},
-                          onProductUpdate: (_) async {},
-                          userSettings:
-                              widget.userSettings ??
-                              UserSettings(
-                                strictMode: true,
-                                alertLactose: false,
-                                warnAdditives: true,
-                                autoSaveHistory: true,
-                                preferredLanguage: 'it',
-                              ),
-                          showReportLink: false,
-                          useResponsiveWrapper: widget.useResponsiveWrapper,
-                        ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: onSurface.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: surfaceLowest,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: outlineVariant.withValues(alpha: 0.5),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: onSurface.withValues(alpha: 0.03),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        // Icona neutra a sinistra
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: const BoxDecoration(
-                            color: surfaceContainerHigh,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.inventory_2_outlined,
-                            size: 20,
-                            color: onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Testo
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Mostra scheda prodotto",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: onSurface,
-                                ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                "Ingredienti, allergeni e note.",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Freccia a destra per indicare la navigazione
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          size: 24,
-                          color: outlineVariant,
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                ),
-              if (widget.showProductLink)
-                const SizedBox(height: 24),
-
-              // ── Vecchio Stato del Prodotto ────────────────────────────
-              _buildSectionCard(
-                title: "STATO PRECEDENTE",
-                icon: Icons.history,
-                child: Row(
-                  children: [
-                    Icon(
-                      oldStatusData["icon"],
-                      color: oldStatusData["color"],
-                      size: 28,
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          oldStatusData["text"],
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: oldStatusData["color"],
-                          ),
+                  child: Row(
+                    children: [
+                      // Icona neutra a sinistra
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: surfaceContainerHigh,
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "Risultato registrato da Open Food Facts",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: onSurfaceVariant.withValues(alpha: 0.7),
-                          ),
+                        child: const Icon(
+                          Icons.inventory_2_outlined,
+                          size: 20,
+                          color: onSurfaceVariant,
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // ── Dettagli Segnalazione Utente (NUOVO DESIGN) ───────────
-              _buildSectionCard(
-                title: "DETTAGLI SEGNALAZIONE",
-                icon: Icons.chat_bubble_outline,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Informazioni compatte: Motivo
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              style: const TextStyle(
-                                fontSize: 14,
+                      ),
+                      const SizedBox(width: 16),
+                      // Testo
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Mostra scheda prodotto",
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
                                 color: onSurface,
-                                height: 1.3,
                               ),
-                              children: [
-                                const TextSpan(
-                                  text: "Motivo: ",
-                                  style: TextStyle(color: onSurfaceVariant),
-                                ),
-                                TextSpan(
-                                  text: _translateReason(
-                                    _activeReport?.type ??
-                                        widget.reportReasonKey,
-                                  ),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
                             ),
-                          ),
+                            SizedBox(height: 2),
+                            Text(
+                              "Ingredienti, allergeni e note.",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Commento dell'utente stile "Blockquote"
-                    const Text(
-                      "Commento dell'utente",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      ),
+                      // Freccia a destra per indicare la navigazione
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 24,
                         color: outlineVariant,
-                        letterSpacing: 0.5,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.only(
-                        left: 14,
-                        top: 2,
-                        bottom: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          left: BorderSide(
-                            color: outlineVariant.withValues(alpha: 0.6),
-                            width: 4,
-                          ),
-                        ),
-                      ),
-                      child: Skeletonizer(
-                        enabled: _isVoteLoading,
-                        child: Text(
-                          _isVoteLoading
-                              ? "Questo è un commento segnaposto utilizzato per visualizzare lo scheletro di caricamento."
-                              : (_activeReport?.comments ?? "").isEmpty
-                                  ? "Nessun commento aggiuntivo fornito."
-                                  : '"${_activeReport!.comments}"',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontStyle: _isVoteLoading || (_activeReport?.comments ?? "").isEmpty
-                                ? FontStyle.normal
-                                : FontStyle.italic,
-                            color: onSurface,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+            if (widget.showProductLink) const SizedBox(height: 24),
 
-              // ── Sistema di Voto (YouTube Style) ───────────────────────
-              if (_isVoteLoading)
-                Skeletonizer(
-                  enabled: true,
-                  child: Center(
-                    child: Column(
-                      children: [
-                        const Text(
-                          "Sei d'accordo con questa segnalazione?",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: onSurfaceVariant,
-                          ),
+            // ── Vecchio Stato del Prodotto ────────────────────────────
+            _buildSectionCard(
+              title: "STATO PRECEDENTE",
+              icon: Icons.history,
+              child: Row(
+                children: [
+                  Icon(
+                    oldStatusData["icon"],
+                    color: oldStatusData["color"],
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        oldStatusData["text"],
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: oldStatusData["color"],
                         ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "Risultato registrato da Open Food Facts",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: onSurfaceVariant.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Dettagli Segnalazione Utente (NUOVO DESIGN) ───────────
+            _buildSectionCard(
+              title: "DETTAGLI SEGNALAZIONE",
+              icon: Icons.chat_bubble_outline,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Informazioni compatte: Motivo
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: onSurface,
+                              height: 1.3,
+                            ),
                             children: [
-                              const Icon(
-                                Icons.thumb_up_outlined,
-                                size: 20,
-                                color: onSurfaceVariant,
+                              const TextSpan(
+                                text: "Motivo: ",
+                                style: TextStyle(color: onSurfaceVariant),
                               ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                "0",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: onSurfaceVariant,
+                              TextSpan(
+                                text: _translateReason(
+                                  _activeReport?.type ?? widget.reportReasonKey,
                                 ),
-                              ),
-                              const SizedBox(width: 20),
-                              Container(
-                                width: 1,
-                                height: 24,
-                                color: outlineVariant,
-                              ),
-                              const SizedBox(width: 20),
-                              const Icon(
-                                Icons.thumb_down_outlined,
-                                size: 20,
-                                color: onSurfaceVariant,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Commento dell'utente stile "Blockquote"
+                  const Text(
+                    "Commento dell'utente",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: outlineVariant,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                )
-              else
-                Center(
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.only(left: 14, top: 2, bottom: 2),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: outlineVariant.withValues(alpha: 0.6),
+                          width: 4,
+                        ),
+                      ),
+                    ),
+                    child: Skeletonizer(
+                      enabled: _isVoteLoading,
+                      child: Text(
+                        _isVoteLoading
+                            ? "Questo è un commento segnaposto utilizzato per visualizzare lo scheletro di caricamento."
+                            : (_activeReport?.comments ?? "").isEmpty
+                            ? "Nessun commento aggiuntivo fornito."
+                            : '"${_activeReport!.comments}"',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontStyle:
+                              _isVoteLoading ||
+                                  (_activeReport?.comments ?? "").isEmpty
+                              ? FontStyle.normal
+                              : FontStyle.italic,
+                          color: onSurface,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Sistema di Voto (YouTube Style) ───────────────────────
+            if (_isVoteLoading)
+              Skeletonizer(
+                enabled: true,
+                child: Center(
                   child: Column(
                     children: [
                       const Text(
@@ -675,6 +612,10 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       ),
                       const SizedBox(height: 12),
                       Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(999),
@@ -682,79 +623,31 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(999),
-                                  bottomLeft: Radius.circular(999),
-                                ),
-                                onTap: () => _handleVote(1),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        _currentVote == 1
-                                            ? Icons.thumb_up
-                                            : Icons.thumb_up_outlined,
-                                        size: 20,
-                                        color: _currentVote == 1
-                                            ? onSurface
-                                            : onSurfaceVariant,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _displayScore < 0
-                                            ? "0"
-                                            : "$_displayScore",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: _currentVote == 1
-                                              ? FontWeight.bold
-                                              : FontWeight.w600,
-                                          color: _currentVote == 1
-                                              ? onSurface
-                                              : onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                            const Icon(
+                              Icons.thumb_up_outlined,
+                              size: 20,
+                              color: onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              "0",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: onSurfaceVariant,
                               ),
                             ),
+                            const SizedBox(width: 20),
                             Container(
                               width: 1,
                               height: 24,
-                              color: outlineVariant.withValues(alpha: 0.5),
+                              color: outlineVariant,
                             ),
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: const BorderRadius.only(
-                                  topRight: Radius.circular(999),
-                                  bottomRight: Radius.circular(999),
-                                ),
-                                onTap: () => _handleVote(-1),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
-                                  ),
-                                  child: Icon(
-                                    _currentVote == -1
-                                        ? Icons.thumb_down
-                                        : Icons.thumb_down_outlined,
-                                    size: 20,
-                                    color: _currentVote == -1
-                                        ? onSurface
-                                        : onSurfaceVariant,
-                                  ),
-                                ),
-                              ),
+                            const SizedBox(width: 20),
+                            const Icon(
+                              Icons.thumb_down_outlined,
+                              size: 20,
+                              color: onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -762,11 +655,113 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     ],
                   ),
                 ),
-              const SizedBox(height: 40),
-            ],
-          ),
+              )
+            else
+              Center(
+                child: Column(
+                  children: [
+                    const Text(
+                      "Sei d'accordo con questa segnalazione?",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(999),
+                                bottomLeft: Radius.circular(999),
+                              ),
+                              onTap: () => _handleVote(1),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _currentVote == 1
+                                          ? Icons.thumb_up
+                                          : Icons.thumb_up_outlined,
+                                      size: 20,
+                                      color: _currentVote == 1
+                                          ? onSurface
+                                          : onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _displayScore < 0
+                                          ? "0"
+                                          : "$_displayScore",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: _currentVote == 1
+                                            ? FontWeight.bold
+                                            : FontWeight.w600,
+                                        color: _currentVote == 1
+                                            ? onSurface
+                                            : onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 24,
+                            color: outlineVariant.withValues(alpha: 0.5),
+                          ),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(999),
+                                bottomRight: Radius.circular(999),
+                              ),
+                              onTap: () => _handleVote(-1),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                child: Icon(
+                                  _currentVote == -1
+                                      ? Icons.thumb_down
+                                      : Icons.thumb_down_outlined,
+                                  size: 20,
+                                  color: _currentVote == -1
+                                      ? onSurface
+                                      : onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 40),
+          ],
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildSectionCard({

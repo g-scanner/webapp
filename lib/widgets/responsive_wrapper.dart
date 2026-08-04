@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 import 'package:flutter/material.dart';
 
 class ResponsiveMaxCardWidth extends StatelessWidget {
@@ -41,10 +43,7 @@ class ResponsiveMaxCardWidth extends StatelessWidget {
         color: const Color(0xFFFAF9FC),
         alignment: Alignment.center,
         child: Container(
-          constraints: BoxConstraints(
-            maxWidth: maxWidth,
-            maxHeight: maxHeight,
-          ),
+          constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
           margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),

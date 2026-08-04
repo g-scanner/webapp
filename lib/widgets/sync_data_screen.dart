@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 import 'package:flutter/material.dart';
 
 const Color surfaceLowest = Color(0xFFFFFFFF);

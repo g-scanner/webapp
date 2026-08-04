@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 import 'dart:js_interop';
 
 /// Binding JS alla funzione isLastPopupClosed() definita in web/index.html.

@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 enum GlutenSafetyStatus { adatto, nonAdatto, incerto, sconosciuto }
 
 class IngredientAnalyzed {
@@ -115,9 +117,7 @@ class Product {
           ? (json['ingredients_analyzed_map'] as Map<String, dynamic>).map(
               (k, v) => MapEntry(
                 k,
-                (v as List)
-                    .map((e) => IngredientAnalyzed.fromJson(e))
-                    .toList(),
+                (v as List).map((e) => IngredientAnalyzed.fromJson(e)).toList(),
               ),
             )
           : null,
@@ -218,7 +218,8 @@ class ProductReport {
   final GlutenSafetyStatus?
   originalStatus; // Lo stato del prodotto al momento della segnalazione
   final int score;
-  final Product? productSnapshot; // Snapshot completo del prodotto al momento della segnalazione
+  final Product?
+  productSnapshot; // Snapshot completo del prodotto al momento della segnalazione
 
   ProductReport({
     required this.id,
@@ -328,7 +329,7 @@ String formatRelativeDate(String isoDate) {
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
     final targetDate = DateTime(parsed.year, parsed.month, parsed.day);
-    
+
     final hour = parsed.hour.toString().padLeft(2, '0');
     final minute = parsed.minute.toString().padLeft(2, '0');
 
@@ -338,8 +339,18 @@ String formatRelativeDate(String isoDate) {
       return "Ieri, $hour:$minute";
     } else {
       const months = [
-        'Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
-        'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'
+        'Gen',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mag',
+        'Giu',
+        'Lug',
+        'Ago',
+        'Set',
+        'Ott',
+        'Nov',
+        'Dic',
       ];
       return "${parsed.day} ${months[parsed.month - 1]} ${parsed.year}, $hour:$minute";
     }

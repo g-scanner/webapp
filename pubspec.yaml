@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 name: gscanner
 description: "A new Flutter project."
 publish_to: 'none'
