@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gscanner/widgets/licenses_screen.dart';
 import '../models/types.dart';
 import '../services/db_service.dart';
 
@@ -149,12 +150,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
             color: primary,
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: surfaceLowest,
+          Material(
+            color: surfaceLowest,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+              side: BorderSide(color: outlineVariant.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: [
@@ -345,41 +346,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           const SizedBox(height: 16),
 
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: surfaceLowest,
+          Material(
+            color: surfaceLowest,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+              side: BorderSide(color: outlineVariant.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: [
-                _buildLegalItem(
-                  title: "Fonte Dati",
-                  subtitle: Text.rich(
-                    TextSpan(
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: onSurfaceVariant,
-                        height: 1.4, // Leggermente aumentato per respiro
-                      ),
-                      children: const [
-                        TextSpan(
-                          text: "I dati sono forniti dalla community di ",
-                        ),
-                        TextSpan(
-                          text: "Open Food Facts",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        TextSpan(
-                          text:
-                              ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico.",
-                        ),
-                      ],
-                    ),
-                  ),
-                  showTrailingArrow: false,
-                ),
                 _buildLegalItem(
                   title: "Termini e Condizioni",
                   subtitle: const Text(
@@ -398,6 +373,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     );
                   },
                   showTrailingArrow: true,
+                  isFirst: true,
                 ),
                 _buildLegalItem(
                   title: "Privacy Policy",
@@ -418,7 +394,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   },
                   showTrailingArrow: true,
                 ),
-
                 _buildLegalItem(
                   title: "Licenze",
                   subtitle: const Text(
@@ -430,11 +405,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     ),
                   ),
                   onTap: () {
-                    showLicensePage(
-                      context: context,
-                      applicationName: 'G-Scanner',
-                      applicationVersion: '1.0.0',
-                      applicationLegalese: '© 2026 Emanuele Ciotola',
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CustomLicensesPage(),
+                      ),
                     );
                   },
                   showTrailingArrow: true,
@@ -1581,55 +1556,65 @@ class _SettingsPanelState extends State<SettingsPanel> {
     bool isFirst = false,
     bool isLast = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(
-                  color: outlineVariant.withValues(alpha: 0.2),
+    return InkWell(
+      // <--- Aggiunto InkWell
+      onTap: () => onChanged(!value),
+      child: Container(
+        // Padding dinamico
+        padding: EdgeInsets.only(
+          left: 24, // 16 originali + 8 tolti al padre
+          right: 24,
+          top: isFirst ? 24.0 : 16.0,
+          bottom: isLast ? 24.0 : 16.0,
+        ),
+        decoration: BoxDecoration(
+          border: isLast
+              ? null
+              : Border(
+                  bottom: BorderSide(
+                    color: outlineVariant.withValues(alpha: 0.2),
+                  ),
                 ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: onSurfaceVariant,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
               ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: onSurface,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: onSurfaceVariant,
-                    height: 1.3,
-                  ),
-                ),
-              ],
             ),
-          ),
-          const SizedBox(width: 16),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: surfaceLowest,
-            activeTrackColor: primary,
-            inactiveThumbColor: onSurfaceVariant.withValues(alpha: 0.7),
-            inactiveTrackColor: surfaceContainerHigh,
-            trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: surfaceLowest,
+              activeTrackColor: primary,
+              inactiveThumbColor: onSurfaceVariant.withValues(alpha: 0.7),
+              inactiveTrackColor: surfaceContainerHigh,
+              trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1640,6 +1625,7 @@ Widget _buildLegalItem({
   required String title,
   required Widget subtitle,
   VoidCallback? onTap,
+  bool isFirst = false,
   bool showTrailingArrow = true,
   bool isLast = false,
 }) {
@@ -1647,11 +1633,13 @@ Widget _buildLegalItem({
 
   return InkWell(
     onTap: onTap,
-    borderRadius: isLast
-        ? const BorderRadius.vertical(bottom: Radius.circular(20))
-        : null,
     child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: isFirst ? 24.0 : 16.0,
+        bottom: isLast ? 24.0 : 16.0,
+      ),
       decoration: BoxDecoration(
         border: isLast
             ? null
