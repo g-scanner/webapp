@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/types.dart';
 import 'analyzer_service.dart';
+import 'off_api_client.dart';
 
 const String productsCollection = "products";
 const String reportsCollection = "reports";
@@ -162,11 +162,7 @@ class DbService {
     Product? productApi;
 
     try {
-      final response = await http.get(
-        Uri.parse(
-          'https://world.openfoodfacts.org/api/v2/product/$barcode.json',
-        ),
-      );
+      final response = await OffApiClient.getProduct(barcode);
       if (response.statusCode == 200) {
         final offData = json.decode(response.body);
         if (offData != null && offData['status'] == 1) {
@@ -307,9 +303,7 @@ class DbService {
           final langAnalysis = AnalyzerService.analyzeGlutenSafety(
             name: offName,
             brand: offBrand,
-            ingredients: langIngFinal.isEmpty
-                ? "Non disponibile"
-                : langIngFinal,
+            ingredients: langIngFinal,
             allergensList: offAllergens,
             reportCount: 0,
             offTags: offTags,
@@ -479,7 +473,9 @@ class DbService {
           final reanalysis = AnalyzerService.analyzeGlutenSafety(
             name: productApi.name,
             brand: productApi.brand,
-            ingredients: productApi.ingredients,
+            ingredients: productApi.ingredients == "Non disponibile"
+                ? ""
+                : productApi.ingredients,
             allergensList: productApi.allergens,
             reportCount: productDb.reportCount ?? 0,
             offTags: null,
@@ -793,13 +789,11 @@ class DbService {
 
       int offLastModified = 0;
       try {
-        final offRes = await http
-            .get(
-              Uri.parse(
-                'https://world.openfoodfacts.org/api/v2/product/$barcode.json?fields=last_modified_t',
-              ),
-            )
-            .timeout(const Duration(seconds: 3));
+        final offRes = await OffApiClient.getProduct(
+          barcode,
+          fields: const ['last_modified_t'],
+          timeout: const Duration(seconds: 3),
+        );
         if (offRes.statusCode == 200) {
           final offData = json.decode(offRes.body);
           if (offData['product'] != null &&

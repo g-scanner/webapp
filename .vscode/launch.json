@@ -1,0 +1,20 @@
+{
+    // Usare IntelliSense per informazioni sui possibili attributi.
+    // Al passaggio del mouse vengono visualizzate le descrizioni degli attributi esistenti.
+    // Per altre informazioni, visitare: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flutter Web (OFF proxy)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "chrome",
+            "program": "lib/main.dart",
+            "flutterMode": "debug",
+            "args": [
+                "--dart-define=OFF_PROXY_BASE_URL=https://gscanner-off-proxy.g-scanner.workers.dev"
+            ],
+            "preLaunchTask": "flutter build web (OFF proxy)"
+        }
+    ]
+}

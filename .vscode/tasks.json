@@ -1,0 +1,20 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "flutter build web (OFF proxy)",
+            "type": "shell",
+            "command": "flutter",
+            "args": [
+                "build",
+                "web",
+                "--dart-define=OFF_PROXY_BASE_URL=https://gscanner-off-proxy.g-scanner.workers.dev"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

@@ -657,7 +657,12 @@ class AnalyzerService {
     bool alertLactose = false, // Impostazione 3 (Nuova)
     String preferredLanguage = 'it', // Lingua per la traduzione degli allergeni
   }) {
-    final String lowerIng = ingredients.toLowerCase();
+    String safeIngredients = ingredients.trim();
+    if (safeIngredients.toLowerCase() == "non disponibile") {
+      safeIngredients = "";
+    }
+
+    final String lowerIng = safeIngredients.toLowerCase();
     final String lowerName = name.toLowerCase();
     final String lowerBrand = brand.toLowerCase();
     final String combinedRaw = "$lowerIng $lowerName $lowerBrand";
@@ -1021,7 +1026,12 @@ class AnalyzerService {
   }
 
   static bool checkLactose(String ingredients, List<String> allergens) {
-    final String lowerIng = ingredients.toLowerCase();
+    String safeIngredients = ingredients.trim();
+    if (safeIngredients.toLowerCase() == "non disponibile") {
+      safeIngredients = "";
+    }
+
+    final String lowerIng = safeIngredients.toLowerCase();
     final String safeLactoseIng = _sanitizeForLactose(lowerIng);
     for (String l in _lactoseKeywords) {
       final regex = RegExp(
