@@ -92,6 +92,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
   }
 
   Future<void> _handleLanguageChange(String newLang) async {
+    if (newLang == widget.settings.preferredLanguage) {
+      return;
+    }
+
     final updated = UserSettings(
       userId: widget.settings.userId,
       strictMode: widget.settings.strictMode,
@@ -368,7 +372,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   onTap: () {
                     _showLegalBottomSheet(
                       context,
-                      "Termini e Condizioni d'Uso (ToS)",
+                      "Termini e Condizioni",
                       _buildNativeTos(onSurfaceVariant),
                     );
                   },
@@ -1360,13 +1364,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
               // Titolo e pulsante chiudi
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: onSurface,
-                    letterSpacing: -0.5,
+                child: Center(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: onSurface,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
               ),
@@ -1410,6 +1416,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
   // Helper per il selettore del tema
   Widget _buildThemeSelector() {
+    final themeLabels = {
+      'system': 'Sistema',
+      'light': 'Chiaro',
+      'dark': 'Scuro',
+    };
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -1440,34 +1452,56 @@ class _SettingsPanelState extends State<SettingsPanel> {
             ),
           ),
           const SizedBox(width: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedTheme,
-                icon: const Icon(
-                  Icons.arrow_drop_down,
-                  color: onSurfaceVariant,
-                ),
-                dropdownColor: surfaceLowest,
+          // Pulsante con effetto splash M3
+          Material(
+            color: surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior:
+                Clip.antiAlias, // Taglia lo splash sui bordi arrotondati
+            child: PopupMenuButton<String>(
+              tooltip: "Scegli tema",
+              initialValue: _selectedTheme,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: onSurface,
+              ),
+              color: surfaceLowest,
+              position: PopupMenuPosition.under,
+              onSelected: (val) => setState(() {
+                if (_selectedTheme == val) return;
+
+                _triggerToast("Preferenze salvate ed applicate!");
+                _selectedTheme = val;
+              }),
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'system', child: Text("Sistema")),
+                PopupMenuItem(value: 'light', child: Text("Chiaro")),
+                PopupMenuItem(value: 'dark', child: Text("Scuro")),
+              ],
+              child: SizedBox(
+                width: 110,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          themeLabels[_selectedTheme] ?? 'Sistema',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: onSurface,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.arrow_drop_down,
+                          color: onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'system', child: Text("Sistema")),
-                  DropdownMenuItem(value: 'light', child: Text("Chiaro")),
-                  DropdownMenuItem(value: 'dark', child: Text("Scuro")),
-                ],
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedTheme = val);
-                },
               ),
             ),
           ),
@@ -1476,7 +1510,16 @@ class _SettingsPanelState extends State<SettingsPanel> {
     );
   }
 
+  // Helper per il selettore lingua
   Widget _buildLanguageSelector() {
+    final langLabels = {
+      'it': 'Italiano',
+      'en': 'Inglese',
+      'es': 'Spagnolo',
+      'de': 'Tedesco',
+      'fr': 'Francese',
+    };
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -1507,38 +1550,53 @@ class _SettingsPanelState extends State<SettingsPanel> {
             ),
           ),
           const SizedBox(width: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: widget.settings.preferredLanguage,
-                icon: const Icon(
-                  Icons.arrow_drop_down,
-                  color: onSurfaceVariant,
-                ),
-                dropdownColor: surfaceLowest,
+          // Pulsante con effetto splash M3
+          Material(
+            color: surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: PopupMenuButton<String>(
+              tooltip: "Scegli lingua",
+              initialValue: widget.settings.preferredLanguage,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: onSurface,
+              ),
+              color: surfaceLowest,
+              position: PopupMenuPosition.under,
+              onSelected: (val) => _handleLanguageChange(val),
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'it', child: Text("Italiano")),
+                PopupMenuItem(value: 'en', child: Text("Inglese")),
+                PopupMenuItem(value: 'es', child: Text("Spagnolo")),
+                PopupMenuItem(value: 'de', child: Text("Tedesco")),
+                PopupMenuItem(value: 'fr', child: Text("Francese")),
+              ],
+              child: SizedBox(
+                width: 110,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          langLabels[widget.settings.preferredLanguage] ??
+                              'Italiano',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: onSurface,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.arrow_drop_down,
+                          color: onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'it', child: Text("Italiano")),
-                  DropdownMenuItem(value: 'en', child: Text("Inglese")),
-                  DropdownMenuItem(value: 'es', child: Text("Spagnolo")),
-                  DropdownMenuItem(value: 'de', child: Text("Tedesco")),
-                  DropdownMenuItem(value: 'fr', child: Text("Francese")),
-                ],
-                onChanged: (val) {
-                  if (val != null) {
-                    _handleLanguageChange(val);
-                  }
-                },
               ),
             ),
           ),
@@ -1556,65 +1614,61 @@ class _SettingsPanelState extends State<SettingsPanel> {
     bool isFirst = false,
     bool isLast = false,
   }) {
-    return InkWell(
-      // <--- Aggiunto InkWell
-      onTap: () => onChanged(!value),
-      child: Container(
-        // Padding dinamico
-        padding: EdgeInsets.only(
-          left: 24, // 16 originali + 8 tolti al padre
-          right: 24,
-          top: isFirst ? 24.0 : 16.0,
-          bottom: isLast ? 24.0 : 16.0,
-        ),
-        decoration: BoxDecoration(
-          border: isLast
-              ? null
-              : Border(
-                  bottom: BorderSide(
-                    color: outlineVariant.withValues(alpha: 0.2),
+    return Container(
+      // Manteniamo il padding dinamico
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: isFirst ? 24.0 : 16.0,
+        bottom: isLast ? 24.0 : 16.0,
+      ),
+      decoration: BoxDecoration(
+        border: isLast
+            ? null
+            : Border(
+                bottom: BorderSide(
+                  color: outlineVariant.withValues(alpha: 0.2),
+                ),
+              ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: onSurface,
                   ),
                 ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: onSurface,
-                    ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: onSurfaceVariant,
+                    height: 1.3,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: onSurfaceVariant,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: surfaceLowest,
-              activeTrackColor: primary,
-              inactiveThumbColor: onSurfaceVariant.withValues(alpha: 0.7),
-              inactiveTrackColor: surfaceContainerHigh,
-              trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 16),
+          Switch(
+            value: value,
+            onChanged: onChanged, // Solo lo Switch risponderà al tocco
+            activeThumbColor: surfaceLowest,
+            activeTrackColor: primary,
+            inactiveThumbColor: onSurfaceVariant.withValues(alpha: 0.7),
+            inactiveTrackColor: surfaceContainerHigh,
+            trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+          ),
+        ],
       ),
     );
   }
@@ -1776,7 +1830,7 @@ Widget _buildNativeTos(Color textColor) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          h2("G-Scanner"),
+          h2("Termini e Condizioni d'Uso (ToS) di G-Scanner"),
           p(
             "**Versione:** 1.0\n**Data di entrata in vigore:** 17 luglio 2026\n**Data di ultimo aggiornamento:** 17 luglio 2026",
           ),
@@ -2547,7 +2601,7 @@ Widget _buildNativePrivacyPolicy(Color textColor) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          h2("G-Scanner"),
+          h2("Privacy Policy di G-Scanner"),
           p(
             "**Versione:** 1.0\n**Data di entrata in vigore:** 17 luglio 2026\n**Data di ultimo aggiornamento:** 17 luglio 2026",
           ),
