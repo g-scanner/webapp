@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
 
-import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,6 +13,8 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'models/types.dart';
 import 'services/db_service.dart';
+import 'theme/app_theme.dart';
+import 'theme/theme_notifier.dart';
 
 import 'widgets/camera_module.dart';
 import 'widgets/history_list.dart';
@@ -25,14 +29,7 @@ import 'widgets/auth_screen.dart';
 import 'widgets/responsive_wrapper.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-// --- Colori estratti dal tuo Tailwind HTML ---
-const Color surfaceLowest = Color(0xFFFFFFFF);
-const Color surfaceContainerLow = Color(0xFFF5F3F7);
-const Color secondaryContainer = Color(0xFF54A0FE);
-const Color onSecondaryContainer = Color(0xFF003567);
-const Color onSurfaceVariant = Color(0xFF40493D);
-const Color onSurface = Color(0xFF1B1B1E);
-
+// Top-level scanner controller
 final MobileScannerController globalScannerController = MobileScannerController(
   autoStart: false,
   detectionSpeed: DetectionSpeed.noDuplicates,
@@ -48,16 +45,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Avvia il warmup della fotocamera durante lo splash nativo se l'utente è già loggato
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null && !kIsWeb) {
-    try {
-      globalScannerController.start();
-    } catch (e) {
-      print("Camera autostart in main failed: $e");
-    }
-  }
-
   usePathUrlStrategy();
 
   runApp(const MyApp());
@@ -68,35 +55,38 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'G-Scanner',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0D631B)),
-        useMaterial3: true,
-        fontFamily: 'Inter',
-      ),
-      // LOGICA DI ROUTING: Ascolta i cambiamenti di stato di Firebase
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          // 1. In attesa della risposta da Firebase
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(color: Color(0xFF0D631B)),
-              ),
-            );
-          }
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, currentThemeMode, _) {
+        return MaterialApp(
+          title: 'G-Scanner',
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: currentThemeMode,
+          // LOGICA DI ROUTING: Ascolta i cambiamenti di stato di Firebase
+          home: StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              // 1. In attesa della risposta da Firebase
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Scaffold(
+                  body: Center(
+                    child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+                  ),
+                );
+              }
 
-          // 2. Utente Loggato (Social o Anonimo) -> Vai all'app
-          if (snapshot.hasData && snapshot.data != null) {
-            return const MainScreen();
-          }
+              // 2. Utente Loggato (Social o Anonimo) -> Vai all'app
+              if (snapshot.hasData && snapshot.data != null) {
+                return const MainScreen();
+              }
 
-          // 3. Nessun utente loggato -> Mostra la UI di Login
-          return const AuthScreen();
-        },
-      ),
+              // 3. Nessun utente loggato -> Mostra la UI di Login
+              return const AuthScreen();
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -111,6 +101,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   bool _isCameraActive = true;
+  double _maxKeyboardHeight = 0.0;
 
   List<Product> products = [];
   List<ScanHistoryItem> history = [];
@@ -122,7 +113,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     alertLactose: false,
     warnAdditives: true,
     autoSaveHistory: true,
-    preferredLanguage: "it",
+    preferredLanguage: UserSettings.defaultSystemLanguage,
+    preferredTheme: "system",
   );
 
   String? userId;
@@ -156,18 +148,49 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      if (_currentIndex == 0 && _isCameraActive && !kIsWeb) {
-        try {
-          globalScannerController.start();
-        } catch (_) {}
-      }
-    } else if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      if (!kIsWeb) {
-        try {
-          globalScannerController.stop();
-        } catch (_) {}
+    // Il ciclo di vita della fotocamera viene ora gestito reattivamente
+    // in CameraModule tramite ScannerStateManager.
+  }
+
+  bool get _shouldEnableKeyboardDismiss {
+    if (kIsWeb) {
+      return defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS;
+    }
+    return !Platform.isWindows && !Platform.isMacOS && !Platform.isLinux;
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+
+    if (_shouldEnableKeyboardDismiss) {
+      final view = View.maybeOf(context);
+      if (view == null) return;
+
+      final currentBottomInset = view.viewInsets.bottom;
+
+      if (currentBottomInset == 0) {
+        // La tastiera è completamente scomparsa.
+        // Resettiamo l'altezza massima per la prossima volta.
+        _maxKeyboardHeight = 0.0;
+      } else {
+        // La tastiera è (almeno parzialmente) aperta.
+        // Registriamo il picco massimo di altezza raggiunto.
+        if (currentBottomInset > _maxKeyboardHeight) {
+          _maxKeyboardHeight = currentBottomInset;
+        }
+
+        // LA MAGIA:
+        // Se l'altezza attuale crolla sotto il 75% dell'altezza massima,
+        // ignoriamo i piccoli cambi (come T9 o Emoji) e deduciamo che
+        // l'utente ha avviato l'animazione di chiusura.
+        if (currentBottomInset < (_maxKeyboardHeight * 0.75)) {
+          final currentFocus = FocusManager.instance.primaryFocus;
+          if (currentFocus != null && currentFocus.hasFocus) {
+            currentFocus.unfocus();
+          }
+        }
       }
     }
   }
@@ -253,6 +276,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Future<void> _loadLocalSettings() async {
     final data = await DbService.getLocalSettings();
+    themeNotifier.value = themeModeFromString(data.preferredTheme);
     if (mounted) setState(() => userSettings = data);
   }
 
@@ -356,12 +380,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _isCameraActive = false;
     });
 
-    if (!kIsWeb) {
-      try {
-        await globalScannerController.stop();
-      } catch (_) {}
-    }
-
     final productNotifier = ValueNotifier<Product?>(null);
     _openProductNotifiers[barcode] = productNotifier;
     final placeholderProduct = Product(
@@ -418,9 +436,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 reportOfProduct != null;
             final String comment =
                 reportOfProduct?.comments ?? loadedProduct.reason;
-            final String rDate = reportOfProduct != null
-                ? formatRelativeDate(reportOfProduct.submittedAt)
-                : formatRelativeDate(loadedProduct.lastUpdated);
+          final String rDate = reportOfProduct != null
+              ? formatRelativeDate(reportOfProduct.submittedAt)
+              : "";
 
             final routeReport = MaterialPageRoute(
               builder: (context) => ReportDetailCard(
@@ -475,11 +493,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         _openReportIdNotifiers.remove(barcode);
         if (mounted) {
           setState(() => _isCameraActive = true);
-          if (_currentIndex == 0 && !kIsWeb) {
-            try {
-              await globalScannerController.start();
-            } catch (_) {}
-          }
         }
       });
     }
@@ -497,7 +510,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Errore di analisi o connessione con il database."),
-            backgroundColor: Color(0xFFBA1A1A),
           ),
         );
       }
@@ -544,7 +556,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           ingredientsAnalyzed: p.ingredientsAnalyzed,
           imageUrl: p.imageUrl,
           isManual: p.isManual,
-          lastUpdated: DateTime.now().toIso8601String(),
+          lastUpdated: p.lastUpdated,
           reportCount: (p.reportCount ?? 0) + 1,
           originalStatus: p.originalStatus ?? p.status,
           originalReason: p.originalReason ?? p.reason,
@@ -571,6 +583,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             warnAdditives: userSettings.warnAdditives,
             autoSaveHistory: userSettings.autoSaveHistory,
             preferredLanguage: userSettings.preferredLanguage,
+            preferredTheme: userSettings.preferredTheme,
             reportedBarcodes: [...userSettings.reportedBarcodes, barcode],
           );
         }
@@ -661,7 +674,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               ingredientsAnalyzed: p.ingredientsAnalyzed,
               imageUrl: p.imageUrl,
               isManual: p.isManual,
-              lastUpdated: DateTime.now().toIso8601String(),
+              lastUpdated: p.lastUpdated,
               reportCount: 0,
               originalStatus: null,
               originalReason: null,
@@ -689,6 +702,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             warnAdditives: userSettings.warnAdditives,
             autoSaveHistory: userSettings.autoSaveHistory,
             preferredLanguage: userSettings.preferredLanguage,
+            preferredTheme: userSettings.preferredTheme,
             reportedBarcodes: updatedBarcodes,
           );
         }
@@ -704,13 +718,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void _navigateToProduct(Product match) async {
     setState(() => _isCameraActive = false);
-    if (!kIsWeb) {
-      try {
-        await globalScannerController.stop();
-      } catch (e) {
-        print("Error stopping camera on navigation: $e");
-      }
-    }
 
     if (!mounted) return;
 
@@ -764,7 +771,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               reportOfProduct?.comments ?? loadedProduct.reason;
           final String rDate = reportOfProduct != null
               ? formatRelativeDate(reportOfProduct.submittedAt)
-              : formatRelativeDate(loadedProduct.lastUpdated);
+              : "";
 
           final routeReport = MaterialPageRoute(
             builder: (context) => ReportDetailCard(
@@ -820,13 +827,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     if (mounted) {
       setState(() => _isCameraActive = true);
-      if (_currentIndex == 0 && !kIsWeb) {
-        try {
-          await globalScannerController.start();
-        } catch (e) {
-          print("Error starting camera on back navigation: $e");
-        }
-      }
     }
   }
 
@@ -887,9 +887,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           settings: userSettings,
           onSettingsChange: (newSet) async {
             setState(() => userSettings = newSet);
-            await DbService.saveLocalSettings(newSet);
-            // Salva su Firestore in background senza bloccare la UI
-            DbService.saveSettings(newSet);
+            themeNotifier.value = themeModeFromString(newSet.preferredTheme);
+            await DbService.saveSettings(newSet);
           },
           onResetDB: () async {
             await DbService.wipeHistoryLocal();
@@ -910,11 +909,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Widget _buildCustomBottomNav() {
     return Container(
       decoration: BoxDecoration(
-        color: surfaceContainerLow,
+        color: context.surfaceContainerLow,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(
+              alpha: context.isDarkMode ? 0.2 : 0.05,
+            ),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -960,6 +961,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     String label,
   ) {
     final bool isSelected = _currentIndex == index;
+    final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
       child: InkWell(
         onTap: () async {
@@ -967,19 +969,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             _currentIndex = index;
             _isCameraActive = index == 0;
           });
-          if (index == 0) {
-            if (!kIsWeb) {
-              try {
-                await globalScannerController.start();
-              } catch (_) {}
-            }
-          } else {
-            if (!kIsWeb) {
-              try {
-                await globalScannerController.stop();
-              } catch (_) {}
-            }
-          }
         },
         borderRadius: BorderRadius.circular(20),
         child: Column(
@@ -989,13 +978,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? secondaryContainer.withValues(alpha: 0.2)
+                    ? colorScheme.secondaryContainer.withValues(alpha: 0.3)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 isSelected ? activeIcon : inactiveIcon,
-                color: isSelected ? onSecondaryContainer : onSurfaceVariant,
+                color: isSelected
+                    ? colorScheme.onSecondaryContainer
+                    : colorScheme.onSurfaceVariant,
                 size: 24,
               ),
             ),
@@ -1008,7 +999,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? onSecondaryContainer : onSurfaceVariant,
+                  color: isSelected
+                      ? colorScheme.onSecondaryContainer
+                      : colorScheme.onSurfaceVariant,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1024,7 +1017,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // SE L'UTENTE DEVE PRENDERE UNA DECISIONE DI SINCRONIZZAZIONE
     if (_requiresSyncDecision) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFAF9FC),
+        backgroundColor: context.colorScheme.surface,
         body: SyncDataScreen(
           historyCount: _anonymousHistoryCount,
           onDecision: (bool wantToSync) async {
@@ -1050,10 +1043,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     // SE C'È UN PROCESSO DI SINCRONIZZAZIONE ATTIVO
     if (_isSyncing) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFFAF9FC),
+      return Scaffold(
+        backgroundColor: context.colorScheme.surface,
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF0D631B)),
+          child: CircularProgressIndicator(color: context.colorScheme.primary),
         ),
       );
     }
@@ -1061,8 +1054,19 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isWideScreen = screenWidth > 960;
 
+    Widget bodyWidget = _buildBody();
+    // Su dispositivi senza tastiera fisica (incluso web su Android/iOS),
+    // toccando fuori dal textfield o abbassando la tastiera si rimuove il focus.
+    if (_shouldEnableKeyboardDismiss) {
+      bodyWidget = GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: bodyWidget,
+      );
+    }
+
     final scaffold = Scaffold(
-      backgroundColor: const Color(0xFFFAF9FC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           "G-Scanner",
@@ -1070,23 +1074,22 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             fontWeight: FontWeight.w600,
             fontSize: 22,
             letterSpacing: -0.5,
-            color: onSurface,
           ),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFFFFFFFF),
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
-      body: _buildBody(),
+      body: bodyWidget,
       bottomNavigationBar: (isWideScreen || _currentIndex == 4)
           ? null
           : _buildCustomBottomNav(),
     );
 
     if (isWideScreen) {
+      final colorScheme = Theme.of(context).colorScheme;
       return Scaffold(
-        backgroundColor: const Color(0xFFFAF9FC),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () {
@@ -1111,17 +1114,19 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                       ),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: surfaceLowest,
+                          color: context.cardBackground,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                            color: colorScheme.outlineVariant.withValues(
+                              alpha: 0.5,
+                            ),
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
+                              color: Colors.black.withValues(
+                                alpha: context.isDarkMode ? 0.2 : 0.06,
+                              ),
                               blurRadius: 24,
                               offset: const Offset(0, 8),
                             ),
@@ -1147,37 +1152,23 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                                   _currentIndex = index;
                                   _isCameraActive = index == 0;
                                 });
-                                if (index == 0) {
-                                  if (!kIsWeb) {
-                                    try {
-                                      await globalScannerController.start();
-                                    } catch (_) {}
-                                  }
-                                } else {
-                                  if (!kIsWeb) {
-                                    try {
-                                      await globalScannerController.stop();
-                                    } catch (_) {}
-                                  }
-                                }
                               },
-                              selectedLabelTextStyle: const TextStyle(
+                              selectedLabelTextStyle: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: onSecondaryContainer,
+                                color: colorScheme.onSecondaryContainer,
                               ),
-                              unselectedLabelTextStyle: const TextStyle(
+                              unselectedLabelTextStyle: TextStyle(
                                 fontWeight: FontWeight.w500,
-                                color: onSurfaceVariant,
+                                color: colorScheme.onSurfaceVariant,
                               ),
-                              selectedIconTheme: const IconThemeData(
-                                color: onSecondaryContainer,
+                              selectedIconTheme: IconThemeData(
+                                color: colorScheme.onSecondaryContainer,
                               ),
-                              unselectedIconTheme: const IconThemeData(
-                                color: onSurfaceVariant,
+                              unselectedIconTheme: IconThemeData(
+                                color: colorScheme.onSurfaceVariant,
                               ),
-                              indicatorColor: secondaryContainer.withValues(
-                                alpha: 0.2,
-                              ),
+                              indicatorColor: colorScheme.secondaryContainer
+                                  .withValues(alpha: 0.3),
                               labelType: NavigationRailLabelType.all,
                               destinations: const [
                                 NavigationRailDestination(
@@ -1222,18 +1213,19 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                         child: Container(
                           width: 500,
                           decoration: BoxDecoration(
-                            color: surfaceLowest,
+                            color: context.cardBackground,
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .outlineVariant
-                                  .withValues(alpha: 0.5),
+                              color: colorScheme.outlineVariant.withValues(
+                                alpha: 0.5,
+                              ),
                               width: 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.06),
+                                color: Colors.black.withValues(
+                                  alpha: context.isDarkMode ? 0.2 : 0.06,
+                                ),
                                 blurRadius: 24,
                                 offset: const Offset(0, 8),
                               ),
@@ -1245,12 +1237,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                               key: _contentNavigatorKey,
                               pages: [
                                 MaterialPage(
-                                  key: ValueKey(_currentIndex),
+                                  key: const ValueKey('main_scaffold_page'),
                                   child: scaffold,
                                 ),
                               ],
-                              onPopPage: (route, result) {
-                                return route.didPop(result);
+                              onDidRemovePage: (page) {
+                                return;
                               },
                             ),
                           ),

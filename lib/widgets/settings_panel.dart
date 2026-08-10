@@ -7,18 +7,7 @@ import 'package:gscanner/widgets/licenses_screen.dart';
 import '../models/types.dart';
 import '../services/db_service.dart';
 
-// --- Colori estratti dal tuo Tailwind Config ---
-const Color bgBackground = Color(0xFFFAF9FC);
-const Color surfaceLowest = Color(0xFFFFFFFF);
-const Color onSurface = Color(0xFF1B1B1E);
-const Color onSurfaceVariant = Color(0xFF40493D);
-const Color surfaceContainer = Color(0xFFEFEDF1);
-const Color surfaceContainerHigh = Color(0xFFE9E7EB);
-const Color outlineVariant = Color(0xFFBFCABA);
-
-const Color primary = Color(0xFF0D631B);
-const Color error = Color(0xFFBA1A1A);
-const Color errorContainer = Color(0xFFFFDAD6);
+import '../theme/app_theme.dart';
 
 class SettingsPanel extends StatefulWidget {
   final UserSettings settings;
@@ -40,26 +29,26 @@ class SettingsPanel extends StatefulWidget {
 
 class _SettingsPanelState extends State<SettingsPanel> {
   bool _clearing = false;
-  String _selectedTheme = 'system';
 
   // Variabile per l'aggiornamento UI istantaneo ("Optimistic Update")
   String? _optimisticDisplayName;
 
   void _triggerToast(String msg) {
     if (!mounted) return;
+    final colorScheme = context.colorScheme;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: onSurface,
+        backgroundColor: colorScheme.inverseSurface,
         content: Row(
           children: [
-            const Icon(Icons.info_outline, color: surfaceLowest),
+            Icon(Icons.info_outline, color: colorScheme.onInverseSurface),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 msg,
-                style: const TextStyle(
-                  color: surfaceLowest,
+                style: TextStyle(
+                  color: colorScheme.onInverseSurface,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -85,6 +74,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           : widget.settings.warnAdditives,
       autoSaveHistory: widget.settings.autoSaveHistory,
       preferredLanguage: widget.settings.preferredLanguage,
+      preferredTheme: widget.settings.preferredTheme,
       reportedBarcodes: widget.settings.reportedBarcodes,
     );
     await widget.onSettingsChange(updated);
@@ -103,6 +93,26 @@ class _SettingsPanelState extends State<SettingsPanel> {
       warnAdditives: widget.settings.warnAdditives,
       autoSaveHistory: widget.settings.autoSaveHistory,
       preferredLanguage: newLang,
+      preferredTheme: widget.settings.preferredTheme,
+      reportedBarcodes: widget.settings.reportedBarcodes,
+    );
+    await widget.onSettingsChange(updated);
+    _triggerToast("Preferenze salvate ed applicate!");
+  }
+
+  Future<void> _handleThemeChange(String newTheme) async {
+    if (newTheme == widget.settings.preferredTheme) {
+      return;
+    }
+
+    final updated = UserSettings(
+      userId: widget.settings.userId,
+      strictMode: widget.settings.strictMode,
+      alertLactose: widget.settings.alertLactose,
+      warnAdditives: widget.settings.warnAdditives,
+      autoSaveHistory: widget.settings.autoSaveHistory,
+      preferredLanguage: widget.settings.preferredLanguage,
+      preferredTheme: newTheme,
       reportedBarcodes: widget.settings.reportedBarcodes,
     );
     await widget.onSettingsChange(updated);
@@ -113,26 +123,28 @@ class _SettingsPanelState extends State<SettingsPanel> {
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
     final bool isAnonymous = currentUser?.isAnonymous ?? true;
+    final colorScheme = context.colorScheme;
+    final cardBg = context.cardBackground;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             "Impostazioni",
             style: TextStyle(
               fontSize: 22,
               fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
-              color: onSurface,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "Gestisci il tuo profilo, l'analisi degli ingredienti e i dati salvati.",
             style: TextStyle(
               fontSize: 14,
-              color: onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant,
               height: 1.4,
             ),
           ),
@@ -141,7 +153,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           _buildSectionHeader(
             icon: Icons.attribution_rounded,
             title: "Il tuo Account",
-            color: primary,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
           _buildAccountCard(isAnonymous, currentUser),
@@ -151,15 +163,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
           _buildSectionHeader(
             icon: Icons.tune,
             title: "Regole di Analisi",
-            color: primary,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
           Material(
-            color: surfaceLowest,
+            color: cardBg,
             clipBehavior: Clip.antiAlias,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(28),
-              side: BorderSide(color: outlineVariant.withValues(alpha: 0.3)),
+              side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: [
@@ -195,15 +207,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
           _buildSectionHeader(
             icon: Icons.palette_outlined,
             title: "Aspetto",
-            color: primary,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: surfaceLowest,
+              color: cardBg,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
             ),
             child: _buildThemeSelector(),
           ),
@@ -213,15 +225,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
           _buildSectionHeader(
             icon: Icons.translate_outlined,
             title: "Lingua",
-            color: primary,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: surfaceLowest,
+              color: cardBg,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
             ),
             child: _buildLanguageSelector(),
           ),
@@ -231,7 +243,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           _buildSectionHeader(
             icon: Icons.data_usage,
             title: "Dati e Cronologia",
-            color: primary,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
 
@@ -242,30 +254,30 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        backgroundColor: surfaceLowest,
+                        backgroundColor: ctx.cardBackground,
                         surfaceTintColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
-                        title: const Text(
+                        title: Text(
                           "Svuota Cronologia",
-                          style: TextStyle(color: onSurface),
+                          style: TextStyle(color: ctx.colorScheme.onSurface),
                         ),
-                        content: const Text(
+                        content: Text(
                           "Sei sicuro di voler eliminare tutta la cronologia delle scansioni? Questa azione non è reversibile.",
-                          style: TextStyle(color: onSurfaceVariant),
+                          style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, false),
                             style: TextButton.styleFrom(
-                              foregroundColor: onSurfaceVariant,
+                              foregroundColor: ctx.colorScheme.onSurfaceVariant,
                             ),
                             child: const Text("Annulla"),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, true),
-                            style: TextButton.styleFrom(foregroundColor: error),
+                            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.error),
                             child: const Text("Svuota"),
                           ),
                         ],
@@ -283,40 +295,40 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     }
                   },
             borderRadius: BorderRadius.circular(24),
-            splashColor: error.withValues(alpha: 0.12),
-            highlightColor: error.withValues(alpha: 0.08),
+            splashColor: colorScheme.error.withValues(alpha: 0.12),
+            highlightColor: colorScheme.error.withValues(alpha: 0.08),
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: errorContainer.withValues(alpha: 0.3),
+                color: colorScheme.errorContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: errorContainer),
+                border: Border.all(color: colorScheme.errorContainer),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: const BoxDecoration(
-                      color: errorContainer,
+                    decoration: BoxDecoration(
+                      color: colorScheme.errorContainer,
                       shape: BoxShape.circle,
                     ),
                     child: _clearing
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: error,
+                              color: colorScheme.error,
                               strokeWidth: 2,
                             ),
                           )
-                        : const Icon(
+                        : Icon(
                             Icons.delete_outline,
-                            color: error,
+                            color: colorScheme.error,
                             size: 20,
                           ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -325,13 +337,13 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: error,
+                            color: colorScheme.error,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           "Rimuove in modo permanente la tua cronologia scansioni.",
-                          style: TextStyle(fontSize: 13, color: error),
+                          style: TextStyle(fontSize: 13, color: colorScheme.error),
                         ),
                       ],
                     ),
@@ -346,26 +358,26 @@ class _SettingsPanelState extends State<SettingsPanel> {
           _buildSectionHeader(
             icon: Icons.info_outline_rounded,
             title: "Informazioni Legali",
-            color: primary,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
 
           Material(
-            color: surfaceLowest,
+            color: cardBg,
             clipBehavior: Clip.antiAlias,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(28),
-              side: BorderSide(color: outlineVariant.withValues(alpha: 0.3)),
+              side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: [
                 _buildLegalItem(
                   title: "Termini e Condizioni",
-                  subtitle: const Text(
+                  subtitle: Text(
                     "Consulta le regole di utilizzo dell'applicazione e dei servizi offerti.",
                     style: TextStyle(
                       fontSize: 13,
-                      color: onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                       height: 1.3,
                     ),
                   ),
@@ -373,7 +385,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     _showLegalBottomSheet(
                       context,
                       "Termini e Condizioni",
-                      _buildNativeTos(onSurfaceVariant),
+                      _buildNativeTos(colorScheme.onSurfaceVariant),
                     );
                   },
                   showTrailingArrow: true,
@@ -381,11 +393,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 ),
                 _buildLegalItem(
                   title: "Privacy Policy",
-                  subtitle: const Text(
+                  subtitle: Text(
                     "Scopri come raccogliamo, gestiamo e proteggiamo i tuoi dati personali.",
                     style: TextStyle(
                       fontSize: 13,
-                      color: onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                       height: 1.3,
                     ),
                   ),
@@ -393,18 +405,18 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     _showLegalBottomSheet(
                       context,
                       "Privacy Policy",
-                      _buildNativePrivacyPolicy(onSurfaceVariant),
+                      _buildNativePrivacyPolicy(colorScheme.onSurfaceVariant),
                     );
                   },
                   showTrailingArrow: true,
                 ),
                 _buildLegalItem(
                   title: "Licenze",
-                  subtitle: const Text(
+                  subtitle: Text(
                     "Consulta le licenze open source dei pacchetti e delle librerie utilizzate in questa app.",
                     style: TextStyle(
                       fontSize: 13,
-                      color: onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                       height: 1.3,
                     ),
                   ),
@@ -433,13 +445,14 @@ class _SettingsPanelState extends State<SettingsPanel> {
   Widget _buildAccountCard(bool isAnonymous, User? currentUser) {
     final String displayName =
         _optimisticDisplayName ?? currentUser?.displayName ?? "";
+    final colorScheme = context.colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: surfaceLowest,
+        color: context.cardBackground,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -457,10 +470,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           : (displayName.isNotEmpty
                                 ? displayName
                                 : "Utente Registrato"),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: onSurface,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -468,9 +481,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       isAnonymous
                           ? "Le tue scansioni sono salvate solo su questo dispositivo."
                           : "Il tuo profilo e le scansioni sono sincronizzati sul cloud.",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: onSurfaceVariant,
+                        color: colorScheme.onSurfaceVariant,
                         height: 1.3,
                       ),
                     ),
@@ -486,8 +499,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 ? FilledButton.tonalIcon(
                     onPressed: () => _handleAnonymousAction(),
                     style: FilledButton.styleFrom(
-                      backgroundColor: surfaceContainer,
-                      foregroundColor: onSurface,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
+                      foregroundColor: colorScheme.onSurface,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     icon: const Icon(Icons.login, size: 20),
@@ -499,9 +512,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 : OutlinedButton.icon(
                     onPressed: () => _showAccountManagementMenu(context),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: onSurface,
+                      foregroundColor: colorScheme.onSurface,
                       side: BorderSide(
-                        color: outlineVariant.withValues(alpha: 0.5),
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -518,17 +531,18 @@ class _SettingsPanelState extends State<SettingsPanel> {
   }
 
   Widget _buildUserAvatar(bool isAnonymous, {double size = 56}) {
+    final colorScheme = context.colorScheme;
     if (isAnonymous) {
       return Container(
         width: size,
         height: size,
-        decoration: const BoxDecoration(
-          color: surfaceContainerHigh,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHigh,
           shape: BoxShape.circle,
         ),
         child: Icon(
           Icons.person_outline,
-          color: onSurfaceVariant,
+          color: colorScheme.onSurfaceVariant,
           size: size * 0.5,
         ),
       );
@@ -537,10 +551,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: primary.withValues(alpha: 0.1),
+          color: colorScheme.primary.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(Icons.person, color: primary, size: size * 0.5),
+        child: Icon(Icons.person, color: colorScheme.primary, size: size * 0.5),
       );
     }
   }
@@ -591,11 +605,13 @@ class _SettingsPanelState extends State<SettingsPanel> {
       isScrollControlled: true,
       useRootNavigator: false,
       constraints: const BoxConstraints(maxWidth: 500),
-      backgroundColor: surfaceLowest,
+      backgroundColor: context.cardBackground,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (ctx) {
+        final colorScheme = ctx.colorScheme;
+        final cardBg = ctx.cardBackground;
         return StatefulBuilder(
           builder: (BuildContext ctx, StateSetter setModalState) {
             final String currentDisplayName =
@@ -624,7 +640,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       height: 5,
                       margin: const EdgeInsets.only(top: 16, bottom: 24),
                       decoration: BoxDecoration(
-                        color: outlineVariant.withValues(alpha: 0.5),
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -640,10 +656,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       currentDisplayName.isNotEmpty
                           ? currentDisplayName
                           : "Aggiungi il tuo nome",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
-                        color: onSurface,
+                        color: colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -669,9 +685,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       });
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: onSurface,
+                      foregroundColor: colorScheme.onSurface,
                       side: BorderSide(
-                        color: outlineVariant.withValues(alpha: 0.5),
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
@@ -693,10 +709,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: surfaceLowest,
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(28),
                         border: Border.all(
-                          color: outlineVariant.withValues(alpha: 0.3),
+                          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
@@ -715,7 +731,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                       (providerName == "Google" ||
                                           providerName == "Facebook")
                                       ? Colors.transparent
-                                      : surfaceContainerHigh,
+                                      : colorScheme.surfaceContainerHigh,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 alignment: Alignment.center,
@@ -733,7 +749,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                       )
                                     : Icon(
                                         providerIcon,
-                                        color: onSurfaceVariant,
+                                        color: colorScheme.onSurfaceVariant,
                                         size: 24,
                                       ),
                               ),
@@ -745,10 +761,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                     // Identificatore (Email/Telefono) come Titolo principale
                                     Text(
                                       identifier,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                        color: onSurface,
+                                        color: colorScheme.onSurface,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -758,18 +774,18 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                     // Metodo di connessione come Sottotitolo
                                     Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.link,
                                           size: 14,
-                                          color: onSurfaceVariant,
+                                          color: colorScheme.onSurfaceVariant,
                                         ),
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: Text(
                                             "Collegato con $providerName",
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 13,
-                                              color: onSurfaceVariant,
+                                              color: colorScheme.onSurfaceVariant,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -787,7 +803,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           // Divisorio per separare nettamente le info dalle azioni
                           Divider(
                             height: 1,
-                            color: outlineVariant.withValues(alpha: 0.3),
+                            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                           ),
                           const SizedBox(height: 20),
 
@@ -800,8 +816,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                 _handleLogout();
                               },
                               style: FilledButton.styleFrom(
-                                backgroundColor: surfaceContainer,
-                                foregroundColor: onSurface,
+                                backgroundColor: colorScheme.surfaceContainerHighest,
+                                foregroundColor: colorScheme.onSurface,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
@@ -825,11 +841,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                 _handleDeleteAccount();
                               },
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: error,
-                                backgroundColor: errorContainer.withValues(
+                                foregroundColor: colorScheme.error,
+                                backgroundColor: colorScheme.errorContainer.withValues(
                                   alpha: 0.3,
                                 ),
-                                side: const BorderSide(color: errorContainer),
+                                side: BorderSide(color: colorScheme.errorContainer),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
@@ -855,7 +871,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
             }
 
             // ── VISTA 2: EDIT NOME (Appare in fade) ───────────────────────
-            // ── VISTA 2: EDIT NOME (Appare in fade) ───────────────────────
             Widget buildEditNameView() {
               return Column(
                 key: const ValueKey("EditNameView"),
@@ -868,7 +883,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       height: 5,
                       margin: const EdgeInsets.only(top: 16, bottom: 16),
                       decoration: BoxDecoration(
-                        color: outlineVariant.withValues(alpha: 0.5),
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -880,22 +895,22 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back,
-                            color: onSurfaceVariant,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                           style: IconButton.styleFrom(
-                            backgroundColor: surfaceContainerHigh,
+                            backgroundColor: colorScheme.surfaceContainerHigh,
                           ),
                           onPressed: goBackToMenu, // Torna fluidamente
                         ),
                         const SizedBox(width: 12),
-                        const Text(
+                        Text(
                           "Modifica Nome",
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
-                            color: onSurface,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -907,10 +922,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
+                        Text(
                           "Scegli come vuoi farti chiamare. Questo nome sarà visibile all'interno dell'app.",
                           style: TextStyle(
-                            color: onSurfaceVariant,
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 14,
                             height: 1.4,
                           ),
@@ -922,16 +937,16 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           controller: nameController,
                           focusNode: nameFocusNode,
                           textCapitalization: TextCapitalization.words,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize:
                                 14, // Uniformato alla grandezza della search bar
-                            color: onSurface,
+                            color: colorScheme.onSurface,
                           ),
-                          cursorColor: primary,
+                          cursorColor: colorScheme.primary,
                           decoration: InputDecoration(
                             hintText: "Es. Mario Rossi",
                             hintStyle: TextStyle(
-                              color: onSurfaceVariant.withValues(alpha: 0.6),
+                              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                               fontSize: 14,
                             ),
                             prefixIconConstraints: const BoxConstraints(
@@ -943,11 +958,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
                               padding: const EdgeInsets.only(left: 8.0),
                               child: Icon(
                                 Icons.badge_outlined,
-                                color: onSurfaceVariant,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                             filled: true,
-                            fillColor: surfaceContainer,
+                            fillColor: colorScheme.surfaceContainerHighest,
                             contentPadding: const EdgeInsets.symmetric(
                               vertical: 0,
                               horizontal: 16,
@@ -966,7 +981,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                             TextButton(
                               onPressed: goBackToMenu,
                               style: TextButton.styleFrom(
-                                foregroundColor: onSurfaceVariant,
+                                foregroundColor: colorScheme.onSurfaceVariant,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 12,
@@ -1009,8 +1024,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                         }
                                       : null,
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: primary,
-                                    foregroundColor: surfaceLowest,
+                                    backgroundColor: colorScheme.primary,
+                                    foregroundColor: colorScheme.onPrimary,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 24,
                                       vertical: 12,
@@ -1071,26 +1086,26 @@ class _SettingsPanelState extends State<SettingsPanel> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: surfaceLowest,
+        backgroundColor: ctx.cardBackground,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
+        title: Text(
           "Effettua l'accesso",
-          style: TextStyle(color: onSurface),
+          style: TextStyle(color: ctx.colorScheme.onSurface),
         ),
-        content: const Text(
+        content: Text(
           "Accedendo potrai sincronizzare la tua cronologia nel cloud.\nI tuoi dati locali verranno mantenuti fino al prossimo accesso.",
-          style: TextStyle(color: onSurfaceVariant),
+          style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.onSurfaceVariant),
             child: const Text("Annulla"),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: primary),
+            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.primary),
             child: const Text("Procedi"),
           ),
         ],
@@ -1113,23 +1128,23 @@ class _SettingsPanelState extends State<SettingsPanel> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: surfaceLowest,
+        backgroundColor: ctx.cardBackground,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text("Vuoi uscire?", style: TextStyle(color: onSurface)),
-        content: const Text(
+        title: Text("Vuoi uscire?", style: TextStyle(color: ctx.colorScheme.onSurface)),
+        content: Text(
           "Uscendo dal tuo account, i dati salvati su questo dispositivo verranno rimossi per privacy.\nPotrai ripristinarli al prossimo accesso.",
-          style: TextStyle(color: onSurfaceVariant),
+          style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.onSurfaceVariant),
             child: const Text("Annulla"),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: error),
+            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.error),
             child: const Text("Esci"),
           ),
         ],
@@ -1161,39 +1176,39 @@ class _SettingsPanelState extends State<SettingsPanel> {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: surfaceLowest,
+          backgroundColor: ctx.cardBackground,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: const BorderSide(color: outlineVariant, width: 1.5),
+            side: BorderSide(color: ctx.colorScheme.outlineVariant, width: 1.5),
           ),
-          icon: const Icon(Icons.security_rounded, color: primary, size: 36),
-          title: const Text(
+          icon: Icon(Icons.security_rounded, color: ctx.colorScheme.primary, size: 36),
+          title: Text(
             "Accesso richiesto per sicurezza",
             style: TextStyle(
-              color: onSurface,
+              color: ctx.colorScheme.onSurface,
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
-          content: const Text(
+          content: Text(
             "Per motivi di sicurezza, prima di procedere all'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo 'Procedi' verrai disconnesso per poter rientrare e completare l'operazione.",
-            style: TextStyle(color: onSurfaceVariant, fontSize: 14),
+            style: TextStyle(color: ctx.colorScheme.onSurfaceVariant, fontSize: 14),
             textAlign: TextAlign.center,
           ),
           actionsAlignment: MainAxisAlignment.center,
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+              style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.onSurfaceVariant),
               child: const Text("Annulla"),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(
-                backgroundColor: primary,
-                foregroundColor: Colors.white,
+                backgroundColor: ctx.colorScheme.primary,
+                foregroundColor: ctx.colorScheme.onPrimary,
               ),
               child: const Text("Procedi"),
             ),
@@ -1217,25 +1232,25 @@ class _SettingsPanelState extends State<SettingsPanel> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (dialogCtx, setDialogState) => AlertDialog(
-          backgroundColor: surfaceLowest,
+          backgroundColor: dialogCtx.cardBackground,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: const BorderSide(color: errorContainer, width: 2),
+            side: BorderSide(color: dialogCtx.colorScheme.errorContainer, width: 2),
           ),
-          icon: const Icon(Icons.warning_amber_rounded, color: error, size: 36),
-          title: const Text(
+          icon: Icon(Icons.warning_amber_rounded, color: dialogCtx.colorScheme.error, size: 36),
+          title: Text(
             "Eliminazione Definitiva",
             style: TextStyle(
-              color: error,
+              color: dialogCtx.colorScheme.error,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),
-          content: const Text(
+          content: Text(
             "Sei sicuro di voler eliminare il tuo account e tutti i dati cloud? Questa azione è IRREVERSIBILE.\n\nSaranno eliminati:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nI tuoi report inseriti rimarranno ma verranno anonimizzati.",
-            style: TextStyle(color: onSurface, fontSize: 14),
+            style: TextStyle(color: dialogCtx.colorScheme.onSurface, fontSize: 14),
             textAlign: TextAlign.center,
           ),
           actionsAlignment: MainAxisAlignment.center,
@@ -1244,7 +1259,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
               onPressed: isDeletingAccount
                   ? null
                   : () => Navigator.pop(dialogCtx),
-              style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+              style: TextButton.styleFrom(foregroundColor: dialogCtx.colorScheme.onSurfaceVariant),
               child: const Text("Annulla"),
             ),
             FilledButton(
@@ -1290,8 +1305,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       }
                     },
               style: FilledButton.styleFrom(
-                backgroundColor: error,
-                foregroundColor: surfaceLowest,
+                backgroundColor: dialogCtx.colorScheme.error,
+                foregroundColor: dialogCtx.colorScheme.onError,
                 minimumSize: const Size(0, 48),
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 shape: RoundedRectangleBorder(
@@ -1313,7 +1328,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                        color: surfaceLowest.withValues(alpha: 0.7),
+                        color: dialogCtx.colorScheme.onError.withValues(alpha: 0.7),
                         strokeWidth: 2,
                       ),
                     ),
@@ -1342,9 +1357,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
         final double sheetHeight = MediaQuery.of(ctx).size.height * 0.85;
         return Container(
           height: sheetHeight,
-          decoration: const BoxDecoration(
-            color: surfaceLowest,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          decoration: BoxDecoration(
+            color: ctx.cardBackground,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1356,7 +1371,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   height: 5,
                   margin: const EdgeInsets.only(top: 16, bottom: 24),
                   decoration: BoxDecoration(
-                    color: outlineVariant.withValues(alpha: 0.5),
+                    color: ctx.colorScheme.outlineVariant.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -1367,10 +1382,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 child: Center(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
-                      color: onSurface,
+                      color: ctx.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -1427,7 +1442,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1436,15 +1451,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
                   "Chiaro, scuro o uguale al sistema",
                   style: TextStyle(
                     fontSize: 13,
-                    color: onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.3,
                   ),
                 ),
@@ -1454,24 +1469,19 @@ class _SettingsPanelState extends State<SettingsPanel> {
           const SizedBox(width: 16),
           // Pulsante con effetto splash M3
           Material(
-            color: surfaceContainerHigh,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(16),
             clipBehavior:
                 Clip.antiAlias, // Taglia lo splash sui bordi arrotondati
             child: PopupMenuButton<String>(
               tooltip: "Scegli tema",
-              initialValue: _selectedTheme,
+              initialValue: widget.settings.preferredTheme,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              color: surfaceLowest,
+              color: Theme.of(context).cardColor,
               position: PopupMenuPosition.under,
-              onSelected: (val) => setState(() {
-                if (_selectedTheme == val) return;
-
-                _triggerToast("Preferenze salvate ed applicate!");
-                _selectedTheme = val;
-              }),
+              onSelected: (val) => _handleThemeChange(val),
               itemBuilder: (context) => const [
                 PopupMenuItem(value: 'system', child: Text("Sistema")),
                 PopupMenuItem(value: 'light', child: Text("Chiaro")),
@@ -1486,17 +1496,17 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          themeLabels[_selectedTheme] ?? 'Sistema',
-                          style: const TextStyle(
+                          themeLabels[widget.settings.preferredTheme] ?? 'Sistema',
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(
+                        Icon(
                           Icons.arrow_drop_down,
-                          color: onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ],
                     ),
@@ -1525,7 +1535,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1534,15 +1544,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
                   "Lingua preferita per gli ingredienti",
                   style: TextStyle(
                     fontSize: 13,
-                    color: onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.3,
                   ),
                 ),
@@ -1552,7 +1562,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           const SizedBox(width: 16),
           // Pulsante con effetto splash M3
           Material(
-            color: surfaceContainerHigh,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(16),
             clipBehavior: Clip.antiAlias,
             child: PopupMenuButton<String>(
@@ -1561,7 +1571,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              color: surfaceLowest,
+              color: Theme.of(context).cardColor,
               position: PopupMenuPosition.under,
               onSelected: (val) => _handleLanguageChange(val),
               itemBuilder: (context) => const [
@@ -1582,16 +1592,16 @@ class _SettingsPanelState extends State<SettingsPanel> {
                         Text(
                           langLabels[widget.settings.preferredLanguage] ??
                               'Italiano',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(
+                        Icon(
                           Icons.arrow_drop_down,
-                          color: onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ],
                     ),
@@ -1614,6 +1624,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
     bool isFirst = false,
     bool isLast = false,
   }) {
+    final colorScheme = context.colorScheme;
     return Container(
       // Manteniamo il padding dinamico
       padding: EdgeInsets.only(
@@ -1627,7 +1638,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             ? null
             : Border(
                 bottom: BorderSide(
-                  color: outlineVariant.withValues(alpha: 0.2),
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.2),
                 ),
               ),
       ),
@@ -1640,18 +1651,18 @@ class _SettingsPanelState extends State<SettingsPanel> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: onSurface,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: onSurfaceVariant,
+                    color: colorScheme.onSurfaceVariant,
                     height: 1.3,
                   ),
                 ),
@@ -1662,10 +1673,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
           Switch(
             value: value,
             onChanged: onChanged, // Solo lo Switch risponderà al tocco
-            activeThumbColor: surfaceLowest,
-            activeTrackColor: primary,
-            inactiveThumbColor: onSurfaceVariant.withValues(alpha: 0.7),
-            inactiveTrackColor: surfaceContainerHigh,
+            activeThumbColor: colorScheme.onPrimary,
+            activeTrackColor: colorScheme.primary,
+            inactiveThumbColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            inactiveTrackColor: colorScheme.surfaceContainerHigh,
             trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
           ),
         ],
@@ -1685,38 +1696,70 @@ Widget _buildLegalItem({
 }) {
   final bool hasTrailingArrow = onTap != null && showTrailingArrow;
 
-  return InkWell(
-    onTap: onTap,
-    child: Container(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: isFirst ? 24.0 : 16.0,
-        bottom: isLast ? 24.0 : 16.0,
-      ),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(
-                  color: outlineVariant.withValues(alpha: 0.2),
-                ),
-              ),
-      ),
-      child: hasTrailingArrow
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
+  return Builder(
+    builder: (context) {
+      final colorScheme = context.colorScheme;
+      return InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: isFirst ? 24.0 : 16.0,
+            bottom: isLast ? 24.0 : 16.0,
+          ),
+          decoration: BoxDecoration(
+            border: isLast
+                ? null
+                : Border(
+                    bottom: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+                    ),
+                  ),
+          ),
+          child: hasTrailingArrow
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          subtitle,
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Transform.translate(
+                      offset: const Offset(8, 0),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                        size: 26,
+                      ),
+                    ),
+                  ],
+                )
+              : SizedBox(
+                  width: double.infinity,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: onSurface,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -1724,36 +1767,9 @@ Widget _buildLegalItem({
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Transform.translate(
-                  offset: const Offset(8, 0),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    color: onSurfaceVariant.withValues(alpha: 0.3),
-                    size: 26,
-                  ),
-                ),
-              ],
-            )
-          : SizedBox(
-              width: double.infinity,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  subtitle,
-                ],
-              ),
-            ),
-    ),
+        ),
+      );
+    },
   );
 }
 

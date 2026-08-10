@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+import 'package:flutter/widgets.dart';
 
 enum GlutenSafetyStatus { adatto, nonAdatto, incerto, sconosciuto }
 
@@ -285,7 +285,18 @@ class UserSettings {
   final bool warnAdditives;
   final bool autoSaveHistory;
   final String preferredLanguage;
+  final String preferredTheme;
   final List<String> reportedBarcodes;
+
+  static String get defaultSystemLanguage {
+    try {
+      const supportedLangs = ['en', 'it', 'de', 'fr', 'es'];
+      final sys = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+      return supportedLangs.contains(sys) ? sys : 'en';
+    } catch (_) {
+      return 'en';
+    }
+  }
 
   UserSettings({
     this.userId,
@@ -294,6 +305,7 @@ class UserSettings {
     required this.warnAdditives,
     required this.autoSaveHistory,
     required this.preferredLanguage,
+    this.preferredTheme = 'system',
     this.reportedBarcodes = const [],
   });
 
@@ -304,7 +316,8 @@ class UserSettings {
       alertLactose: json['alertLactose'] ?? false,
       warnAdditives: json['warnAdditives'] ?? true,
       autoSaveHistory: json['autoSaveHistory'] ?? true,
-      preferredLanguage: json['preferredLanguage'] ?? 'it',
+      preferredLanguage: json['preferredLanguage'] ?? defaultSystemLanguage,
+      preferredTheme: json['preferredTheme'] ?? 'system',
       reportedBarcodes: List<String>.from(json['reportedBarcodes'] ?? []),
     );
   }
@@ -317,6 +330,7 @@ class UserSettings {
       'warnAdditives': warnAdditives,
       'autoSaveHistory': autoSaveHistory,
       'preferredLanguage': preferredLanguage,
+      'preferredTheme': preferredTheme,
       'reportedBarcodes': reportedBarcodes,
     };
   }

@@ -6,26 +6,7 @@ import '../models/types.dart';
 import 'responsive_wrapper.dart';
 import '../services/analyzer_service.dart';
 
-// --- Material 3 Design Colors (dal Tailwind Config) ---
-const Color bgBackground = Color(0xFFFAF9FC);
-const Color surfaceLowest = Color(0xFFFFFFFF);
-const Color surfaceLow = Color(0xFFF5F3F7);
-const Color surfaceContainer = Color(0xFFEFEDF1);
-const Color outlineVariant = Color(0xFFBFCABA);
-const Color onSurface = Color(0xFF1B1B1E);
-const Color onSurfaceVariant = Color(0xFF40493D);
-
-const Color primary = Color(0xFF0D631B);
-const Color primaryContainer = Color(0xFF2E7D32);
-
-const Color error = Color(0xFFBA1A1A);
-const Color errorContainer = Color(0xFFFFDAD6);
-
-const Color warningText = Color(0xFF884200);
-const Color warningContainer = Color(0xFFFFDCC6);
-
-const Color secondaryContainer = Color(0xFF54A0FE);
-const Color onSecondaryContainer = Color(0xFF003567);
+import '../theme/app_theme.dart';
 
 class ProductDetailCard extends StatefulWidget {
   final Product product;
@@ -43,6 +24,7 @@ class ProductDetailCard extends StatefulWidget {
   final Future<void> Function(String reportId)? onDeleteReport;
   final bool useResponsiveWrapper;
   final bool showReportLink;
+  final bool showScanDate;
   final void Function(Product product)? onViewReport;
 
   const ProductDetailCard({
@@ -61,6 +43,7 @@ class ProductDetailCard extends StatefulWidget {
     this.onDeleteReport,
     this.useResponsiveWrapper = true,
     this.showReportLink = true,
+    this.showScanDate = true,
     this.onViewReport,
   });
 
@@ -146,11 +129,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 bottom: MediaQuery.of(ctx).viewInsets.bottom,
               ),
               child: Container(
-                decoration: const BoxDecoration(
-                  color: surfaceLowest, // Sfondo bianco pulito M3
-                  borderRadius: BorderRadius.vertical(
+                decoration: BoxDecoration(
+                  color: sheetCtx.cardBackground,
+                  borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(32),
-                  ), // Raggio M3 molto morbido
+                  ),
                 ),
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
                 child: Column(
@@ -164,7 +147,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         height: 4,
                         margin: const EdgeInsets.only(bottom: 24),
                         decoration: BoxDecoration(
-                          color: outlineVariant.withValues(alpha: 0.4),
+                          color: sheetCtx.colorScheme.outlineVariant.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -176,23 +159,23 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: error.withValues(alpha: 0.1),
+                            color: sheetCtx.colorScheme.error.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.flag_rounded,
-                            color: error,
+                            color: sheetCtx.colorScheme.error,
                             size: 24,
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             "Segnala dati errati",
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w600,
-                              color: onSurface,
+                              color: sheetCtx.colorScheme.onSurface,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -200,38 +183,38 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       "Aiuta la community segnalando informazioni inesatte o etichette poco chiare.",
                       style: TextStyle(
                         fontSize: 14,
-                        color: onSurfaceVariant,
+                        color: sheetCtx.colorScheme.onSurfaceVariant,
                         height: 1.4,
                       ),
                     ),
                     const SizedBox(height: 32),
 
                     // --- Dropdown M3 ---
-                    const Text(
+                    Text(
                       "Motivo della segnalazione",
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: onSurface,
+                        color: sheetCtx.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       initialValue: _reportType,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.expand_more,
-                        color: onSurfaceVariant,
+                        color: sheetCtx.colorScheme.onSurfaceVariant,
                       ),
-                      dropdownColor: surfaceLowest,
+                      dropdownColor: sheetCtx.cardBackground,
                       elevation: 4,
                       borderRadius: BorderRadius.circular(24),
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: surfaceContainer, // Grigio morbido
+                        fillColor: sheetCtx.colorScheme.surfaceContainerHighest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
@@ -263,27 +246,27 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     const SizedBox(height: 24),
 
                     // --- TextField M3 ---
-                    const Text(
+                    Text(
                       "Dettagli (Opzionale)",
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: onSurface,
+                        color: sheetCtx.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _reportCommentsController,
                       maxLines: 3,
-                      style: const TextStyle(fontSize: 15, color: onSurface),
+                      style: TextStyle(fontSize: 15, color: sheetCtx.colorScheme.onSurface),
                       decoration: InputDecoration(
                         hintText:
                             "Es: Sulla confezione dice 'può contenere tracce'...",
                         hintStyle: TextStyle(
-                          color: onSurfaceVariant.withValues(alpha: 0.5),
+                          color: sheetCtx.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                         ),
                         filled: true,
-                        fillColor: surfaceContainer,
+                        fillColor: sheetCtx.colorScheme.surfaceContainerHighest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
@@ -302,11 +285,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               ? null
                               : () => Navigator.pop(sheetCtx),
                           style: TextButton.styleFrom(
-                            foregroundColor: onSurfaceVariant,
+                            foregroundColor: sheetCtx.colorScheme.onSurfaceVariant,
                             minimumSize: const Size(
                               0,
                               48,
-                            ), // Touch target standard M3
+                            ),
                             padding: const EdgeInsets.symmetric(horizontal: 24),
                           ),
                           child: const Text(
@@ -352,15 +335,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                     }
                                   },
                             style: FilledButton.styleFrom(
-                              backgroundColor: error,
-                              foregroundColor: surfaceLowest,
+                              backgroundColor: sheetCtx.colorScheme.error,
+                              foregroundColor: sheetCtx.colorScheme.onError,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                   999,
-                                ), // Pill shape M3
+                                ),
                               ),
                             ),
                             child: _submittingReport
@@ -368,7 +351,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
-                                      color: surfaceLowest.withValues(
+                                      color: sheetCtx.colorScheme.onError.withValues(
                                         alpha: 0.5,
                                       ),
                                       strokeWidth: 2,
@@ -454,6 +437,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     final bool showLactoseWarning =
         widget.userSettings.alertLactose && containsLactose;
 
+    final colorScheme = context.colorScheme;
+    final cardBg = context.cardBackground;
+
     Color heroBgColor;
     Color heroTextColor;
     String statusBigText;
@@ -461,26 +447,26 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
     switch (currentProduct.status) {
       case GlutenSafetyStatus.adatto:
-        heroBgColor = primary.withValues(alpha: 0.05);
-        heroTextColor = primary;
+        heroBgColor = colorScheme.primaryContainer.withValues(alpha: 0.15);
+        heroTextColor = colorScheme.primary;
         statusBigText = "SICURO";
         statusIcon = Icons.check_circle;
         break;
       case GlutenSafetyStatus.nonAdatto:
-        heroBgColor = error.withValues(alpha: 0.08);
-        heroTextColor = error;
+        heroBgColor = colorScheme.errorContainer.withValues(alpha: 0.15);
+        heroTextColor = colorScheme.error;
         statusBigText = "VIETATO";
         statusIcon = Icons.cancel;
         break;
       case GlutenSafetyStatus.incerto:
-        heroBgColor = warningContainer.withValues(alpha: 0.3);
-        heroTextColor = warningText;
+        heroBgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
+        heroTextColor = colorScheme.tertiary;
         statusBigText = "INCERTO";
         statusIcon = Icons.warning;
         break;
       case GlutenSafetyStatus.sconosciuto:
-        heroBgColor = onSurfaceVariant.withValues(alpha: 0.05);
-        heroTextColor = onSurfaceVariant;
+        heroBgColor = colorScheme.surfaceContainerHighest;
+        heroTextColor = colorScheme.onSurfaceVariant;
         statusBigText = "SCONOSCIUTO";
         statusIcon = Icons.help;
         break;
@@ -488,22 +474,22 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
     // Utilizziamo uno Scaffold interno per gestire la sua AppBar personale
     final scaffold = Scaffold(
-      backgroundColor: bgBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: surfaceLowest,
+        backgroundColor: cardBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: onSurface),
+          icon: Icon(Icons.arrow_back_ios_new, color: colorScheme.onSurface),
           onPressed: widget.onBack,
         ),
         title: Center(
-          child: const Text(
+          child: Text(
             "Dettaglio scansione",
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w500,
-              color: onSurface,
+              color: colorScheme.onSurface,
             ),
           ),
         ),
@@ -512,23 +498,24 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           if (widget.onDeleteHistoryByBarcode != null ||
               _effectiveUserReportId != null)
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: onSurfaceVariant),
-              color: surfaceLowest,
+              icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+              color: cardBg,
               onSelected: (value) {
                 if (value == 'delete_history') {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: surfaceLowest,
-                      title: const Text("Eliminare scansione?"),
-                      content: const Text(
+                      backgroundColor: cardBg,
+                      title: Text("Eliminare scansione?", style: TextStyle(color: colorScheme.onSurface)),
+                      content: Text(
                         "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
                           style: TextButton.styleFrom(
-                            foregroundColor: onSurfaceVariant,
+                            foregroundColor: colorScheme.onSurfaceVariant,
                           ),
                           child: const Text("Annulla"),
                         ),
@@ -540,7 +527,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             );
                             widget.onBack();
                           },
-                          style: TextButton.styleFrom(foregroundColor: error),
+                          style: TextButton.styleFrom(foregroundColor: colorScheme.error),
                           child: const Text("Elimina"),
                         ),
                       ],
@@ -550,16 +537,17 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: surfaceLowest,
-                      title: const Text("Eliminare segnalazione?"),
-                      content: const Text(
+                      backgroundColor: cardBg,
+                      title: Text("Eliminare segnalazione?", style: TextStyle(color: colorScheme.onSurface)),
+                      content: Text(
                         "Sei sicuro di voler eliminare questa segnalazione?",
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
                           style: TextButton.styleFrom(
-                            foregroundColor: onSurfaceVariant,
+                            foregroundColor: colorScheme.onSurfaceVariant,
                           ),
                           child: const Text("Annulla"),
                         ),
@@ -572,7 +560,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               );
                             }
                           },
-                          style: TextButton.styleFrom(foregroundColor: error),
+                          style: TextButton.styleFrom(foregroundColor: colorScheme.error),
                           child: const Text("Elimina"),
                         ),
                       ],
@@ -582,15 +570,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               },
               itemBuilder: (BuildContext context) => [
                 if (widget.onDeleteHistoryByBarcode != null)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'delete_history',
                     child: Row(
                       children: [
-                        Icon(Icons.delete, color: error, size: 20),
-                        SizedBox(width: 12),
+                        Icon(Icons.delete, color: colorScheme.error, size: 20),
+                        const SizedBox(width: 12),
                         Text(
                           "Elimina dalla cronologia",
-                          style: TextStyle(color: error),
+                          style: TextStyle(color: colorScheme.error),
                         ),
                       ],
                     ),
@@ -598,15 +586,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 if (_effectiveUserReportId != null &&
                     _effectiveUserReportId!.isNotEmpty &&
                     widget.onDeleteReport != null)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'delete_report',
                     child: Row(
                       children: [
-                        Icon(Icons.warning, color: error, size: 20),
-                        SizedBox(width: 12),
+                        Icon(Icons.warning, color: colorScheme.error, size: 20),
+                        const SizedBox(width: 12),
                         Text(
                           "Elimina segnalazione",
-                          style: TextStyle(color: error),
+                          style: TextStyle(color: colorScheme.error),
                         ),
                       ],
                     ),
@@ -656,19 +644,19 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     Text(
                       currentProduct.name,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w500,
-                        color: onSurface,
+                        color: colorScheme.onSurface,
                         height: 1.2,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       currentProduct.brand,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: onSurfaceVariant,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -701,14 +689,16 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     ),
 
                     // DATA AGGIUNTA DA RICHIESTA
-                    const SizedBox(height: 4),
-                    Text(
-                      "Scansionato il: ${formatRelativeDate(currentProduct.lastUpdated)}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: onSurfaceVariant.withValues(alpha: 0.8),
+                    if (widget.showScanDate) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        "Scansionato il: ${formatRelativeDate(currentProduct.lastUpdated)}",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -753,19 +743,19 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.leaderboard,
                               size: 18,
-                              color: onSurfaceVariant,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               "VALUTAZIONE GLUTINE",
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 0.5,
-                                color: onSurfaceVariant,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -780,9 +770,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         ),
                         child: Text(
                           displayedReasonWithOldStatus,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
-                            color: onSurface,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -793,30 +783,30 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             vertical: 14,
                           ),
                           decoration: BoxDecoration(
-                            color: warningText.withValues(alpha: 0.04),
+                            color: colorScheme.tertiary.withValues(alpha: 0.04),
                             border: Border(
                               top: BorderSide(
-                                color: outlineVariant.withValues(alpha: 0.2),
+                                color: colorScheme.outlineVariant.withValues(alpha: 0.2),
                               ),
                             ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
+                              Text(
                                 "Vai alla segnalazione",
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: warningText,
+                                  color: colorScheme.tertiary,
                                 ),
                               ),
                               Transform.translate(
                                 offset: const Offset(6, 0),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.chevron_right_rounded,
                                   size: 18,
-                                  color: warningText,
+                                  color: colorScheme.tertiary,
                                 ),
                               ),
                             ],
@@ -828,14 +818,14 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
                   return Container(
                     decoration: BoxDecoration(
-                      color: surfaceLowest,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: outlineVariant.withValues(alpha: 0.5),
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
+                          color: colorScheme.shadow.withValues(alpha: 0.02),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -859,12 +849,12 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   title: "PRESENZA LATTOSIO",
                   icon: Icons.water_drop,
                   isLactose: true,
-                  bgColor: secondaryContainer.withValues(alpha: 0.08),
+                  bgColor: colorScheme.secondaryContainer.withValues(alpha: 0.15),
                   child: Text(
                     "Questo prodotto contiene ingredienti o allergeni che indicano la presenza di lattosio. Non adatto agli intolleranti.",
                     style: TextStyle(
                       fontSize: 14,
-                      color: onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                       height: 1.4,
                     ),
                   ),
@@ -886,15 +876,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: surfaceContainer,
+                              color: colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Text(
                               alg,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: onSurfaceVariant,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           );
@@ -906,15 +896,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: surfaceContainer,
+                              color: colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(24),
                             ),
-                            child: const Text(
+                            child: Text(
                               "Nessuno dichiarato",
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: onSurfaceVariant,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -932,9 +922,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   children: [
                     Text(
                       displayedIngredients,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: onSurface,
+                        color: colorScheme.onSurface,
                         height: 1.5,
                       ),
                     ),
@@ -946,17 +936,16 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         String pillLabel;
 
                         if (item.dangerLevel == "danger") {
-                          pillBg = error.withValues(alpha: 0.1);
-                          pillText = error;
+                          pillBg = colorScheme.errorContainer.withValues(alpha: 0.2);
+                          pillText = colorScheme.error;
                           pillLabel = "Pericolo";
                         } else if (item.dangerLevel == "warning") {
-                          print("Warning ingredient: ${item.ingredient}");
-                          pillBg = warningContainer;
-                          pillText = warningText;
+                          pillBg = colorScheme.tertiaryContainer.withValues(alpha: 0.2);
+                          pillText = colorScheme.tertiary;
                           pillLabel = "Attenzione";
                         } else {
-                          pillBg = primary.withValues(alpha: 0.1);
-                          pillText = primary;
+                          pillBg = colorScheme.primaryContainer.withValues(alpha: 0.2);
+                          pillText = colorScheme.primary;
                           pillLabel = "Sicuro";
                         }
 
@@ -966,7 +955,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           decoration: BoxDecoration(
                             border: Border(
                               top: BorderSide(
-                                color: outlineVariant.withValues(alpha: 0.3),
+                                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                               ),
                             ),
                           ),
@@ -980,10 +969,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                   Expanded(
                                     child: Text(
                                       item.ingredient,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
-                                        color: onSurface,
+                                        color: colorScheme.onSurface,
                                       ),
                                     ),
                                   ),
@@ -1010,9 +999,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               const SizedBox(height: 4),
                               Text(
                                 item.reason,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
-                                  color: onSurfaceVariant,
+                                  color: colorScheme.onSurfaceVariant,
                                   height: 1.4,
                                 ),
                               ),
@@ -1033,10 +1022,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 isCaution: true,
                 child: RichText(
                   text: TextSpan(
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       height: 1.4,
-                      color: onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     children: <TextSpan>[
                       const TextSpan(
@@ -1062,19 +1051,19 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: errorContainer.withValues(alpha: 0.5),
+                    color: colorScheme.errorContainer.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(32),
                   ),
                   alignment: Alignment.center,
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle, color: error, size: 20),
-                      SizedBox(width: 8),
+                      Icon(Icons.check_circle, color: colorScheme.error, size: 20),
+                      const SizedBox(width: 8),
                       Text(
                         "Prodotto già segnalato",
                         style: TextStyle(
-                          color: error,
+                          color: colorScheme.error,
                           fontWeight: FontWeight.w500,
                           fontSize: 16,
                         ),
@@ -1086,8 +1075,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 OutlinedButton.icon(
                   onPressed: () => _showReportBottomSheet(context),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: error,
-                    side: const BorderSide(color: error, width: 1.5),
+                    foregroundColor: colorScheme.error,
+                    side: BorderSide(color: colorScheme.error, width: 1.5),
                     minimumSize: const Size(double.infinity, 56),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(32),
@@ -1121,19 +1110,22 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     bool isCaution = false,
     bool isLactose = false,
   }) {
+    final colorScheme = context.colorScheme;
+    final cardBg = context.cardBackground;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: bgColor ?? (isCaution ? surfaceContainer : surfaceLowest),
+        color: bgColor ?? (isCaution ? colorScheme.surfaceContainerHighest : cardBg),
         borderRadius: BorderRadius.circular(24),
         border: isCaution || isLactose
             ? null
-            : Border.all(color: outlineVariant.withValues(alpha: 0.5)),
+            : Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
         boxShadow: [
           if (isCaution == false &&
-              (bgColor == null || bgColor == surfaceLowest))
+              (bgColor == null || bgColor == cardBg))
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: colorScheme.shadow.withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -1149,10 +1141,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   icon,
                   size: 18,
                   color: isCaution
-                      ? onSurface
+                      ? colorScheme.onSurface
                       : isLactose
-                      ? onSecondaryContainer
-                      : onSurfaceVariant,
+                      ? colorScheme.onSecondaryContainer
+                      : colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
               ],
@@ -1163,10 +1155,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.5,
                   color: isCaution
-                      ? onSurface
+                      ? colorScheme.onSurface
                       : isLactose
-                      ? onSecondaryContainer
-                      : onSurfaceVariant,
+                      ? colorScheme.onSecondaryContainer
+                      : colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

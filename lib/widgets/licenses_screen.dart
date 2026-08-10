@@ -1,19 +1,12 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-// Usa i colori del tuo tema
-const Color bgBackground = Color(0xFFFAF9FC);
-const Color surfaceLowest = Color(0xFFFFFFFF);
-const Color onSurface = Color(0xFF1B1B1E);
-const Color onSurfaceVariant = Color(0xFF40493D);
-const Color surfaceContainerHigh = Color(0xFFE9E7EB);
-const Color primary = Color(0xFF0D631B);
-const Color outlineVariant = Color(0xFFBFCABA);
+import '../theme/app_theme.dart';
 
 class CustomLicensesPage extends StatefulWidget {
   const CustomLicensesPage({super.key});
@@ -56,23 +49,30 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final cardBg = context.cardBackground;
+
     return Scaffold(
-      backgroundColor: bgBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: bgBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: onSurface),
+          icon: Icon(Icons.arrow_back_ios_new, color: colorScheme.onSurface),
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
-        title: const Text(
+        title: Text(
           "Licenze e Note Legali",
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            color: colorScheme.onSurface,
+          ),
         ),
       ),
       body: ListView(
@@ -84,30 +84,30 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
           _buildSectionHeader(
             icon: Icons.copyright,
             title: "Licenza G-Scanner",
-            color: primary,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: surfaceLowest,
+              color: cardBg,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
             ),
             child: Text.rich(
               TextSpan(
-                style: const TextStyle(
-                  color: onSurfaceVariant,
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 13,
                   height: 1.5,
                 ),
                 children: [
-                  const TextSpan(
+                  TextSpan(
                     text:
                         "Copyright (c) 2026 Emanuele Ciotola. Tutti i diritti riservati.\n\n",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: onSurface,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const TextSpan(
@@ -117,13 +117,12 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                   const TextSpan(text: "Per qualsiasi dubbio, consulta la "),
                   TextSpan(
                     text: "Licenza Completa",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: primary,
+                      color: colorScheme.primary,
                     ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () async {
-                        // Sostituisci con il link reale alla tua repository GitHub
                         final url = Uri.parse(
                           'https://github.com/tuo-username/g-scanner/blob/main/LICENSE',
                         );
@@ -149,21 +148,21 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
           _buildSectionHeader(
             icon: Icons.source_outlined,
             title: "Fonte Dati",
-            color: primary,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: surfaceLowest,
+              color: cardBg,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
             ),
             child: Text.rich(
               TextSpan(
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: onSurfaceVariant,
+                  color: colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
                 children: [
@@ -173,9 +172,9 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                   ),
                   TextSpan(
                     text: "Open Food Facts",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: primary,
+                      color: colorScheme.primary,
                     ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () async {
@@ -195,9 +194,9 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                   ),
                   TextSpan(
                     text: "Open Database License (ODbL)",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: primary,
+                      color: colorScheme.primary,
                     ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () async {
@@ -230,7 +229,7 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
           _buildSectionHeader(
             icon: Icons.code_rounded,
             title: "Librerie Open Source",
-            color: primary,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
           Builder(
@@ -248,16 +247,16 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
               return Skeletonizer(
                 enabled: _isLoading,
                 effect: ShimmerEffect(
-                  baseColor: surfaceContainerHigh,
-                  highlightColor: surfaceLowest,
+                  baseColor: colorScheme.surfaceContainerHighest,
+                  highlightColor: cardBg,
                 ),
                 child: Material(
-                  color: surfaceLowest,
+                  color: cardBg,
                   clipBehavior: Clip.antiAlias,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                     side: BorderSide(
-                      color: outlineVariant.withValues(alpha: 0.3),
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Column(
@@ -273,8 +272,6 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
 
                       return [
                         ExpansionTile(
-                          // Rimuove i bordi nativi di default (sia a riposo che espansi)
-                          // che occupavano fisicamente 1px e causavano il distacco
                           shape: const Border(),
                           collapsedShape: const Border(),
                           tilePadding: EdgeInsets.only(
@@ -283,12 +280,12 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                             top: isFirst ? 8.0 : 0.0,
                             bottom: isLast ? 8.0 : 0.0,
                           ),
-                          iconColor: primary,
-                          collapsedIconColor: onSurfaceVariant,
+                          iconColor: colorScheme.primary,
+                          collapsedIconColor: colorScheme.onSurfaceVariant,
                           title: Text(
                             packageName,
-                            style: const TextStyle(
-                              color: onSurface,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
                               fontWeight: FontWeight.w500,
                               fontSize: 15,
                             ),
@@ -300,8 +297,8 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                                 textEntry.key == licenseTexts.length - 1;
                             return Container(
                               width: double.infinity,
-                              color: surfaceContainerHigh.withValues(
-                                alpha: 0.2,
+                              color: colorScheme.surfaceContainerHighest.withValues(
+                                alpha: 0.3,
                               ),
                               padding: EdgeInsets.only(
                                 left: 24,
@@ -311,8 +308,8 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                               ),
                               child: Text(
                                 textEntry.value,
-                                style: const TextStyle(
-                                  color: onSurfaceVariant,
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
                                   fontSize: 12,
                                   fontFamily: 'monospace',
                                 ),
@@ -334,7 +331,6 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
     );
   }
 
-  // Header IDENTICO a quello di SettingsPanel (M3 sottile ed elegante)
   Widget _buildSectionHeader({
     required IconData icon,
     required String title,

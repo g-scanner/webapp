@@ -4,23 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/types.dart';
+import '../theme/app_theme.dart';
 import 'responsive_wrapper.dart';
 import 'product_detail_card.dart';
-
-// --- Colori estratti dal tuo Tailwind Config ---
-const Color bgBackground = Color(0xFFFAF9FC);
-const Color surfaceLowest = Color(0xFFFFFFFF);
-const Color onSurface = Color(0xFF1B1B1E);
-const Color onSurfaceVariant = Color(0xFF40493D);
-const Color surfaceContainer = Color(0xFFEFEDF1);
-const Color surfaceContainerHigh = Color(0xFFE9E7EB);
-const Color surfaceContainerLow = Color(0xFFF5F3F7);
-const Color outlineVariant = Color(0xFFBFCABA);
-
-const Color primary = Color(0xFF0D631B);
-const Color error = Color(0xFFBA1A1A);
-const Color warningText = Color(0xFF884200);
-const Color warningContainer = Color(0xFFFFDCC6);
 
 class ReportDetailCard extends StatefulWidget {
   final Product product;
@@ -170,18 +156,18 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   }
 
   // Helper per ottenere colori/icone in base allo stato
-  Map<String, dynamic> _getStatusData(GlutenSafetyStatus status) {
+  Map<String, dynamic> _getStatusData(GlutenSafetyStatus status, ColorScheme colorScheme) {
     switch (status) {
       case GlutenSafetyStatus.adatto:
-        return {"text": "SICURO", "color": primary, "icon": Icons.check_circle};
+        return {"text": "SICURO", "color": colorScheme.primary, "icon": Icons.check_circle};
       case GlutenSafetyStatus.nonAdatto:
-        return {"text": "VIETATO", "color": error, "icon": Icons.cancel};
+        return {"text": "VIETATO", "color": colorScheme.error, "icon": Icons.cancel};
       case GlutenSafetyStatus.incerto:
-        return {"text": "INCERTO", "color": warningText, "icon": Icons.warning};
+        return {"text": "INCERTO", "color": colorScheme.tertiary, "icon": Icons.warning};
       default:
         return {
           "text": "SCONOSCIUTO",
-          "color": outlineVariant,
+          "color": colorScheme.outlineVariant,
           "icon": Icons.help,
         };
     }
@@ -189,8 +175,9 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
     // Ora usa l'originalStatus passato via parametro e non il current status (che sarebbe in revisione/giallo)
-    final oldStatusData = _getStatusData(widget.originalStatus);
+    final oldStatusData = _getStatusData(widget.originalStatus, colorScheme);
 
     return widget.useResponsiveWrapper
         ? ResponsiveMaxCardWidth(child: _buildContent(context, oldStatusData))
@@ -201,76 +188,83 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     BuildContext context,
     Map<String, dynamic> oldStatusData,
   ) {
+    final colorScheme = context.colorScheme;
+    final cardBg = context.cardBackground;
+
     return Scaffold(
-      backgroundColor: bgBackground,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: surfaceLowest,
+        backgroundColor: cardBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: onSurface),
+          icon: Icon(Icons.arrow_back_ios_new, color: colorScheme.onSurface),
           onPressed: widget.onBack,
         ),
-        title: const Text(
+        title: Text(
           "Revisione Segnalazione",
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w500,
-            color: onSurface,
+            color: colorScheme.onSurface,
           ),
         ),
         centerTitle: true,
         actions: [
           if (widget.isOwnReport && widget.onDeleteReport != null)
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: onSurfaceVariant),
-              color: surfaceLowest,
+              icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+              color: cardBg,
               onSelected: (value) {
                 if (value == 'delete_report') {
                   showDialog(
                     context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: surfaceLowest,
-                      title: const Text("Eliminare segnalazione?"),
-                      content: const Text(
-                        "Sei sicuro di voler eliminare questa segnalazione?",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          style: TextButton.styleFrom(
-                            foregroundColor: onSurfaceVariant,
+                    builder: (ctx) {
+                      final ctxColorScheme = ctx.colorScheme;
+                      final ctxCardBg = ctx.cardBackground;
+                      return AlertDialog(
+                        backgroundColor: ctxCardBg,
+                        title: const Text("Eliminare segnalazione?"),
+                        content: const Text(
+                          "Sei sicuro di voler eliminare questa segnalazione?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: TextButton.styleFrom(
+                              foregroundColor: ctxColorScheme.onSurfaceVariant,
+                            ),
+                            child: const Text("Annulla"),
                           ),
-                          child: const Text("Annulla"),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            Navigator.pop(ctx);
-                            final targetId =
-                                widget.reportId ?? _activeReport?.id;
-                            if (targetId != null) {
-                              await widget.onDeleteReport!(targetId);
-                            }
-                            if (mounted) widget.onBack();
-                          },
-                          style: TextButton.styleFrom(foregroundColor: error),
-                          child: const Text("Elimina"),
-                        ),
-                      ],
-                    ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.pop(ctx);
+                              final targetId =
+                                  widget.reportId ?? _activeReport?.id;
+                              if (targetId != null) {
+                                await widget.onDeleteReport!(targetId);
+                              }
+                              if (mounted) widget.onBack();
+                            },
+                            style: TextButton.styleFrom(foregroundColor: ctxColorScheme.error),
+                            child: const Text("Elimina"),
+                          ),
+                        ],
+                      );
+                    },
                   );
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete_report',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline, color: error, size: 20),
-                      SizedBox(width: 12),
+                      Icon(Icons.delete_outline, color: colorScheme.error, size: 20),
+                      const SizedBox(width: 12),
                       Text(
                         "Elimina segnalazione",
-                        style: TextStyle(color: error),
+                        style: TextStyle(color: colorScheme.error),
                       ),
                     ],
                   ),
@@ -288,7 +282,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: warningContainer.withValues(alpha: 0.3),
+                color: colorScheme.tertiaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
@@ -297,12 +291,12 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Color(0xFF884200).withValues(alpha: 0.1),
+                      color: colorScheme.tertiary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.warning,
-                      color: Color(0xFF884200),
+                      color: colorScheme.tertiary,
                       size: 48,
                     ),
                   ),
@@ -310,19 +304,19 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                   Text(
                     widget.product.name,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w500,
-                      color: onSurface,
+                      color: colorScheme.onSurface,
                       height: 1.2,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     widget.product.brand,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -334,20 +328,20 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Color(0xFF884200).withValues(alpha: 0.1),
+                      color: colorScheme.tertiary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.qr_code, size: 16, color: Color(0xFF884200)),
+                        Icon(Icons.qr_code, size: 16, color: colorScheme.tertiary),
                         const SizedBox(width: 8),
                         SelectableText(
                           widget.product.barcode,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF884200),
+                            color: colorScheme.tertiary,
                           ),
                         ),
                       ],
@@ -355,13 +349,45 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                   ),
 
                   // DATA AGGIUNTA DA RICHIESTA
-                  const SizedBox(height: 4),
-                  Text(
-                    "Segnalato il: ${widget.reportDate}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: onSurfaceVariant.withValues(alpha: 0.8),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final String effectiveReportDate =
+                          (_activeReport?.submittedAt != null &&
+                                  _activeReport!.submittedAt.isNotEmpty)
+                              ? formatRelativeDate(_activeReport!.submittedAt)
+                              : widget.reportDate;
+
+                      if (effectiveReportDate.isNotEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Text(
+                            "Segnalato il: $effectiveReportDate",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        );
+                      }
+
+                      if (_isVoteLoading) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Skeletonizer(
+                            enabled: true,
+                            child: Text(
+                              "Segnalato il: 00/00/0000",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return const SizedBox.shrink();
+                    },
                   ),
                 ],
               ),
@@ -394,6 +420,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                               preferredLanguage: 'it',
                             ),
                         showReportLink: false,
+                        showScanDate: false,
                         useResponsiveWrapper: widget.useResponsiveWrapper,
                       ),
                     ),
@@ -403,14 +430,14 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: surfaceLowest,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: outlineVariant.withValues(alpha: 0.5),
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: onSurface.withValues(alpha: 0.03),
+                        color: colorScheme.onSurface.withValues(alpha: 0.03),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -421,19 +448,19 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       // Icona neutra a sinistra
                       Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                          color: surfaceContainerHigh,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHigh,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.inventory_2_outlined,
                           size: 20,
-                          color: onSurfaceVariant,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(width: 16),
                       // Testo
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -442,25 +469,25 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: onSurface,
+                                color: colorScheme.onSurface,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               "Ingredienti, allergeni e note.",
                               style: TextStyle(
                                 fontSize: 13,
-                                color: onSurfaceVariant,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
                       ),
                       // Freccia a destra per indicare la navigazione
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
                         size: 24,
-                        color: outlineVariant,
+                        color: colorScheme.outlineVariant,
                       ),
                     ],
                   ),
@@ -470,6 +497,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
             // ── Vecchio Stato del Prodotto ────────────────────────────
             _buildSectionCard(
+              colorScheme: colorScheme,
+              cardBg: cardBg,
               title: "STATO PRECEDENTE",
               icon: Icons.history,
               child: Row(
@@ -496,7 +525,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         "Risultato registrato da Open Food Facts",
                         style: TextStyle(
                           fontSize: 12,
-                          color: onSurfaceVariant.withValues(alpha: 0.7),
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -508,6 +537,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
             // ── Dettagli Segnalazione Utente (NUOVO DESIGN) ───────────
             _buildSectionCard(
+              colorScheme: colorScheme,
+              cardBg: cardBg,
               title: "DETTAGLI SEGNALAZIONE",
               icon: Icons.chat_bubble_outline,
               child: Column(
@@ -520,15 +551,15 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       Expanded(
                         child: RichText(
                           text: TextSpan(
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: onSurface,
+                              color: colorScheme.onSurface,
                               height: 1.3,
                             ),
                             children: [
-                              const TextSpan(
+                              TextSpan(
                                 text: "Motivo: ",
-                                style: TextStyle(color: onSurfaceVariant),
+                                style: TextStyle(color: colorScheme.onSurfaceVariant),
                               ),
                               TextSpan(
                                 text: _translateReason(
@@ -548,12 +579,12 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                   const SizedBox(height: 12),
 
                   // Commento dell'utente stile "Blockquote"
-                  const Text(
+                  Text(
                     "Commento dell'utente",
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: outlineVariant,
+                      color: colorScheme.outlineVariant,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -564,7 +595,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     decoration: BoxDecoration(
                       border: Border(
                         left: BorderSide(
-                          color: outlineVariant.withValues(alpha: 0.6),
+                          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
                           width: 4,
                         ),
                       ),
@@ -584,7 +615,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                                   (_activeReport?.comments ?? "").isEmpty
                               ? FontStyle.normal
                               : FontStyle.italic,
-                          color: onSurface,
+                          color: colorScheme.onSurface,
                           height: 1.4,
                         ),
                       ),
@@ -602,12 +633,12 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                 child: Center(
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         "Sei d'accordo con questa segnalazione?",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: onSurfaceVariant,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -617,37 +648,37 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: surfaceContainerHigh,
+                          color: colorScheme.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.thumb_up_outlined,
                               size: 20,
-                              color: onSurfaceVariant,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               "0",
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: onSurfaceVariant,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(width: 20),
                             Container(
                               width: 1,
                               height: 24,
-                              color: outlineVariant,
+                              color: colorScheme.outlineVariant,
                             ),
                             const SizedBox(width: 20),
-                            const Icon(
+                            Icon(
                               Icons.thumb_down_outlined,
                               size: 20,
-                              color: onSurfaceVariant,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -660,18 +691,18 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
               Center(
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       "Sei d'accordo con questa segnalazione?",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: onSurfaceVariant,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Container(
                       decoration: BoxDecoration(
-                        color: surfaceContainerHigh,
+                        color: colorScheme.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Row(
@@ -698,8 +729,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                                           : Icons.thumb_up_outlined,
                                       size: 20,
                                       color: _currentVote == 1
-                                          ? onSurface
-                                          : onSurfaceVariant,
+                                          ? colorScheme.onSurface
+                                          : colorScheme.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
@@ -712,8 +743,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                                             ? FontWeight.bold
                                             : FontWeight.w600,
                                         color: _currentVote == 1
-                                            ? onSurface
-                                            : onSurfaceVariant,
+                                            ? colorScheme.onSurface
+                                            : colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -724,7 +755,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                           Container(
                             width: 1,
                             height: 24,
-                            color: outlineVariant.withValues(alpha: 0.5),
+                            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                           ),
                           Material(
                             color: Colors.transparent,
@@ -745,8 +776,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                                       : Icons.thumb_down_outlined,
                                   size: 20,
                                   color: _currentVote == -1
-                                      ? onSurface
-                                      : onSurfaceVariant,
+                                      ? colorScheme.onSurface
+                                      : colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -765,6 +796,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   }
 
   Widget _buildSectionCard({
+    required ColorScheme colorScheme,
+    required Color cardBg,
     required String title,
     IconData? icon,
     required Widget child,
@@ -772,12 +805,12 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: surfaceLowest,
+        color: cardBg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: onSurface.withValues(alpha: 0.02),
+            color: colorScheme.onSurface.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -789,16 +822,16 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 18, color: onSurfaceVariant),
+                Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
                 const SizedBox(width: 8),
               ],
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
-                  color: onSurfaceVariant,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

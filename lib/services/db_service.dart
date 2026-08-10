@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/types.dart';
@@ -1160,14 +1161,23 @@ class DbService {
         print("Error parsing local settings: $e");
       }
     }
-    return UserSettings(
+    // Primo avvio: nessuna impostazione salvata → usa la lingua di sistema
+    const supportedLangs = ['en', 'it', 'de', 'fr', 'es'];
+    final systemLocale = PlatformDispatcher.instance.locale.languageCode;
+    final defaultLang = supportedLangs.contains(systemLocale) ? systemLocale : 'en';
+
+    final defaultSettings = UserSettings(
       strictMode: true,
       alertLactose: false,
       warnAdditives: true,
       autoSaveHistory: true,
-      preferredLanguage: "it",
+      preferredLanguage: defaultLang,
+      preferredTheme: 'system',
       reportedBarcodes: const [],
     );
+    // Salva subito così al secondo avvio si usa questa lingua e non ripetiamo il check
+    await saveLocalSettings(defaultSettings);
+    return defaultSettings;
   }
 
   static Future<void> saveLocalSettings(UserSettings settings) async {
@@ -1177,6 +1187,7 @@ class DbService {
 
   static Future<void> saveSettings(UserSettings settings) async {
     final user = auth.currentUser;
+
     final effectiveSettings = user != null && !user.isAnonymous
         ? UserSettings(
             userId: user.uid,
@@ -1185,11 +1196,15 @@ class DbService {
             warnAdditives: settings.warnAdditives,
             autoSaveHistory: settings.autoSaveHistory,
             preferredLanguage: settings.preferredLanguage,
+            preferredTheme: settings.preferredTheme,
             reportedBarcodes: settings.reportedBarcodes,
           )
         : settings;
 
+    // Salva sempre in locale (sia per utenti registrati che anonimi)
     await saveLocalSettings(effectiveSettings);
+
+    // Salva su Firestore solo se l'utente non è anonimo
     if (user != null && !user.isAnonymous) {
       try {
         await db
@@ -1217,15 +1232,27 @@ class DbService {
         warnAdditives: localSettings.warnAdditives,
         autoSaveHistory: localSettings.autoSaveHistory,
         preferredLanguage: localSettings.preferredLanguage,
+        preferredTheme: localSettings.preferredTheme,
         reportedBarcodes: localSettings.reportedBarcodes,
       );
 
       if (docSnap.exists && docSnap.data() != null) {
-        final firestoreSettings = UserSettings.fromJson(docSnap.data()!);
+        final dataMap = docSnap.data()!;
+        final firestoreSettings = UserSettings.fromJson(dataMap);
 
         final localBarcodes = effectiveLocalSettings.reportedBarcodes;
         final remoteBarcodes = firestoreSettings.reportedBarcodes;
         final mergedBarcodes = {...localBarcodes, ...remoteBarcodes}.toList();
+
+        final String effectiveLang =
+            dataMap.containsKey('preferredLanguage') && dataMap['preferredLanguage'] != null
+                ? firestoreSettings.preferredLanguage
+                : effectiveLocalSettings.preferredLanguage;
+
+        final String effectiveTheme =
+            dataMap.containsKey('preferredTheme') && dataMap['preferredTheme'] != null
+                ? firestoreSettings.preferredTheme
+                : effectiveLocalSettings.preferredTheme;
 
         final mergedSettings = UserSettings(
           userId: user.uid,
@@ -1233,7 +1260,8 @@ class DbService {
           alertLactose: firestoreSettings.alertLactose,
           warnAdditives: firestoreSettings.warnAdditives,
           autoSaveHistory: firestoreSettings.autoSaveHistory,
-          preferredLanguage: firestoreSettings.preferredLanguage,
+          preferredLanguage: effectiveLang,
+          preferredTheme: effectiveTheme,
           reportedBarcodes: mergedBarcodes,
         );
 
@@ -1263,6 +1291,7 @@ class DbService {
       warnAdditives: localSettings.warnAdditives,
       autoSaveHistory: localSettings.autoSaveHistory,
       preferredLanguage: localSettings.preferredLanguage,
+      preferredTheme: localSettings.preferredTheme,
       reportedBarcodes: localSettings.reportedBarcodes,
     );
   }
@@ -1535,5 +1564,19 @@ class DbService {
     } catch (e) {
       print("Errore durante il wipe dei dati locali dell'utente: $e");
     }
+  }
+
+  // ─── Consenso Termini ───────────────────────────────────────────────────────
+
+  static const String _termsKey = 'gscanner_terms_accepted';
+
+  static Future<bool> hasAcceptedTerms() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_termsKey) ?? false;
+  }
+
+  static Future<void> saveTermsAccepted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_termsKey, true);
   }
 }

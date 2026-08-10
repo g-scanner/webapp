@@ -1,24 +1,12 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../models/types.dart';
 import '../services/analyzer_service.dart';
+import '../theme/app_theme.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-// --- Colori estratti dal tuo Tailwind Config ---
-const Color bgBackground = Color(0xFFFAF9FC);
-const Color surfaceLowest = Color(0xFFFFFFFF);
-const Color onSurface = Color(0xFF1B1B1E);
-const Color onSurfaceVariant = Color(0xFF40493D);
-const Color surfaceContainer = Color(0xFFEFEDF1);
-const Color surfaceContainerHigh = Color(0xFFE9E7EB);
-const Color surfaceContainerLow = Color(0xFFF5F3F7);
-const Color outlineVariant = Color(0xFFBFCABA);
-
-const Color primary = Color(0xFF0D631B);
-const Color error = Color(0xFFBA1A1A);
-const Color warningText = Color(0xFF884200);
 
 class HistoryList extends StatefulWidget {
   final List<ScanHistoryItem> history;
@@ -78,18 +66,25 @@ class _HistoryListState extends State<HistoryList> {
   }
 
   void _confirmDelete(String id) {
+    final colorScheme = context.colorScheme;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: surfaceLowest,
-        title: const Text("Eliminare scansione?"),
-        content: const Text(
+        backgroundColor: context.cardBackground,
+        title: Text(
+          "Eliminare scansione?",
+          style: TextStyle(color: colorScheme.onSurface),
+        ),
+        content: Text(
           "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            style: TextButton.styleFrom(foregroundColor: onSurfaceVariant),
+            style: TextButton.styleFrom(
+              foregroundColor: colorScheme.onSurfaceVariant,
+            ),
             child: const Text("Annulla"),
           ),
           TextButton(
@@ -97,7 +92,7 @@ class _HistoryListState extends State<HistoryList> {
               Navigator.of(ctx).pop();
               widget.onDeleteHistoryItem(id);
             },
-            style: TextButton.styleFrom(foregroundColor: error),
+            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
             child: const Text("Elimina"),
           ),
         ],
@@ -119,23 +114,28 @@ class _HistoryListState extends State<HistoryList> {
   }
 
   Widget _buildLactoseTag() {
+    final colorScheme = context.colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF54A0FE).withValues(alpha: 0.15),
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.water_drop_outlined, size: 14, color: Color(0xFF003567)),
-          SizedBox(width: 4),
+          Icon(
+            Icons.water_drop_outlined,
+            size: 14,
+            color: colorScheme.onSecondaryContainer,
+          ),
+          const SizedBox(width: 4),
           Text(
             "Lattosio",
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF003567),
+              color: colorScheme.onSecondaryContainer,
               letterSpacing: 0.2,
             ),
           ),
@@ -145,47 +145,50 @@ class _HistoryListState extends State<HistoryList> {
   }
 
   Color _getFilterColor() {
+    final colorScheme = context.colorScheme;
     switch (_filter) {
       case GlutenSafetyStatus.adatto:
-        return primary.withValues(alpha: 0.12);
+        return colorScheme.primary.withValues(alpha: 0.12);
       case GlutenSafetyStatus.incerto:
-        return warningText.withValues(alpha: 0.12);
+        return colorScheme.tertiary.withValues(alpha: 0.12);
       case GlutenSafetyStatus.nonAdatto:
-        return error.withValues(alpha: 0.12);
+        return colorScheme.error.withValues(alpha: 0.12);
       case GlutenSafetyStatus.sconosciuto:
-        return outlineVariant.withValues(alpha: 0.2);
+        return colorScheme.outlineVariant.withValues(alpha: 0.2);
       default:
-        return surfaceContainer;
+        return colorScheme.surfaceContainerHighest;
     }
   }
 
   Color _getFilterTextColor() {
+    final colorScheme = context.colorScheme;
     switch (_filter) {
       case GlutenSafetyStatus.adatto:
-        return primary;
+        return colorScheme.primary;
       case GlutenSafetyStatus.incerto:
-        return warningText;
+        return colorScheme.tertiary;
       case GlutenSafetyStatus.nonAdatto:
-        return error;
+        return colorScheme.error;
       case GlutenSafetyStatus.sconosciuto:
-        return onSurfaceVariant;
+        return colorScheme.onSurfaceVariant;
       default:
-        return onSurfaceVariant.withValues(alpha: 0.6);
+        return colorScheme.onSurfaceVariant.withValues(alpha: 0.6);
     }
   }
 
   Color _getFilterIconColor() {
+    final colorScheme = context.colorScheme;
     switch (_filter) {
       case GlutenSafetyStatus.adatto:
-        return primary;
+        return colorScheme.primary;
       case GlutenSafetyStatus.incerto:
-        return warningText;
+        return colorScheme.tertiary;
       case GlutenSafetyStatus.nonAdatto:
-        return error;
+        return colorScheme.error;
       case GlutenSafetyStatus.sconosciuto:
-        return onSurfaceVariant;
+        return colorScheme.onSurfaceVariant;
       default:
-        return onSurfaceVariant.withValues(alpha: 0.6);
+        return colorScheme.onSurfaceVariant.withValues(alpha: 0.6);
     }
   }
 
@@ -195,6 +198,9 @@ class _HistoryListState extends State<HistoryList> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final cardBg = context.cardBackground;
+
     // 1. SINCRONIZZAZIONE LIVE DEGLI STATI
     // Incrocia la cronologia con il database prodotti scaricato all'avvio
     final List<ScanHistoryItem> syncedHistory = widget.history.map((item) {
@@ -280,8 +286,8 @@ class _HistoryListState extends State<HistoryList> {
 
     return RefreshIndicator(
       onRefresh: widget.onRefresh,
-      color: primary,
-      backgroundColor: surfaceLowest,
+      color: colorScheme.primary,
+      backgroundColor: cardBg,
       displacement: 15.0,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -290,20 +296,20 @@ class _HistoryListState extends State<HistoryList> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── Intestazione Pagina ─────────────────────────────────────
-            const Text(
+            Text(
               "Cronologia Scansioni",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
-                color: onSurface,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "Rivedi i prodotti che hai scansionato e i loro controlli di sicurezza.",
               style: TextStyle(
                 fontSize: 14,
-                color: onSurfaceVariant,
+                color: colorScheme.onSurfaceVariant,
                 height: 1.4,
               ),
             ),
@@ -318,21 +324,21 @@ class _HistoryListState extends State<HistoryList> {
                     _buildStatBox(
                       count: safeCount.toString(),
                       label: "Idonei",
-                      color: primary,
+                      color: colorScheme.primary,
                       icon: Icons.check_circle,
                     ),
                     const SizedBox(width: 12),
                     _buildStatBox(
                       count: uncertainCount.toString(),
                       label: "Incerti",
-                      color: warningText,
+                      color: colorScheme.tertiary,
                       icon: Icons.warning_rounded,
                     ),
                     const SizedBox(width: 12),
                     _buildStatBox(
                       count: dangerCount.toString(),
                       label: "Vietati",
-                      color: error,
+                      color: colorScheme.error,
                       icon: Icons.cancel,
                     ),
                   ],
@@ -350,11 +356,16 @@ class _HistoryListState extends State<HistoryList> {
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     onChanged: (val) => setState(() => _search = val),
-                    style: const TextStyle(fontSize: 14, color: onSurface),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface,
+                    ),
                     decoration: InputDecoration(
                       hintText: "Cerca prodotto...",
                       hintStyle: TextStyle(
-                        color: onSurfaceVariant.withValues(alpha: 0.6),
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.6,
+                        ),
                         fontSize: 14,
                       ),
                       prefixIconConstraints: const BoxConstraints(
@@ -376,9 +387,9 @@ class _HistoryListState extends State<HistoryList> {
                           child: showClearIcon
                               ? IconButton(
                                   key: const ValueKey('clearIcon'),
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.close,
-                                    color: onSurfaceVariant,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                   onPressed: () {
                                     _searchController.clear();
@@ -389,16 +400,18 @@ class _HistoryListState extends State<HistoryList> {
                                   },
                                 )
                               : Icon(
-                                  key: ValueKey('searchIcon'),
+                                  key: const ValueKey('searchIcon'),
                                   Icons.search,
                                   color: _search.isNotEmpty
-                                      ? onSurfaceVariant
-                                      : onSurfaceVariant.withValues(alpha: 0.6),
+                                      ? colorScheme.onSurfaceVariant
+                                      : colorScheme.onSurfaceVariant.withValues(
+                                          alpha: 0.6,
+                                        ),
                                 ),
                         ),
                       ),
                       filled: true,
-                      fillColor: surfaceContainer,
+                      fillColor: colorScheme.surfaceContainerHighest,
                       contentPadding: const EdgeInsets.symmetric(
                         vertical: 0,
                         horizontal: 16,
@@ -442,7 +455,7 @@ class _HistoryListState extends State<HistoryList> {
                         child: Text(
                           "Tutti",
                           style: _dropdownItemTextStyle(
-                            onSurfaceVariant.withValues(alpha: 0.6),
+                            colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                           ),
                         ),
                       ),
@@ -450,28 +463,30 @@ class _HistoryListState extends State<HistoryList> {
                         value: GlutenSafetyStatus.adatto,
                         child: Text(
                           "Sicuri",
-                          style: _dropdownItemTextStyle(primary),
+                          style: _dropdownItemTextStyle(colorScheme.primary),
                         ),
                       ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.incerto,
                         child: Text(
                           "Incerti",
-                          style: _dropdownItemTextStyle(warningText),
+                          style: _dropdownItemTextStyle(colorScheme.tertiary),
                         ),
                       ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.nonAdatto,
                         child: Text(
                           "Vietati",
-                          style: _dropdownItemTextStyle(error),
+                          style: _dropdownItemTextStyle(colorScheme.error),
                         ),
                       ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.sconosciuto,
                         child: Text(
                           "Scon.",
-                          style: _dropdownItemTextStyle(onSurfaceVariant),
+                          style: _dropdownItemTextStyle(
+                            colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ],
@@ -518,30 +533,33 @@ class _HistoryListState extends State<HistoryList> {
                     Container(
                       width: 80,
                       height: 80,
-                      decoration: const BoxDecoration(
-                        color: surfaceContainer,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.history,
                         size: 40,
-                        color: outlineVariant,
+                        color: colorScheme.outlineVariant,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       "Nessuna scansione trovata",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: onSurface,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       "Quando scansionerai un prodotto, apparirà qui.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: onSurfaceVariant),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -593,6 +611,7 @@ class _HistoryListState extends State<HistoryList> {
   }
 
   Widget _buildStatusTag(GlutenSafetyStatus status) {
+    final colorScheme = context.colorScheme;
     Color bgColor;
     Color textColor;
     String label;
@@ -600,26 +619,26 @@ class _HistoryListState extends State<HistoryList> {
 
     switch (status) {
       case GlutenSafetyStatus.adatto:
-        bgColor = primary.withValues(alpha: 0.12);
-        textColor = primary;
+        bgColor = colorScheme.primaryContainer.withValues(alpha: 0.15);
+        textColor = colorScheme.primary;
         label = "Sicuro - non contiene glutine";
         icon = Icons.check_circle_outline;
         break;
       case GlutenSafetyStatus.nonAdatto:
-        bgColor = error.withValues(alpha: 0.12);
-        textColor = error;
+        bgColor = colorScheme.errorContainer.withValues(alpha: 0.15);
+        textColor = colorScheme.error;
         label = "Vietato - contiene glutine";
         icon = Icons.cancel_outlined;
         break;
       case GlutenSafetyStatus.incerto:
-        bgColor = warningText.withValues(alpha: 0.12);
-        textColor = warningText;
+        bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
+        textColor = colorScheme.tertiary;
         label = "Incerto - potrebbe contenere glutine";
         icon = Icons.help_outline;
         break;
       case GlutenSafetyStatus.sconosciuto:
-        bgColor = outlineVariant.withValues(alpha: 0.2);
-        textColor = onSurfaceVariant;
+        bgColor = colorScheme.surfaceContainerHighest;
+        textColor = colorScheme.onSurfaceVariant;
         label = "Sconosciuto - nessuna informazione disponibile";
         icon = Icons.search_off;
         break;
@@ -655,20 +674,25 @@ class _HistoryListState extends State<HistoryList> {
   }
 
   Widget _buildHistoryCard(ScanHistoryItem item) {
+    final colorScheme = context.colorScheme;
+    final cardBg = context.cardBackground;
+
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
-      color: surfaceLowest,
+      color: cardBg,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: outlineVariant.withValues(alpha: 0.3)),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
       ),
       child: InkWell(
         onTap: () => widget.onSelectItem(item.barcode),
         onLongPress: () => _confirmDelete(item.id),
-        hoverColor: surfaceContainerHigh,
-        highlightColor: surfaceContainerLow,
+        hoverColor: colorScheme.surfaceContainerHighest,
+        highlightColor: context.surfaceContainerLow,
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Row(
@@ -693,10 +717,10 @@ class _HistoryListState extends State<HistoryList> {
                       item.productName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: onSurface,
+                        color: colorScheme.onSurface,
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -712,7 +736,9 @@ class _HistoryListState extends State<HistoryList> {
                             Icon(
                               Icons.storefront_outlined,
                               size: 14,
-                              color: onSurfaceVariant.withValues(alpha: 0.6),
+                              color: colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.6,
+                              ),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
@@ -722,9 +748,8 @@ class _HistoryListState extends State<HistoryList> {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: onSurfaceVariant.withValues(
-                                    alpha: 0.9,
-                                  ),
+                                  color: colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.9),
                                 ),
                               ),
                             ),
@@ -736,7 +761,9 @@ class _HistoryListState extends State<HistoryList> {
                             Icon(
                               Icons.calendar_month_outlined,
                               size: 14,
-                              color: onSurfaceVariant.withValues(alpha: 0.4),
+                              color: colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.4,
+                              ),
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -744,7 +771,9 @@ class _HistoryListState extends State<HistoryList> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: onSurfaceVariant.withValues(alpha: 0.6),
+                                color: colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.6,
+                                ),
                               ),
                             ),
                           ],
@@ -761,7 +790,7 @@ class _HistoryListState extends State<HistoryList> {
                   offset: const Offset(8, 0),
                   child: Icon(
                     Icons.chevron_right_rounded,
-                    color: onSurfaceVariant.withValues(alpha: 0.3),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                     size: 26,
                   ),
                 ),

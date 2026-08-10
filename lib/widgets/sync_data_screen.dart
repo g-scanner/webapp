@@ -1,14 +1,8 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
-
-const Color surfaceLowest = Color(0xFFFFFFFF);
-const Color surfaceVariant = Color(0xFFE3E2E6);
-const Color primary = Color(0xFF0D631B);
-const Color onPrimary = Color(0xFFFFFFFF);
-const Color onSurface = Color(0xFF1B1B1E);
-const Color onSurfaceVariant = Color(0xFF40493D);
-const Color error = Color(0xFFBA1A1A);
+import '../theme/app_theme.dart';
 
 class SyncDataScreen extends StatelessWidget {
   final int historyCount;
@@ -22,6 +16,8 @@ class SyncDataScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
@@ -35,25 +31,25 @@ class SyncDataScreen extends StatelessWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: primary.withValues(alpha: 0.1),
+                color: colorScheme.primary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.cloud_sync_outlined,
                 size: 64,
-                color: primary,
+                color: colorScheme.primary,
               ),
             ),
             const SizedBox(height: 32),
 
             // Testi
-            const Text(
+            Text(
               "Dati Locali Rilevati",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: onSurface,
+                color: colorScheme.onSurface,
                 letterSpacing: -0.5,
               ),
             ),
@@ -61,9 +57,9 @@ class SyncDataScreen extends StatelessWidget {
             Text(
               "Abbiamo trovato $historyCount scansioni effettuate in precedenza sul tuo telefono.\n\nOra che hai un account, vuoi collegare questi dati al tuo profilo o preferisci iniziare da zero?",
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: onSurfaceVariant,
+                color: colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
             ),
@@ -76,8 +72,8 @@ class SyncDataScreen extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () => onDecision(true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: onPrimary,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -99,8 +95,8 @@ class SyncDataScreen extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () => onDecision(false),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: error,
-                  side: const BorderSide(color: error),
+                  foregroundColor: colorScheme.error,
+                  side: BorderSide(color: colorScheme.error),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999),

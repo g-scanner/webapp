@@ -1,29 +1,13 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/widgets/report_detail_card.dart';
 import '../models/types.dart';
+import '../theme/app_theme.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-// --- Colori estratti dal tuo Tailwind Config ---
-const Color bgBackground = Color(0xFFFAF9FC);
-const Color surfaceLowest = Color(0xFFFFFFFF);
-const Color onSurface = Color(0xFF1B1B1E);
-const Color onSurfaceVariant = Color(0xFF40493D);
-const Color surfaceContainer = Color(0xFFEFEDF1);
-const Color surfaceContainerHigh = Color(0xFFE9E7EB);
-const Color surfaceContainerLow = Color(0xFFF5F3F7);
-const Color outlineVariant = Color(0xFFBFCABA);
-
-const Color primary = Color(0xFF0D631B);
-const Color error = Color(0xFFBA1A1A);
-const Color warningText = Color(0xFF884200);
-
-// --- Colori per il Filtro Selezionato ---
-const Color secondaryContainer = Color(0xFF54A0FE);
-const Color onSecondaryContainer = Color(0xFF003567);
 
 class DatabaseProducts extends StatefulWidget {
   final List<Product> products;
@@ -87,6 +71,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final cardBg = context.cardBackground;
+
     // Estrai i prodotti con segnalazioni, ordinati per data decrescente
     final reportedProducts =
         widget.products.where((p) => (p.reportCount ?? 0) > 0).toList()
@@ -140,19 +127,19 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
     // --- Variabili di Stile Dinamiche per il Filtro ---
     final bool isMineSelected = _reportFilter == "Mie";
     final Color filterBgColor = isMineSelected
-        ? secondaryContainer.withValues(alpha: 0.15)
-        : surfaceContainer;
+        ? colorScheme.secondaryContainer.withValues(alpha: 0.15)
+        : colorScheme.surfaceContainerHighest;
     final Color filterTextColor = isMineSelected
-        ? onSecondaryContainer
-        : onSurface;
+        ? colorScheme.onSecondaryContainer
+        : colorScheme.onSurface;
     final Color filterIconColor = isMineSelected
-        ? onSecondaryContainer
-        : onSurfaceVariant.withValues(alpha: 0.6);
+        ? colorScheme.onSecondaryContainer
+        : colorScheme.onSurfaceVariant.withValues(alpha: 0.6);
 
     return RefreshIndicator(
       onRefresh: widget.onRefresh,
-      color: primary,
-      backgroundColor: surfaceLowest,
+      color: colorScheme.primary,
+      backgroundColor: cardBg,
       displacement: 15.0,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -161,20 +148,20 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── Intestazione Pagina ─────────────────────────────────────
-            const Text(
+            Text(
               "Segnalazioni",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
-                color: onSurface,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "Seleziona un prodotto per esaminare i dettagli inviati dalla community e approvare o respingere le modifiche.",
               style: TextStyle(
                 fontSize: 14,
-                color: onSurfaceVariant,
+                color: colorScheme.onSurfaceVariant,
                 height: 1.4,
               ),
             ),
@@ -190,14 +177,14 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: surfaceLowest,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: outlineVariant.withValues(alpha: 0.3),
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: onSurface.withValues(alpha: 0.02),
+                        color: colorScheme.onSurface.withValues(alpha: 0.02),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -208,22 +195,22 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: warningText.withValues(alpha: 0.12),
+                          color: colorScheme.tertiary.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.pending_actions,
                           size: 20,
-                          color: warningText,
+                          color: colorScheme.tertiary,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
+                      Text(
                         "Segnalazioni attive",
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: onSurface,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       const Spacer(),
@@ -234,8 +221,8 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                         ),
                         decoration: BoxDecoration(
                           color: showSkeleton
-                              ? warningText.withValues(alpha: 0.18)
-                              : warningText,
+                              ? colorScheme.tertiary.withValues(alpha: 0.18)
+                              : colorScheme.tertiary,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -243,7 +230,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: showSkeleton ? warningText : surfaceLowest,
+                            color: showSkeleton
+                                ? colorScheme.tertiary
+                                : colorScheme.onTertiary,
                           ),
                         ),
                       ),
@@ -263,11 +252,16 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     onChanged: (val) => setState(() => _searchTerm = val),
-                    style: const TextStyle(fontSize: 14, color: onSurface),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface,
+                    ),
                     decoration: InputDecoration(
                       hintText: "Cerca prodotto...",
                       hintStyle: TextStyle(
-                        color: onSurfaceVariant.withValues(alpha: 0.6),
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.6,
+                        ),
                         fontSize: 14,
                       ),
                       prefixIconConstraints: const BoxConstraints(
@@ -289,9 +283,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           child: showClearIcon
                               ? IconButton(
                                   key: const ValueKey('clearIcon'),
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.close,
-                                    color: onSurfaceVariant,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                   onPressed: () {
                                     _searchController.clear();
@@ -303,13 +297,15 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                                   key: const ValueKey('searchIcon'),
                                   Icons.search,
                                   color: _searchTerm.isNotEmpty
-                                      ? onSurfaceVariant
-                                      : onSurfaceVariant.withValues(alpha: 0.6),
+                                      ? colorScheme.onSurfaceVariant
+                                      : colorScheme.onSurfaceVariant.withValues(
+                                          alpha: 0.6,
+                                        ),
                                 ),
                         ),
                       ),
                       filled: true,
-                      fillColor: surfaceContainer,
+                      fillColor: colorScheme.surfaceContainerHighest,
                       contentPadding: const EdgeInsets.symmetric(
                         vertical: 0,
                         horizontal: 16,
@@ -328,17 +324,17 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     initialValue: _reportFilter,
                     icon: Icon(
                       Icons.filter_list,
-                      color: filterIconColor, // Colore Dinamico Icona
+                      color: filterIconColor,
                       size: 20,
                     ),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: filterTextColor, // Colore Dinamico Testo
+                      color: filterTextColor,
                     ),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: filterBgColor, // Sfondo Dinamico
+                      fillColor: filterBgColor,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                       ),
@@ -353,7 +349,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                         child: Text(
                           "Tutte",
                           style: _dropdownItemTextStyle(
-                            onSurfaceVariant.withValues(alpha: 0.6),
+                            colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                           ),
                         ),
                       ),
@@ -361,7 +357,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                         value: "Mie",
                         child: Text(
                           "Le mie",
-                          style: _dropdownItemTextStyle(onSecondaryContainer),
+                          style: _dropdownItemTextStyle(
+                            colorScheme.onSecondaryContainer,
+                          ),
                         ),
                       ),
                     ],
@@ -410,30 +408,33 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     Container(
                       width: 80,
                       height: 80,
-                      decoration: const BoxDecoration(
-                        color: surfaceContainer,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.task_alt,
                         size: 40,
-                        color: outlineVariant,
+                        color: colorScheme.outlineVariant,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       "Nessuna segnalazione",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: onSurface,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       "Non ci sono prodotti che richiedono la tua attenzione per i filtri selezionati.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: onSurfaceVariant),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -446,6 +447,8 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
 
   // ── Costruzione Card Prodotto Segnalato ──
   Widget _buildReportCard(Product prod) {
+    final colorScheme = context.colorScheme;
+    final cardBg = context.cardBackground;
     final bool isOwnReport = widget.reportedBarcodes.contains(prod.barcode);
     final userReport = widget.userReports?.cast<ProductReport?>().firstWhere(
       (r) => r?.barcode == prod.barcode,
@@ -455,11 +458,13 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
-      color: surfaceLowest,
+      color: cardBg,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: outlineVariant.withValues(alpha: 0.3)),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
       ),
       child: InkWell(
         onTap: () {
@@ -475,7 +480,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 reportComment: prod.reason.isNotEmpty
                     ? prod.reason
                     : "Nessun commento",
-                reportDate: formatRelativeDate(prod.lastUpdated),
+                reportDate: "",
                 onVote: (vote) async {
                   await DbService.voteOnReportByBarcode(prod.barcode, vote);
                 },
@@ -498,16 +503,20 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    backgroundColor: surfaceLowest,
-                    title: const Text("Eliminare segnalazione?"),
-                    content: const Text(
+                    backgroundColor: cardBg,
+                    title: Text(
+                      "Eliminare segnalazione?",
+                      style: TextStyle(color: colorScheme.onSurface),
+                    ),
+                    content: Text(
                       "Sei sicuro di voler eliminare la tua segnalazione per questo prodotto?",
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
                         style: TextButton.styleFrom(
-                          foregroundColor: onSurfaceVariant,
+                          foregroundColor: colorScheme.onSurfaceVariant,
                         ),
                         child: const Text("Annulla"),
                       ),
@@ -519,7 +528,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                             await widget.onDeleteReport!(reportId);
                           }
                         },
-                        style: TextButton.styleFrom(foregroundColor: error),
+                        style: TextButton.styleFrom(
+                          foregroundColor: colorScheme.error,
+                        ),
                         child: const Text("Elimina"),
                       ),
                     ],
@@ -527,8 +538,8 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 );
               }
             : null,
-        hoverColor: surfaceContainerHigh,
-        highlightColor: surfaceContainerLow,
+        hoverColor: colorScheme.surfaceContainerHighest,
+        highlightColor: context.surfaceContainerLow,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -545,10 +556,10 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                       prod.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: onSurface,
+                        color: colorScheme.onSurface,
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -566,7 +577,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           Icon(
                             Icons.storefront_outlined,
                             size: 16,
-                            color: onSurfaceVariant.withValues(alpha: 0.6),
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                           const SizedBox(width: 6),
                           Flexible(
@@ -576,7 +589,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: onSurfaceVariant.withValues(alpha: 0.9),
+                                color: colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.9,
+                                ),
                               ),
                             ),
                           ),
@@ -588,14 +603,18 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           Icon(
                             Icons.calendar_today_outlined,
                             size: 14,
-                            color: onSurfaceVariant.withValues(alpha: 0.5),
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             formatRelativeDate(prod.lastUpdated),
                             style: TextStyle(
                               fontSize: 12,
-                              color: onSurfaceVariant.withValues(alpha: 0.7),
+                              color: colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.7,
+                              ),
                             ),
                           ),
                         ],
@@ -606,7 +625,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                           Icon(
                             Icons.qr_code_2,
                             size: 18,
-                            color: onSurfaceVariant.withValues(alpha: 0.6),
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -614,7 +635,9 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: onSurfaceVariant.withValues(alpha: 0.8),
+                              color: colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.8,
+                              ),
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -630,20 +653,22 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                color: warningText.withValues(alpha: 0.04),
+                color: colorScheme.tertiary.withValues(alpha: 0.04),
                 border: Border(
-                  top: BorderSide(color: outlineVariant.withValues(alpha: 0.2)),
+                  top: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+                  ),
                 ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     "Esamina dettagli segnalazione",
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: warningText,
+                      color: colorScheme.tertiary,
                     ),
                   ),
                   Transform.translate(
@@ -651,7 +676,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     child: Icon(
                       Icons.chevron_right_rounded,
                       size: 18,
-                      color: warningText.withValues(alpha: 0.8),
+                      color: colorScheme.tertiary.withValues(alpha: 0.8),
                     ),
                   ),
                 ],

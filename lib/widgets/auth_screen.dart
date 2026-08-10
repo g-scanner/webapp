@@ -1,23 +1,18 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'dart:async';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../services/db_service.dart';
 import 'package:gscanner/utils/popup_tracker_stub.dart'
     if (dart.library.js_interop) 'package:gscanner/utils/popup_tracker_web.dart';
 
-const Color surfaceContainerLowest = Color(0xFFFFFFFF);
-const Color iconForeground = Color(0xFFBFDEB4);
-const Color surfaceVariant = Color(0xFFE3E2E6);
-const Color primary = Color(0xFF0D631B);
-const Color onPrimary = Color(0xFFFFFFFF);
-const Color primaryContainer = Color(0xFF2E7D32);
-const Color secondaryContainer = Color(0xFF54A0FE);
-const Color onSurface = Color(0xFF1B1B1E);
-const Color onSurfaceVariant = Color(0xFF40493D);
+import '../theme/app_theme.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -29,6 +24,30 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool _isLoading = false;
   static bool _isGoogleSignInInitialized = false;
+
+  Future<void> _checkAndShowLegalPopup(Future<void> Function() onAccepted) async {
+    final hasAccepted = await DbService.hasAcceptedTerms();
+    if (hasAccepted) {
+      await onAccepted();
+      return;
+    }
+
+    final settings = await DbService.getLocalSettings();
+    final lang = settings.preferredLanguage;
+
+    if (!mounted) return;
+
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _LegalConsentDialog(lang: lang),
+    );
+
+    if (accepted == true) {
+      await DbService.saveTermsAccepted();
+      await onAccepted();
+    }
+  }
 
   // ==========================================
   // LOGICA ACCESSO ANONIMO
@@ -255,7 +274,7 @@ class _AuthScreenState extends State<AuthScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: onSurfaceVariant,
+        backgroundColor: context.colorScheme.inverseSurface,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -264,7 +283,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9FC),
+      backgroundColor: context.colorScheme.surface,
       body: Stack(
         children: [
           // Sfondo decorativo: Blob alto a sinistra
@@ -276,10 +295,10 @@ class _AuthScreenState extends State<AuthScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: secondaryContainer.withValues(alpha: 0.15),
+                color: context.colorScheme.secondaryContainer.withValues(alpha: 0.15),
                 boxShadow: [
                   BoxShadow(
-                    color: secondaryContainer.withValues(alpha: 0.15),
+                    color: context.colorScheme.secondaryContainer.withValues(alpha: 0.15),
                     blurRadius: 100,
                     spreadRadius: 50,
                   ),
@@ -296,10 +315,10 @@ class _AuthScreenState extends State<AuthScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primaryContainer.withValues(alpha: 0.15),
+                color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryContainer.withValues(alpha: 0.15),
+                    color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
                     blurRadius: 120,
                     spreadRadius: 60,
                   ),
@@ -321,12 +340,12 @@ class _AuthScreenState extends State<AuthScreen> {
                   horizontal: 24,
                 ),
                 decoration: BoxDecoration(
-                  color: surfaceContainerLowest,
+                  color: context.cardBackground,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: surfaceVariant),
+                  border: Border.all(color: context.colorScheme.outlineVariant.withValues(alpha: 0.3)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
+                      color: context.colorScheme.shadow.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -341,7 +360,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       height: 96,
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: iconForeground,
+                        color: context.colorScheme.primaryContainer.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -353,12 +372,12 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       "G-Scanner",
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: primary,
+                        color: context.colorScheme.primary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -368,16 +387,16 @@ class _AuthScreenState extends State<AuthScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: onSurfaceVariant.withValues(alpha: 0.8),
+                        color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(height: 32),
 
                     // --- SOCIAL LOGINS ---
                     if (_isLoading)
-                      const Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: CircularProgressIndicator(color: primary),
+                      Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(color: context.colorScheme.primary),
                       )
                     else ...[
                       _buildSocialBtn(
@@ -387,9 +406,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           width: 20,
                           height: 20,
                         ),
-                        bgColor: primary,
-                        textColor: onPrimary,
-                        onTap: _signInWithGoogle,
+                        bgColor: context.colorScheme.primary,
+                        textColor: context.colorScheme.onPrimary,
+                        onTap: () => _checkAndShowLegalPopup(_signInWithGoogle),
                       ),
                       const SizedBox(height: 12),
 
@@ -400,19 +419,19 @@ class _AuthScreenState extends State<AuthScreen> {
                           width: 20,
                           height: 20,
                         ),
-                        bgColor: Colors.white,
-                        textColor: onSurface,
-                        borderColor: surfaceVariant,
-                        onTap: _signInWithFacebook,
+                        bgColor: context.cardBackground,
+                        textColor: context.colorScheme.onSurface,
+                        borderColor: context.colorScheme.outlineVariant,
+                        onTap: () => _checkAndShowLegalPopup(_signInWithFacebook),
                       ),
                       const SizedBox(height: 24),
 
                       // --- GUEST ENTRY ---
                       Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Divider(
-                              color: surfaceVariant,
+                              color: context.colorScheme.outlineVariant.withValues(alpha: 0.4),
                               thickness: 1.5,
                             ),
                           ),
@@ -424,15 +443,15 @@ class _AuthScreenState extends State<AuthScreen> {
                               "Oppure",
                               style: TextStyle(
                                 fontSize: 14,
-                                color: onSurfaceVariant.withValues(alpha: 0.6),
+                                color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
                               ),
                             ),
                           ),
-                          const Expanded(
+                          Expanded(
                             child: Divider(
-                              color: surfaceVariant,
+                              color: context.colorScheme.outlineVariant.withValues(alpha: 0.4),
                               thickness: 1.5,
                             ),
                           ),
@@ -440,7 +459,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 24),
                       TextButton.icon(
-                        onPressed: _signInAnonymously,
+                        onPressed: () => _checkAndShowLegalPopup(_signInAnonymously),
                         icon: const Icon(Icons.person_off, size: 18),
                         label: const Text(
                           "Entra senza autenticazione",
@@ -450,7 +469,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         style: TextButton.styleFrom(
-                          foregroundColor: primary,
+                          foregroundColor: context.colorScheme.primary,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,
@@ -463,7 +482,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
-                          color: onSurfaceVariant.withValues(alpha: 0.7),
+                          color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -495,10 +514,10 @@ class _AuthScreenState extends State<AuthScreen> {
           color: bgColor,
           borderRadius: BorderRadius.circular(30),
           border: borderColor != null ? Border.all(color: borderColor) : null,
-          boxShadow: bgColor == primary
+          boxShadow: borderColor == null
               ? [
                   BoxShadow(
-                    color: primary.withValues(alpha: 0.3),
+                    color: bgColor.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -510,7 +529,7 @@ class _AuthScreenState extends State<AuthScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(2),
-              decoration: bgColor == primary
+              decoration: borderColor == null
                   ? const BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
@@ -531,6 +550,289 @@ class _AuthScreenState extends State<AuthScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LegalConsentDialog extends StatefulWidget {
+  final String lang;
+  const _LegalConsentDialog({required this.lang});
+
+  @override
+  State<_LegalConsentDialog> createState() => _LegalConsentDialogState();
+}
+
+class _LegalConsentDialogState extends State<_LegalConsentDialog> {
+  bool _isChecked = false;
+
+  late final TapGestureRecognizer _tosRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
+  String get tosUrl {
+    switch (widget.lang) {
+      case 'it': return 'https://g-scanner.github.io/it/TerminiDiServizio.html';
+      case 'es': return 'https://g-scanner.github.io/es/TerminosYCondiciones.html';
+      case 'de': return 'https://g-scanner.github.io/de/Nutzungsbedingungen.html';
+      case 'fr': return 'https://g-scanner.github.io/fr/ConditionsDUtilisation.html';
+      default:   return 'https://g-scanner.github.io/TermsOfService.html';
+    }
+  }
+
+  String get privacyUrl {
+    switch (widget.lang) {
+      case 'it': return 'https://g-scanner.github.io/it/InformativaSullaPrivacy.html';
+      case 'es': return 'https://g-scanner.github.io/es/PoliticaDePrivacidad.html';
+      case 'de': return 'https://g-scanner.github.io/de/Datenschutzerklaerung.html';
+      case 'fr': return 'https://g-scanner.github.io/fr/PolitiqueDeConfidentialite.html';
+      default:   return 'https://g-scanner.github.io/PrivacyPolicy.html';
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _tosRecognizer = TapGestureRecognizer()..onTap = () => _launchURL(tosUrl);
+    _privacyRecognizer = TapGestureRecognizer()..onTap = () => _launchURL(privacyUrl);
+  }
+
+  @override
+  void dispose() {
+    _tosRecognizer.dispose();
+    _privacyRecognizer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _launchURL(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {},
+      child: Dialog(
+        backgroundColor: context.cardBackground,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header con Icona e Titolo
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.gavel_rounded,
+                    color: context.colorScheme.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    "Prima di iniziare...",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: context.colorScheme.primary,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+
+            // Testo introduttivo
+            Text(
+              "Per usare G-Scanner, devi comprendere e accettare queste regole essenziali:",
+              style: TextStyle(
+                fontSize: 14,
+                color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Bullets
+            _buildBulletItem(
+              title: "Dati non garantiti",
+              description:
+                  "Le informazioni provengono dalla community di Open Food Facts. Possono contenere errori, omissioni o dati obsoleti.",
+            ),
+            const SizedBox(height: 10),
+            _buildBulletItem(
+              title: "Nessun parere medico",
+              description:
+                  "L'app ha solo scopo informativo. Verifica SEMPRE l'etichetta fisica del prodotto per accertarti dell'assenza di allergeni.",
+            ),
+            const SizedBox(height: 10),
+            _buildBulletItem(
+              title: "Zero responsabilità",
+              description:
+                  "L'app è fornita \"così com'è\". L'utilizzo è a tuo rischio e sollevi lo sviluppatore da qualsiasi responsabilità per eventuali inesattezze o danni.",
+            ),
+            const SizedBox(height: 18),
+
+            Divider(color: context.colorScheme.outlineVariant.withValues(alpha: 0.4), height: 1),
+            const SizedBox(height: 14),
+
+            // Checkbox con link a ToS e Privacy
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: _isChecked,
+                    activeColor: context.colorScheme.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    onChanged: (val) {
+                      setState(() => _isChecked = val ?? false);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() => _isChecked = !_isChecked);
+                    },
+                    child: Text.rich(
+                      TextSpan(
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: context.colorScheme.onSurface,
+                          height: 1.4,
+                        ),
+                        children: [
+                          const TextSpan(
+                            text:
+                                "Dichiaro di avere almeno 14 anni e accetto integralmente i ",
+                          ),
+                          TextSpan(
+                            text: "Termini di Servizio",
+                            style: TextStyle(
+                              color: context.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: _tosRecognizer,
+                          ),
+                          const TextSpan(text: " e la "),
+                          TextSpan(
+                            text: "Privacy Policy",
+                            style: TextStyle(
+                              color: context.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: _privacyRecognizer,
+                          ),
+                          const TextSpan(text: "."),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+
+            // Pulsante INIZIA
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: _isChecked
+                    ? () => Navigator.pop(context, true)
+                    : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: context.colorScheme.primary,
+                  disabledBackgroundColor: context.colorScheme.surfaceContainerHighest,
+                  disabledForegroundColor: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  "INIZIA",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    );
+  }
+
+  Widget _buildBulletItem({
+    required String title,
+    required String description,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: context.colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              style: TextStyle(
+                fontSize: 13,
+                color: context.colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+              children: [
+                TextSpan(
+                  text: "$title: ",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: context.colorScheme.onSurface,
+                  ),
+                ),
+                TextSpan(text: description),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

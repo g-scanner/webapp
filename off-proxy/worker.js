@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+
 const OFF_BASE_URL = 'https://world.openfoodfacts.org';
 const USER_AGENT = 'G-Scanner/1.0 (https://g-scanner.github.io)';
 
