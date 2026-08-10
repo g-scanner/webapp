@@ -10,8 +10,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 class HistoryList extends StatefulWidget {
   final List<ScanHistoryItem> history;
-  final List<Product>
-  liveProducts; // Aggiunto per sincronizzare lo stato in tempo reale
+  final List<Product> liveProducts;
   final Function(String) onSelectItem;
   final Future<void> Function() onClearHistory;
   final Future<void> Function(String) onDeleteHistoryItem;
@@ -22,7 +21,7 @@ class HistoryList extends StatefulWidget {
   const HistoryList({
     super.key,
     required this.history,
-    required this.liveProducts, // Aggiunto al costruttore
+    required this.liveProducts,
     required this.onSelectItem,
     required this.onClearHistory,
     required this.onDeleteHistoryItem,
@@ -40,8 +39,10 @@ class _HistoryListState extends State<HistoryList> {
   GlutenSafetyStatus? _filter;
   late FocusNode _searchFocusNode;
   late TextEditingController _searchController;
+  final ScrollController _scrollController = ScrollController();
 
   bool _isSearchFocused = false;
+  int _displayedItemsCount = 20;
 
   @override
   void initState() {
@@ -49,6 +50,7 @@ class _HistoryListState extends State<HistoryList> {
     _searchFocusNode = FocusNode();
     _searchFocusNode.addListener(_onSearchFocusChange);
     _searchController = TextEditingController();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -56,6 +58,7 @@ class _HistoryListState extends State<HistoryList> {
     _searchFocusNode.removeListener(_onSearchFocusChange);
     _searchFocusNode.dispose();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -63,6 +66,18 @@ class _HistoryListState extends State<HistoryList> {
     setState(() {
       _isSearchFocused = _searchFocusNode.hasFocus;
     });
+  }
+
+  void _onScroll() {
+    if (_search.isNotEmpty || _filter != null) return;
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      if (_displayedItemsCount < widget.history.length) {
+        setState(() {
+          _displayedItemsCount += 20;
+        });
+      }
+    }
   }
 
   void _confirmDelete(String id) {
@@ -100,16 +115,54 @@ class _HistoryListState extends State<HistoryList> {
     );
   }
 
-  bool _hasLactose(ScanHistoryItem item) {
-    if (item.hasLactose) return true;
-    final liveProd = widget.liveProducts.cast<Product?>().firstWhere(
+  // Helper per analizzare un item di cronologia al volo (Pure-Data / Zero-DB)
+  _AnalyzedItemData _analyzeHistoryItem(ScanHistoryItem item) {
+    final lang = widget.userSettings.preferredLanguage;
+    final Product? product = widget.liveProducts.cast<Product?>().firstWhere(
       (p) => p?.barcode == item.barcode,
       orElse: () => null,
     );
-    if (liveProd == null) return false;
-    return AnalyzerService.checkLactose(
-      liveProd.ingredients,
-      liveProd.allergens,
+
+    if (product == null) {
+      return _AnalyzedItemData(
+        productName: "Prodotto #${item.barcode}",
+        brand: "Caricamento in corso...",
+        status: GlutenSafetyStatus.sconosciuto,
+        hasLactose: false,
+      );
+    }
+
+    final name = product.getName(lang);
+    final brand = product.getBrand(lang);
+    final ingredients = product.getIngredients(lang);
+    final allergens = product.getAllergens(lang);
+
+    final bool isUserReported = widget.userSettings.reportedBarcodes.contains(item.barcode);
+
+    final analysis = AnalyzerService.analyzeGlutenSafety(
+      name: name,
+      brand: brand,
+      ingredients: ingredients,
+      allergensList: allergens,
+      reportCount: product.pendingReportsCount,
+      categoriesTags: const [],
+      strictMode: widget.userSettings.strictMode,
+      warnAdditives: widget.userSettings.warnAdditives,
+      alertLactose: widget.userSettings.alertLactose,
+      preferredLanguage: lang,
+    );
+
+    final GlutenSafetyStatus finalStatus = (isUserReported || product.pendingReportsCount > 0)
+        ? GlutenSafetyStatus.incerto
+        : analysis.status;
+
+    final bool hasLactose = AnalyzerService.checkLactose(ingredients, allergens);
+
+    return _AnalyzedItemData(
+      productName: name,
+      brand: brand,
+      status: finalStatus,
+      hasLactose: hasLactose,
     );
   }
 
@@ -201,95 +254,52 @@ class _HistoryListState extends State<HistoryList> {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
 
-    // 1. SINCRONIZZAZIONE LIVE DEGLI STATI
-    // Incrocia la cronologia con il database prodotti scaricato all'avvio
-    final List<ScanHistoryItem> syncedHistory = widget.history.map((item) {
-      final liveProd = widget.liveProducts.cast<Product?>().firstWhere(
-        (p) => p?.barcode == item.barcode,
-        orElse: () => null,
-      );
-
-      // Se troviamo il prodotto nel DB e lo stato, nome o brand sono diversi, restituiamo un item aggiornato
-      if (liveProd != null &&
-          (liveProd.status != item.status ||
-              liveProd.name != item.productName ||
-              liveProd.brand != item.brand)) {
-        return ScanHistoryItem(
-          id: item.id,
-          userId: item.userId,
-          barcode: item.barcode,
-          productName: liveProd
-              .name, // Aggiorna anche il nome se la community lo ha corretto
-          brand: liveProd.brand,
-          status: liveProd.status, // ECCO LA MAGIA: STATO AGGIORNATO AL LIVE
-          scannedAt: item.scannedAt,
-          hasLactose: item.hasLactose,
-        );
-      }
-      return item; // Se non lo trova o non è cambiato, lascia quello in cronologia
-    }).toList();
-
     final bool showSkeleton = widget.history.isEmpty && !widget.isSynced;
 
-    final List<ScanHistoryItem> displayHistory = showSkeleton
-        ? [
-            ScanHistoryItem(
-              id: 'dummy1',
-              barcode: '1234567890123',
-              productName: 'Nome Prodotto Esempio Molto Lungo',
-              brand: 'Marca Prodotto Esempio',
-              status: GlutenSafetyStatus.adatto,
-              scannedAt: DateTime.now().toIso8601String(),
-            ),
-            ScanHistoryItem(
-              id: 'dummy2',
-              barcode: '9876543210987',
-              productName: 'Nome Prodotto Esempio Secondo',
-              brand: 'Altra Marca Esempio',
-              status: GlutenSafetyStatus.nonAdatto,
-              scannedAt: DateTime.now().toIso8601String(),
-            ),
-          ]
-        : syncedHistory;
-
-    // 2. USA IL SYNCED HISTORY PER IL RESTO DELLA LOGICA
-    final filteredHistory = syncedHistory.where((item) {
-      final matchesSearch =
-          item.productName.toLowerCase().contains(_search.toLowerCase()) ||
-          item.brand.toLowerCase().contains(_search.toLowerCase()) ||
-          item.barcode.contains(_search);
-      final matchesFilter = _filter == null || item.status == _filter;
-      return matchesSearch && matchesFilter;
-    }).toList();
+    // Calcolo in memoria per ricerca e filtri o paginazione standard
+    List<MapEntry<ScanHistoryItem, _AnalyzedItemData>> processedList = [];
 
     int safeCount = 0;
     int dangerCount = 0;
     int uncertainCount = 0;
 
-    if (showSkeleton) {
-      safeCount = 99;
-      dangerCount = 99;
-      uncertainCount = 99;
-    } else {
-      safeCount = syncedHistory
-          .where((h) => h.status == GlutenSafetyStatus.adatto)
-          .length;
-      dangerCount = syncedHistory
-          .where((h) => h.status == GlutenSafetyStatus.nonAdatto)
-          .length;
-      uncertainCount = syncedHistory
-          .where((h) => h.status == GlutenSafetyStatus.incerto)
-          .length;
+    for (var item in widget.history) {
+      final data = _analyzeHistoryItem(item);
+      if (data.status == GlutenSafetyStatus.adatto) safeCount++;
+      if (data.status == GlutenSafetyStatus.nonAdatto) dangerCount++;
+      if (data.status == GlutenSafetyStatus.incerto) uncertainCount++;
+
+      final matchesSearch = _search.isEmpty ||
+          data.productName.toLowerCase().contains(_search.toLowerCase()) ||
+          data.brand.toLowerCase().contains(_search.toLowerCase()) ||
+          item.barcode.contains(_search);
+      final matchesFilter = _filter == null || data.status == _filter;
+
+      if (matchesSearch && matchesFilter) {
+        processedList.add(MapEntry(item, data));
+      }
     }
+
+    final bool isFiltering = _search.isNotEmpty || _filter != null;
+    final List<MapEntry<ScanHistoryItem, _AnalyzedItemData>> displayItems =
+        isFiltering
+            ? processedList
+            : processedList.take(_displayedItemsCount).toList();
 
     final bool showClearIcon = _isSearchFocused && _search.isNotEmpty;
 
     return RefreshIndicator(
-      onRefresh: widget.onRefresh,
+      onRefresh: () async {
+        setState(() {
+          _displayedItemsCount = 20;
+        });
+        await widget.onRefresh();
+      },
       color: colorScheme.primary,
       backgroundColor: cardBg,
       displacement: 15.0,
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
         child: Column(
@@ -315,8 +325,8 @@ class _HistoryListState extends State<HistoryList> {
             ),
             const SizedBox(height: 24),
 
-            // ── Bento Grid (Statistiche) ────────────────────────────────
-            if (syncedHistory.isNotEmpty || showSkeleton) ...[
+            // ── Bento Grid (Statistiche In-Memory) ─────────────────────
+            if (widget.history.isNotEmpty || showSkeleton) ...[
               Skeletonizer(
                 enabled: showSkeleton,
                 child: Row(
@@ -503,23 +513,22 @@ class _HistoryListState extends State<HistoryList> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: displayHistory.length,
+                  itemCount: 3,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    final item = displayHistory[index];
-                    return _buildHistoryCard(item);
+                    return _buildDummySkeletonCard();
                   },
                 ),
               )
-            else if (filteredHistory.isNotEmpty)
+            else if (displayItems.isNotEmpty)
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: filteredHistory.length,
+                itemCount: displayItems.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
-                  final item = filteredHistory[index];
-                  return _buildHistoryCard(item);
+                  final entry = displayItems[index];
+                  return _buildHistoryCard(entry.key, entry.value);
                 },
               )
             else
@@ -673,7 +682,29 @@ class _HistoryListState extends State<HistoryList> {
     );
   }
 
-  Widget _buildHistoryCard(ScanHistoryItem item) {
+  Widget _buildDummySkeletonCard() {
+    final colorScheme = context.colorScheme;
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(width: 120, height: 16, color: colorScheme.surfaceContainerHighest),
+            const SizedBox(height: 8),
+            Container(width: 200, height: 20, color: colorScheme.surfaceContainerHighest),
+            const SizedBox(height: 6),
+            Container(width: 100, height: 14, color: colorScheme.surfaceContainerHighest),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryCard(ScanHistoryItem item, _AnalyzedItemData data) {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
 
@@ -706,15 +737,14 @@ class _HistoryListState extends State<HistoryList> {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _buildStatusTag(item.status),
-                        if (widget.userSettings.alertLactose &&
-                            _hasLactose(item))
+                        _buildStatusTag(data.status),
+                        if (widget.userSettings.alertLactose && data.hasLactose)
                           _buildLactoseTag(),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      item.productName,
+                      data.productName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -743,7 +773,7 @@ class _HistoryListState extends State<HistoryList> {
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                item.brand,
+                                data.brand,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -801,4 +831,18 @@ class _HistoryListState extends State<HistoryList> {
       ),
     );
   }
+}
+
+class _AnalyzedItemData {
+  final String productName;
+  final String brand;
+  final GlutenSafetyStatus status;
+  final bool hasLactose;
+
+  _AnalyzedItemData({
+    required this.productName,
+    required this.brand,
+    required this.status,
+    required this.hasLactose,
+  });
 }

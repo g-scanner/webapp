@@ -12,6 +12,7 @@ import 'firebase_options.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'models/types.dart';
+import 'services/analyzer_service.dart';
 import 'services/db_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_notifier.dart';
@@ -281,13 +282,14 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   void _syncEverythingWithFirestore() {
-    // Sincronizza prodotti in background (comune a tutti gli utenti, anche anonimi)
-    DbService.fetchAllProducts()
-        .then((remoteData) {
-          if (mounted) setState(() => products = remoteData);
+    // Delta sync prodotti in background
+    DbService.performDeltaSync()
+        .then((_) async {
+          final updated = await DbService.getLocalProducts();
+          if (mounted) setState(() => products = updated);
         })
         .catchError((e) {
-          print("Failed to sync products from Firestore: $e");
+          print("Failed to delta sync products: $e");
         });
 
     final user = FirebaseAuth.instance.currentUser;
@@ -343,7 +345,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _fetchProducts() async {
-    final data = await DbService.fetchAllProducts();
+    // Usa la cache locale come fonte di verità primaria
+    final data = await DbService.getLocalProducts();
     if (mounted) {
       setState(() {
         products = data;
@@ -358,6 +361,24 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         }
       });
     }
+    // Delta sync in background
+    DbService.performDeltaSync().then((_) async {
+      final updated = await DbService.getLocalProducts();
+      if (mounted) {
+        setState(() {
+          products = updated;
+          for (var barcode in _openProductNotifiers.keys) {
+            final prod = updated.cast<Product?>().firstWhere(
+              (p) => p?.barcode == barcode,
+              orElse: () => null,
+            );
+            if (prod != null) {
+              _openProductNotifiers[barcode]!.value = prod;
+            }
+          }
+        });
+      }
+    }).catchError((e) { print('Delta sync error: $e'); return null; });
   }
 
   Future<void> refreshAllData() async {
@@ -384,13 +405,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _openProductNotifiers[barcode] = productNotifier;
     final placeholderProduct = Product(
       barcode: barcode,
-      name: "Caricamento prodotto...",
-      brand: "Analisi in corso",
-      status: GlutenSafetyStatus.incerto,
-      ingredients: "Analisi degli ingredienti e degli allergeni in corso...",
-      allergens: const [],
-      reason: "Elaborazione dati dal database in corso...",
+      nameMap: const {'it': 'Caricamento prodotto...'},
+      brandMap: const {'it': 'Analisi in corso'},
+      ingredientsMap: const {'it': 'Analisi degli ingredienti in corso...'},
+      allergensMap: const {'it': <String>[]},
       lastUpdated: DateTime.now().toIso8601String(),
+      pendingReportsCount: 0,
     );
 
     if (mounted) {
@@ -434,18 +454,30 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             final bool isOwn =
                 reportedSessionBarcodes.contains(loadedProduct.barcode) ||
                 reportOfProduct != null;
-            final String comment =
-                reportOfProduct?.comments ?? loadedProduct.reason;
+            final String comment = reportOfProduct?.comments ?? '';
           final String rDate = reportOfProduct != null
               ? formatRelativeDate(reportOfProduct.submittedAt)
               : "";
 
+            // Calcola originalStatus al volo (senza usare il campo legacy)
+            final origLang = userSettings.preferredLanguage;
+            final origAnalysis = AnalyzerService.analyzeGlutenSafety(
+              name: loadedProduct.getName(origLang),
+              brand: loadedProduct.getBrand(origLang),
+              ingredients: loadedProduct.getIngredients(origLang),
+              allergensList: loadedProduct.getAllergens(origLang),
+              reportCount: 0,
+              categoriesTags: const [],
+              strictMode: userSettings.strictMode,
+              warnAdditives: userSettings.warnAdditives,
+              alertLactose: userSettings.alertLactose,
+              preferredLanguage: origLang,
+              ignoreReports: true,
+            );
             final routeReport = MaterialPageRoute(
               builder: (context) => ReportDetailCard(
                 product: loadedProduct,
-                originalStatus:
-                    loadedProduct.originalStatus ??
-                    GlutenSafetyStatus.sconosciuto,
+                originalStatus: origAnalysis.status,
                 onBack: () => Navigator.pop(context),
                 reportReasonKey: reportOfProduct?.type ?? "label_unclear",
                 reportComment: comment.isNotEmpty ? comment : "Nessun commento",
@@ -527,47 +559,34 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     Map<String, dynamic> reportData,
   ) async {
     try {
+      final lang = userSettings.preferredLanguage;
       final product = products.firstWhere(
         (p) => p.barcode == barcode,
         orElse: () => Product(
           barcode: barcode,
-          name: "Product",
-          brand: "Brand",
-          ingredients: "",
-          allergens: [],
-          status: GlutenSafetyStatus.sconosciuto,
-          reason: "",
-          lastUpdated: "",
+          nameMap: const {'it': 'Prodotto'},
+          brandMap: const {'it': ''},
+          ingredientsMap: const {'it': ''},
+          allergensMap: const {'it': <String>[]},
+          lastUpdated: '',
         ),
       );
 
+      // Aggiorna ottimisticamente pendingReportsCount in memoria (Pure-Data)
       final pIdx = products.indexWhere((p) => p.barcode == barcode);
       if (pIdx != -1) {
         final p = products[pIdx];
         products[pIdx] = Product(
           barcode: p.barcode,
-          name: p.name,
-          brand: p.brand,
-          ingredients: p.ingredients,
-          allergens: p.allergens,
-          status: GlutenSafetyStatus.incerto,
-          reason:
-              'ATTENZIONE: Segnalata etichetta incongruente. Note: ${reportData['comments'] ?? ''}',
-          ingredientsAnalyzed: p.ingredientsAnalyzed,
-          imageUrl: p.imageUrl,
-          isManual: p.isManual,
-          lastUpdated: p.lastUpdated,
-          reportCount: (p.reportCount ?? 0) + 1,
-          originalStatus: p.originalStatus ?? p.status,
-          originalReason: p.originalReason ?? p.reason,
-          originalReasonsMap: p.originalReasonsMap ?? p.reasonsMap,
+          nameMap: p.nameMap,
+          brandMap: p.brandMap,
           ingredientsMap: p.ingredientsMap,
           allergensMap: p.allergensMap,
-          reasonsMap: p.reasonsMap,
-          ingredientsAnalyzedMap: p.ingredientsAnalyzedMap,
+          imageUrl: p.imageUrl,
+          lastUpdated: p.lastUpdated,
+          pendingReportsCount: p.pendingReportsCount + 1,
+          fetchedFromOffAt: p.fetchedFromOffAt,
         );
-      }
-      if (pIdx != -1) {
         if (_openProductNotifiers.containsKey(barcode)) {
           _openProductNotifiers[barcode]!.value = products[pIdx];
         }
@@ -591,10 +610,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       final newReport = await DbService.submitProductReportClientSide(
         barcode,
-        product.name,
-        product.brand,
+        product.getName(lang),
+        product.getBrand(lang),
         reportData,
-        product,
       );
 
       if (_openReportIdNotifiers.containsKey(barcode)) {
@@ -610,22 +628,17 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Future<void> handleProductUpdate(Product updatedProduct) async {
     try {
+      // Pure-Data: salva solo i campi raw, no status/reason pre-calcolati
       final finalProduct = Product(
         barcode: updatedProduct.barcode,
-        name: updatedProduct.name,
-        brand: updatedProduct.brand,
-        ingredients: updatedProduct.ingredients,
-        allergens: updatedProduct.allergens,
-        status: updatedProduct.status,
-        reason: updatedProduct.reason,
-        ingredientsAnalyzed: updatedProduct.ingredientsAnalyzed,
-        imageUrl: updatedProduct.imageUrl,
-        lastUpdated: DateTime.now().toIso8601String(),
-        reportCount: updatedProduct.reportCount,
+        nameMap: updatedProduct.nameMap,
+        brandMap: updatedProduct.brandMap,
         ingredientsMap: updatedProduct.ingredientsMap,
         allergensMap: updatedProduct.allergensMap,
-        reasonsMap: updatedProduct.reasonsMap,
-        ingredientsAnalyzedMap: updatedProduct.ingredientsAnalyzedMap,
+        imageUrl: updatedProduct.imageUrl,
+        lastUpdated: DateTime.now().toIso8601String(),
+        pendingReportsCount: updatedProduct.pendingReportsCount,
+        fetchedFromOffAt: updatedProduct.fetchedFromOffAt,
       );
       await DbService.db
           .collection('products')
@@ -658,31 +671,21 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         if (barcode != null) {
           reportedSessionBarcodes.remove(barcode);
 
+          // Pure-Data: decrementa pendingReportsCount ottimisticamente
           final pIdx = products.indexWhere((p) => p.barcode == barcode);
           if (pIdx != -1) {
             final p = products[pIdx];
-            final restoredStatus =
-                p.originalStatus ?? GlutenSafetyStatus.sconosciuto;
             products[pIdx] = Product(
               barcode: p.barcode,
-              name: p.name,
-              brand: p.brand,
-              ingredients: p.ingredients,
-              allergens: p.allergens,
-              status: restoredStatus,
-              reason: p.originalReason ?? p.reason,
-              ingredientsAnalyzed: p.ingredientsAnalyzed,
-              imageUrl: p.imageUrl,
-              isManual: p.isManual,
-              lastUpdated: p.lastUpdated,
-              reportCount: 0,
-              originalStatus: null,
-              originalReason: null,
-              originalReasonsMap: null,
+              nameMap: p.nameMap,
+              brandMap: p.brandMap,
               ingredientsMap: p.ingredientsMap,
               allergensMap: p.allergensMap,
-              reasonsMap: p.originalReasonsMap ?? p.reasonsMap,
-              ingredientsAnalyzedMap: p.ingredientsAnalyzedMap,
+              imageUrl: p.imageUrl,
+              lastUpdated: p.lastUpdated,
+              pendingReportsCount:
+                  (p.pendingReportsCount - 1).clamp(0, 9999),
+              fetchedFromOffAt: p.fetchedFromOffAt,
             );
             if (_openProductNotifiers.containsKey(barcode)) {
               _openProductNotifiers[barcode]!.value = products[pIdx];
@@ -767,18 +770,30 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           final bool isOwn =
               reportedSessionBarcodes.contains(loadedProduct.barcode) ||
               reportOfProduct != null;
-          final String comment =
-              reportOfProduct?.comments ?? loadedProduct.reason;
+          final String comment = reportOfProduct?.comments ?? '';
           final String rDate = reportOfProduct != null
               ? formatRelativeDate(reportOfProduct.submittedAt)
               : "";
 
+          // Calcola originalStatus on-the-fly senza campi legacy
+          final oLang = userSettings.preferredLanguage;
+          final oAnalysis = AnalyzerService.analyzeGlutenSafety(
+            name: loadedProduct.getName(oLang),
+            brand: loadedProduct.getBrand(oLang),
+            ingredients: loadedProduct.getIngredients(oLang),
+            allergensList: loadedProduct.getAllergens(oLang),
+            reportCount: 0,
+            categoriesTags: const [],
+            strictMode: userSettings.strictMode,
+            warnAdditives: userSettings.warnAdditives,
+            alertLactose: userSettings.alertLactose,
+            preferredLanguage: oLang,
+            ignoreReports: true,
+          );
           final routeReport = MaterialPageRoute(
             builder: (context) => ReportDetailCard(
               product: loadedProduct,
-              originalStatus:
-                  loadedProduct.originalStatus ??
-                  GlutenSafetyStatus.sconosciuto,
+              originalStatus: oAnalysis.status,
               onBack: () => Navigator.pop(context),
               reportReasonKey: reportOfProduct?.type ?? "label_unclear",
               reportComment: comment.isNotEmpty ? comment : "Nessun commento",

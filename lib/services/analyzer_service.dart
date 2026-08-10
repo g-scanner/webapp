@@ -654,8 +654,9 @@ class AnalyzerService {
     OffTags? offTags,
     bool strictMode = false, // Impostazione 1
     bool warnAdditives = true, // Impostazione 2
-    bool alertLactose = false, // Impostazione 3 (Nuova)
+    bool alertLactose = false, // Impostazione 3
     String preferredLanguage = 'it', // Lingua per la traduzione degli allergeni
+    bool ignoreReports = false, // Flag per calcolo stato originale
   }) {
     String safeIngredients = ingredients.trim();
     if (safeIngredients.toLowerCase() == "non disponibile") {
@@ -695,9 +696,6 @@ class AnalyzerService {
             lt.contains('glutensiz') ||
             lt.contains('celiac');
       });
-      // ⚠️ NON usiamo ingredientsAnalysisTags 'en:gluten-free' per il bollino verde!
-      // OFF lo assegna semplicemente se non vede "grano" negli ingredienti,
-      // ma un prodotto lavorato senza grano potrebbe avere contaminazioni in fabbrica.
     }
 
     // ─── STEP 2: Controlla ingredienti PERICOLOSI (usando il testo pulito) ───
@@ -707,7 +705,6 @@ class AnalyzerService {
         r'\b' + RegExp.escape(k) + r'\b',
         caseSensitive: false,
       );
-      // Cerchiamo nel testo a cui abbiamo tolto "senza glutine"
       if (regex.hasMatch(safeIng) || regex.hasMatch(safeName)) {
         foundDanger.add(k);
       }
@@ -766,7 +763,7 @@ class AnalyzerService {
 
     bool hasAnyTrace = hasOffGlutenTrace || foundTraces.isNotEmpty;
 
-    // ─── STEP 5: Filtro Additivi (Impostazione 2) ────────────────────────────
+    // ─── STEP 5: Filtro Additivi ────────────────────────────────────────────
     List<String> foundDoubtful = [];
     if (warnAdditives) {
       for (String d in _doubtfulAdditives) {
@@ -778,7 +775,7 @@ class AnalyzerService {
       }
     }
 
-    // ─── STEP 6: Filtro Lattosio (Impostazione 3) ────────────────────────────
+    // ─── STEP 6: Filtro Lattosio ────────────────────────────────────────────
     List<String> foundLactose = [];
     if (alertLactose) {
       final String safeLactoseIng = _sanitizeForLactose(lowerIng);
@@ -829,8 +826,8 @@ class AnalyzerService {
     String reason;
     List<IngredientAnalyzed> ingredientsAnalyzed = [];
 
-    // CASO 1: SEGNALAZIONI (Vince su tutto in caso di incongruenze)
-    if (reportCount > 0) {
+    // CASO 1: SEGNALAZIONI (Vince su tutto se non si richiede ignoreReports)
+    if (!ignoreReports && reportCount > 0) {
       status = GlutenSafetyStatus.incerto;
       reason =
           "ATTENZIONE: Questo prodotto ha $reportCount segnalazione/i dagli utenti.";

@@ -32,175 +32,178 @@ class IngredientAnalyzed {
 
 class Product {
   final String barcode;
-  final String name;
-  final String brand;
-  final String ingredients;
-  final List<String> allergens;
-  final GlutenSafetyStatus status;
-  final String reason;
-  final List<IngredientAnalyzed>? ingredientsAnalyzed;
+  final Map<String, String> nameMap;
+  final Map<String, String> brandMap;
+  final Map<String, String> ingredientsMap;
+  final Map<String, List<String>> allergensMap;
   final String? imageUrl;
   final bool? isManual;
+  final int pendingReportsCount;
   final String lastUpdated;
-  final int? reportCount;
-  final GlutenSafetyStatus? originalStatus;
-  final String? originalReason;
-  final Map<String, String>? originalReasonsMap;
-  final Map<String, String>? ingredientsMap;
-  final Map<String, List<String>>? allergensMap;
-  final Map<String, String>? reasonsMap;
-  final Map<String, List<IngredientAnalyzed>>? ingredientsAnalyzedMap;
+  final String? fetchedFromOffAt;
 
   Product({
     required this.barcode,
-    required this.name,
-    required this.brand,
-    required this.ingredients,
-    required this.allergens,
-    required this.status,
-    required this.reason,
-    this.ingredientsAnalyzed,
+    required this.nameMap,
+    required this.brandMap,
+    required this.ingredientsMap,
+    required this.allergensMap,
     this.imageUrl,
     this.isManual,
+    this.pendingReportsCount = 0,
     required this.lastUpdated,
-    this.reportCount,
-    this.originalStatus,
-    this.originalReason,
-    this.originalReasonsMap,
-    this.ingredientsMap,
-    this.allergensMap,
-    this.reasonsMap,
-    this.ingredientsAnalyzedMap,
+    this.fetchedFromOffAt,
   });
 
+  // Helper getters per estrarre la lingua corrente con fallback intelligente
+  String getName(String preferredLanguage) {
+    if (nameMap.containsKey(preferredLanguage) && nameMap[preferredLanguage]!.trim().isNotEmpty) {
+      return nameMap[preferredLanguage]!;
+    }
+    for (final lang in ['it', 'en', 'es', 'fr', 'de']) {
+      if (nameMap.containsKey(lang) && nameMap[lang]!.trim().isNotEmpty) {
+        return nameMap[lang]!;
+      }
+    }
+    return nameMap.values.firstWhere((v) => v.trim().isNotEmpty, orElse: () => 'Prodotto Sconosciuto');
+  }
+
+  String getBrand(String preferredLanguage) {
+    if (brandMap.containsKey(preferredLanguage) && brandMap[preferredLanguage]!.trim().isNotEmpty) {
+      return brandMap[preferredLanguage]!;
+    }
+    for (final lang in ['it', 'en', 'es', 'fr', 'de']) {
+      if (brandMap.containsKey(lang) && brandMap[lang]!.trim().isNotEmpty) {
+        return brandMap[lang]!;
+      }
+    }
+    return brandMap.values.firstWhere((v) => v.trim().isNotEmpty, orElse: () => 'Produttore Sconosciuto');
+  }
+
+  String getIngredients(String preferredLanguage) {
+    if (ingredientsMap.containsKey(preferredLanguage) && ingredientsMap[preferredLanguage]!.trim().isNotEmpty) {
+      return ingredientsMap[preferredLanguage]!;
+    }
+    for (final lang in ['it', 'en', 'es', 'fr', 'de']) {
+      if (ingredientsMap.containsKey(lang) && ingredientsMap[lang]!.trim().isNotEmpty) {
+        return ingredientsMap[lang]!;
+      }
+    }
+    return ingredientsMap.values.firstWhere((v) => v.trim().isNotEmpty, orElse: () => '');
+  }
+
+  List<String> getAllergens(String preferredLanguage) {
+    if (allergensMap.containsKey(preferredLanguage) && allergensMap[preferredLanguage]!.isNotEmpty) {
+      return allergensMap[preferredLanguage]!;
+    }
+    for (final lang in ['it', 'en', 'es', 'fr', 'de']) {
+      if (allergensMap.containsKey(lang) && allergensMap[lang]!.isNotEmpty) {
+        return allergensMap[lang]!;
+      }
+    }
+    return allergensMap.values.firstWhere((v) => v.isNotEmpty, orElse: () => const []);
+  }
+
+  // Getters di retrocompatibilità
+  String get name => getName('it');
+  String get brand => getBrand('it');
+  String get ingredients => getIngredients('it');
+  List<String> get allergens => getAllergens('it');
+  int get reportCount => pendingReportsCount;
+
   factory Product.fromJson(Map<String, dynamic> json) {
+    // Gestione nameMap
+    Map<String, String> nMap = {};
+    if (json['name_map'] != null) {
+      nMap = Map<String, String>.from(json['name_map']);
+    } else if (json['name'] != null) {
+      final String singleName = json['name'].toString();
+      nMap = {'it': singleName, 'en': singleName};
+    }
+
+    // Gestione brandMap
+    Map<String, String> bMap = {};
+    if (json['brand_map'] != null) {
+      bMap = Map<String, String>.from(json['brand_map']);
+    } else if (json['brand'] != null) {
+      final String singleBrand = json['brand'].toString();
+      bMap = {'it': singleBrand, 'en': singleBrand};
+    }
+
+    // Gestione ingredientsMap
+    Map<String, String> iMap = {};
+    if (json['ingredients_map'] != null) {
+      iMap = Map<String, String>.from(json['ingredients_map']);
+    } else if (json['ingredients'] != null) {
+      final String singleIng = json['ingredients'].toString();
+      iMap = {'it': singleIng, 'en': singleIng};
+    }
+
+    // Gestione allergensMap
+    Map<String, List<String>> aMap = {};
+    if (json['allergens_map'] != null) {
+      aMap = (json['allergens_map'] as Map<String, dynamic>).map(
+        (k, v) => MapEntry(k, List<String>.from(v)),
+      );
+    } else if (json['allergens'] != null) {
+      final List<String> singleAlg = List<String>.from(json['allergens']);
+      aMap = {'it': singleAlg, 'en': singleAlg};
+    }
+
     return Product(
       barcode: json['barcode'] ?? '',
-      name: json['name'] ?? '',
-      brand: json['brand'] ?? '',
-      ingredients: json['ingredients'] ?? '',
-      allergens: List<String>.from(json['allergens'] ?? []),
-      status: GlutenSafetyStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => GlutenSafetyStatus.sconosciuto,
-      ),
-      reason: json['reason'] ?? '',
-      ingredientsAnalyzed: (json['ingredients_analyzed'] as List?)
-          ?.map((e) => IngredientAnalyzed.fromJson(e))
-          .toList(),
-      imageUrl: json['image_url'],
-      isManual: json['isManual'],
-      lastUpdated: json['lastUpdated'] ?? DateTime.now().toIso8601String(),
-      reportCount: json['reportCount'],
-      originalStatus: json['originalStatus'] != null
-          ? GlutenSafetyStatus.values.firstWhere(
-              (e) => e.name == json['originalStatus'],
-              orElse: () => GlutenSafetyStatus.sconosciuto,
-            )
-          : null,
-      originalReason: json['originalReason'],
-      originalReasonsMap: json['originalReasons_map'] != null
-          ? Map<String, String>.from(json['originalReasons_map'])
-          : null,
-      ingredientsMap: json['ingredients_map'] != null
-          ? Map<String, String>.from(json['ingredients_map'])
-          : null,
-      allergensMap: json['allergens_map'] != null
-          ? (json['allergens_map'] as Map<String, dynamic>).map(
-              (k, v) => MapEntry(k, List<String>.from(v)),
-            )
-          : null,
-      reasonsMap: json['reasons_map'] != null
-          ? Map<String, String>.from(json['reasons_map'])
-          : null,
-      ingredientsAnalyzedMap: json['ingredients_analyzed_map'] != null
-          ? (json['ingredients_analyzed_map'] as Map<String, dynamic>).map(
-              (k, v) => MapEntry(
-                k,
-                (v as List).map((e) => IngredientAnalyzed.fromJson(e)).toList(),
-              ),
-            )
-          : null,
+      nameMap: nMap,
+      brandMap: bMap,
+      ingredientsMap: iMap,
+      allergensMap: aMap,
+      imageUrl: json['image_url'] ?? json['imageUrl'],
+      isManual: json['is_manual'] ?? json['isManual'],
+      pendingReportsCount: json['pending_reports_count'] ?? json['reportCount'] ?? 0,
+      lastUpdated: json['last_updated'] ?? json['lastUpdated'] ?? DateTime.now().toIso8601String(),
+      fetchedFromOffAt: json['fetched_from_off_at'] ?? json['fetchedFromOffAt'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'barcode': barcode,
-      'name': name,
-      'brand': brand,
-      'ingredients': ingredients,
-      'allergens': allergens,
-      'status': status.name,
-      'reason': reason,
-      'ingredients_colored': null, // Deprecated or kept for compatibility
-      'ingredients_analyzed': ingredientsAnalyzed
-          ?.map((e) => e.toJson())
-          .toList(),
-      'image_url': imageUrl,
-      'isManual': isManual,
-      'lastUpdated': lastUpdated,
-      'reportCount': reportCount,
-      'originalStatus': originalStatus?.name,
-      'originalReason': originalReason,
-      'originalReasons_map': originalReasonsMap,
+      'name_map': nameMap,
+      'brand_map': brandMap,
       'ingredients_map': ingredientsMap,
       'allergens_map': allergensMap,
-      'reasons_map': reasonsMap,
-      'ingredients_analyzed_map': ingredientsAnalyzedMap?.map(
-        (k, v) => MapEntry(k, v.map((e) => e.toJson()).toList()),
-      ),
+      'image_url': imageUrl,
+      'is_manual': isManual,
+      'pending_reports_count': pendingReportsCount,
+      'last_updated': lastUpdated,
+      'fetched_from_off_at': fetchedFromOffAt,
     };
   }
 }
 
 class ScanHistoryItem {
   final String id;
-  final String? userId;
   final String barcode;
-  final String productName;
-  final String brand;
-  final GlutenSafetyStatus status;
   final String scannedAt;
-  final bool hasLactose;
 
   ScanHistoryItem({
     required this.id,
-    this.userId,
     required this.barcode,
-    required this.productName,
-    required this.brand,
-    required this.status,
     required this.scannedAt,
-    this.hasLactose = false,
   });
 
   factory ScanHistoryItem.fromJson(Map<String, dynamic> json) {
     return ScanHistoryItem(
       id: json['id'] ?? '',
-      userId: json['userId'],
       barcode: json['barcode'] ?? '',
-      productName: json['productName'] ?? '',
-      brand: json['brand'] ?? '',
-      status: GlutenSafetyStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => GlutenSafetyStatus.sconosciuto,
-      ),
-      scannedAt: json['scannedAt'] ?? DateTime.now().toIso8601String(),
-      hasLactose: json['hasLactose'] ?? false,
+      scannedAt: json['scannedAt'] ?? json['scanned_at'] ?? DateTime.now().toIso8601String(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'userId': userId,
       'barcode': barcode,
-      'productName': productName,
-      'brand': brand,
-      'status': status.name,
       'scannedAt': scannedAt,
-      'hasLactose': hasLactose,
     };
   }
 }
@@ -215,11 +218,7 @@ class ProductReport {
   final String comments;
   final String submittedAt;
   final String status;
-  final GlutenSafetyStatus?
-  originalStatus; // Lo stato del prodotto al momento della segnalazione
   final int score;
-  final Product?
-  productSnapshot; // Snapshot completo del prodotto al momento della segnalazione
 
   ProductReport({
     required this.id,
@@ -231,9 +230,7 @@ class ProductReport {
     required this.comments,
     required this.submittedAt,
     required this.status,
-    this.originalStatus,
     this.score = 0,
-    this.productSnapshot,
   });
 
   factory ProductReport.fromJson(Map<String, dynamic> json) {
@@ -243,20 +240,11 @@ class ProductReport {
       barcode: json['barcode'] ?? '',
       productName: json['productName'] ?? '',
       brand: json['brand'] ?? '',
-      type: json['type'] ?? 'other',
+      type: json['type'] ?? 'label_unclear',
       comments: json['comments'] ?? '',
       submittedAt: json['submittedAt'] ?? DateTime.now().toIso8601String(),
       status: json['status'] ?? 'open',
-      originalStatus: json['originalStatus'] != null
-          ? GlutenSafetyStatus.values.firstWhere(
-              (e) => e.name == json['originalStatus'],
-              orElse: () => GlutenSafetyStatus.sconosciuto,
-            )
-          : null,
       score: json['score'] ?? 0,
-      productSnapshot: json['productSnapshot'] != null
-          ? Product.fromJson(Map<String, dynamic>.from(json['productSnapshot']))
-          : null,
     );
   }
 
@@ -271,9 +259,7 @@ class ProductReport {
       'comments': comments,
       'submittedAt': submittedAt,
       'status': status,
-      'originalStatus': originalStatus?.name,
       'score': score,
-      'productSnapshot': productSnapshot?.toJson(),
     };
   }
 }

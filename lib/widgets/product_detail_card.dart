@@ -309,6 +309,20 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                       () => _submittingReport = true,
                                     );
                                     try {
+                                      final currentLang = widget.userSettings.preferredLanguage;
+                                      final origAnalysis = AnalyzerService.analyzeGlutenSafety(
+                                        name: currentProduct.getName(currentLang),
+                                        brand: currentProduct.getBrand(currentLang),
+                                        ingredients: currentProduct.getIngredients(currentLang),
+                                        allergensList: currentProduct.getAllergens(currentLang),
+                                        reportCount: 0,
+                                        categoriesTags: const [],
+                                        strictMode: widget.userSettings.strictMode,
+                                        warnAdditives: widget.userSettings.warnAdditives,
+                                        alertLactose: widget.userSettings.alertLactose,
+                                        preferredLanguage: currentLang,
+                                        ignoreReports: true,
+                                      );
                                       await widget.onReportSubmit(
                                         currentProduct.barcode,
                                         {
@@ -316,7 +330,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                           "comments":
                                               _reportCommentsController.text,
                                           "originalStatus":
-                                              currentProduct.status.name,
+                                              origAnalysis.status.name,
                                         },
                                       );
                                       setState(() {
@@ -385,49 +399,41 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         widget.isLoading && widget.productNotifier?.value == null;
 
     final String currentLang = widget.userSettings.preferredLanguage;
-    final String rawIngredients =
-        currentProduct.ingredientsMap?[currentLang] ??
-        currentProduct.ingredients;
-    final String displayedIngredients = rawIngredients
+    final String productName = currentProduct.getName(currentLang);
+    final String productBrand = currentProduct.getBrand(currentLang);
+    final String displayedIngredients = currentProduct
+        .getIngredients(currentLang)
         .replaceAll('\$', '')
         .trim();
-    final List<String> rawAllergens =
-        currentProduct.allergensMap?[currentLang] ??
-        AnalyzerService.translateAllergens(
-          currentProduct.allergens,
-          currentLang,
-        );
-    final List<String> displayedAllergens = rawAllergens
+    final List<String> displayedAllergens = currentProduct
+        .getAllergens(currentLang)
         .map((a) => a.replaceAll('\$', '').trim())
         .toList();
-    final bool isReported =
-        (currentProduct.reportCount ?? 0) > 0 || _hasUserReported;
-    final String rawReason = isReported
-        ? currentProduct.reason
-        : (currentProduct.reasonsMap?[currentLang] ?? currentProduct.reason);
-    final String displayedReason = rawReason.replaceAll('\$', '').trim();
-    final List<IngredientAnalyzed> rawIngredientsAnalyzed =
-        currentProduct.ingredientsAnalyzedMap?[currentLang] ??
-        currentProduct.ingredientsAnalyzed ??
-        [];
 
-    final List<IngredientAnalyzed> displayedIngredientsAnalyzed = [];
-    final Set<String> seenIngredients = {};
-    for (var item in rawIngredientsAnalyzed) {
-      final cleanName = item.ingredient.replaceAll('\$', '').trim();
-      final cleanReason = item.reason.replaceAll('\$', '').trim();
-      final key = cleanName.toLowerCase();
-      if (!seenIngredients.contains(key) && cleanName.isNotEmpty) {
-        seenIngredients.add(key);
-        displayedIngredientsAnalyzed.add(
-          IngredientAnalyzed(
-            ingredient: cleanName,
-            dangerLevel: item.dangerLevel,
-            reason: cleanReason,
-          ),
-        );
-      }
-    }
+    final bool isReported =
+        (currentProduct.pendingReportsCount > 0) || _hasUserReported;
+
+    final analysis = AnalyzerService.analyzeGlutenSafety(
+      name: productName,
+      brand: productBrand,
+      ingredients: displayedIngredients,
+      allergensList: displayedAllergens,
+      reportCount: currentProduct.pendingReportsCount,
+      categoriesTags: const [],
+      strictMode: widget.userSettings.strictMode,
+      warnAdditives: widget.userSettings.warnAdditives,
+      alertLactose: widget.userSettings.alertLactose,
+      preferredLanguage: currentLang,
+    );
+
+    final GlutenSafetyStatus effectiveStatus = isReported
+        ? GlutenSafetyStatus.incerto
+        : analysis.status;
+    final String displayedReason = isReported
+        ? "ATTENZIONE: Questo prodotto presenta una segnalazione attiva o incongruenze."
+        : analysis.reason;
+    final List<IngredientAnalyzed> displayedIngredientsAnalyzed =
+        analysis.ingredientsAnalyzed;
 
     final bool containsLactose = AnalyzerService.checkLactose(
       displayedIngredients,
@@ -445,7 +451,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     String statusBigText;
     IconData statusIcon;
 
-    switch (currentProduct.status) {
+    switch (effectiveStatus) {
       case GlutenSafetyStatus.adatto:
         heroBgColor = colorScheme.primaryContainer.withValues(alpha: 0.15);
         heroTextColor = colorScheme.primary;
@@ -710,26 +716,36 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   final bool hasActiveReport =
                       widget.showReportLink &&
                       widget.onViewReport != null &&
-                      ((currentProduct.reportCount ?? 0) > 0 ||
+                      (currentProduct.pendingReportsCount > 0 ||
                           _hasUserReported);
 
-                  // Costruiamo la stringa con il vecchio stato se presente
+                  // On-the-fly: calcola lo stato originale ignorando report
                   String displayedReasonWithOldStatus = displayedReason;
-                  if (hasActiveReport &&
-                      currentProduct.originalStatus != null &&
-                      currentProduct.originalStatus != currentProduct.status) {
-                    final String oldStatusTranslated = _translateGlutenStatus(
-                      currentProduct.originalStatus!,
+                  if (hasActiveReport) {
+                    final origAnalysisCopy = AnalyzerService.analyzeGlutenSafety(
+                      name: productName,
+                      brand: productBrand,
+                      ingredients: displayedIngredients,
+                      allergensList: displayedAllergens,
+                      reportCount: 0,
+                      categoriesTags: const [],
+                      strictMode: widget.userSettings.strictMode,
+                      warnAdditives: widget.userSettings.warnAdditives,
+                      alertLactose: widget.userSettings.alertLactose,
+                      preferredLanguage: currentLang,
+                      ignoreReports: true,
                     );
-                    String cleanReason = displayedReason.trim();
-                    if (cleanReason.endsWith('.')) {
-                      cleanReason = cleanReason.substring(
-                        0,
-                        cleanReason.length - 1,
+                    if (origAnalysisCopy.status != effectiveStatus) {
+                      final String oldStatusTranslated = _translateGlutenStatus(
+                        origAnalysisCopy.status,
                       );
+                      String cleanReason = displayedReason.trim();
+                      if (cleanReason.endsWith('.')) {
+                        cleanReason = cleanReason.substring(0, cleanReason.length - 1);
+                      }
+                      displayedReasonWithOldStatus =
+                          "$cleanReason. Stato precedente alla segnalazione: $oldStatusTranslated.";
                     }
-                    displayedReasonWithOldStatus =
-                        "$cleanReason. Stato precedente alla segnalazione: $oldStatusTranslated.";
                   }
 
                   final Widget cardContent = Column(
@@ -1046,7 +1062,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               const SizedBox(height: 24),
 
               // ── Pulsante Segnalazione ──────────────────────────
-              if (_hasUserReported || (currentProduct.reportCount ?? 0) > 0)
+              if (_hasUserReported || currentProduct.pendingReportsCount > 0)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),

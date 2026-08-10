@@ -398,8 +398,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             if (widget.showProductLink)
               InkWell(
                 onTap: () {
-                  final productToShow =
-                      _activeReport?.productSnapshot ?? widget.product;
+                  final productToShow = widget.product;
                   Navigator.push(
                     context,
                     MaterialPageRoute(

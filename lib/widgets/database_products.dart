@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gscanner/services/db_service.dart';
+import 'package:gscanner/services/analyzer_service.dart';
 import 'package:gscanner/widgets/report_detail_card.dart';
 import '../models/types.dart';
 import '../theme/app_theme.dart';
@@ -76,7 +77,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
 
     // Estrai i prodotti con segnalazioni, ordinati per data decrescente
     final reportedProducts =
-        widget.products.where((p) => (p.reportCount ?? 0) > 0).toList()
+        widget.products.where((p) => p.pendingReportsCount > 0).toList()
           ..sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
 
     final bool showSkeleton = reportedProducts.isEmpty && !widget.isSynced;
@@ -99,25 +100,21 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
         ? [
             Product(
               barcode: '1234567890123',
-              name: 'Nome Prodotto Segnalato Esempio',
-              brand: 'Marca Esempio',
-              ingredients: 'Dummy ingredients',
-              allergens: [],
-              status: GlutenSafetyStatus.incerto,
-              reason: 'Segnalazione in corso',
+              nameMap: const {'it': 'Nome Prodotto Segnalato Esempio'},
+              brandMap: const {'it': 'Marca Esempio'},
+              ingredientsMap: const {'it': 'Dummy ingredients'},
+              allergensMap: const {'it': []},
               lastUpdated: DateTime.now().toIso8601String(),
-              reportCount: 3,
+              pendingReportsCount: 3,
             ),
             Product(
               barcode: '9876543210987',
-              name: 'Altro Prodotto Segnalato Esempio',
-              brand: 'Altra Marca Esempio',
-              ingredients: 'Dummy ingredients',
-              allergens: [],
-              status: GlutenSafetyStatus.nonAdatto,
-              reason: 'Segnalazione in corso',
+              nameMap: const {'it': 'Altro Prodotto Segnalato Esempio'},
+              brandMap: const {'it': 'Altra Marca Esempio'},
+              ingredientsMap: const {'it': 'Dummy ingredients'},
+              allergensMap: const {'it': []},
               lastUpdated: DateTime.now().toIso8601String(),
-              reportCount: 1,
+              pendingReportsCount: 1,
             ),
           ]
         : filtered;
@@ -468,18 +465,29 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
       ),
       child: InkWell(
         onTap: () {
+          final lang = widget.userSettings?.preferredLanguage ?? 'it';
+          final origA = AnalyzerService.analyzeGlutenSafety(
+            name: prod.getName(lang),
+            brand: prod.getBrand(lang),
+            ingredients: prod.getIngredients(lang),
+            allergensList: prod.getAllergens(lang),
+            reportCount: 0,
+            categoriesTags: const [],
+            strictMode: widget.userSettings?.strictMode ?? false,
+            warnAdditives: widget.userSettings?.warnAdditives ?? false,
+            alertLactose: widget.userSettings?.alertLactose ?? false,
+            preferredLanguage: lang,
+            ignoreReports: true,
+          );
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ReportDetailCard(
                 product: prod,
-                originalStatus:
-                    prod.originalStatus ?? GlutenSafetyStatus.sconosciuto,
+                originalStatus: origA.status,
                 onBack: () => Navigator.pop(context),
                 reportReasonKey: "label_unclear",
-                reportComment: prod.reason.isNotEmpty
-                    ? prod.reason
-                    : "Nessun commento",
+                reportComment: "Nessun commento",
                 reportDate: "",
                 onVote: (vote) async {
                   await DbService.voteOnReportByBarcode(prod.barcode, vote);
