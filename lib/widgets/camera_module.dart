@@ -81,13 +81,17 @@ class _CameraModuleState extends State<CameraModule>
         _startCamera();
       } else {
         _controller.stop();
+        if (mounted) setState(() => _cameraError = null); // Reset errore al cambio tab
       }
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
+    // Su Web, la minimizzazione/cambio scheda emette `inactive` o `hidden` invece di `paused`.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
       _controller.stop();
     } else if (state == AppLifecycleState.resumed) {
       if (widget.isActive) {
@@ -475,23 +479,14 @@ class _CameraModuleState extends State<CameraModule>
 
   Widget _buildInPageErrorOverlay(Object? error) {
     final colorScheme = context.colorScheme;
-    final errStr = error?.toString().toLowerCase() ?? '';
-
-    final isPermissionDenied = errStr.contains('permission') ||
-        errStr.contains('notallowederror') ||
-        errStr.contains('denied');
-
-    // Messaggi e pulsante differenziati per piattaforma
+    // Su Web i browser restituiscono stringhe d'errore incoerenti: evitiamo il parsing.
     final String cleanMessage;
-    if (kIsWeb && isPermissionDenied) {
+    if (kIsWeb) {
       cleanMessage =
-          "Permesso fotocamera negato.\nClicca sull'icona del lucchetto (🔒) nella barra degli indirizzi del browser per consentire l'accesso, poi ricarica la pagina.";
-    } else if (isPermissionDenied) {
-      cleanMessage =
-          "Permesso fotocamera negato.\nConcedi l'accesso alla fotocamera nelle impostazioni del dispositivo.";
+          "Permesso fotocamera negato o hardware non disponibile.\nClicca sull'icona del lucchetto nella barra degli indirizzi del browser per consentire l'accesso, poi ricarica la pagina.";
     } else {
       cleanMessage =
-          "Impossibile avviare la fotocamera.\nVerifica che non sia in uso da un'altra app.";
+          "Permesso fotocamera negato.\nConcedi l'accesso alla fotocamera nelle impostazioni del dispositivo.";
     }
 
     return Container(
@@ -518,18 +513,16 @@ class _CameraModuleState extends State<CameraModule>
               ),
               textAlign: TextAlign.center,
             ),
-            // Su Web con permessi negati: nessun bottone (l'utente deve agire nel browser)
+            // Su Web nessun bottone: l'utente deve agire sul browser (lucchetto URL)
             if (!kIsWeb) ...[
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: () async {
-                  if (isPermissionDenied && _isMobile) {
-                    await openAppSettings();
-                  }
+                  if (_isMobile) await openAppSettings();
                   await _startCamera();
                 },
                 icon: const Icon(Icons.refresh, size: 18),
-                label: Text(isPermissionDenied ? 'Impostazioni' : 'Riprova'),
+                label: const Text('Impostazioni'),
                 style: FilledButton.styleFrom(
                   backgroundColor: colorScheme.primaryContainer,
                   foregroundColor: colorScheme.onPrimaryContainer,
