@@ -24,23 +24,8 @@ import 'widgets/settings_panel.dart';
 import 'widgets/product_detail_card.dart';
 import 'widgets/report_detail_card.dart';
 
-// IMPORTA LA NUOVA SCHERMATA
 import 'widgets/auth_screen.dart';
-
 import 'widgets/responsive_wrapper.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
-
-// Top-level scanner controller
-final MobileScannerController globalScannerController = MobileScannerController(
-  autoStart: false,
-  detectionSpeed: DetectionSpeed.noDuplicates,
-  formats: const [
-    BarcodeFormat.ean13,
-    BarcodeFormat.ean8,
-    BarcodeFormat.qrCode,
-  ],
-  cameraResolution: const Size(480, 640),
-);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,7 +57,9 @@ class MyApp extends StatelessWidget {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Scaffold(
                   body: Center(
-                    child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+                    child: CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 );
               }
@@ -362,23 +349,28 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       });
     }
     // Delta sync in background
-    DbService.performDeltaSync().then((_) async {
-      final updated = await DbService.getLocalProducts();
-      if (mounted) {
-        setState(() {
-          products = updated;
-          for (var barcode in _openProductNotifiers.keys) {
-            final prod = updated.cast<Product?>().firstWhere(
-              (p) => p?.barcode == barcode,
-              orElse: () => null,
-            );
-            if (prod != null) {
-              _openProductNotifiers[barcode]!.value = prod;
-            }
+    DbService.performDeltaSync()
+        .then((_) async {
+          final updated = await DbService.getLocalProducts();
+          if (mounted) {
+            setState(() {
+              products = updated;
+              for (var barcode in _openProductNotifiers.keys) {
+                final prod = updated.cast<Product?>().firstWhere(
+                  (p) => p?.barcode == barcode,
+                  orElse: () => null,
+                );
+                if (prod != null) {
+                  _openProductNotifiers[barcode]!.value = prod;
+                }
+              }
+            });
           }
+        })
+        .catchError((e) {
+          print('Delta sync error: $e');
+          return null;
         });
-      }
-    }).catchError((e) { print('Delta sync error: $e'); return null; });
   }
 
   Future<void> refreshAllData() async {
@@ -455,9 +447,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 reportedSessionBarcodes.contains(loadedProduct.barcode) ||
                 reportOfProduct != null;
             final String comment = reportOfProduct?.comments ?? '';
-          final String rDate = reportOfProduct != null
-              ? formatRelativeDate(reportOfProduct.submittedAt)
-              : "";
+            final String rDate = reportOfProduct != null
+                ? formatRelativeDate(reportOfProduct.submittedAt)
+                : "";
 
             // Calcola originalStatus al volo (senza usare il campo legacy)
             final origLang = userSettings.preferredLanguage;
@@ -683,8 +675,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               allergensMap: p.allergensMap,
               imageUrl: p.imageUrl,
               lastUpdated: p.lastUpdated,
-              pendingReportsCount:
-                  (p.pendingReportsCount - 1).clamp(0, 9999),
+              pendingReportsCount: (p.pendingReportsCount - 1).clamp(0, 9999),
               fetchedFromOffAt: p.fetchedFromOffAt,
             );
             if (_openProductNotifiers.containsKey(barcode)) {
@@ -850,7 +841,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       index: _currentIndex > 3 ? 3 : _currentIndex,
       children: [
         CameraModule(
-          controller: globalScannerController,
           isActive: _isCameraActive && _currentIndex == 0,
           onScanSuccess: handleScanSuccess,
           scanningProgress: scanningProgress,

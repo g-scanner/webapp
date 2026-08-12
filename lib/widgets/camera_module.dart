@@ -5,11 +5,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:gscanner/services/scanner_state_manager.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../theme/app_theme.dart';
 
 class CameraModule extends StatefulWidget {
-  final MobileScannerController controller;
+  final MobileScannerController? controller;
   final Future<void> Function(String barcode) onScanSuccess;
   final bool scanningProgress;
   final String? scanError;
@@ -17,7 +17,7 @@ class CameraModule extends StatefulWidget {
 
   const CameraModule({
     super.key,
-    required this.controller,
+    this.controller,
     required this.onScanSuccess,
     required this.scanningProgress,
     this.scanError,
@@ -30,12 +30,15 @@ class CameraModule extends StatefulWidget {
 
 class _CameraModuleState extends State<CameraModule>
     with WidgetsBindingObserver {
-  late final ScannerStateManager _stateManager;
+  late final MobileScannerController _controller;
+
   final TextEditingController _manualCodeController = TextEditingController();
   late FocusNode _manualFocusNode;
 
   bool _isProcessing = false;
   bool _isManualFocused = false;
+  bool _isStarting = false;
+  Object? _cameraError;
 
   bool get _isMobile =>
       !kIsWeb &&
@@ -47,16 +50,25 @@ class _CameraModuleState extends State<CameraModule>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Inizializza lo state manager dedicato
-    _stateManager = ScannerStateManager(controller: widget.controller);
+    _controller = widget.controller ??
+        MobileScannerController(
+          autoStart: false,
+          detectionSpeed: DetectionSpeed.noDuplicates,
+          formats: const [
+            BarcodeFormat.ean13,
+            BarcodeFormat.ean8,
+            BarcodeFormat.qrCode,
+          ],
+          cameraResolution: const Size(480, 640),
+        );
 
     _manualFocusNode = FocusNode();
     _manualFocusNode.addListener(_onManualFocusChange);
 
-    // Avvio deterministico della fotocamera dopo il primo frame (widget gia' montato)
+    // Avvio deterministico della fotocamera dopo il primo frame (widget montato)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _stateManager.initializeAndStart(isActive: widget.isActive);
+      if (mounted && widget.isActive) {
+        _startCamera();
       }
     });
   }
@@ -66,26 +78,21 @@ class _CameraModuleState extends State<CameraModule>
     super.didUpdateWidget(oldWidget);
     if (widget.isActive != oldWidget.isActive) {
       if (widget.isActive) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _stateManager.initializeAndStart(isActive: true);
-          }
-        });
+        _startCamera();
       } else {
-        _stateManager.stop();
+        _controller.stop();
       }
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.paused) {
+      _controller.stop();
+    } else if (state == AppLifecycleState.resumed) {
       if (widget.isActive) {
-        _stateManager.initializeAndStart(isActive: true);
+        _startCamera();
       }
-    } else if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      _stateManager.stop();
     }
   }
 
@@ -96,10 +103,38 @@ class _CameraModuleState extends State<CameraModule>
     _manualFocusNode.dispose();
     _manualCodeController.dispose();
 
-    // Rilascia le risorse del manager se la schermata viene distrutta
-    _stateManager.stop();
-    _stateManager.dispose();
+    _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _startCamera() async {
+    if (_isStarting || _controller.value.isRunning) return;
+    _isStarting = true;
+
+    if (mounted) {
+      setState(() {
+        _cameraError = null;
+      });
+    }
+
+    try {
+      await _controller.start();
+    } catch (e) {
+      final errorString = e.toString().toLowerCase();
+      // Su Web, il browser potrebbe tenere il video appeso. Ignoriamo questo "falso errore".
+      if (errorString.contains('already running') ||
+          errorString.contains('already playing')) {
+        debugPrint('Web Camera already running, ignoring exception.');
+      } else {
+        if (mounted) {
+          setState(() {
+            _cameraError = e;
+          });
+        }
+      }
+    } finally {
+      _isStarting = false;
+    }
   }
 
   void _onManualFocusChange() {
@@ -278,55 +313,51 @@ class _CameraModuleState extends State<CameraModule>
     );
   }
 
-  /// Costruisce la zona video/fallback a ingombro FISSO (AspectRatio 16/10)
-  /// eliminando ogni forma di layout shift durante le transizioni di stato.
-  ///
-  /// IMPORTANTE: MobileScanner e' isolato all'esterno del ValueListenableBuilder
-  /// per evitare che cambi di stato (checkingPermissions -> starting -> running)
-  /// ne causino il rebuild, smontaggio o il loop nativo di avvio/arresto.
   Widget _buildCameraArea() {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
     final bool hasTorch = _isMobile;
     final double buttonOverflow = hasTorch ? 28.0 : 0.0;
 
-    return Stack(
-      children: [
-        Padding(
-          padding: EdgeInsets.only(bottom: buttonOverflow),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28.0),
-              // Camera preview background is always black (intentional)
-              color: Colors.black,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: AspectRatio(
-              aspectRatio: 16 / 10,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final w = constraints.maxWidth;
-                  final h = constraints.maxHeight;
-                  final double frameW = w * 0.85;
-                  final double frameH = h * 0.65;
+    return ValueListenableBuilder<MobileScannerState>(
+      valueListenable: _controller,
+      builder: (context, state, child) {
+        final hasError = state.error != null || _cameraError != null;
+        final currentError = state.error ?? _cameraError;
 
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // 1. MobileScanner FISSO nell'albero (mai ricostruito dai cambi di stato)
-                      MobileScanner(
-                        controller: widget.controller,
-                        onDetect: _onDetect,
-                      ),
+        return Stack(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(bottom: buttonOverflow),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28.0),
+                  color: Colors.black,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: AspectRatio(
+                  aspectRatio: 16 / 10,
+                  child: hasError
+                      ? _buildInPageErrorOverlay(currentError)
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final w = constraints.maxWidth;
+                            final h = constraints.maxHeight;
+                            final double frameW = w * 0.85;
+                            final double frameH = h * 0.65;
 
-                      // 2. Overlay Reattivi (ascoltano lo stato senza toccare MobileScanner)
-                      ValueListenableBuilder<ScannerState>(
-                        valueListenable: _stateManager,
-                        builder: (context, scannerState, _) {
-                          return Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              if (scannerState.isRunning) ...[
+                            return Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                // 1. Livello inferiore (Camera) con placeholder nero
+                                MobileScanner(
+                                  controller: _controller,
+                                  onDetect: _onDetect,
+                                  placeholderBuilder: (context) =>
+                                      Container(color: Colors.black),
+                                ),
+
+                                // 2. Overlay Statico (visibile solo quando NON ci sono errori)
                                 CustomPaint(
                                   size: Size(w, h),
                                   painter: _VignetteBorderPainter(
@@ -364,7 +395,6 @@ class _CameraModuleState extends State<CameraModule>
                                 ),
                                 if (widget.scanningProgress)
                                   Container(
-                                    // Camera overlay dimming - always black (intentional)
                                     color: Colors.black.withValues(alpha: 0.6),
                                     child: Center(
                                       child: Column(
@@ -374,7 +404,6 @@ class _CameraModuleState extends State<CameraModule>
                                             color: colorScheme.primaryContainer,
                                           ),
                                           const SizedBox(height: 16),
-                                          // Text on camera overlay - always white (intentional)
                                           const Text(
                                             'Analisi in corso...',
                                             style: TextStyle(
@@ -388,30 +417,20 @@ class _CameraModuleState extends State<CameraModule>
                                     ),
                                   ),
                               ],
-                              if (!scannerState.isRunning)
-                                _buildFallbackOverlay(scannerState),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                },
+                            );
+                          },
+                        ),
+                ),
               ),
             ),
-          ),
-        ),
 
-        // Pulsante Flashlight per dispositivi Mobile (ascolta solo quando running)
-        if (hasTorch)
-          ValueListenableBuilder<ScannerState>(
-            valueListenable: _stateManager,
-            builder: (context, scannerState, _) {
-              if (!scannerState.isRunning) return const SizedBox.shrink();
-              return ValueListenableBuilder<MobileScannerState>(
-                valueListenable: widget.controller,
+            // Pulsante Flashlight per dispositivi Mobile (attivo solo se non ci sono errori)
+            if (hasTorch && !hasError)
+              ValueListenableBuilder<MobileScannerState>(
+                valueListenable: _controller,
                 builder: (context, controllerState, _) {
-                  final isTorchOn = controllerState.torchState == TorchState.on;
+                  final isTorchOn =
+                      controllerState.torchState == TorchState.on;
                   return Positioned(
                     bottom: 0,
                     left: 0,
@@ -426,7 +445,7 @@ class _CameraModuleState extends State<CameraModule>
                         shape: const CircleBorder(),
                         clipBehavior: Clip.antiAlias,
                         child: InkWell(
-                          onTap: () => widget.controller.toggleTorch(),
+                          onTap: () => _controller.toggleTorch(),
                           child: SizedBox(
                             width: 56,
                             height: 56,
@@ -447,173 +466,78 @@ class _CameraModuleState extends State<CameraModule>
                     ),
                   );
                 },
-              );
-            },
-          ),
-      ],
+              ),
+          ],
+        );
+      },
     );
   }
 
-  /// Costruisce gli overlay di informazione o di errore quando lo scanner non e' attivo.
-  /// NOTE: These overlays are rendered ON TOP of the black camera area,
-  /// so Colors.white/Colors.white70 for text is intentional (always on dark bg).
-  Widget _buildFallbackOverlay(ScannerState state) {
+  Widget _buildInPageErrorOverlay(Object? error) {
     final colorScheme = context.colorScheme;
-    Widget content;
+    final errStr = error?.toString().toLowerCase() ?? '';
 
-    switch (state.status) {
-      case ScannerStatus.checkingPermissions:
-      case ScannerStatus.starting:
-        content = Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: colorScheme.primaryContainer),
-            const SizedBox(height: 16),
-            const Text(
-              "Avvio fotocamera in corso...",
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-          ],
-        );
-        break;
+    final isPermissionDenied = errStr.contains('permission') ||
+        errStr.contains('notallowederror') ||
+        errStr.contains('denied');
 
-      case ScannerStatus.permissionWaiting:
-        content = Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: colorScheme.primaryContainer),
-            const SizedBox(height: 16),
-            const Text(
-              "In attesa dei permessi...",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        );
-        break;
-
-      case ScannerStatus.permissionDeniedWeb:
-        content = Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Accesso Fotocamera Bloccato',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Permesso negato. Clicca sul lucchetto nella barra degli indirizzi del browser per sbloccare la fotocamera e ricarica.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.white70,
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () => _stateManager.retryWebStart(),
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Riprova'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.primaryContainer,
-                  foregroundColor: colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ],
-          ),
-        );
-        break;
-
-      case ScannerStatus.permissionDeniedMobile:
-        content = Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Fotocamera non disponibile',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Concedi l\'accesso alla fotocamera per scansionare i codici a barre.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.white70,
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () => _stateManager.requestMobilePermission(),
-                label: const Text('Vai alle Impostazioni'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.primaryContainer,
-                  foregroundColor: colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ],
-          ),
-        );
-        break;
-
-      case ScannerStatus.error:
-        content = Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: colorScheme.error,
-              size: 40,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              state.errorMessage ?? 'Impossibile avviare la fotocamera.',
-              style: const TextStyle(fontSize: 14, color: Colors.white70),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => _stateManager.initializeAndStart(isActive: true),
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Riprova'),
-              style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.primaryContainer,
-                foregroundColor: colorScheme.onPrimaryContainer,
-              ),
-            ),
-          ],
-        );
-        break;
-
-      default:
-        content = const SizedBox.shrink();
+    // Messaggi e pulsante differenziati per piattaforma
+    final String cleanMessage;
+    if (kIsWeb && isPermissionDenied) {
+      cleanMessage =
+          "Permesso fotocamera negato.\nClicca sull'icona del lucchetto (🔒) nella barra degli indirizzi del browser per consentire l'accesso, poi ricarica la pagina.";
+    } else if (isPermissionDenied) {
+      cleanMessage =
+          "Permesso fotocamera negato.\nConcedi l'accesso alla fotocamera nelle impostazioni del dispositivo.";
+    } else {
+      cleanMessage =
+          "Impossibile avviare la fotocamera.\nVerifica che non sia in uso da un'altra app.";
     }
 
-    return Positioned.fill(
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28.0),
-          // Camera fallback overlay - always black (intentional)
-          color: Colors.black,
+    return Container(
+      color: Colors.black,
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.white,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              cleanMessage,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            // Su Web con permessi negati: nessun bottone (l'utente deve agire nel browser)
+            if (!kIsWeb) ...[
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () async {
+                  if (isPermissionDenied && _isMobile) {
+                    await openAppSettings();
+                  }
+                  await _startCamera();
+                },
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text(isPermissionDenied ? 'Impostazioni' : 'Riprova'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primaryContainer,
+                  foregroundColor: colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ],
+          ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-        child: Center(child: content),
       ),
     );
   }
@@ -658,11 +582,11 @@ class _CameraModuleState extends State<CameraModule>
                       duration: const Duration(milliseconds: 250),
                       transitionBuilder:
                           (Widget child, Animation<double> animation) {
-                            return ScaleTransition(
-                              scale: animation,
-                              child: child,
-                            );
-                          },
+                        return ScaleTransition(
+                          scale: animation,
+                          child: child,
+                        );
+                      },
                       child: showClearIcon
                           ? IconButton(
                               key: const ValueKey('clearIcon'),
