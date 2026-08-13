@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../models/types.dart';
 import '../services/analyzer_service.dart';
 import '../theme/app_theme.dart';
@@ -87,11 +88,11 @@ class _HistoryListState extends State<HistoryList> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.cardBackground,
         title: Text(
-          "Eliminare scansione?",
+          "history.actions.clearAllConfirmTitle".tr(),
           style: TextStyle(color: colorScheme.onSurface),
         ),
         content: Text(
-          "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
+          "history.actions.clearAllConfirmBody".tr(),
           style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
         actions: [
@@ -100,7 +101,7 @@ class _HistoryListState extends State<HistoryList> {
             style: TextButton.styleFrom(
               foregroundColor: colorScheme.onSurfaceVariant,
             ),
-            child: const Text("Annulla"),
+            child: Text("common.actions.cancel".tr()),
           ),
           TextButton(
             onPressed: () {
@@ -108,7 +109,7 @@ class _HistoryListState extends State<HistoryList> {
               widget.onDeleteHistoryItem(id);
             },
             style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-            child: const Text("Elimina"),
+            child: Text("common.actions.delete".tr()),
           ),
         ],
       ),
@@ -125,8 +126,10 @@ class _HistoryListState extends State<HistoryList> {
 
     if (product == null) {
       return _AnalyzedItemData(
-        productName: "Prodotto #${item.barcode}",
-        brand: "Caricamento in corso...",
+        productName: "history.loading.productFallbackName".tr(
+          namedArgs: {"barcode": item.barcode},
+        ),
+        brand: "history.loading.brandLoading".tr(),
         status: GlutenSafetyStatus.sconosciuto,
         hasLactose: false,
       );
@@ -137,7 +140,9 @@ class _HistoryListState extends State<HistoryList> {
     final ingredients = product.getIngredients(lang);
     final allergens = product.getAllergens(lang);
 
-    final bool isUserReported = widget.userSettings.reportedBarcodes.contains(item.barcode);
+    final bool isUserReported = widget.userSettings.reportedBarcodes.contains(
+      item.barcode,
+    );
 
     final analysis = AnalyzerService.analyzeGlutenSafety(
       name: name,
@@ -152,11 +157,15 @@ class _HistoryListState extends State<HistoryList> {
       preferredLanguage: lang,
     );
 
-    final GlutenSafetyStatus finalStatus = (isUserReported || product.pendingReportsCount > 0)
+    final GlutenSafetyStatus finalStatus =
+        (isUserReported || product.pendingReportsCount > 0)
         ? GlutenSafetyStatus.incerto
         : analysis.status;
 
-    final bool hasLactose = AnalyzerService.checkLactose(ingredients, allergens);
+    final bool hasLactose = AnalyzerService.checkLactose(
+      ingredients,
+      allergens,
+    );
 
     return _AnalyzedItemData(
       productName: name,
@@ -184,7 +193,7 @@ class _HistoryListState extends State<HistoryList> {
           ),
           const SizedBox(width: 4),
           Text(
-            "Lattosio",
+            "history.lactose".tr(),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -269,7 +278,8 @@ class _HistoryListState extends State<HistoryList> {
       if (data.status == GlutenSafetyStatus.nonAdatto) dangerCount++;
       if (data.status == GlutenSafetyStatus.incerto) uncertainCount++;
 
-      final matchesSearch = _search.isEmpty ||
+      final matchesSearch =
+          _search.isEmpty ||
           data.productName.toLowerCase().contains(_search.toLowerCase()) ||
           data.brand.toLowerCase().contains(_search.toLowerCase()) ||
           item.barcode.contains(_search);
@@ -283,8 +293,8 @@ class _HistoryListState extends State<HistoryList> {
     final bool isFiltering = _search.isNotEmpty || _filter != null;
     final List<MapEntry<ScanHistoryItem, _AnalyzedItemData>> displayItems =
         isFiltering
-            ? processedList
-            : processedList.take(_displayedItemsCount).toList();
+        ? processedList
+        : processedList.take(_displayedItemsCount).toList();
 
     final bool showClearIcon = _isSearchFocused && _search.isNotEmpty;
 
@@ -307,7 +317,7 @@ class _HistoryListState extends State<HistoryList> {
           children: [
             // ── Intestazione Pagina ─────────────────────────────────────
             Text(
-              "Cronologia Scansioni",
+              "history.title".tr(),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
@@ -316,7 +326,7 @@ class _HistoryListState extends State<HistoryList> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Rivedi i prodotti che hai scansionato e i loro controlli di sicurezza.",
+              "history.empty.subtitle".tr(),
               style: TextStyle(
                 fontSize: 14,
                 color: colorScheme.onSurfaceVariant,
@@ -333,21 +343,21 @@ class _HistoryListState extends State<HistoryList> {
                   children: [
                     _buildStatBox(
                       count: safeCount.toString(),
-                      label: "Idonei",
+                      label: "history.filters.safe".tr(),
                       color: colorScheme.primary,
                       icon: Icons.check_circle,
                     ),
                     const SizedBox(width: 12),
                     _buildStatBox(
                       count: uncertainCount.toString(),
-                      label: "Incerti",
+                      label: "history.filters.uncertain".tr(),
                       color: colorScheme.tertiary,
                       icon: Icons.warning_rounded,
                     ),
                     const SizedBox(width: 12),
                     _buildStatBox(
                       count: dangerCount.toString(),
-                      label: "Vietati",
+                      label: "history.filters.unsafe".tr(),
                       color: colorScheme.error,
                       icon: Icons.cancel,
                     ),
@@ -371,7 +381,7 @@ class _HistoryListState extends State<HistoryList> {
                       color: colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
-                      hintText: "Cerca prodotto...",
+                      hintText: "common.actions.search".tr(),
                       hintStyle: TextStyle(
                         color: colorScheme.onSurfaceVariant.withValues(
                           alpha: 0.6,
@@ -437,6 +447,8 @@ class _HistoryListState extends State<HistoryList> {
                 Flexible(
                   flex: 2,
                   child: DropdownButtonFormField<GlutenSafetyStatus?>(
+                    isExpanded:
+                        true, //Todo forse da rimuovere, aggiunto io a mano
                     initialValue: _filter,
                     icon: Icon(
                       Icons.filter_list,
@@ -463,7 +475,7 @@ class _HistoryListState extends State<HistoryList> {
                       DropdownMenuItem(
                         value: null,
                         child: Text(
-                          "Tutti",
+                          "history.filters.all".tr(),
                           style: _dropdownItemTextStyle(
                             colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                           ),
@@ -472,28 +484,28 @@ class _HistoryListState extends State<HistoryList> {
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.adatto,
                         child: Text(
-                          "Sicuri",
+                          "history.filters.safe".tr(),
                           style: _dropdownItemTextStyle(colorScheme.primary),
                         ),
                       ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.incerto,
                         child: Text(
-                          "Incerti",
+                          "history.filters.uncertain".tr(),
                           style: _dropdownItemTextStyle(colorScheme.tertiary),
                         ),
                       ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.nonAdatto,
                         child: Text(
-                          "Vietati",
+                          "history.filters.unsafe".tr(),
                           style: _dropdownItemTextStyle(colorScheme.error),
                         ),
                       ),
                       DropdownMenuItem(
                         value: GlutenSafetyStatus.sconosciuto,
                         child: Text(
-                          "Scon.",
+                          "product.glutenStatus.uncertain".tr(),
                           style: _dropdownItemTextStyle(
                             colorScheme.onSurfaceVariant,
                           ),
@@ -554,7 +566,7 @@ class _HistoryListState extends State<HistoryList> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Nessuna scansione trovata",
+                      "history.empty.title".tr(),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
@@ -563,7 +575,7 @@ class _HistoryListState extends State<HistoryList> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Quando scansionerai un prodotto, apparirà qui.",
+                      "history.empty.subtitle".tr(),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -630,25 +642,25 @@ class _HistoryListState extends State<HistoryList> {
       case GlutenSafetyStatus.adatto:
         bgColor = colorScheme.primaryContainer.withValues(alpha: 0.15);
         textColor = colorScheme.primary;
-        label = "Sicuro - non contiene glutine";
+        label = "history.status.safe".tr();
         icon = Icons.check_circle_outline;
         break;
       case GlutenSafetyStatus.nonAdatto:
         bgColor = colorScheme.errorContainer.withValues(alpha: 0.15);
         textColor = colorScheme.error;
-        label = "Vietato - contiene glutine";
+        label = "history.status.unsafe".tr();
         icon = Icons.cancel_outlined;
         break;
       case GlutenSafetyStatus.incerto:
         bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
         textColor = colorScheme.tertiary;
-        label = "Incerto - potrebbe contenere glutine";
+        label = "history.status.uncertain".tr();
         icon = Icons.help_outline;
         break;
       case GlutenSafetyStatus.sconosciuto:
         bgColor = colorScheme.surfaceContainerHighest;
         textColor = colorScheme.onSurfaceVariant;
-        label = "Sconosciuto - nessuna informazione disponibile";
+        label = "history.status.unknown".tr();
         icon = Icons.search_off;
         break;
     }
@@ -693,11 +705,23 @@ class _HistoryListState extends State<HistoryList> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(width: 120, height: 16, color: colorScheme.surfaceContainerHighest),
+            Container(
+              width: 120,
+              height: 16,
+              color: colorScheme.surfaceContainerHighest,
+            ),
             const SizedBox(height: 8),
-            Container(width: 200, height: 20, color: colorScheme.surfaceContainerHighest),
+            Container(
+              width: 200,
+              height: 20,
+              color: colorScheme.surfaceContainerHighest,
+            ),
             const SizedBox(height: 6),
-            Container(width: 100, height: 14, color: colorScheme.surfaceContainerHighest),
+            Container(
+              width: 100,
+              height: 14,
+              color: colorScheme.surfaceContainerHighest,
+            ),
           ],
         ),
       ),

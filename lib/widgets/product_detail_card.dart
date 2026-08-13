@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../models/types.dart';
 import 'responsive_wrapper.dart';
 import '../services/analyzer_service.dart';
@@ -102,13 +103,13 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   String _translateGlutenStatus(GlutenSafetyStatus status) {
     switch (status) {
       case GlutenSafetyStatus.adatto:
-        return "Sicuro";
+        return "product.glutenStatus.safe".tr();
       case GlutenSafetyStatus.nonAdatto:
-        return "Vietato";
+        return "product.glutenStatus.unsafe".tr();
       case GlutenSafetyStatus.incerto:
-        return "Incerto";
+        return "product.glutenStatus.uncertain".tr();
       case GlutenSafetyStatus.sconosciuto:
-        return "Sconosciuto";
+        return "product.glutenStatus.noData".tr();
     }
   }
 
@@ -171,7 +172,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: Text(
-                            "Segnala dati errati",
+                            "product.actions.reportError".tr(),
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w600,
@@ -184,7 +185,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Aiuta la community segnalando informazioni inesatte o etichette poco chiare.",
+                      "product.report.communityCallout".tr(),
                       style: TextStyle(
                         fontSize: 14,
                         color: sheetCtx.colorScheme.onSurfaceVariant,
@@ -195,7 +196,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
                     // --- Dropdown M3 ---
                     Text(
-                      "Motivo della segnalazione",
+                      "product.report.reasonLabel".tr(),
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -224,20 +225,20 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           vertical: 16,
                         ),
                       ),
-                      items: const [
+                      items: [
                         DropdownMenuItem(
                           value: "label_unclear",
-                          child: Text("Etichetta poco chiara o ambigua"),
+                          child: Text("product.report.reasonUnclear".tr()),
                         ),
                         DropdownMenuItem(
                           value: "outdated",
-                          child: Text("Informazione obsoleta"),
+                          child: Text("product.report.reasonOutdated".tr()),
                         ),
                         DropdownMenuItem(
                           value: "incorrect_status",
-                          child: Text("Stato glutine errato"),
+                          child: Text("product.report.reasonWrongStatus".tr()),
                         ),
-                        DropdownMenuItem(value: "other", child: Text("Altro")),
+                        DropdownMenuItem(value: "other", child: Text("product.report.reasonOther".tr())),
                       ],
                       onChanged: (val) {
                         if (val != null) setSheetState(() => _reportType = val);
@@ -247,7 +248,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
                     // --- TextField M3 ---
                     Text(
-                      "Dettagli (Opzionale)",
+                      "product.report.detailsHint".tr(),
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -292,9 +293,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 24),
                           ),
-                          child: const Text(
-                            "Annulla",
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                          child: Text(
+                            "common.actions.cancel".tr(),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -371,9 +372,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Text(
-                                    "Invia segnalazione",
-                                    style: TextStyle(
+                                : Text(
+                                    "product.report.submit".tr(),
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -430,7 +431,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         ? GlutenSafetyStatus.incerto
         : analysis.status;
     final String displayedReason = isReported
-        ? "ATTENZIONE: Questo prodotto presenta una segnalazione attiva o incongruenze."
+        ? "product.alert.activeReportWarning".tr()
         : analysis.reason;
     final List<IngredientAnalyzed> displayedIngredientsAnalyzed =
         analysis.ingredientsAnalyzed;
@@ -455,25 +456,25 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       case GlutenSafetyStatus.adatto:
         heroBgColor = colorScheme.primaryContainer.withValues(alpha: 0.15);
         heroTextColor = colorScheme.primary;
-        statusBigText = "SICURO";
+        statusBigText = "product.bigStatus.safe".tr();
         statusIcon = Icons.check_circle;
         break;
       case GlutenSafetyStatus.nonAdatto:
         heroBgColor = colorScheme.errorContainer.withValues(alpha: 0.15);
         heroTextColor = colorScheme.error;
-        statusBigText = "VIETATO";
+        statusBigText = "product.bigStatus.unsafe".tr();
         statusIcon = Icons.cancel;
         break;
       case GlutenSafetyStatus.incerto:
         heroBgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
         heroTextColor = colorScheme.tertiary;
-        statusBigText = "INCERTO";
+        statusBigText = "product.bigStatus.uncertain".tr();
         statusIcon = Icons.warning;
         break;
       case GlutenSafetyStatus.sconosciuto:
         heroBgColor = colorScheme.surfaceContainerHighest;
         heroTextColor = colorScheme.onSurfaceVariant;
-        statusBigText = "SCONOSCIUTO";
+        statusBigText = "product.bigStatus.unknown".tr();
         statusIcon = Icons.help;
         break;
     }
@@ -491,7 +492,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         ),
         title: Center(
           child: Text(
-            "Dettaglio scansione",
+            "product.titles.scanDetail".tr(),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w500,
@@ -512,9 +513,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       backgroundColor: cardBg,
-                      title: Text("Eliminare scansione?", style: TextStyle(color: colorScheme.onSurface)),
+                      title: Text("product.deleteHistory.confirmTitle".tr(), style: TextStyle(color: colorScheme.onSurface)),
                       content: Text(
-                        "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
+                        "product.deleteHistory.confirmBody".tr(),
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                       actions: [
@@ -523,7 +524,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           style: TextButton.styleFrom(
                             foregroundColor: colorScheme.onSurfaceVariant,
                           ),
-                          child: const Text("Annulla"),
+                          child: Text("common.actions.cancel".tr()),
                         ),
                         TextButton(
                           onPressed: () {
@@ -534,7 +535,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             widget.onBack();
                           },
                           style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-                          child: const Text("Elimina"),
+                          child: Text("common.actions.delete".tr()),
                         ),
                       ],
                     ),
@@ -544,9 +545,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       backgroundColor: cardBg,
-                      title: Text("Eliminare segnalazione?", style: TextStyle(color: colorScheme.onSurface)),
+                      title: Text("product.deleteReport.confirmTitle".tr(), style: TextStyle(color: colorScheme.onSurface)),
                       content: Text(
-                        "Sei sicuro di voler eliminare questa segnalazione?",
+                        "product.deleteReport.confirmBody".tr(),
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                       actions: [
@@ -555,7 +556,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           style: TextButton.styleFrom(
                             foregroundColor: colorScheme.onSurfaceVariant,
                           ),
-                          child: const Text("Annulla"),
+                          child: Text("common.actions.cancel".tr()),
                         ),
                         TextButton(
                           onPressed: () async {
@@ -567,7 +568,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             }
                           },
                           style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-                          child: const Text("Elimina"),
+                          child: Text("common.actions.delete".tr()),
                         ),
                       ],
                     ),
@@ -583,7 +584,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         Icon(Icons.delete, color: colorScheme.error, size: 20),
                         const SizedBox(width: 12),
                         Text(
-                          "Elimina dalla cronologia",
+                          "product.deleteHistory.menuLabel".tr(),
                           style: TextStyle(color: colorScheme.error),
                         ),
                       ],
@@ -599,7 +600,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         Icon(Icons.warning, color: colorScheme.error, size: 20),
                         const SizedBox(width: 12),
                         Text(
-                          "Elimina segnalazione",
+                          "product.deleteReport.menuLabel".tr(),
                           style: TextStyle(color: colorScheme.error),
                         ),
                       ],
@@ -659,7 +660,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      currentProduct.brand,
+                      currentProduct.brand.isEmpty
+                          ? "product.status.unknownBrand".tr()
+                          : currentProduct.brand,
                       style: TextStyle(
                         fontSize: 16,
                         color: colorScheme.onSurfaceVariant,
@@ -698,7 +701,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     if (widget.showScanDate) ...[
                       const SizedBox(height: 4),
                       Text(
-                        "Scansionato il: ${formatRelativeDate(currentProduct.lastUpdated)}",
+                        formatScanDate(currentProduct.lastUpdated),
                         style: TextStyle(
                           fontSize: 12,
                           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
@@ -743,8 +746,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       if (cleanReason.endsWith('.')) {
                         cleanReason = cleanReason.substring(0, cleanReason.length - 1);
                       }
-                      displayedReasonWithOldStatus =
-                          "$cleanReason. Stato precedente alla segnalazione: $oldStatusTranslated.";
+                      final String prevStatusText = "product.alert.previousStatus".tr(namedArgs: {"status": oldStatusTranslated});
+                      displayedReasonWithOldStatus = "$cleanReason. $prevStatusText";
                     }
                   }
 
@@ -766,7 +769,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              "VALUTAZIONE GLUTINE",
+                              "product.titles.glutenEvaluation".tr(),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -810,7 +813,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                "Vai alla segnalazione",
+                                "product.report.goToReport".tr(),
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -862,12 +865,12 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               // ── Avviso Lattosio (se presente) ─────────────────────────
               if (showLactoseWarning) ...[
                 _buildSectionCard(
-                  title: "PRESENZA LATTOSIO",
+                  title: "product.titles.lactosePresence".tr(),
                   icon: Icons.water_drop,
                   isLactose: true,
                   bgColor: colorScheme.secondaryContainer.withValues(alpha: 0.15),
                   child: Text(
-                    "Questo prodotto contiene ingredienti o allergeni che indicano la presenza di lattosio. Non adatto agli intolleranti.",
+                    "product.warnings.lactoseAlertBody".tr(),
                     style: TextStyle(
                       fontSize: 14,
                       color: colorScheme.onSurfaceVariant,
@@ -879,7 +882,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               ],
               // ── Allergeni Dichiarati ──────────────────────────────────
               _buildSectionCard(
-                title: "ALLERGENI DICHIARATI",
+                title: "product.titles.declaredAllergens".tr(),
                 icon: Icons.coronavirus,
                 child: Wrap(
                   spacing: 8,
@@ -916,7 +919,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Text(
-                              "Nessuno dichiarato",
+                              "product.ingredients.noneLabel".tr(),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -931,49 +934,69 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
               // ── Analisi Ingredienti ───────────────────────────────────
               _buildSectionCard(
-                title: "ANALISI INGREDIENTI",
+                title: "product.titles.ingredientsAnalysis".tr(),
                 icon: Icons.science,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      displayedIngredients,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurface,
-                        height: 1.5,
+                    if (displayedIngredients.trim().isNotEmpty) ...[
+                      Text(
+                        displayedIngredients,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurface,
+                          height: 1.5,
+                        ),
                       ),
-                    ),
+                      if (displayedIngredientsAnalyzed.isNotEmpty)
+                        const SizedBox(height: 16),
+                    ],
                     if (displayedIngredientsAnalyzed.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      ...displayedIngredientsAnalyzed.map((item) {
+                      ...displayedIngredientsAnalyzed.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final item = entry.value;
+                        final bool showTopDivider =
+                            displayedIngredients.trim().isNotEmpty || index > 0;
+
                         Color pillBg;
                         Color pillText;
                         String pillLabel;
 
-                        if (item.dangerLevel == "danger") {
-                          pillBg = colorScheme.errorContainer.withValues(alpha: 0.2);
-                          pillText = colorScheme.error;
-                          pillLabel = "Pericolo";
-                        } else if (item.dangerLevel == "warning") {
-                          pillBg = colorScheme.tertiaryContainer.withValues(alpha: 0.2);
-                          pillText = colorScheme.tertiary;
-                          pillLabel = "Attenzione";
-                        } else {
-                          pillBg = colorScheme.primaryContainer.withValues(alpha: 0.2);
-                          pillText = colorScheme.primary;
-                          pillLabel = "Sicuro";
+                        switch (item.dangerLevel) {
+                          case "danger":
+                            pillBg = colorScheme.errorContainer.withValues(alpha: 0.2);
+                            pillText = colorScheme.error;
+                            pillLabel = "product.ingredients.dangerBadge".tr();
+                            break;
+                          case "warning":
+                            pillBg = colorScheme.tertiaryContainer.withValues(alpha: 0.2);
+                            pillText = colorScheme.tertiary;
+                            pillLabel = "product.ingredients.warningBadge".tr();
+                            break;
+                          case "uncertain":
+                            pillBg = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
+                            pillText = colorScheme.tertiary;
+                            pillLabel = "product.ingredients.uncertainBadge".tr();
+                            break;
+                          case "safe":
+                          default:
+                            pillBg = colorScheme.primaryContainer.withValues(alpha: 0.2);
+                            pillText = colorScheme.primary;
+                            pillLabel = "product.ingredients.safeBadge".tr();
+                            break;
                         }
 
                         return Container(
-                          margin: const EdgeInsets.only(top: 12),
-                          padding: const EdgeInsets.only(top: 12),
+                          margin: EdgeInsets.only(top: showTopDivider ? 12 : 0),
+                          padding: EdgeInsets.only(top: showTopDivider ? 12 : 0),
                           decoration: BoxDecoration(
-                            border: Border(
-                              top: BorderSide(
-                                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                              ),
-                            ),
+                            border: showTopDivider
+                                ? Border(
+                                    top: BorderSide(
+                                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                                    ),
+                                  )
+                                : null,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1012,19 +1035,30 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                item.reason,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.4,
+                              if (item.reason.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  item.reason,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: colorScheme.onSurfaceVariant,
+                                    height: 1.4,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         );
                       }),
+                    ] else if (displayedIngredients.trim().isEmpty) ...[
+                      Text(
+                        "product.ingredients.noRisksDetected".tr(),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -1033,7 +1067,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
               // ── Blocco Info / Avvertenze ─────────────────────────────
               _buildSectionCard(
-                title: "INFORMAZIONI E AVVERTENZE",
+                title: "product.warnings.infoTitle".tr(),
                 icon: Icons.info_outline,
                 isCaution: true,
                 child: RichText(
@@ -1044,16 +1078,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       color: colorScheme.onSurfaceVariant,
                     ),
                     children: <TextSpan>[
-                      const TextSpan(
-                        text: "I dati sono forniti dalla community di ",
+                      TextSpan(
+                        text: "product.warnings.infoPre".tr(),
                       ),
-                      const TextSpan(
-                        text: "Open Food Facts",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      TextSpan(
+                        text: "product.warnings.infoSource".tr(),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      const TextSpan(
-                        text:
-                            ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico.",
+                      TextSpan(
+                        text: "product.warnings.infoPost".tr(),
                       ),
                     ],
                   ),
@@ -1077,7 +1110,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       Icon(Icons.check_circle, color: colorScheme.error, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        "Prodotto già segnalato",
+                        "product.actions.alreadyReported".tr(),
                         style: TextStyle(
                           color: colorScheme.error,
                           fontWeight: FontWeight.w500,
@@ -1099,9 +1132,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     ),
                   ),
                   icon: const Icon(Icons.flag_outlined, size: 20),
-                  label: const Text(
-                    "Segnala dati errati o poco chiari",
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  label: Text(
+                    "product.actions.reportError".tr(),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                 ),
 

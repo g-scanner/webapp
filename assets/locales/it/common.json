@@ -1,0 +1,57 @@
+{
+  "common": {
+    "appName": "G-Scanner",
+    "time": {
+      "today": "Oggi",
+      "yesterday": "Ieri"
+    },
+    "navigation": {
+      "scanner": "Scansione",
+      "history": "Cronologia",
+      "reports": "Segnalazioni",
+      "settings": "Impostazioni"
+    },
+    "actions": {
+      "cancel": "Annulla",
+      "save": "Salva",
+      "or": "Oppure",
+      "confirm": "Conferma",
+      "retry": "Riprova",
+      "close": "Chiudi",
+      "delete": "Elimina",
+      "edit": "Modifica",
+      "search": "Cerca",
+      "loading": "Caricamento...",
+      "error": "Errore",
+      "yes": "Sì",
+      "no": "No",
+      "ok": "OK",
+      "settings": "Impostazioni"
+    },
+    "languages": {
+      "it": "Italiano",
+      "en": "Inglese",
+      "es": "Spagnolo",
+      "de": "Tedesco",
+      "fr": "Francese"
+    },
+    "themes": {
+      "system": "Sistema",
+      "light": "Chiaro",
+      "dark": "Scuro"
+    },
+    "dates": {
+      "scannedAt": "Scansionato il: {}",
+      "reportedAt": "Segnalato il: {}"
+    },
+    "status": {
+      "noData": "Nessun dato disponibile",
+      "noResults": "Nessun risultato trovato",
+      "networkError": "Errore di rete. Controlla la connessione.",
+      "unknownError": "Si è verificato un errore sconosciuto.",
+      "preferencesSaved": "Preferenze salvate ed applicate!",
+      "historyClearedSuccess": "Cronologia svuotata con successo!",
+      "securityForcedLogout": "Sicurezza: Uscita forzata. Esegui un nuovo accesso e riprova."
+    }
+  }
+}

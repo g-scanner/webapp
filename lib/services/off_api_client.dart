@@ -12,11 +12,6 @@ class OffApiClient {
     defaultValue: '',
   );
 
-  static const bool _allowDirectWebFallback = bool.fromEnvironment(
-    'OFF_ALLOW_DIRECT_WEB_FALLBACK',
-    defaultValue: false,
-  );
-
   static Map<String, String> _headers() {
     if (kIsWeb) {
       return const {'Accept': 'application/json'};
@@ -28,17 +23,14 @@ class OffApiClient {
   static Uri _buildProductUri(String barcode, {Map<String, String>? query}) {
     final path = '/api/v2/product/$barcode.json';
 
-    if (kIsWeb && _webProxyBaseUrl.trim().isNotEmpty) {
-      final base = _webProxyBaseUrl.endsWith('/')
+    if (kIsWeb) {
+      final String proxy = _webProxyBaseUrl.trim().isNotEmpty
           ? _webProxyBaseUrl
-          : _webProxyBaseUrl;
-      return Uri.parse('$base$path').replace(queryParameters: query);
-    }
-
-    if (kIsWeb && !_allowDirectWebFallback) {
-      throw StateError(
-        'OFF web proxy not configured. Set OFF_PROXY_BASE_URL for web builds.',
-      );
+          : 'https://corsproxy.io/?https://world.openfoodfacts.org';
+      final String fullUrl = proxy.endsWith('/') || proxy.contains('?')
+          ? '$proxy$path'
+          : '$proxy/$path';
+      return Uri.parse(fullUrl).replace(queryParameters: query);
     }
 
     return Uri.https('world.openfoodfacts.org', path, query);

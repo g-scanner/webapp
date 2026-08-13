@@ -27,7 +27,7 @@ class ResponsiveMaxCardWidth extends StatelessWidget {
       if (isLowHeight) {
         final double constrainedWidth = maxWidth > 450 ? 450 : maxWidth;
         return Container(
-          color: const Color(0xFFFAF9FC),
+          color: Theme.of(context).scaffoldBackgroundColor,
           alignment: Alignment.center,
           child: Container(
             constraints: BoxConstraints(

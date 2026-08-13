@@ -1,0 +1,36 @@
+{
+  "history": {
+    "title": "Cronologia scansioni",
+    "empty": {
+      "title": "Nessuna scansione ancora",
+      "subtitle": "Le scansioni effettuate appariranno qui."
+    },
+    "item": {
+      "scannedAt": "Scansionato il {date}",
+      "barcode": "Cod. {barcode}"
+    },
+    "actions": {
+      "clearAll": "Cancella tutto",
+      "clearAllConfirmTitle": "Cancellare la cronologia?",
+      "clearAllConfirmBody": "Questa azione è irreversibile.",
+      "deleteItem": "Elimina scansione"
+    },
+    "filters": {
+      "all": "Tutti",
+      "safe": "Sicuri",
+      "uncertain": "Incerti",
+      "unsafe": "Vietati"
+    },
+    "status": {
+      "safe": "Sicuro - non contiene glutine",
+      "unsafe": "Vietato - contiene glutine",
+      "uncertain": "Incerto - potrebbe contenere glutine",
+      "unknown": "Sconosciuto - nessuna informazione disponibile"
+    },
+    "loading": {
+      "productFallbackName": "Prodotto #{barcode}",
+      "brandLoading": "Caricamento in corso..."
+    },
+    "lactose": "Lattosio"
+  }
+}

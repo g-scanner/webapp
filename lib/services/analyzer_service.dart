@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
 
+import 'package:easy_localization/easy_localization.dart';
 import '../models/types.dart';
 
 class OffTags {
@@ -829,8 +830,7 @@ class AnalyzerService {
     // CASO 1: SEGNALAZIONI (Vince su tutto se non si richiede ignoreReports)
     if (!ignoreReports && reportCount > 0) {
       status = GlutenSafetyStatus.incerto;
-      reason =
-          "ATTENZIONE: Questo prodotto ha $reportCount segnalazione/i dagli utenti.";
+      reason = "product.analysis.userReported".tr(namedArgs: {"count": reportCount.toString()});
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
           ingredient: "Segnalazione Utenti",
@@ -842,8 +842,7 @@ class AnalyzerService {
     // CASO 2: BOLLINO UFFICIALE (Se c'è bollino, è <20ppm per legge)
     else if (hasGlutenFreeBollino || hasGlutenFreeTextClaim) {
       status = GlutenSafetyStatus.adatto;
-      reason =
-          "ADATTO ai celiaci. Certificazione o etichetta 'Senza Glutine' rilevata.";
+      reason = "product.analysis.safe".tr();
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
           ingredient: "Etichetta Gluten-Free",
@@ -878,10 +877,9 @@ class AnalyzerService {
         (hasAnyTrace && strictMode)) {
       status = GlutenSafetyStatus.nonAdatto;
       if (foundDanger.isNotEmpty || hasOffGlutenAllergen) {
-        reason = "NON ADATTO ai celiaci. Rilevati ingredienti vietati.";
+        reason = "product.analysis.notSuitable".tr();
       } else {
-        reason =
-            "VIETATO DAL FILTRO: Rilevate possibili tracce di contaminazione crociata (Filtro Rigido attivo).";
+        reason = "product.analysis.strictFilterBlocked".tr();
       }
 
       for (var ing in foundDanger) {
@@ -889,7 +887,7 @@ class AnalyzerService {
           IngredientAnalyzed(
             ingredient: ing,
             dangerLevel: "danger",
-            reason: "Fonte diretta di glutine.",
+            reason: "product.analysis.glutenSource".tr(),
           ),
         );
       }
@@ -907,7 +905,7 @@ class AnalyzerService {
           IngredientAnalyzed(
             ingredient: "Tracce",
             dangerLevel: "danger",
-            reason: "Bloccato dal Filtro Rigido Contaminazioni.",
+            reason: "product.analysis.contaminationBlocked".tr(),
           ),
         );
       }
@@ -915,8 +913,7 @@ class AnalyzerService {
     // CASO 4: GRIGIO
     else if (hasNoInfo) {
       status = GlutenSafetyStatus.sconosciuto;
-      reason =
-          "SCONOSCIUTO. Informazioni insufficienti. Leggi l'etichetta fisica.";
+      reason = "product.analysis.unknown".tr();
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
           ingredient: "Dati Assenti",
@@ -928,8 +925,7 @@ class AnalyzerService {
     // CASO 5: VERDE (Naturalmente Sicuro)
     else if (isNaturallySafe) {
       status = GlutenSafetyStatus.adatto;
-      reason =
-          "ADATTO ai celiaci. Prodotto di base naturalmente privo di glutine.";
+      reason = "product.analysis.naturallySafe".tr();
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
           ingredient: "Naturalmente Sicuro",
@@ -941,12 +937,10 @@ class AnalyzerService {
     // CASO 6: GIALLO (Fallback)
     else {
       status = GlutenSafetyStatus.incerto;
-      reason =
-          "ATTENZIONE: Prodotto lavorato senza dicitura 'Senza glutine'. Verifica l'etichetta.";
+      reason = "product.analysis.uncertainNoLabel".tr();
 
       if (hasAnyTrace && !strictMode) {
-        reason =
-            "ATTENZIONE: Trovate diciture di contaminazione. Consumo a tuo rischio.";
+        reason = "product.analysis.uncertainTraces".tr();
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
             ingredient: "Tracce",
@@ -977,14 +971,14 @@ class AnalyzerService {
 
     // ─── AGGIUNTA ALLERTA LATTOSIO ALLA UI ──────────────────────────────────
     if (alertLactose && foundLactose.isNotEmpty) {
-      reason += "\n\n🥛 ALLERTA LATTOSIO: Il prodotto contiene lattosio/latte.";
+      reason += "\n\n🥛 ${'product.analysis.lactoseAlert'.tr()}";
       for (var l in foundLactose) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
             ingredient: l,
             dangerLevel:
                 "danger", // Mostra rosso negli ingredienti per far capire all'utente
-            reason: "Rilevato per le tue impostazioni sul lattosio.",
+            reason: "product.analysis.lactoseDetected".tr(),
           ),
         );
       }

@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gscanner/widgets/sync_data_screen.dart';
 import 'firebase_options.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import 'models/types.dart';
 import 'services/analyzer_service.dart';
@@ -26,14 +27,31 @@ import 'widgets/report_detail_card.dart';
 
 import 'widgets/auth_screen.dart';
 import 'widgets/responsive_wrapper.dart';
+import 'utils/modular_asset_loader.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await EasyLocalization.ensureInitialized();
 
   usePathUrlStrategy();
 
-  runApp(const MyApp());
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [
+        Locale('it'),
+        Locale('en'),
+        Locale('de'),
+        Locale('fr'),
+        Locale('es'),
+      ],
+      path: 'assets/locales',
+      fallbackLocale: const Locale('en'),
+      useOnlyLangCode: true,
+      assetLoader: const ModularAssetLoader(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -49,6 +67,9 @@ class MyApp extends StatelessWidget {
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: currentThemeMode,
+          localizationsDelegates: context.localizationDelegates,
+          supportedLocales: context.supportedLocales,
+          locale: context.locale,
           // LOGICA DI ROUTING: Ascolta i cambiamenti di stato di Firebase
           home: StreamBuilder<User?>(
             stream: FirebaseAuth.instance.authStateChanges(),
@@ -265,7 +286,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Future<void> _loadLocalSettings() async {
     final data = await DbService.getLocalSettings();
     themeNotifier.value = themeModeFromString(data.preferredTheme);
-    if (mounted) setState(() => userSettings = data);
+    if (mounted) {
+      setState(() => userSettings = data);
+      // Sincronizza la locale UI con la preferenza dell'utente
+      context.setLocale(Locale(data.preferredLanguage));
+    }
   }
 
   void _syncEverythingWithFirestore() {
@@ -937,20 +962,20 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 0,
                 Icons.qr_code_scanner,
                 Icons.qr_code_scanner,
-                "Scansione",
+                "common.navigation.scanner".tr(),
               ),
-              _buildNavItem(1, Icons.history, Icons.history, "Cronologia"),
+              _buildNavItem(1, Icons.history, Icons.history, "common.navigation.history".tr()),
               _buildNavItem(
                 2,
                 Icons.report_problem,
                 Icons.report_problem_outlined,
-                "Segnalazioni",
+                "common.navigation.reports".tr(),
               ),
               _buildNavItem(
                 3,
                 Icons.settings,
                 Icons.settings_outlined,
-                "Impostazioni",
+                "common.navigation.settings".tr(),
               ),
             ],
           ),
@@ -1073,9 +1098,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     final scaffold = Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          "G-Scanner",
-          style: TextStyle(
+        title: Text(
+          "common.appName".tr(),
+          style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 22,
             letterSpacing: -0.5,
@@ -1175,30 +1200,30 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                               indicatorColor: colorScheme.secondaryContainer
                                   .withValues(alpha: 0.3),
                               labelType: NavigationRailLabelType.all,
-                              destinations: const [
+                              destinations: [
                                 NavigationRailDestination(
-                                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                                  icon: Icon(Icons.qr_code_scanner),
-                                  selectedIcon: Icon(Icons.qr_code_scanner),
-                                  label: Text('Scansione'),
+                                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                  icon: const Icon(Icons.qr_code_scanner),
+                                  selectedIcon: const Icon(Icons.qr_code_scanner),
+                                  label: Text("common.navigation.scanner".tr()),
                                 ),
                                 NavigationRailDestination(
-                                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                                  icon: Icon(Icons.history),
-                                  selectedIcon: Icon(Icons.history),
-                                  label: Text('Cronologia'),
+                                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                  icon: const Icon(Icons.history),
+                                  selectedIcon: const Icon(Icons.history),
+                                  label: Text("common.navigation.history".tr()),
                                 ),
                                 NavigationRailDestination(
-                                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                                  icon: Icon(Icons.report_problem_outlined),
-                                  selectedIcon: Icon(Icons.report_problem),
-                                  label: Text('Segnalazioni'),
+                                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                  icon: const Icon(Icons.report_problem_outlined),
+                                  selectedIcon: const Icon(Icons.report_problem),
+                                  label: Text("common.navigation.reports".tr()),
                                 ),
                                 NavigationRailDestination(
-                                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                                  icon: Icon(Icons.settings_outlined),
-                                  selectedIcon: Icon(Icons.settings),
-                                  label: Text('Impostazioni'),
+                                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                  icon: const Icon(Icons.settings_outlined),
+                                  selectedIcon: const Icon(Icons.settings),
+                                  label: Text("common.navigation.settings".tr()),
                                 ),
                               ],
                             ),

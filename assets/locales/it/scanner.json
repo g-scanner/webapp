@@ -1,0 +1,42 @@
+{
+  "scanner": {
+    "ui": {
+      "scanProduct": "Scan Product",
+      "alignBarcodeHint": "Align barcode within frame to check celiac safety.",
+      "safetyIndicators": "Safety Indicators"
+    },
+    "states": {
+      "safe": "Safe",
+      "glutenFree": "Gluten-free",
+      "uncertain": "Uncertain",
+      "checkLabel": "Check label",
+      "unsafe": "Unsafe",
+      "hasGluten": "Has gluten",
+      "unknown": "Unknown",
+      "notFound": "Not found"
+    },
+    "camera": {
+      "permissionDeniedWeb": "Permesso fotocamera negato o hardware non disponibile.\nClicca sull'icona del lucchetto nella barra degli indirizzi del browser per consentire l'accesso, poi ricarica la pagina.",
+      "permissionDeniedMobile": "Permesso fotocamera negato.\nConcedi l'accesso alla fotocamera nelle impostazioni del dispositivo.",
+      "openSettings": "Impostazioni"
+    },
+    "overlay": {
+      "scanHint": "Inquadra il codice a barre",
+      "torchOn": "Torcia ON",
+      "torchOff": "Torcia OFF",
+      "switchCamera": "Cambia fotocamera"
+    },
+    "manualInput": {
+      "title": "Inserimento manuale",
+      "hint": "Inserisci il codice a barre",
+      "button": "Cerca",
+      "invalidBarcode": "Codice a barre non valido",
+      "empty": "Inserisci un codice"
+    },
+    "result": {
+      "scanning": "Scansione in corso...",
+      "notFound": "Prodotto non trovato",
+      "analysisError": "Errore durante l'analisi"
+    }
+  }
+}

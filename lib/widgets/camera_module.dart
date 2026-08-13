@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../theme/app_theme.dart';
 
 class CameraModule extends StatefulWidget {
@@ -50,7 +51,8 @@ class _CameraModuleState extends State<CameraModule>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _controller = widget.controller ??
+    _controller =
+        widget.controller ??
         MobileScannerController(
           autoStart: false,
           detectionSpeed: DetectionSpeed.noDuplicates,
@@ -81,7 +83,9 @@ class _CameraModuleState extends State<CameraModule>
         _startCamera();
       } else {
         _controller.stop();
-        if (mounted) setState(() => _cameraError = null); // Reset errore al cambio tab
+        if (mounted) {
+          setState(() => _cameraError = null); // Reset errore al cambio tab
+        }
       }
     }
   }
@@ -188,7 +192,9 @@ class _CameraModuleState extends State<CameraModule>
                 decoration: BoxDecoration(
                   color: colorScheme.error.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: colorScheme.error.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: colorScheme.error.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -249,7 +255,7 @@ class _CameraModuleState extends State<CameraModule>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              "Scan Product",
+              "scanner.ui.scanProduct".tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 28,
@@ -263,7 +269,7 @@ class _CameraModuleState extends State<CameraModule>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                "Align barcode within frame to check celiac safety.",
+                "scanner.ui.alignBarcodeHint".tr(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
@@ -291,10 +297,12 @@ class _CameraModuleState extends State<CameraModule>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Text(
-                      "Oppure",
+                      "common.actions.or".tr(),
                       style: TextStyle(
                         fontSize: 14,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.6,
+                        ),
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
                       ),
@@ -433,8 +441,7 @@ class _CameraModuleState extends State<CameraModule>
               ValueListenableBuilder<MobileScannerState>(
                 valueListenable: _controller,
                 builder: (context, controllerState, _) {
-                  final isTorchOn =
-                      controllerState.torchState == TorchState.on;
+                  final isTorchOn = controllerState.torchState == TorchState.on;
                   return Positioned(
                     bottom: 0,
                     left: 0,
@@ -482,11 +489,9 @@ class _CameraModuleState extends State<CameraModule>
     // Su Web i browser restituiscono stringhe d'errore incoerenti: evitiamo il parsing.
     final String cleanMessage;
     if (kIsWeb) {
-      cleanMessage =
-          "Permesso fotocamera negato o hardware non disponibile.\nClicca sull'icona del lucchetto nella barra degli indirizzi del browser per consentire l'accesso, poi ricarica la pagina.";
+      cleanMessage = "scanner.camera.permissionDeniedWeb".tr();
     } else {
-      cleanMessage =
-          "Permesso fotocamera negato.\nConcedi l'accesso alla fotocamera nelle impostazioni del dispositivo.";
+      cleanMessage = "scanner.camera.permissionDeniedMobile".tr();
     }
 
     return Container(
@@ -497,11 +502,7 @@ class _CameraModuleState extends State<CameraModule>
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.white,
-              size: 48,
-            ),
+            const Icon(Icons.error_outline, color: Colors.white, size: 48),
             const SizedBox(height: 16),
             Text(
               cleanMessage,
@@ -522,7 +523,7 @@ class _CameraModuleState extends State<CameraModule>
                   await _startCamera();
                 },
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Impostazioni'),
+                label: Text('scanner.camera.openSettings'.tr()),
                 style: FilledButton.styleFrom(
                   backgroundColor: colorScheme.primaryContainer,
                   foregroundColor: colorScheme.onPrimaryContainer,
@@ -558,7 +559,7 @@ class _CameraModuleState extends State<CameraModule>
                   letterSpacing: 1.0,
                 ),
                 decoration: InputDecoration(
-                  hintText: "Manual Barcode...",
+                  hintText: "scanner.manualInput.hint".tr(),
                   hintStyle: TextStyle(
                     color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                     fontSize: 15,
@@ -575,11 +576,11 @@ class _CameraModuleState extends State<CameraModule>
                       duration: const Duration(milliseconds: 250),
                       transitionBuilder:
                           (Widget child, Animation<double> animation) {
-                        return ScaleTransition(
-                          scale: animation,
-                          child: child,
-                        );
-                      },
+                            return ScaleTransition(
+                              scale: animation,
+                              child: child,
+                            );
+                          },
                       child: showClearIcon
                           ? IconButton(
                               key: const ValueKey('clearIcon'),
@@ -598,7 +599,9 @@ class _CameraModuleState extends State<CameraModule>
                               key: const ValueKey('barcodeIcon'),
                               color: hasText
                                   ? colorScheme.onSurfaceVariant
-                                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                  : colorScheme.onSurfaceVariant.withValues(
+                                      alpha: 0.6,
+                                    ),
                               size: 22,
                             ),
                     ),
@@ -624,11 +627,15 @@ class _CameraModuleState extends State<CameraModule>
               height: 50,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: hasText ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest,
+                color: hasText
+                    ? colorScheme.primaryContainer
+                    : colorScheme.surfaceContainerHighest,
                 boxShadow: hasText
                     ? [
                         BoxShadow(
-                          color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          color: colorScheme.primaryContainer.withValues(
+                            alpha: 0.3,
+                          ),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -650,7 +657,9 @@ class _CameraModuleState extends State<CameraModule>
                         size: 22,
                         color: hasText
                             ? colorScheme.onPrimaryContainer
-                            : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                            : colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.6,
+                              ),
                       ),
                     ),
                   ),
@@ -675,7 +684,7 @@ class _CameraModuleState extends State<CameraModule>
       child: Column(
         children: [
           Text(
-            "Safety Indicators",
+            "scanner.ui.safetyIndicators".tr(),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -691,8 +700,8 @@ class _CameraModuleState extends State<CameraModule>
                 fit: FlexFit.loose,
                 child: _buildIndicatorItem(
                   Icons.check_circle_rounded,
-                  "Safe",
-                  "Gluten-free",
+                  "scanner.states.safe".tr(),
+                  "scanner.states.glutenFree".tr(),
                   colorScheme.primaryContainer,
                 ),
               ),
@@ -700,8 +709,8 @@ class _CameraModuleState extends State<CameraModule>
                 fit: FlexFit.loose,
                 child: _buildIndicatorItem(
                   Icons.warning_rounded,
-                  "Uncertain",
-                  "Check label",
+                  "scanner.states.uncertain".tr(),
+                  "scanner.states.checkLabel".tr(),
                   colorScheme.tertiaryContainer,
                 ),
               ),
@@ -709,8 +718,8 @@ class _CameraModuleState extends State<CameraModule>
                 fit: FlexFit.loose,
                 child: _buildIndicatorItem(
                   Icons.cancel_rounded,
-                  "Unsafe",
-                  "Has gluten",
+                  "scanner.states.unsafe".tr(),
+                  "scanner.states.hasGluten".tr(),
                   colorScheme.error,
                 ),
               ),
@@ -718,8 +727,8 @@ class _CameraModuleState extends State<CameraModule>
                 fit: FlexFit.loose,
                 child: _buildIndicatorItem(
                   Icons.help_rounded,
-                  "Unknown",
-                  "Not found",
+                  "scanner.states.unknown".tr(),
+                  "scanner.states.notFound".tr(),
                   colorScheme.onSurfaceVariant,
                 ),
               ),

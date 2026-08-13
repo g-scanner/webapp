@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:easy_localization/easy_localization.dart';
 import '../models/types.dart';
 import 'analyzer_service.dart';
 import 'off_api_client.dart';
@@ -195,7 +196,23 @@ class DbService {
     }
 
     // 4. FALLBACK EXTREMO: Se non trovato neanche su OFF o rete assente
-    throw Exception("Prodotto non trovato su Open Food Facts o connessione assente.");
+    final String unknownName = 'product.status.unknownProductName'.tr();
+    return Product(
+      barcode: barcode,
+      nameMap: {
+        'it': unknownName,
+        'en': unknownName,
+        'es': unknownName,
+        'fr': unknownName,
+        'de': unknownName,
+      },
+      brandMap: {'en': '-'},
+      ingredientsMap: {'en': ''},
+      allergensMap: {'en': []},
+      isManual: false,
+      pendingReportsCount: 0,
+      lastUpdated: DateTime.now().toIso8601String(),
+    );
   }
 
   static void _checkAndRefreshOffStaleCache(Product product, UserSettings settings) async {

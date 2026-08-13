@@ -1,7 +1,5 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
-
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../theme/app_theme.dart';
 
 class SyncDataScreen extends StatelessWidget {
@@ -44,7 +42,7 @@ class SyncDataScreen extends StatelessWidget {
 
             // Testi
             Text(
-              "Dati Locali Rilevati",
+              "sync.localDataFound.title".tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 28,
@@ -55,7 +53,7 @@ class SyncDataScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              "Abbiamo trovato $historyCount scansioni effettuate in precedenza sul tuo telefono.\n\nOra che hai un account, vuoi collegare questi dati al tuo profilo o preferisci iniziare da zero?",
+              "sync.localDataFound.body".tr(namedArgs: {"count": historyCount.toString()}),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -81,9 +79,9 @@ class SyncDataScreen extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.sync),
-                label: const Text(
-                  "Unisci i dati al mio account",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                label: Text(
+                  "sync.localDataFound.merge".tr(),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -103,9 +101,9 @@ class SyncDataScreen extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.delete_sweep),
-                label: const Text(
-                  "Cancella e inizia da zero",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                label: Text(
+                  "sync.localDataFound.discard".tr(),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -116,3 +114,4 @@ class SyncDataScreen extends StatelessWidget {
     );
   }
 }
+

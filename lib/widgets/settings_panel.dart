@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:gscanner/widgets/licenses_screen.dart';
 import '../models/types.dart';
 import '../services/db_service.dart';
@@ -78,7 +79,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       reportedBarcodes: widget.settings.reportedBarcodes,
     );
     await widget.onSettingsChange(updated);
-    _triggerToast("Preferenze salvate ed applicate!");
+    _triggerToast("common.status.preferencesSaved".tr());
   }
 
   Future<void> _handleLanguageChange(String newLang) async {
@@ -97,6 +98,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
       reportedBarcodes: widget.settings.reportedBarcodes,
     );
     await widget.onSettingsChange(updated);
+    // Aggiorna la locale UI in sync con la preferenza
+    if (mounted) context.setLocale(Locale(newLang));
     _triggerToast("Preferenze salvate ed applicate!");
   }
 
@@ -132,7 +135,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            "Impostazioni",
+            "settings.title".tr(),
             style: TextStyle(
               fontSize: 22,
               fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
@@ -141,7 +144,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           const SizedBox(height: 8),
           Text(
-            "Gestisci il tuo profilo, l'analisi degli ingredienti e i dati salvati.",
+            "settings.subtitle".tr(),
             style: TextStyle(
               fontSize: 14,
               color: colorScheme.onSurfaceVariant,
@@ -152,7 +155,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           _buildSectionHeader(
             icon: Icons.attribution_rounded,
-            title: "Il tuo Account",
+            title: "settings.sectionTitles.account".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
@@ -162,7 +165,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           _buildSectionHeader(
             icon: Icons.tune,
-            title: "Regole di Analisi",
+            title: "settings.sectionTitles.analysisRules".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
@@ -176,24 +179,21 @@ class _SettingsPanelState extends State<SettingsPanel> {
             child: Column(
               children: [
                 _buildToggleItem(
-                  title: "Avvertimento Additivi",
-                  subtitle:
-                      "Genera un avviso per amidi modificati o aromi senza origine specificata.",
+                  title: "settings.toggles.warnAdditivesTitle".tr(),
+                  subtitle: "settings.toggles.warnAdditivesSubtitle".tr(),
                   value: widget.settings.warnAdditives,
                   onChanged: (val) => _handleToggle(val, 'warnAdditives'),
                   isFirst: true,
                 ),
                 _buildToggleItem(
-                  title: "Filtro Rigido Contaminazioni",
-                  subtitle:
-                      "Segnala come 'Vietato' qualsiasi alimento con dicitura \"può contenere tracce di glutine\".",
+                  title: "settings.toggles.strictFilterTitle".tr(),
+                  subtitle: "settings.toggles.strictFilterSubtitle".tr(),
                   value: widget.settings.strictMode,
                   onChanged: (val) => _handleToggle(val, 'strictMode'),
                 ),
                 _buildToggleItem(
-                  title: "Intolleranza al Lattosio",
-                  subtitle:
-                      "Verifica la presenza di lattosio, burro, polvere di latte o siero.",
+                  title: "settings.toggles.lactoseIntoleranceTitle".tr(),
+                  subtitle: "settings.toggles.lactoseIntoleranceSubtitle".tr(),
                   value: widget.settings.alertLactose,
                   onChanged: (val) => _handleToggle(val, 'alertLactose'),
                   isLast: true,
@@ -206,7 +206,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           _buildSectionHeader(
             icon: Icons.palette_outlined,
-            title: "Aspetto",
+            title: "settings.sectionTitles.appearance".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
@@ -224,7 +224,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           _buildSectionHeader(
             icon: Icons.translate_outlined,
-            title: "Lingua",
+            title: "settings.sectionTitles.language".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
@@ -242,7 +242,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           _buildSectionHeader(
             icon: Icons.data_usage,
-            title: "Dati e Cronologia",
+            title: "settings.sectionTitles.dataAndHistory".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
@@ -260,11 +260,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           borderRadius: BorderRadius.circular(24),
                         ),
                         title: Text(
-                          "Svuota Cronologia",
+                          "settings.destructive.clearHistoryTitle".tr(),
                           style: TextStyle(color: ctx.colorScheme.onSurface),
                         ),
                         content: Text(
-                          "Sei sicuro di voler eliminare tutta la cronologia delle scansioni? Questa azione non è reversibile.",
+                          "settings.data.clearHistoryConfirm".tr(),
                           style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
                         ),
                         actions: [
@@ -273,12 +273,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
                             style: TextButton.styleFrom(
                               foregroundColor: ctx.colorScheme.onSurfaceVariant,
                             ),
-                            child: const Text("Annulla"),
+                            child: Text("common.actions.cancel".tr()),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, true),
                             style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.error),
-                            child: const Text("Svuota"),
+                            child: Text("settings.destructive.clearHistoryTitle".tr()),
                           ),
                         ],
                       ),
@@ -288,7 +288,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       setState(() => _clearing = true);
                       try {
                         await widget.onClearHistory();
-                        _triggerToast("Cronologia svuotata con successo!");
+                        _triggerToast("common.status.historyClearedSuccess".tr());
                       } finally {
                         if (mounted) setState(() => _clearing = false);
                       }
@@ -333,7 +333,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Svuota Cronologia",
+                          "settings.destructive.clearHistoryTitle".tr(),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -342,7 +342,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "Rimuove in modo permanente la tua cronologia scansioni.",
+                          "settings.destructive.clearHistorySubtitle".tr(),
                           style: TextStyle(fontSize: 13, color: colorScheme.error),
                         ),
                       ],
@@ -357,7 +357,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           _buildSectionHeader(
             icon: Icons.info_outline_rounded,
-            title: "Informazioni Legali",
+            title: "settings.sectionTitles.legalInfo".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
@@ -372,9 +372,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
             child: Column(
               children: [
                 _buildLegalItem(
-                  title: "Termini e Condizioni",
+                  title: "settings.legalMenu.termsAndConditionsTitle".tr(),
                   subtitle: Text(
-                    "Consulta le regole di utilizzo dell'applicazione e dei servizi offerti.",
+                    "settings.legalMenu.termsAndConditionsSubtitle".tr(),
                     style: TextStyle(
                       fontSize: 13,
                       color: colorScheme.onSurfaceVariant,
@@ -384,7 +384,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   onTap: () {
                     _showLegalBottomSheet(
                       context,
-                      "Termini e Condizioni",
+                      "settings.legalMenu.termsAndConditionsTitle".tr(),
                       _buildNativeTos(colorScheme.onSurfaceVariant),
                     );
                   },
@@ -392,9 +392,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   isFirst: true,
                 ),
                 _buildLegalItem(
-                  title: "Privacy Policy",
+                  title: "settings.legalMenu.privacyPolicyTitle".tr(),
                   subtitle: Text(
-                    "Scopri come raccogliamo, gestiamo e proteggiamo i tuoi dati personali.",
+                    "settings.legalMenu.privacyPolicySubtitle".tr(),
                     style: TextStyle(
                       fontSize: 13,
                       color: colorScheme.onSurfaceVariant,
@@ -404,16 +404,16 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   onTap: () {
                     _showLegalBottomSheet(
                       context,
-                      "Privacy Policy",
+                      "settings.legalMenu.privacyPolicyTitle".tr(),
                       _buildNativePrivacyPolicy(colorScheme.onSurfaceVariant),
                     );
                   },
                   showTrailingArrow: true,
                 ),
                 _buildLegalItem(
-                  title: "Licenze",
+                  title: "settings.legalMenu.licensesTitle".tr(),
                   subtitle: Text(
-                    "Consulta le licenze open source dei pacchetti e delle librerie utilizzate in questa app.",
+                    "settings.legalMenu.licensesSubtitle".tr(),
                     style: TextStyle(
                       fontSize: 13,
                       color: colorScheme.onSurfaceVariant,
@@ -466,10 +466,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   children: [
                     Text(
                       isAnonymous
-                          ? "Utente Ospite"
+                          ? "auth.social.anonymousUser".tr()
                           : (displayName.isNotEmpty
                                 ? displayName
-                                : "Utente Registrato"),
+                                : "auth.social.registeredUser".tr()),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -479,8 +479,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     const SizedBox(height: 4),
                     Text(
                       isAnonymous
-                          ? "Le tue scansioni sono salvate solo su questo dispositivo."
-                          : "Il tuo profilo e le scansioni sono sincronizzati sul cloud.",
+                          ? "auth.social.anonymousLocalSubtitle".tr()
+                          : "settings.account.syncedCloudSubtitle".tr(),
                       style: TextStyle(
                         fontSize: 13,
                         color: colorScheme.onSurfaceVariant,
@@ -504,9 +504,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     icon: const Icon(Icons.login, size: 20),
-                    label: const Text(
-                      "Accedi o Registrati",
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    label: Text(
+                      "auth.social.signInOrRegister".tr(),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   )
                 : OutlinedButton.icon(
@@ -519,9 +519,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     icon: const Icon(Icons.manage_accounts_outlined, size: 20),
-                    label: const Text(
-                      "Gestisci Account",
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    label: Text(
+                      "settings.account.manageAccount".tr(),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
           ),
@@ -655,7 +655,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                     child: Text(
                       currentDisplayName.isNotEmpty
                           ? currentDisplayName
-                          : "Aggiungi il tuo nome",
+                          : "auth.social.addYourName".tr(),
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
@@ -695,9 +695,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       ),
                     ),
                     icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text(
-                      "Modifica Nome",
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    label: Text(
+                      "settings.account.editName".tr(),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
 
@@ -782,7 +782,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: Text(
-                                            "Collegato con $providerName",
+                                            "auth.social.connectedWith".tr(namedArgs: {"provider": providerName}),
                                             style: TextStyle(
                                               fontSize: 13,
                                               color: colorScheme.onSurfaceVariant,
@@ -823,9 +823,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                 ),
                               ),
                               icon: const Icon(Icons.logout, size: 20),
-                              label: const Text(
-                                "Esci dall'account",
-                                style: TextStyle(fontWeight: FontWeight.w600),
+                              label: Text(
+                                "settings.account.signOut".tr(),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
@@ -854,9 +854,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                 Icons.person_remove_outlined,
                                 size: 20,
                               ),
-                              label: const Text(
-                                "Elimina Account",
-                                style: TextStyle(fontWeight: FontWeight.w600),
+                              label: Text(
+                                "settings.account.deleteAccount".tr(),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
@@ -906,7 +906,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          "Modifica Nome",
+                          "settings.account.editName".tr(),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
@@ -923,7 +923,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          "Scegli come vuoi farti chiamare. Questo nome sarà visibile all'interno dell'app.",
+                          "settings.account.editNameSubtitle".tr(),
                           style: TextStyle(
                             color: colorScheme.onSurfaceVariant,
                             fontSize: 14,
@@ -944,7 +944,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           ),
                           cursorColor: colorScheme.primary,
                           decoration: InputDecoration(
-                            hintText: "Es. Mario Rossi",
+                           hintText: "settings.account.editNameHint".tr(),
                             hintStyle: TextStyle(
                               color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                               fontSize: 14,
@@ -987,9 +987,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                   vertical: 12,
                                 ),
                               ),
-                              child: const Text(
-                                "Annulla",
-                                style: TextStyle(fontWeight: FontWeight.w600),
+                              child: Text(
+                                "common.actions.cancel".tr(),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1034,9 +1034,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                       borderRadius: BorderRadius.circular(999),
                                     ),
                                   ),
-                                  child: const Text(
-                                    "Salva",
-                                    style: TextStyle(
+                                  child: Text(
+                                    "common.actions.save".tr(),
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -1090,30 +1090,30 @@ class _SettingsPanelState extends State<SettingsPanel> {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
-          "Effettua l'accesso",
+          "auth.social.signInAction".tr(),
           style: TextStyle(color: ctx.colorScheme.onSurface),
         ),
         content: Text(
-          "Accedendo potrai sincronizzare la tua cronologia nel cloud.\nI tuoi dati locali verranno mantenuti fino al prossimo accesso.",
+          "auth.social.signInCloudPrompt".tr(),
           style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.onSurfaceVariant),
-            child: const Text("Annulla"),
+            child: Text("common.actions.cancel".tr()),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.primary),
-            child: const Text("Procedi"),
+            child: Text("auth.social.proceed".tr()),
           ),
         ],
       ),
     );
 
     if (confirm == true) {
-      if (mounted) _triggerToast("Preparazione all'accesso...");
+      if (mounted) _triggerToast("auth.social.preparingLogin".tr());
       try {
         await DbService.wipeAllLocalData();
         await FirebaseAuth.instance.currentUser?.delete();
@@ -1131,28 +1131,28 @@ class _SettingsPanelState extends State<SettingsPanel> {
         backgroundColor: ctx.cardBackground,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text("Vuoi uscire?", style: TextStyle(color: ctx.colorScheme.onSurface)),
+        title: Text("settings.account.signOutConfirmTitle".tr(), style: TextStyle(color: ctx.colorScheme.onSurface)),
         content: Text(
-          "Uscendo dal tuo account, i dati salvati su questo dispositivo verranno rimossi per privacy.\nPotrai ripristinarli al prossimo accesso.",
+          "settings.account.signOutConfirmBody".tr(),
           style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.onSurfaceVariant),
-            child: const Text("Annulla"),
+            child: Text("common.actions.cancel".tr()),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.error),
-            child: const Text("Esci"),
+            child: Text("settings.account.signOutShort".tr()),
           ),
         ],
       ),
     );
 
     if (confirm == true) {
-      if (mounted) _triggerToast("Uscita in corso...");
+      if (mounted) _triggerToast("settings.account.signingOut".tr());
       try {
         await DbService.wipeAllLocalData();
         await FirebaseAuth.instance.signOut();
@@ -1184,7 +1184,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           icon: Icon(Icons.security_rounded, color: ctx.colorScheme.primary, size: 36),
           title: Text(
-            "Accesso richiesto per sicurezza",
+            "settings.account.deleteReauthTitle".tr(),
             style: TextStyle(
               color: ctx.colorScheme.onSurface,
               fontSize: 20,
@@ -1193,7 +1193,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             textAlign: TextAlign.center,
           ),
           content: Text(
-            "Per motivi di sicurezza, prima di procedere all'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo 'Procedi' verrai disconnesso per poter rientrare e completare l'operazione.",
+            "settings.account.deleteReauthBody".tr(),
             style: TextStyle(color: ctx.colorScheme.onSurfaceVariant, fontSize: 14),
             textAlign: TextAlign.center,
           ),
@@ -1202,7 +1202,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.onSurfaceVariant),
-              child: const Text("Annulla"),
+              child: Text("common.actions.cancel".tr()),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
@@ -1210,7 +1210,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 backgroundColor: ctx.colorScheme.primary,
                 foregroundColor: ctx.colorScheme.onPrimary,
               ),
-              child: const Text("Procedi"),
+              child: Text("auth.social.proceed".tr()),
             ),
           ],
         ),
@@ -1240,7 +1240,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           icon: Icon(Icons.warning_amber_rounded, color: dialogCtx.colorScheme.error, size: 36),
           title: Text(
-            "Eliminazione Definitiva",
+            "settings.account.deleteConfirmTitle".tr(),
             style: TextStyle(
               color: dialogCtx.colorScheme.error,
               fontSize: 20,
@@ -1249,7 +1249,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
             textAlign: TextAlign.center,
           ),
           content: Text(
-            "Sei sicuro di voler eliminare il tuo account e tutti i dati cloud? Questa azione è IRREVERSIBILE.\n\nSaranno eliminati:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nI tuoi report inseriti rimarranno ma verranno anonimizzati.",
+            "settings.account.deleteConfirmBody".tr(),
             style: TextStyle(color: dialogCtx.colorScheme.onSurface, fontSize: 14),
             textAlign: TextAlign.center,
           ),
@@ -1260,7 +1260,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   ? null
                   : () => Navigator.pop(dialogCtx),
               style: TextButton.styleFrom(foregroundColor: dialogCtx.colorScheme.onSurfaceVariant),
-              child: const Text("Annulla"),
+              child: Text("common.actions.cancel".tr()),
             ),
             FilledButton(
               onPressed: isDeletingAccount
@@ -1292,7 +1292,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                         if (e.code == 'requires-recent-login') {
                           if (mounted) {
                             _triggerToast(
-                              "Sicurezza: Uscita forzata. Esegui un nuovo accesso e riprova.",
+                              "common.status.securityForcedLogout".tr(),
                             );
                           }
                           await FirebaseAuth.instance.signOut();
@@ -1432,9 +1432,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
   // Helper per il selettore del tema
   Widget _buildThemeSelector() {
     final themeLabels = {
-      'system': 'Sistema',
-      'light': 'Chiaro',
-      'dark': 'Scuro',
+      'system': 'common.themes.system'.tr(),
+      'light': 'common.themes.light'.tr(),
+      'dark': 'common.themes.dark'.tr(),
     };
 
     return Container(
@@ -1447,7 +1447,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Tema dell'app",
+                  "settings.uiOptions.appThemeTitle".tr(),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1456,7 +1456,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "Chiaro, scuro o uguale al sistema",
+                  "settings.uiOptions.appThemeSubtitle".tr(),
                   style: TextStyle(
                     fontSize: 13,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1482,10 +1482,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
               color: Theme.of(context).cardColor,
               position: PopupMenuPosition.under,
               onSelected: (val) => _handleThemeChange(val),
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'system', child: Text("Sistema")),
-                PopupMenuItem(value: 'light', child: Text("Chiaro")),
-                PopupMenuItem(value: 'dark', child: Text("Scuro")),
+              itemBuilder: (context) => [
+                PopupMenuItem(value: 'system', child: Text("common.themes.system".tr())),
+                PopupMenuItem(value: 'light', child: Text("common.themes.light".tr())),
+                PopupMenuItem(value: 'dark', child: Text("common.themes.dark".tr())),
               ],
               child: SizedBox(
                 width: 110,
@@ -1523,11 +1523,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
   // Helper per il selettore lingua
   Widget _buildLanguageSelector() {
     final langLabels = {
-      'it': 'Italiano',
-      'en': 'Inglese',
-      'es': 'Spagnolo',
-      'de': 'Tedesco',
-      'fr': 'Francese',
+      'it': 'common.languages.it'.tr(),
+      'en': 'common.languages.en'.tr(),
+      'es': 'common.languages.es'.tr(),
+      'de': 'common.languages.de'.tr(),
+      'fr': 'common.languages.fr'.tr(),
     };
 
     return Container(
@@ -1540,7 +1540,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Lingua preferita",
+                  "settings.uiOptions.preferredLanguageTitle".tr(),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -1549,7 +1549,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "Lingua preferita per gli ingredienti",
+                  "settings.uiOptions.preferredLanguageSubtitle".tr(),
                   style: TextStyle(
                     fontSize: 13,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1574,12 +1574,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
               color: Theme.of(context).cardColor,
               position: PopupMenuPosition.under,
               onSelected: (val) => _handleLanguageChange(val),
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'it', child: Text("Italiano")),
-                PopupMenuItem(value: 'en', child: Text("Inglese")),
-                PopupMenuItem(value: 'es', child: Text("Spagnolo")),
-                PopupMenuItem(value: 'de', child: Text("Tedesco")),
-                PopupMenuItem(value: 'fr', child: Text("Francese")),
+              itemBuilder: (context) => [
+                PopupMenuItem(value: 'it', child: Text("common.languages.it".tr())),
+                PopupMenuItem(value: 'en', child: Text("common.languages.en".tr())),
+                PopupMenuItem(value: 'es', child: Text("common.languages.es".tr())),
+                PopupMenuItem(value: 'de', child: Text("common.languages.de".tr())),
+                PopupMenuItem(value: 'fr', child: Text("common.languages.fr".tr())),
               ],
               child: SizedBox(
                 width: 110,

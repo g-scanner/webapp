@@ -1,9 +1,7 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
@@ -67,7 +65,7 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
           },
         ),
         title: Text(
-          "Licenze e Note Legali",
+          "settings.licensesPage.title".tr(),
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 20,
@@ -83,7 +81,7 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
           // ==========================================
           _buildSectionHeader(
             icon: Icons.copyright,
-            title: "Licenza G-Scanner",
+            title: "settings.licensesPage.appLicenseTitle".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
@@ -104,19 +102,19 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                 children: [
                   TextSpan(
                     text:
-                        "Copyright (c) 2026 Emanuele Ciotola. Tutti i diritti riservati.\n\n",
+                        "${"settings.licensesPage.appLicenseCopyright".tr()}\n\n",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurface,
                     ),
                   ),
-                  const TextSpan(
-                    text:
-                        "G-Scanner è un software closed-source e proprietario. Il codice sorgente è reso pubblicamente visibile (\"Source-Available\") esclusivamente a scopo di trasparenza, verifica tecnica e portfolio personale.\n\n",
-                  ),
-                  const TextSpan(text: "Per qualsiasi dubbio, consulta la "),
                   TextSpan(
-                    text: "Licenza Completa",
+                    text:
+                        "${"settings.licensesPage.appLicenseBody".tr()}\n\n",
+                  ),
+                  TextSpan(text: "settings.licensesPage.appLicenseAsk".tr()),
+                  TextSpan(
+                    text: "settings.licensesPage.appLicenseLink".tr(),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.primary,
@@ -147,7 +145,7 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
           // ==========================================
           _buildSectionHeader(
             icon: Icons.source_outlined,
-            title: "Fonte Dati",
+            title: "settings.licensesPage.dataSourceTitle".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
@@ -166,9 +164,9 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                   height: 1.5,
                 ),
                 children: [
-                  const TextSpan(
+                  TextSpan(
                     text:
-                        "I dati sui prodotti sono forniti dalla community di ",
+                        "settings.licensesPage.dataSourcePre".tr(),
                   ),
                   TextSpan(
                     text: "Open Food Facts",
@@ -189,8 +187,8 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                         }
                       },
                   ),
-                  const TextSpan(
-                    text: ". I dati sono rilasciati sotto licenza ",
+                  TextSpan(
+                    text: "settings.licensesPage.dataSourceMid".tr(),
                   ),
                   TextSpan(
                     text: "Open Database License (ODbL)",
@@ -212,9 +210,9 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                       },
                   ),
                   const TextSpan(text: ".\n\n"),
-                  const TextSpan(
+                  TextSpan(
                     text:
-                        "Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico.",
+                        "settings.licensesPage.dataSourceDisclaimer".tr(),
                   ),
                 ],
               ),
@@ -228,10 +226,11 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
           // ==========================================
           _buildSectionHeader(
             icon: Icons.code_rounded,
-            title: "Librerie Open Source",
+            title: "settings.licensesPage.openSourceTitle".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
+
           Builder(
             builder: (context) {
               final Map<String, List<String>> displayLicenses = _isLoading

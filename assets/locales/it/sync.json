@@ -1,0 +1,26 @@
+{
+  "sync": {
+    "title": "Sincronizzazione dati",
+    "localDataFound": {
+      "title": "Dati Locali Rilevati",
+      "body": "Abbiamo trovato {count} scansioni effettuate in precedenza sul tuo telefono.\n\nOra che hai un account, vuoi collegare questi dati al tuo profilo o preferisci iniziare da zero?",
+      "merge": "Unisci i dati al mio account",
+      "discard": "Cancella e inizia da zero"
+    },
+    "status": {
+      "idle": "Pronto per la sincronizzazione",
+      "syncing": "Sincronizzazione in corso...",
+      "success": "Sincronizzazione completata",
+      "error": "Errore durante la sincronizzazione",
+      "lastSync": "Ultima sincronizzazione: {datetime}"
+    },
+    "actions": {
+      "syncNow": "Sincronizza ora",
+      "cancel": "Annulla"
+    },
+    "info": {
+      "requiresLogin": "La sincronizzazione richiede un account. Accedi per abilitarla.",
+      "wifiRecommended": "Consigliato: connessione Wi-Fi per la sincronizzazione."
+    }
+  }
+}

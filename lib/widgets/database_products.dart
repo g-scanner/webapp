@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/services/analyzer_service.dart';
 import 'package:gscanner/widgets/report_detail_card.dart';
@@ -146,7 +147,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
           children: [
             // ── Intestazione Pagina ─────────────────────────────────────
             Text(
-              "Segnalazioni",
+              "database.title".tr(),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
@@ -155,7 +156,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Seleziona un prodotto per esaminare i dettagli inviati dalla community e approvare o respingere le modifiche.",
+              "report.empty".tr(),
               style: TextStyle(
                 fontSize: 14,
                 color: colorScheme.onSurfaceVariant,
@@ -203,7 +204,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        "Segnalazioni attive",
+                        "report.lists.activeReports".tr(),
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -254,7 +255,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                       color: colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
-                      hintText: "Cerca prodotto...",
+                      hintText: "database.search.hint".tr(),
                       hintStyle: TextStyle(
                         color: colorScheme.onSurfaceVariant.withValues(
                           alpha: 0.6,
@@ -344,7 +345,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                       DropdownMenuItem(
                         value: "Tutte",
                         child: Text(
-                          "Tutte",
+                          "report.dropdown.all".tr(),
                           style: _dropdownItemTextStyle(
                             colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                           ),
@@ -353,7 +354,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                       DropdownMenuItem(
                         value: "Mie",
                         child: Text(
-                          "Le mie",
+                          "report.dropdown.mine".tr(),
                           style: _dropdownItemTextStyle(
                             colorScheme.onSecondaryContainer,
                           ),
@@ -417,7 +418,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Nessuna segnalazione",
+                      "report.empty".tr(),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
@@ -426,7 +427,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Non ci sono prodotti che richiedono la tua attenzione per i filtri selezionati.",
+                      "database.search.noResults".tr(namedArgs: {"query": _searchTerm}),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -513,11 +514,11 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                   builder: (ctx) => AlertDialog(
                     backgroundColor: cardBg,
                     title: Text(
-                      "Eliminare segnalazione?",
+                      "report.ui.deleteConfirmTitle".tr(),
                       style: TextStyle(color: colorScheme.onSurface),
                     ),
                     content: Text(
-                      "Sei sicuro di voler eliminare la tua segnalazione per questo prodotto?",
+                      "report.ui.deleteConfirmBody".tr(),
                       style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                     actions: [
@@ -526,7 +527,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                         style: TextButton.styleFrom(
                           foregroundColor: colorScheme.onSurfaceVariant,
                         ),
-                        child: const Text("Annulla"),
+                        child: Text("common.actions.cancel".tr()),
                       ),
                       TextButton(
                         onPressed: () async {
@@ -539,7 +540,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                         style: TextButton.styleFrom(
                           foregroundColor: colorScheme.error,
                         ),
-                        child: const Text("Elimina"),
+                        child: Text("common.actions.delete".tr()),
                       ),
                     ],
                   ),
@@ -672,7 +673,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Esamina dettagli segnalazione",
+                    "report.lists.examineDetails".tr(),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

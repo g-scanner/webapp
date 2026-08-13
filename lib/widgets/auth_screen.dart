@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../services/db_service.dart';
 import 'package:gscanner/utils/popup_tracker_stub.dart'
     if (dart.library.js_interop) 'package:gscanner/utils/popup_tracker_web.dart';
@@ -59,11 +60,11 @@ class _AuthScreenState extends State<AuthScreen> {
       // Se ha successo, lo StreamBuilder nel main.dart cambia pagina da solo.
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      _showError(e.message ?? "Errore di accesso anonimo");
+      _showError(e.message ?? "auth.errors.anonymousFailed".tr());
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       if (!mounted) return;
-      _showError("Si è verificato un errore: $e");
+      _showError("auth.errors.genericError".tr(namedArgs: {"error": e.toString()}));
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -110,9 +111,9 @@ class _AuthScreenState extends State<AuthScreen> {
           errStr.contains('already-opened') ||
           errStr.contains('already-in-progress') ||
           errStr.contains('abort')) {
-        _showInfo("Accesso con Google annullato o già in corso.");
+        _showInfo("auth.errors.googleCancelled".tr());
       } else {
-        _showError("Errore Firebase: ${e.message}");
+        _showError("auth.errors.firebaseError".tr(namedArgs: {"message": e.message ?? ""}));
       }
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
@@ -122,9 +123,9 @@ class _AuthScreenState extends State<AuthScreen> {
           errStr.contains('12502') ||
           errStr.contains('cancel') ||
           errStr.contains('abort')) {
-        _showInfo("Accesso con Google annullato.");
+        _showInfo("auth.errors.googleCancelledShort".tr());
       } else {
-        _showError("Errore Google Sign-In: $e");
+        _showError("auth.errors.googleSignInError".tr(namedArgs: {"error": e.toString()}));
       }
       if (mounted) setState(() => _isLoading = false);
     }
@@ -155,10 +156,10 @@ class _AuthScreenState extends State<AuthScreen> {
       // Se l'utente annulla l'operazione o c'è un errore
       if (result.status != LoginStatus.success) {
         if (result.status == LoginStatus.cancelled) {
-          _showInfo("Accesso con Facebook annullato.");
+          _showInfo("auth.errors.facebookCancelled".tr());
         } else if (result.status == LoginStatus.failed) {
           if (!mounted) return;
-          _showError("Errore Facebook: ${result.message}");
+          _showError("auth.errors.facebookError".tr(namedArgs: {"message": result.message ?? ""}));
         }
         if (mounted) setState(() => _isLoading = false);
         return;
@@ -201,14 +202,14 @@ class _AuthScreenState extends State<AuthScreen> {
           errStr.contains('already-opened') ||
           errStr.contains('already-in-progress') ||
           errStr.contains('abort')) {
-        _showInfo("Accesso con Facebook annullato o già in corso.");
+        _showInfo("auth.errors.facebookCancelledOrInProgress".tr());
       } else {
-        _showError("Errore Firebase: ${e.message}");
+        _showError("auth.errors.firebaseError".tr(namedArgs: {"message": e.message ?? ""}));
       }
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       if (!mounted) return;
-      _showError("Errore Facebook Sign-In: $e");
+      _showError("auth.errors.facebookSignInError".tr(namedArgs: {"error": e.toString()}));
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -232,7 +233,7 @@ class _AuthScreenState extends State<AuthScreen> {
         timerHandled = true;
         if (mounted && _isLoading) {
           setState(() => _isLoading = false);
-          _showInfo("Accesso con $providerName annullato.");
+          _showInfo("auth.errors.popupCancelled".tr(namedArgs: {"provider": providerName}));
         }
       }
     });
@@ -383,7 +384,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Il tuo assistente affidabile per le scelte senza\u00A0glutine.",
+                      "auth.branding.tagline".tr(),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -400,7 +401,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       )
                     else ...[
                       _buildSocialBtn(
-                        text: "Continua con Google",
+                        text: "auth.social.continueWithGoogle".tr(),
                         iconWidget: Image.asset(
                           'assets/icons/google.png',
                           width: 20,
@@ -413,7 +414,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: 12),
 
                       _buildSocialBtn(
-                        text: "Continua con Facebook",
+                        text: "auth.social.continueWithFacebook".tr(),
                         iconWidget: Image.asset(
                           'assets/icons/facebook.png',
                           width: 20,
@@ -440,7 +441,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               horizontal: 16.0,
                             ),
                             child: Text(
-                              "Oppure",
+                              "auth.social.or".tr(),
                               style: TextStyle(
                                 fontSize: 14,
                                 color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -461,9 +462,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       TextButton.icon(
                         onPressed: () => _checkAndShowLegalPopup(_signInAnonymously),
                         icon: const Icon(Icons.person_off, size: 18),
-                        label: const Text(
-                          "Entra senza autenticazione",
-                          style: TextStyle(
+                        label: Text(
+                          "auth.social.enterAnonymously".tr(),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -478,7 +479,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "La cronologia scansioni e le impostazioni utente verranno salvate solo localmente.",
+                        "auth.social.anonymousDisclaimer".tr(),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
@@ -646,7 +647,7 @@ class _LegalConsentDialogState extends State<_LegalConsentDialog> {
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    "Prima di iniziare...",
+                    "auth.legal.dialogTitle".tr(),
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -661,7 +662,7 @@ class _LegalConsentDialogState extends State<_LegalConsentDialog> {
 
             // Testo introduttivo
             Text(
-              "Per usare G-Scanner, devi comprendere e accettare queste regole essenziali:",
+              "auth.legal.dialogIntro".tr(),
               style: TextStyle(
                 fontSize: 14,
                 color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
@@ -672,21 +673,18 @@ class _LegalConsentDialogState extends State<_LegalConsentDialog> {
 
             // Bullets
             _buildBulletItem(
-              title: "Dati non garantiti",
-              description:
-                  "Le informazioni provengono dalla community di Open Food Facts. Possono contenere errori, omissioni o dati obsoleti.",
+              title: "auth.legal.bullet1Title".tr(),
+              description: "auth.legal.bullet1Body".tr(),
             ),
             const SizedBox(height: 10),
             _buildBulletItem(
-              title: "Nessun parere medico",
-              description:
-                  "L'app ha solo scopo informativo. Verifica SEMPRE l'etichetta fisica del prodotto per accertarti dell'assenza di allergeni.",
+              title: "auth.legal.bullet2Title".tr(),
+              description: "auth.legal.bullet2Body".tr(),
             ),
             const SizedBox(height: 10),
             _buildBulletItem(
-              title: "Zero responsabilità",
-              description:
-                  "L'app è fornita \"così com'è\". L'utilizzo è a tuo rischio e sollevi lo sviluppatore da qualsiasi responsabilità per eventuali inesattezze o danni.",
+              title: "auth.legal.bullet3Title".tr(),
+              description: "auth.legal.bullet3Body".tr(),
             ),
             const SizedBox(height: 18),
 
@@ -725,12 +723,11 @@ class _LegalConsentDialogState extends State<_LegalConsentDialog> {
                           height: 1.4,
                         ),
                         children: [
-                          const TextSpan(
-                            text:
-                                "Dichiaro di avere almeno 14 anni e accetto integralmente i ",
+                          TextSpan(
+                            text: "auth.legal.checkboxPre".tr(),
                           ),
                           TextSpan(
-                            text: "Termini di Servizio",
+                            text: "auth.legal.checkboxTos".tr(),
                             style: TextStyle(
                               color: context.colorScheme.primary,
                               fontWeight: FontWeight.bold,
@@ -738,9 +735,9 @@ class _LegalConsentDialogState extends State<_LegalConsentDialog> {
                             ),
                             recognizer: _tosRecognizer,
                           ),
-                          const TextSpan(text: " e la "),
+                          TextSpan(text: "auth.legal.checkboxMid".tr()),
                           TextSpan(
-                            text: "Privacy Policy",
+                            text: "auth.legal.checkboxPrivacy".tr(),
                             style: TextStyle(
                               color: context.colorScheme.primary,
                               fontWeight: FontWeight.bold,
@@ -748,7 +745,7 @@ class _LegalConsentDialogState extends State<_LegalConsentDialog> {
                             ),
                             recognizer: _privacyRecognizer,
                           ),
-                          const TextSpan(text: "."),
+                          TextSpan(text: "auth.legal.checkboxPost".tr()),
                         ],
                       ),
                     ),
@@ -775,9 +772,9 @@ class _LegalConsentDialogState extends State<_LegalConsentDialog> {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  "INIZIA",
-                  style: TextStyle(
+                child: Text(
+                  "auth.legal.startButton".tr(),
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
@@ -785,6 +782,7 @@ class _LegalConsentDialogState extends State<_LegalConsentDialog> {
                 ),
               ),
             ),
+
           ],
         ),
       ),
