@@ -489,7 +489,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 onBack: () => Navigator.pop(context),
                 reportReasonKey: "label_unclear",
                 reportComment: "Nessun commento",
-                reportDate: "",
+                reportDate: userReport?.submittedAt ?? "",
                 onVote: (vote) async {
                   await DbService.voteOnReportByBarcode(prod.barcode, vote);
                 },

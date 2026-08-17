@@ -31,22 +31,6 @@ class IngredientAnalyzed {
   }
 }
 
-const Map<String, String> defaultUnknownProductNames = {
-  'it': 'Prodotto Sconosciuto',
-  'en': 'Unknown Product',
-  'es': 'Producto Desconocido',
-  'fr': 'Produit Inconnu',
-  'de': 'Unbekanntes Produkt',
-};
-
-const Map<String, String> defaultUnknownBrandNames = {
-  'it': 'Produttore Sconosciuto',
-  'en': 'Unknown Brand',
-  'es': 'Marca Desconocida',
-  'fr': 'Marque Inconnue',
-  'de': 'Unbekannter Hersteller',
-};
-
 class Product {
   final String barcode;
   final Map<String, String> nameMap;
@@ -54,7 +38,6 @@ class Product {
   final Map<String, String> ingredientsMap;
   final Map<String, List<String>> allergensMap;
   final String? imageUrl;
-  final bool? isManual;
   final int pendingReportsCount;
   final String lastUpdated;
   final String? fetchedFromOffAt;
@@ -66,7 +49,6 @@ class Product {
     required this.ingredientsMap,
     required this.allergensMap,
     this.imageUrl,
-    this.isManual,
     this.pendingReportsCount = 0,
     required this.lastUpdated,
     this.fetchedFromOffAt,
@@ -84,7 +66,7 @@ class Product {
     }
     final firstNonEmpty = nameMap.values.firstWhere((v) => v.trim().isNotEmpty, orElse: () => '');
     if (firstNonEmpty.isNotEmpty) return firstNonEmpty;
-    return defaultUnknownProductNames[preferredLanguage] ?? defaultUnknownProductNames['en']!;
+    return 'product.status.unknownProductName'.tr();
   }
 
   String getBrand(String preferredLanguage) {
@@ -202,7 +184,6 @@ class Product {
       ingredientsMap: iMap,
       allergensMap: aMap,
       imageUrl: json['image_url'] ?? json['imageUrl'],
-      isManual: json['is_manual'] ?? json['isManual'],
       pendingReportsCount: json['pending_reports_count'] ?? json['reportCount'] ?? 0,
       lastUpdated: json['last_updated'] ?? json['lastUpdated'] ?? DateTime.now().toIso8601String(),
       fetchedFromOffAt: json['fetched_from_off_at'] ?? json['fetchedFromOffAt'],
@@ -217,7 +198,6 @@ class Product {
       'ingredients_map': ingredientsMap,
       'allergens_map': allergensMap,
       'image_url': imageUrl,
-      'is_manual': isManual,
       'pending_reports_count': pendingReportsCount,
       'last_updated': lastUpdated,
       'fetched_from_off_at': fetchedFromOffAt,

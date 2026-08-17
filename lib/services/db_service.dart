@@ -195,16 +195,15 @@ class DbService {
     }
 
     // GHOST PRODUCT: Prodotto non trovato né in cache, né su Firestore, né su OFF.
-    // Creiamo un oggetto "Fantasma" con le traduzioni corrette per ciascuna lingua in nameMap,
-    // e mappe VUOTE per brand, ingredienti e allergeni (segnale semantico di "dati non acquisiti").
+    // Creiamo un oggetto "Fantasma" con mappe VUOTE per nome, brand, ingredienti e allergeni.
+    // Nessun testo hardcoded sul DB: l'app userà la localizzazione dinamica json i18n ("product.status.unknownProductName".tr()).
     final nowIso = DateTime.now().toIso8601String();
     final ghostProduct = Product(
       barcode: barcode,
-      nameMap: Map<String, String>.from(defaultUnknownProductNames),
-      brandMap: {},       // Mappa VUOTA: brand non disponibile (la UI userà la traduzione dinamica)
+      nameMap: {},        // Mappa VUOTA: nessun dato su DB (UI usa "product.status.unknownProductName".tr())
+      brandMap: {},       // Mappa VUOTA: nessun dato su DB (UI usa "product.status.unknownBrand".tr())
       ingredientsMap: {}, // Mappa VUOTA: ingredienti non disponibili
       allergensMap: {},   // Mappa VUOTA: allergeni non disponibili (hasAllergenData = false)
-      isManual: false,
       pendingReportsCount: 0,
       lastUpdated: nowIso,
       fetchedFromOffAt: nowIso, // permette ricalcolo automatico tra 30 giorni
@@ -338,10 +337,8 @@ class DbService {
             }
             if (fallbackName.isNotEmpty) {
               nameMap['en'] = fallbackName;
-            } else {
-              // Se su OFF non esiste alcun nome, popola con traduzioni appropriate per ogni lingua
-              nameMap.addAll(defaultUnknownProductNames);
             }
+            // Se su OFF non esiste alcun nome, nameMap rimane vuota {} (UI userà "product.status.unknownProductName".tr())
           }
 
           // Estrazione Allergeni con rilevamento accurato dei dati mancanti:
@@ -397,7 +394,6 @@ class DbService {
             ingredientsMap: ingredientsMap,
             allergensMap: allergensMap,
             imageUrl: imageUrl,
-            isManual: false,
             pendingReportsCount: 0,
             lastUpdated: nowIso,
             fetchedFromOffAt: nowIso,

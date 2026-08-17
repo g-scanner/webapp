@@ -104,7 +104,8 @@
     "deleteReport": {
       "confirmTitle": "Eliminare segnalazione?",
       "confirmBody": "Sei sicuro di voler eliminare questa segnalazione?",
-      "menuLabel": "Elimina segnalazione"
+      "menuLabel": "Elimina segnalazione",
+      "errorMessage": "Errore durante l'eliminazione. Riprova."
     },
     "report": {
       "communityCallout": "Aiuta la community segnalando informazioni inesatte o etichette poco chiare.",

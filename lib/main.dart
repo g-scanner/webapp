@@ -430,12 +430,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       pendingReportsCount: 0,
     );
 
+    // Dichiarato prima dell'if(mounted) per essere accessibile nel try block.
+    final isInHistoryNotifier = ValueNotifier<bool>(
+      history.any((h) => h.barcode == barcode),
+    );
+
     if (mounted) {
       final userReport = reports.cast<ProductReport?>().firstWhere(
         (r) => r?.barcode == barcode && r?.userId == userId,
         orElse: () => null,
       );
-      final isInHistory = history.any((h) => h.barcode == barcode);
 
       final reportIdNotifier = _openReportIdNotifiers.putIfAbsent(
         barcode,
@@ -448,14 +452,14 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           product: placeholderProduct,
           productNotifier: productNotifier,
           reportIdNotifier: reportIdNotifier,
+          isInHistoryNotifier: isInHistoryNotifier,
           isLoading: true,
+          scannedAt: DateTime.now().toIso8601String(),
           onBack: () => Navigator.pop(context),
           onReportSubmit: handleReportSubmit,
           onProductUpdate: handleProductUpdate,
           userSettings: userSettings,
-          onDeleteHistoryByBarcode: isInHistory
-              ? handleDeleteHistoryByBarcode
-              : null,
+          onDeleteHistoryByBarcode: handleDeleteHistoryByBarcode,
           hasReportedThisSession:
               reportedSessionBarcodes.contains(barcode) || userReport != null,
           userReportId: userReport?.id,
@@ -473,7 +477,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 reportOfProduct != null;
             final String comment = reportOfProduct?.comments ?? '';
             final String rDate = reportOfProduct != null
-                ? formatRelativeDate(reportOfProduct.submittedAt)
+                ? reportOfProduct.submittedAt
                 : "";
 
             // Calcola originalStatus al volo (senza usare il campo legacy)
@@ -540,6 +544,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       pushFuture.then((_) async {
         _openProductNotifiers.remove(barcode);
         _openReportIdNotifiers.remove(barcode);
+        isInHistoryNotifier.dispose();
         if (mounted) {
           setState(() => _isCameraActive = true);
         }
@@ -552,7 +557,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         userSettings,
       );
       productNotifier.value = product;
-      _loadLocalHistory();
+      await _loadLocalHistory();
+      // Notifica il widget che il prodotto è ora in cronologia:
+      // il menu "Elimina dalla cronologia" apparirà istantaneamente.
+      isInHistoryNotifier.value = true;
       _fetchProducts();
     } catch (e) {
       if (mounted) {
@@ -683,56 +691,71 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
     final String? barcode = report?.barcode;
 
-    if (mounted) {
+    // Non-ottimistico: aspettiamo la conferma del server prima di aggiornare la UI.
+    // Per operazioni irreversibili è sbagliato assumere il successo in anticipo.
+    try {
+      await DbService.deleteReportFromDb(reportId);
+      await DbService.deleteLocalReport(reportId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('product.deleteReport.errorMessage'.tr()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      return; // UI rimane invariata: il report non è stato eliminato
+    }
+
+    // Solo dopo la conferma del server aggiorniamo la UI
+    if (mounted && barcode != null) {
       setState(() {
-        if (barcode != null) {
-          reportedSessionBarcodes.remove(barcode);
+        reportedSessionBarcodes.remove(barcode);
 
-          // Pure-Data: decrementa pendingReportsCount ottimisticamente
-          final pIdx = products.indexWhere((p) => p.barcode == barcode);
-          if (pIdx != -1) {
-            final p = products[pIdx];
-            products[pIdx] = Product(
-              barcode: p.barcode,
-              nameMap: p.nameMap,
-              brandMap: p.brandMap,
-              ingredientsMap: p.ingredientsMap,
-              allergensMap: p.allergensMap,
-              imageUrl: p.imageUrl,
-              lastUpdated: p.lastUpdated,
-              pendingReportsCount: (p.pendingReportsCount - 1).clamp(0, 9999),
-              fetchedFromOffAt: p.fetchedFromOffAt,
-            );
-            if (_openProductNotifiers.containsKey(barcode)) {
-              _openProductNotifiers[barcode]!.value = products[pIdx];
-            }
-            if (_openReportIdNotifiers.containsKey(barcode)) {
-              _openReportIdNotifiers[barcode]!.value = null;
-            }
-          }
-
-          final updatedBarcodes = List<String>.from(
-            userSettings.reportedBarcodes,
-          )..remove(barcode);
-          userSettings = UserSettings(
-            userId: userSettings.userId,
-            strictMode: userSettings.strictMode,
-            alertLactose: userSettings.alertLactose,
-            warnAdditives: userSettings.warnAdditives,
-            autoSaveHistory: userSettings.autoSaveHistory,
-            preferredLanguage: userSettings.preferredLanguage,
-            preferredTheme: userSettings.preferredTheme,
-            reportedBarcodes: updatedBarcodes,
+        // Decrementa pendingReportsCount
+        final pIdx = products.indexWhere((p) => p.barcode == barcode);
+        if (pIdx != -1) {
+          final p = products[pIdx];
+          products[pIdx] = Product(
+            barcode: p.barcode,
+            nameMap: p.nameMap,
+            brandMap: p.brandMap,
+            ingredientsMap: p.ingredientsMap,
+            allergensMap: p.allergensMap,
+            imageUrl: p.imageUrl,
+            lastUpdated: p.lastUpdated,
+            pendingReportsCount: (p.pendingReportsCount - 1).clamp(0, 9999),
+            fetchedFromOffAt: p.fetchedFromOffAt,
           );
+          if (_openProductNotifiers.containsKey(barcode)) {
+            _openProductNotifiers[barcode]!.value = products[pIdx];
+          }
+          if (_openReportIdNotifiers.containsKey(barcode)) {
+            _openReportIdNotifiers[barcode]!.value = null;
+          }
         }
+
+        final updatedBarcodes = List<String>.from(
+          userSettings.reportedBarcodes,
+        )..remove(barcode);
+        userSettings = UserSettings(
+          userId: userSettings.userId,
+          strictMode: userSettings.strictMode,
+          alertLactose: userSettings.alertLactose,
+          warnAdditives: userSettings.warnAdditives,
+          autoSaveHistory: userSettings.autoSaveHistory,
+          preferredLanguage: userSettings.preferredLanguage,
+          preferredTheme: userSettings.preferredTheme,
+          reportedBarcodes: updatedBarcodes,
+        );
       });
     }
 
-    await DbService.deleteReportFromDb(reportId);
-    await DbService.deleteLocalReport(reportId);
     DbService.saveLocalSettings(userSettings);
     DbService.saveSettings(userSettings);
-    await Future.wait([_loadLocalReports(), _fetchProducts()]);
+    // Ricarica solo i report locali (senza refetch dei prodotti che causa il flash)
+    await _loadLocalReports();
   }
 
   void _navigateToProduct(Product match) async {
@@ -758,11 +781,17 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
     reportIdNotifier.value = userReport?.id;
 
+    final historyItem = history.cast<ScanHistoryItem?>().firstWhere(
+      (h) => h?.barcode == match.barcode,
+      orElse: () => null,
+    );
+
     final route = MaterialPageRoute(
       builder: (context) => ProductDetailCard(
         product: match,
         productNotifier: notifier,
         reportIdNotifier: reportIdNotifier,
+        scannedAt: historyItem?.scannedAt,
         onBack: () => Navigator.pop(context),
         onReportSubmit: handleReportSubmit,
         onProductUpdate: handleProductUpdate,
@@ -788,7 +817,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               reportOfProduct != null;
           final String comment = reportOfProduct?.comments ?? '';
           final String rDate = reportOfProduct != null
-              ? formatRelativeDate(reportOfProduct.submittedAt)
+              ? reportOfProduct.submittedAt
               : "";
 
           // Calcola originalStatus on-the-fly senza campi legacy

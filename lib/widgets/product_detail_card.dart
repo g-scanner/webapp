@@ -20,12 +20,14 @@ class ProductDetailCard extends StatefulWidget {
   final Future<void> Function(Product updatedProduct) onProductUpdate;
   final UserSettings userSettings;
   final Future<void> Function(String barcode)? onDeleteHistoryByBarcode;
+  final ValueNotifier<bool>? isInHistoryNotifier;
   final bool hasReportedThisSession;
   final String? userReportId;
   final Future<void> Function(String reportId)? onDeleteReport;
   final bool useResponsiveWrapper;
   final bool showReportLink;
   final bool showScanDate;
+  final String? scannedAt;
   final void Function(Product product)? onViewReport;
 
   const ProductDetailCard({
@@ -39,12 +41,14 @@ class ProductDetailCard extends StatefulWidget {
     required this.onProductUpdate,
     required this.userSettings,
     this.onDeleteHistoryByBarcode,
+    this.isInHistoryNotifier,
     this.hasReportedThisSession = false,
     this.userReportId,
     this.onDeleteReport,
     this.useResponsiveWrapper = true,
     this.showReportLink = true,
     this.showScanDate = true,
+    this.scannedAt,
     this.onViewReport,
   });
 
@@ -81,12 +85,14 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     super.initState();
     widget.productNotifier?.addListener(_onProductNotifierChanged);
     widget.reportIdNotifier?.addListener(_onReportIdNotifierChanged);
+    widget.isInHistoryNotifier?.addListener(_onIsInHistoryChanged);
   }
 
   @override
   void dispose() {
     widget.productNotifier?.removeListener(_onProductNotifierChanged);
     widget.reportIdNotifier?.removeListener(_onReportIdNotifierChanged);
+    widget.isInHistoryNotifier?.removeListener(_onIsInHistoryChanged);
     _reportCommentsController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -97,6 +103,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   void _onReportIdNotifierChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onIsInHistoryChanged() {
     if (mounted) setState(() {});
   }
 
@@ -452,12 +462,16 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       preferredLanguage: currentLang,
     );
 
-    final GlutenSafetyStatus effectiveStatus = isReported
-        ? GlutenSafetyStatus.incerto
-        : analysis.status;
-    final String displayedReason = isReported
-        ? "product.alert.activeReportWarning".tr()
-        : analysis.reason;
+    final GlutenSafetyStatus effectiveStatus = showSkeleton
+        ? GlutenSafetyStatus.sconosciuto
+        : (isReported
+            ? GlutenSafetyStatus.incerto
+            : analysis.status);
+    final String displayedReason = showSkeleton
+        ? "product.analysis.unknown".tr()
+        : (isReported
+            ? "product.alert.activeReportWarning".tr()
+            : analysis.reason);
     final List<IngredientAnalyzed> displayedIngredientsAnalyzed =
         analysis.ingredientsAnalyzed;
 
@@ -526,8 +540,27 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           ),
         ),
         actions: [
-          // I Tre Puntini per le impostazioni
-          if (widget.onDeleteHistoryByBarcode != null ||
+          // Durante il caricamento (prodotto non ancora in cronologia): shimmer skeleton.
+          // Una volta salvato in history o se c'è già una segnalazione: bottone reale.
+          if (widget.isInHistoryNotifier != null &&
+              !widget.isInHistoryNotifier!.value &&
+              _effectiveUserReportId == null)
+            Padding(
+              padding: const EdgeInsets.only(right: 4.0),
+              child: Skeletonizer(
+                enabled: true,
+                child: IconButton(
+                  color: cardBg,
+                  onPressed: () {},
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            )
+          else if ((widget.isInHistoryNotifier?.value ??
+                  widget.onDeleteHistoryByBarcode != null) ||
               _effectiveUserReportId != null)
             PopupMenuButton<String>(
               icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
@@ -611,7 +644,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 }
               },
               itemBuilder: (BuildContext context) => [
-                if (widget.onDeleteHistoryByBarcode != null)
+                if ((widget.isInHistoryNotifier?.value ?? false) &&
+                    widget.onDeleteHistoryByBarcode != null)
                   PopupMenuItem(
                     value: 'delete_history',
                     child: Row(
@@ -736,7 +770,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     if (widget.showScanDate) ...[
                       const SizedBox(height: 4),
                       Text(
-                        formatScanDate(currentProduct.lastUpdated),
+                        formatScanDate(
+                          widget.scannedAt ?? currentProduct.lastUpdated,
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           color: colorScheme.onSurfaceVariant.withValues(

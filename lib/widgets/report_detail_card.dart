@@ -379,39 +379,23 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                   // DATA AGGIUNTA DA RICHIESTA
                   Builder(
                     builder: (context) {
-                      final String effectiveReportDate =
+                      final String rawReportDate =
                           (_activeReport?.submittedAt != null &&
                               _activeReport!.submittedAt.isNotEmpty)
-                          ? formatRelativeDate(_activeReport!.submittedAt)
-                          : widget.reportDate;
+                          ? _activeReport!.submittedAt
+                          : (widget.reportDate.isNotEmpty
+                              ? widget.reportDate
+                              : widget.product.lastUpdated);
 
-                      if (effectiveReportDate.isNotEmpty) {
+                      if (rawReportDate.isNotEmpty) {
                         return Padding(
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Text(
-                            formatReportDate(effectiveReportDate),
+                            formatReportDate(rawReportDate),
                             style: TextStyle(
                               fontSize: 12,
                               color: colorScheme.onSurfaceVariant.withValues(
                                 alpha: 0.8,
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-
-                      if (_isVoteLoading) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Skeletonizer(
-                            enabled: true,
-                            child: Text(
-                              formatReportDate("00/00/0000"),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.8,
-                                ),
                               ),
                             ),
                           ),
@@ -637,25 +621,30 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         ),
                       ),
                     ),
-                    child: Skeletonizer(
-                      enabled: _isVoteLoading,
-                      child: Text(
-                        _isVoteLoading
-                            ? "Questo è un commento segnaposto utilizzato per visualizzare lo scheletro di caricamento."
-                            : (_activeReport?.comments ?? "").isEmpty
-                            ? "report.ui.noAdditionalComment".tr()
-                            : '"${_activeReport!.comments}"',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontStyle:
-                              _isVoteLoading ||
-                                  (_activeReport?.comments ?? "").isEmpty
-                              ? FontStyle.normal
-                              : FontStyle.italic,
-                          color: colorScheme.onSurface,
-                          height: 1.4,
-                        ),
-                      ),
+                    child: Builder(
+                      builder: (context) {
+                        // Usa il commento da _activeReport se disponibile,
+                        // altrimenti quello passato dal padre (già noto subito).
+                        final String effectiveComment =
+                            _activeReport != null
+                            ? _activeReport!.comments
+                            : widget.reportComment;
+                        final bool isEmpty = effectiveComment.trim().isEmpty ||
+                            effectiveComment == "Nessun commento";
+                        return Text(
+                          isEmpty
+                              ? "report.ui.noAdditionalComment".tr()
+                              : '"$effectiveComment"',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontStyle: isEmpty
+                                ? FontStyle.normal
+                                : FontStyle.italic,
+                            color: colorScheme.onSurface,
+                            height: 1.4,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
