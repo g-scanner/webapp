@@ -169,7 +169,7 @@ class _HistoryListState extends State<HistoryList> {
 
     return _AnalyzedItemData(
       productName: name,
-      brand: brand,
+      brand: brand.isNotEmpty ? brand : "product.status.unknownBrand".tr(),
       status: finalStatus,
       hasLactose: hasLactose,
     );

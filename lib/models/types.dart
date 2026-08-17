@@ -31,6 +31,22 @@ class IngredientAnalyzed {
   }
 }
 
+const Map<String, String> defaultUnknownProductNames = {
+  'it': 'Prodotto Sconosciuto',
+  'en': 'Unknown Product',
+  'es': 'Producto Desconocido',
+  'fr': 'Produit Inconnu',
+  'de': 'Unbekanntes Produkt',
+};
+
+const Map<String, String> defaultUnknownBrandNames = {
+  'it': 'Produttore Sconosciuto',
+  'en': 'Unknown Brand',
+  'es': 'Marca Desconocida',
+  'fr': 'Marque Inconnue',
+  'de': 'Unbekannter Hersteller',
+};
+
 class Product {
   final String barcode;
   final Map<String, String> nameMap;
@@ -66,7 +82,9 @@ class Product {
         return nameMap[lang]!;
       }
     }
-    return nameMap.values.firstWhere((v) => v.trim().isNotEmpty, orElse: () => 'Prodotto Sconosciuto');
+    final firstNonEmpty = nameMap.values.firstWhere((v) => v.trim().isNotEmpty, orElse: () => '');
+    if (firstNonEmpty.isNotEmpty) return firstNonEmpty;
+    return defaultUnknownProductNames[preferredLanguage] ?? defaultUnknownProductNames['en']!;
   }
 
   String getBrand(String preferredLanguage) {
@@ -82,8 +100,11 @@ class Product {
         return brandMap[lang]!;
       }
     }
-    // Restituisce stringa vuota — il fallback localizzato viene gestito nella UI
-    return '';
+    final firstNonEmpty = brandMap.values.firstWhere(
+      (v) => v.trim().isNotEmpty && v != '-',
+      orElse: () => '',
+    );
+    return firstNonEmpty;
   }
 
   String getIngredients(String preferredLanguage) {
@@ -116,6 +137,24 @@ class Product {
   String get ingredients => getIngredients('it');
   List<String> get allergens => getAllergens('it');
   int get reportCount => pendingReportsCount;
+
+  /// `true` se abbiamo dati certi sugli allergeni:
+  /// - se ci sono allergeni dichiarati nella lista (> 0)
+  /// - OPPURE se abbiamo la lista degli ingredienti da cui è stato accertato che non ci sono allergeni
+  /// Se non abbiamo né ingredienti né allergeni dichiarati (es. prodotto incompleto su OFF), restituisce `false`.
+  bool get hasAllergenData {
+    if (allergensMap.isEmpty) return false;
+    final bool hasAnyDeclaredAllergen = allergensMap.values.any((list) => list.isNotEmpty);
+    if (hasAnyDeclaredAllergen) return true;
+    return hasIngredientData;
+  }
+
+  /// `true` se abbiamo dati sugli ingredienti (almeno un testo ingredienti non vuoto).
+  /// `false` se la mappa è completamente assente o vuota (Ghost Product o prodotto incompleto).
+  bool get hasIngredientData {
+    if (ingredientsMap.isEmpty) return false;
+    return ingredientsMap.values.any((ing) => ing.trim().isNotEmpty);
+  }
 
   factory Product.fromJson(Map<String, dynamic> json) {
     // Gestione nameMap

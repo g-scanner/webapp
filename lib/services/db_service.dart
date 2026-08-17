@@ -6,7 +6,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:easy_localization/easy_localization.dart';
 import '../models/types.dart';
 import 'analyzer_service.dart';
 import 'off_api_client.dart';
@@ -195,24 +194,41 @@ class DbService {
       return offProduct;
     }
 
-    // 4. FALLBACK EXTREMO: Se non trovato neanche su OFF o rete assente
-    final String unknownName = 'product.status.unknownProductName'.tr();
-    return Product(
+    // GHOST PRODUCT: Prodotto non trovato né in cache, né su Firestore, né su OFF.
+    // Creiamo un oggetto "Fantasma" con le traduzioni corrette per ciascuna lingua in nameMap,
+    // e mappe VUOTE per brand, ingredienti e allergeni (segnale semantico di "dati non acquisiti").
+    final nowIso = DateTime.now().toIso8601String();
+    final ghostProduct = Product(
       barcode: barcode,
-      nameMap: {
-        'it': unknownName,
-        'en': unknownName,
-        'es': unknownName,
-        'fr': unknownName,
-        'de': unknownName,
-      },
-      brandMap: {'en': '-'},
-      ingredientsMap: {'en': ''},
-      allergensMap: {'en': []},
+      nameMap: Map<String, String>.from(defaultUnknownProductNames),
+      brandMap: {},       // Mappa VUOTA: brand non disponibile (la UI userà la traduzione dinamica)
+      ingredientsMap: {}, // Mappa VUOTA: ingredienti non disponibili
+      allergensMap: {},   // Mappa VUOTA: allergeni non disponibili (hasAllergenData = false)
       isManual: false,
       pendingReportsCount: 0,
-      lastUpdated: DateTime.now().toIso8601String(),
+      lastUpdated: nowIso,
+      fetchedFromOffAt: nowIso, // permette ricalcolo automatico tra 30 giorni
     );
+
+    // Salva su Firestore per popolare il DB globale (rispetta l'architettura)
+    try {
+      await db
+          .collection(productsCollection)
+          .doc(barcode)
+          .set(ghostProduct.toJson(), SetOptions(merge: true));
+    } catch (e) {
+      print("Error saving ghost product to Firestore: $e");
+    }
+
+    // Salva in cache locale
+    await upsertLocalProduct(ghostProduct);
+
+    // Registra nella cronologia (fondamentale per BUG 1)
+    if (settings.autoSaveHistory) {
+      await _saveHistoryItem(ghostProduct);
+    }
+
+    return ghostProduct;
   }
 
   static void _checkAndRefreshOffStaleCache(Product product, UserSettings settings) async {
@@ -268,13 +284,15 @@ class DbService {
             if (n.isNotEmpty) nameMap[lang] = n;
           }
 
-          // Estrazione Multilingua BRANDS
+          // Estrazione Multilingua BRANDS (solo se presente su OFF)
           final brandStr = _getFirstNonEmptyString(pData, [
             'brands',
             'brand_tags',
-          ], 'Produttore Sconosciuto');
-          for (final lang in supportedLangs) {
-            brandMap[lang] = brandStr;
+          ], '');
+          if (brandStr.isNotEmpty && brandStr != '-') {
+            for (final lang in supportedLangs) {
+              brandMap[lang] = brandStr;
+            }
           }
 
           // Estrazione Multilingua INGREDIENTI
@@ -306,26 +324,63 @@ class DbService {
             }
           }
 
+          // Se nameMap è vuoto, cerca prima qualunque chiave di nome su OFF
           if (nameMap.isEmpty) {
-            final mainName = _getFirstNonEmptyString(pData, ['product_name'], 'Prodotto Sconosciuto');
-            nameMap['en'] = mainName;
+            String fallbackName = '';
+            for (final key in pData.keys) {
+              if (key.startsWith('product_name')) {
+                final val = pData[key];
+                if (val is String && val.trim().isNotEmpty) {
+                  fallbackName = val.trim();
+                  break;
+                }
+              }
+            }
+            if (fallbackName.isNotEmpty) {
+              nameMap['en'] = fallbackName;
+            } else {
+              // Se su OFF non esiste alcun nome, popola con traduzioni appropriate per ogni lingua
+              nameMap.addAll(defaultUnknownProductNames);
+            }
           }
 
-          // Estrazione Allergeni
-          List<String> rawAllergens = [];
-          if (pData['allergens_tags'] != null) {
+          // Estrazione Allergeni con rilevamento accurato dei dati mancanti:
+          // Distinguiamo se OFF ha effettivamente campi allergeni / ingredienti oppure se i dati non esistono proprio.
+          List<String>? rawAllergens;
+          if (pData['allergens_tags'] != null && (pData['allergens_tags'] as List).isNotEmpty) {
             rawAllergens = List<String>.from(pData['allergens_tags']);
-          } else if (pData['allergens_from_ingredients'] != null) {
+          } else if (pData['allergens_from_ingredients'] != null &&
+              pData['allergens_from_ingredients'].toString().trim().isNotEmpty) {
             rawAllergens = pData['allergens_from_ingredients']
                 .toString()
                 .split(',')
                 .map((e) => e.trim())
                 .where((e) => e.isNotEmpty)
                 .toList();
+          } else if (pData['allergens'] != null &&
+              pData['allergens'].toString().trim().isNotEmpty) {
+            rawAllergens = pData['allergens']
+                .toString()
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+          } else if (ingredientsMap.isNotEmpty) {
+            // Gli ingredienti sono stati forniti su OFF ma non sono stati segnalati allergeni
+            // -> Il produttore/OFF dichiara 0 allergeni
+            rawAllergens = [];
+          } else if (pData['allergens_tags'] is List && (pData['allergens_tags'] as List).isEmpty) {
+            // OFF ha confermato esplicitamente un array vuoto di allergeni
+            rawAllergens = [];
           }
 
-          for (final lang in supportedLangs) {
-            allergensMap[lang] = AnalyzerService.translateAllergens(rawAllergens, lang);
+          // Se rawAllergens è non-null, abbiamo dati certi (popoliamo la mappa per tutte le lingue).
+          // Se rawAllergens è null (es. solo nome su OFF, niente ingredienti né allergeni),
+          // allergensMap rimane vuota {} (hasAllergenData = false -> "Informazioni Insufficienti").
+          if (rawAllergens != null) {
+            for (final lang in supportedLangs) {
+              allergensMap[lang] = AnalyzerService.translateAllergens(rawAllergens, lang);
+            }
           }
 
           final imageUrl = pData['image_url'] ??

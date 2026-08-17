@@ -126,6 +126,7 @@
       "safeBadge": "Sicuro",
       "uncertainBadge": "Incerto",
       "noneLabel": "Nessuno dichiarato",
+      "insufficientDataLabel": "Informazioni Insufficienti",
       "noRisksDetected": "Nessun ingrediente a rischio rilevato."
     },
     "scanDate": {

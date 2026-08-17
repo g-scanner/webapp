@@ -148,7 +148,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         height: 4,
                         margin: const EdgeInsets.only(bottom: 24),
                         decoration: BoxDecoration(
-                          color: sheetCtx.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                          color: sheetCtx.colorScheme.outlineVariant.withValues(
+                            alpha: 0.4,
+                          ),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -160,7 +162,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: sheetCtx.colorScheme.error.withValues(alpha: 0.1),
+                            color: sheetCtx.colorScheme.error.withValues(
+                              alpha: 0.1,
+                            ),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -238,7 +242,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           value: "incorrect_status",
                           child: Text("product.report.reasonWrongStatus".tr()),
                         ),
-                        DropdownMenuItem(value: "other", child: Text("product.report.reasonOther".tr())),
+                        DropdownMenuItem(
+                          value: "other",
+                          child: Text("product.report.reasonOther".tr()),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) setSheetState(() => _reportType = val);
@@ -259,12 +266,16 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     TextField(
                       controller: _reportCommentsController,
                       maxLines: 3,
-                      style: TextStyle(fontSize: 15, color: sheetCtx.colorScheme.onSurface),
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: sheetCtx.colorScheme.onSurface,
+                      ),
                       decoration: InputDecoration(
                         hintText:
                             "Es: Sulla confezione dice 'può contenere tracce'...",
                         hintStyle: TextStyle(
-                          color: sheetCtx.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          color: sheetCtx.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.5),
                         ),
                         filled: true,
                         fillColor: sheetCtx.colorScheme.surfaceContainerHighest,
@@ -286,11 +297,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               ? null
                               : () => Navigator.pop(sheetCtx),
                           style: TextButton.styleFrom(
-                            foregroundColor: sheetCtx.colorScheme.onSurfaceVariant,
-                            minimumSize: const Size(
-                              0,
-                              48,
-                            ),
+                            foregroundColor:
+                                sheetCtx.colorScheme.onSurfaceVariant,
+                            minimumSize: const Size(0, 48),
                             padding: const EdgeInsets.symmetric(horizontal: 24),
                           ),
                           child: Text(
@@ -310,20 +319,33 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                       () => _submittingReport = true,
                                     );
                                     try {
-                                      final currentLang = widget.userSettings.preferredLanguage;
-                                      final origAnalysis = AnalyzerService.analyzeGlutenSafety(
-                                        name: currentProduct.getName(currentLang),
-                                        brand: currentProduct.getBrand(currentLang),
-                                        ingredients: currentProduct.getIngredients(currentLang),
-                                        allergensList: currentProduct.getAllergens(currentLang),
-                                        reportCount: 0,
-                                        categoriesTags: const [],
-                                        strictMode: widget.userSettings.strictMode,
-                                        warnAdditives: widget.userSettings.warnAdditives,
-                                        alertLactose: widget.userSettings.alertLactose,
-                                        preferredLanguage: currentLang,
-                                        ignoreReports: true,
-                                      );
+                                      final currentLang =
+                                          widget.userSettings.preferredLanguage;
+                                      final origAnalysis =
+                                          AnalyzerService.analyzeGlutenSafety(
+                                            name: currentProduct.getName(
+                                              currentLang,
+                                            ),
+                                            brand: currentProduct.getBrand(
+                                              currentLang,
+                                            ),
+                                            ingredients: currentProduct
+                                                .getIngredients(currentLang),
+                                            allergensList: currentProduct
+                                                .getAllergens(currentLang),
+                                            reportCount: 0,
+                                            categoriesTags: const [],
+                                            strictMode:
+                                                widget.userSettings.strictMode,
+                                            warnAdditives: widget
+                                                .userSettings
+                                                .warnAdditives,
+                                            alertLactose: widget
+                                                .userSettings
+                                                .alertLactose,
+                                            preferredLanguage: currentLang,
+                                            ignoreReports: true,
+                                          );
                                       await widget.onReportSubmit(
                                         currentProduct.barcode,
                                         {
@@ -356,9 +378,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                 horizontal: 16,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  999,
-                                ),
+                                borderRadius: BorderRadius.circular(999),
                               ),
                             ),
                             child: _submittingReport
@@ -366,9 +386,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
-                                      color: sheetCtx.colorScheme.onError.withValues(
-                                        alpha: 0.5,
-                                      ),
+                                      color: sheetCtx.colorScheme.onError
+                                          .withValues(alpha: 0.5),
                                       strokeWidth: 2,
                                     ),
                                   )
@@ -410,6 +429,12 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         .getAllergens(currentLang)
         .map((a) => a.replaceAll('\$', '').trim())
         .toList();
+
+    // BUG 2 FIX: distinzione semantica tra dati mancanti e dati noti ma vuoti.
+    // hasAllergenData = true → allergensMap ha almeno una chiave lingua (anche con lista vuota = "nessuno dichiarato")
+    // hasAllergenData = false → allergensMap è completamente assente = Ghost Product / dati non acquisiti
+    final bool hasAllergenData = currentProduct.hasAllergenData;
+    final bool hasIngredientData = currentProduct.hasIngredientData;
 
     final bool isReported =
         (currentProduct.pendingReportsCount > 0) || _hasUserReported;
@@ -513,7 +538,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       backgroundColor: cardBg,
-                      title: Text("product.deleteHistory.confirmTitle".tr(), style: TextStyle(color: colorScheme.onSurface)),
+                      title: Text(
+                        "product.deleteHistory.confirmTitle".tr(),
+                        style: TextStyle(color: colorScheme.onSurface),
+                      ),
                       content: Text(
                         "product.deleteHistory.confirmBody".tr(),
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
@@ -534,7 +562,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             );
                             widget.onBack();
                           },
-                          style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+                          style: TextButton.styleFrom(
+                            foregroundColor: colorScheme.error,
+                          ),
                           child: Text("common.actions.delete".tr()),
                         ),
                       ],
@@ -545,7 +575,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       backgroundColor: cardBg,
-                      title: Text("product.deleteReport.confirmTitle".tr(), style: TextStyle(color: colorScheme.onSurface)),
+                      title: Text(
+                        "product.deleteReport.confirmTitle".tr(),
+                        style: TextStyle(color: colorScheme.onSurface),
+                      ),
                       content: Text(
                         "product.deleteReport.confirmBody".tr(),
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
@@ -567,7 +600,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               );
                             }
                           },
-                          style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+                          style: TextButton.styleFrom(
+                            foregroundColor: colorScheme.error,
+                          ),
                           child: Text("common.actions.delete".tr()),
                         ),
                       ],
@@ -649,7 +684,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      currentProduct.name,
+                      productName,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 28,
@@ -660,9 +695,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      currentProduct.brand.isEmpty
+                      productBrand.isEmpty
                           ? "product.status.unknownBrand".tr()
-                          : currentProduct.brand,
+                          : productBrand,
                       style: TextStyle(
                         fontSize: 16,
                         color: colorScheme.onSurfaceVariant,
@@ -704,7 +739,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         formatScanDate(currentProduct.lastUpdated),
                         style: TextStyle(
                           fontSize: 12,
-                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.8,
+                          ),
                         ),
                       ),
                     ],
@@ -725,29 +762,37 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   // On-the-fly: calcola lo stato originale ignorando report
                   String displayedReasonWithOldStatus = displayedReason;
                   if (hasActiveReport) {
-                    final origAnalysisCopy = AnalyzerService.analyzeGlutenSafety(
-                      name: productName,
-                      brand: productBrand,
-                      ingredients: displayedIngredients,
-                      allergensList: displayedAllergens,
-                      reportCount: 0,
-                      categoriesTags: const [],
-                      strictMode: widget.userSettings.strictMode,
-                      warnAdditives: widget.userSettings.warnAdditives,
-                      alertLactose: widget.userSettings.alertLactose,
-                      preferredLanguage: currentLang,
-                      ignoreReports: true,
-                    );
+                    final origAnalysisCopy =
+                        AnalyzerService.analyzeGlutenSafety(
+                          name: productName,
+                          brand: productBrand,
+                          ingredients: displayedIngredients,
+                          allergensList: displayedAllergens,
+                          reportCount: 0,
+                          categoriesTags: const [],
+                          strictMode: widget.userSettings.strictMode,
+                          warnAdditives: widget.userSettings.warnAdditives,
+                          alertLactose: widget.userSettings.alertLactose,
+                          preferredLanguage: currentLang,
+                          ignoreReports: true,
+                        );
                     if (origAnalysisCopy.status != effectiveStatus) {
                       final String oldStatusTranslated = _translateGlutenStatus(
                         origAnalysisCopy.status,
                       );
                       String cleanReason = displayedReason.trim();
                       if (cleanReason.endsWith('.')) {
-                        cleanReason = cleanReason.substring(0, cleanReason.length - 1);
+                        cleanReason = cleanReason.substring(
+                          0,
+                          cleanReason.length - 1,
+                        );
                       }
-                      final String prevStatusText = "product.alert.previousStatus".tr(namedArgs: {"status": oldStatusTranslated});
-                      displayedReasonWithOldStatus = "$cleanReason. $prevStatusText";
+                      final String prevStatusText =
+                          "product.alert.previousStatus".tr(
+                            namedArgs: {"status": oldStatusTranslated},
+                          );
+                      displayedReasonWithOldStatus =
+                          "$cleanReason. $prevStatusText";
                     }
                   }
 
@@ -805,7 +850,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             color: colorScheme.tertiary.withValues(alpha: 0.04),
                             border: Border(
                               top: BorderSide(
-                                color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+                                color: colorScheme.outlineVariant.withValues(
+                                  alpha: 0.2,
+                                ),
                               ),
                             ),
                           ),
@@ -840,7 +887,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       color: cardBg,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -868,7 +917,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   title: "product.titles.lactosePresence".tr(),
                   icon: Icons.water_drop,
                   isLactose: true,
-                  bgColor: colorScheme.secondaryContainer.withValues(alpha: 0.15),
+                  bgColor: colorScheme.secondaryContainer.withValues(
+                    alpha: 0.15,
+                  ),
                   child: Text(
                     "product.warnings.lactoseAlertBody".tr(),
                     style: TextStyle(
@@ -881,13 +932,40 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 const SizedBox(height: 24),
               ],
               // ── Allergeni Dichiarati ──────────────────────────────────
+              // Tre stati semantici:
+              // 1. hasAllergenData=false → dati non disponibili (Ghost Product)
+              // 2. hasAllergenData=true, lista vuota → nessun allergene dichiarato
+              // 3. hasAllergenData=true, lista non vuota → mostra gli allergeni
               _buildSectionCard(
                 title: "product.titles.declaredAllergens".tr(),
                 icon: Icons.coronavirus,
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: displayedAllergens.isNotEmpty
+                  children: !hasAllergenData
+                      // Stato 1: Nessun dato — informazioni non disponibili (stessa pillola neutrale degli allergeni)
+                      ? [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Text(
+                              "product.ingredients.insufficientDataLabel".tr(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ]
+                      : displayedAllergens.isNotEmpty
+                      // Stato 3: Allergeni dichiarati → mostra chips
                       ? displayedAllergens.map((alg) {
                           return Container(
                             padding: const EdgeInsets.symmetric(
@@ -908,6 +986,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                             ),
                           );
                         }).toList()
+                      // Stato 2: Dati presenti ma lista vuota → nessuno dichiarato (sicuro)
                       : [
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -952,7 +1031,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         const SizedBox(height: 16),
                     ],
                     if (displayedIngredientsAnalyzed.isNotEmpty) ...[
-                      ...displayedIngredientsAnalyzed.asMap().entries.map((entry) {
+                      ...displayedIngredientsAnalyzed.asMap().entries.map((
+                        entry,
+                      ) {
                         final index = entry.key;
                         final item = entry.value;
                         final bool showTopDivider =
@@ -964,23 +1045,32 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
                         switch (item.dangerLevel) {
                           case "danger":
-                            pillBg = colorScheme.errorContainer.withValues(alpha: 0.2);
+                            pillBg = colorScheme.errorContainer.withValues(
+                              alpha: 0.2,
+                            );
                             pillText = colorScheme.error;
                             pillLabel = "product.ingredients.dangerBadge".tr();
                             break;
                           case "warning":
-                            pillBg = colorScheme.tertiaryContainer.withValues(alpha: 0.2);
+                            pillBg = colorScheme.tertiaryContainer.withValues(
+                              alpha: 0.2,
+                            );
                             pillText = colorScheme.tertiary;
                             pillLabel = "product.ingredients.warningBadge".tr();
                             break;
                           case "uncertain":
-                            pillBg = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
+                            pillBg = colorScheme.tertiaryContainer.withValues(
+                              alpha: 0.15,
+                            );
                             pillText = colorScheme.tertiary;
-                            pillLabel = "product.ingredients.uncertainBadge".tr();
+                            pillLabel = "product.ingredients.uncertainBadge"
+                                .tr();
                             break;
                           case "safe":
                           default:
-                            pillBg = colorScheme.primaryContainer.withValues(alpha: 0.2);
+                            pillBg = colorScheme.primaryContainer.withValues(
+                              alpha: 0.2,
+                            );
                             pillText = colorScheme.primary;
                             pillLabel = "product.ingredients.safeBadge".tr();
                             break;
@@ -988,12 +1078,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
                         return Container(
                           margin: EdgeInsets.only(top: showTopDivider ? 12 : 0),
-                          padding: EdgeInsets.only(top: showTopDivider ? 12 : 0),
+                          padding: EdgeInsets.only(
+                            top: showTopDivider ? 12 : 0,
+                          ),
                           decoration: BoxDecoration(
                             border: showTopDivider
                                 ? Border(
                                     top: BorderSide(
-                                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                                      color: colorScheme.outlineVariant
+                                          .withValues(alpha: 0.3),
                                     ),
                                   )
                                 : null,
@@ -1052,11 +1145,17 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       }),
                     ] else if (displayedIngredients.trim().isEmpty) ...[
                       Text(
-                        "product.ingredients.noRisksDetected".tr(),
+                        // hasIngredientData=false → ghost product: dati non disponibili
+                        // hasIngredientData=true ma ingredienti vuoti → prodotto pulito, nessun rischio
+                        !hasIngredientData
+                            ? "product.ingredients.insufficientDataLabel".tr()
+                            : "product.ingredients.noRisksDetected".tr(),
                         style: TextStyle(
                           fontSize: 13,
                           fontStyle: FontStyle.italic,
-                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.8,
+                          ),
                         ),
                       ),
                     ],
@@ -1078,16 +1177,12 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       color: colorScheme.onSurfaceVariant,
                     ),
                     children: <TextSpan>[
-                      TextSpan(
-                        text: "product.warnings.infoPre".tr(),
-                      ),
+                      TextSpan(text: "product.warnings.infoPre".tr()),
                       TextSpan(
                         text: "product.warnings.infoSource".tr(),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      TextSpan(
-                        text: "product.warnings.infoPost".tr(),
-                      ),
+                      TextSpan(text: "product.warnings.infoPost".tr()),
                     ],
                   ),
                 ),
@@ -1107,7 +1202,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle, color: colorScheme.error, size: 20),
+                      Icon(
+                        Icons.check_circle,
+                        color: colorScheme.error,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         "product.actions.alreadyReported".tr(),
@@ -1134,7 +1233,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   icon: const Icon(Icons.flag_outlined, size: 20),
                   label: Text(
                     "product.actions.reportError".tr(),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
 
@@ -1165,14 +1267,17 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: bgColor ?? (isCaution ? colorScheme.surfaceContainerHighest : cardBg),
+        color:
+            bgColor ??
+            (isCaution ? colorScheme.surfaceContainerHighest : cardBg),
         borderRadius: BorderRadius.circular(24),
         border: isCaution || isLactose
             ? null
-            : Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+            : Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
         boxShadow: [
-          if (isCaution == false &&
-              (bgColor == null || bgColor == cardBg))
+          if (isCaution == false && (bgColor == null || bgColor == cardBg))
             BoxShadow(
               color: colorScheme.shadow.withValues(alpha: 0.02),
               blurRadius: 8,
