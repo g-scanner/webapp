@@ -40,7 +40,7 @@ class ResponsiveMaxCardWidth extends StatelessWidget {
       }
 
       return Container(
-        color: const Color(0xFFFAF9FC),
+        color: Theme.of(context).scaffoldBackgroundColor,
         alignment: Alignment.center,
         child: Container(
           constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
