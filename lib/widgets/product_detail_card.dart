@@ -219,6 +219,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: _reportType,
                       icon: Icon(
                         Icons.expand_more,
@@ -302,26 +303,32 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        TextButton(
-                          onPressed: _submittingReport
-                              ? null
-                              : () => Navigator.pop(sheetCtx),
-                          style: TextButton.styleFrom(
-                            foregroundColor:
-                                sheetCtx.colorScheme.onSurfaceVariant,
-                            minimumSize: const Size(0, 48),
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                          ),
-                          child: Text(
-                            "common.actions.cancel".tr(),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                        Flexible(
+                          child: TextButton(
+                            onPressed: _submittingReport
+                                ? null
+                                : () => Navigator.pop(sheetCtx),
+                            style: TextButton.styleFrom(
+                              foregroundColor:
+                                  sheetCtx.colorScheme.onSurfaceVariant,
+                              minimumSize: const Size(0, 48),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                            ),
+                            child: Text(
+                              "common.actions.cancel".tr(),
+                              overflow: TextOverflow.ellipsis,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        SizedBox(
-                          width: 185,
-                          height: 48,
-                          child: FilledButton(
+                        Flexible(
+                          flex: 2,
+                          child: SizedBox(
+                            height: 48,
+                            child: FilledButton(
                             onPressed: _submittingReport
                                 ? null
                                 : () async {
@@ -409,7 +416,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                                   ),
                           ),
                         ),
-                      ],
+                      ),
+                    ],
                     ),
                   ],
                 ),
@@ -652,9 +660,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       children: [
                         Icon(Icons.delete, color: colorScheme.error, size: 20),
                         const SizedBox(width: 12),
-                        Text(
-                          "product.deleteHistory.menuLabel".tr(),
-                          style: TextStyle(color: colorScheme.error),
+                        Expanded(
+                          child: Text(
+                            "product.deleteHistory.menuLabel".tr(),
+                            style: TextStyle(color: colorScheme.error),
+                          ),
                         ),
                       ],
                     ),
@@ -668,9 +678,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       children: [
                         Icon(Icons.warning, color: colorScheme.error, size: 20),
                         const SizedBox(width: 12),
-                        Text(
-                          "product.deleteReport.menuLabel".tr(),
-                          style: TextStyle(color: colorScheme.error),
+                        Expanded(
+                          child: Text(
+                            "product.deleteReport.menuLabel".tr(),
+                            style: TextStyle(color: colorScheme.error),
+                          ),
                         ),
                       ],
                     ),
@@ -849,13 +861,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               color: colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              "product.titles.glutenEvaluation".tr(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.5,
-                                color: colorScheme.onSurfaceVariant,
+                            Expanded(
+                              child: Text(
+                                "product.titles.glutenEvaluation".tr(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.5,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ],
@@ -1244,12 +1258,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        "product.actions.alreadyReported".tr(),
-                        style: TextStyle(
-                          color: colorScheme.error,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 16,
+                      Flexible(
+                        child: Text(
+                          "product.actions.alreadyReported".tr(),
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colorScheme.error,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ],
@@ -1338,17 +1355,19 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 ),
                 const SizedBox(width: 8),
               ],
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.5,
-                  color: isCaution
-                      ? colorScheme.onSurface
-                      : isLactose
-                      ? colorScheme.onSecondaryContainer
-                      : colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                    color: isCaution
+                        ? colorScheme.onSurface
+                        : isLactose
+                        ? colorScheme.onSecondaryContainer
+                        : colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],

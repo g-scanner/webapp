@@ -14,8 +14,8 @@ const String productsCollection = "products";
 const String reportsCollection = "reports";
 
 class DbService {
-  static final FirebaseFirestore db = FirebaseFirestore.instance;
-  static final FirebaseAuth auth = FirebaseAuth.instance;
+  static FirebaseFirestore db = FirebaseFirestore.instance;
+  static FirebaseAuth auth = FirebaseAuth.instance;
 
   static const String _productsKey = 'celiac_products_cache';
   static const String _lastSyncKey = 'celiac_app_last_sync_time';

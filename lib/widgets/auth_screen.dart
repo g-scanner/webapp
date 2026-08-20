@@ -16,7 +16,16 @@ import 'package:gscanner/utils/popup_tracker_stub.dart'
 import '../theme/app_theme.dart';
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+  final FirebaseAuth? firebaseAuth;
+  final GoogleSignIn? googleSignIn;
+  final FacebookAuth? facebookAuth;
+
+  const AuthScreen({
+    super.key,
+    this.firebaseAuth,
+    this.googleSignIn,
+    this.facebookAuth,
+  });
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -25,6 +34,10 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool _isLoading = false;
   static bool _isGoogleSignInInitialized = false;
+
+  FirebaseAuth get _auth => widget.firebaseAuth ?? FirebaseAuth.instance;
+  GoogleSignIn get _googleSignIn => widget.googleSignIn ?? GoogleSignIn.instance;
+  FacebookAuth get _facebookAuth => widget.facebookAuth ?? FacebookAuth.instance;
 
   Future<void> _checkAndShowLegalPopup(Future<void> Function() onAccepted) async {
     final hasAccepted = await DbService.hasAcceptedTerms();
@@ -56,7 +69,7 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _signInAnonymously() async {
     setState(() => _isLoading = true);
     try {
-      await FirebaseAuth.instance.signInAnonymously();
+      await _auth.signInAnonymously();
       // Se ha successo, lo StreamBuilder nel main.dart cambia pagina da solo.
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -87,7 +100,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
 
       // Mobile: usa authenticate() direttamente per mostrare il bottom sheet nativo (Credential Manager)
-      final googleSignIn = GoogleSignIn.instance;
+      final googleSignIn = _googleSignIn;
       if (!_isGoogleSignInInitialized) {
         await googleSignIn.initialize(
           serverClientId:
@@ -102,7 +115,7 @@ class _AuthScreenState extends State<AuthScreen> {
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      await _auth.signInWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       final errStr = (e.code + (e.message ?? '')).toLowerCase();
@@ -149,7 +162,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
 
       // 1. Avvia il flusso nativo di Facebook usando .instance
-      final LoginResult result = await FacebookAuth.instance.login(
+      final LoginResult result = await _facebookAuth.login(
         permissions: ['email', 'public_profile'],
       );
 
@@ -175,14 +188,14 @@ class _AuthScreenState extends State<AuthScreen> {
       );
 
       // 4. Esegui il login su Firebase
-      final UserCredential userCredential = await FirebaseAuth.instance
+      final UserCredential userCredential = await _auth
           .signInWithCredential(credential);
       final user = userCredential.user;
 
       if (user != null &&
           (user.displayName == null || user.displayName!.isEmpty)) {
         try {
-          final userData = await FacebookAuth.instance.getUserData(
+          final userData = await _facebookAuth.getUserData(
             fields: "name,email",
           );
           final name = userData['name'] as String?;
@@ -539,13 +552,17 @@ class _AuthScreenState extends State<AuthScreen> {
               child: iconWidget,
             ),
             const SizedBox(width: 12),
-            Text(
-              text,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.1,
+            Flexible(
+              child: Text(
+                text,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.1,
+                ),
               ),
             ),
           ],

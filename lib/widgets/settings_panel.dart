@@ -15,6 +15,7 @@ class SettingsPanel extends StatefulWidget {
   final Future<void> Function(UserSettings) onSettingsChange;
   final Future<void> Function() onResetDB;
   final Future<void> Function() onClearHistory;
+  final FirebaseAuth? firebaseAuth;
 
   const SettingsPanel({
     super.key,
@@ -22,6 +23,7 @@ class SettingsPanel extends StatefulWidget {
     required this.onSettingsChange,
     required this.onResetDB,
     required this.onClearHistory,
+    this.firebaseAuth,
   });
 
   @override
@@ -29,6 +31,7 @@ class SettingsPanel extends StatefulWidget {
 }
 
 class _SettingsPanelState extends State<SettingsPanel> {
+  FirebaseAuth get _auth => widget.firebaseAuth ?? FirebaseAuth.instance;
   bool _clearing = false;
 
   // Variabile per l'aggiornamento UI istantaneo ("Optimistic Update")
@@ -124,7 +127,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = _auth.currentUser;
     final bool isAnonymous = currentUser?.isAnonymous ?? true;
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
@@ -561,7 +564,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
   // ── Bottom Sheet Animato: Gestione & Modifica Nome ──────────────────
   void _showAccountManagementMenu(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
     // Stato locale del Bottom Sheet
@@ -905,12 +908,14 @@ class _SettingsPanelState extends State<SettingsPanel> {
                           onPressed: goBackToMenu, // Torna fluidamente
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          "settings.account.editName".tr(),
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
+                        Expanded(
+                          child: Text(
+                            "settings.account.editName".tr(),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ],
@@ -975,8 +980,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
                         ),
                         const SizedBox(height: 24),
 
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                        Wrap(
+                          alignment: WrapAlignment.end,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             TextButton(
                               onPressed: goBackToMenu,
@@ -992,7 +1000,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
                                 style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
                             ),
-                            const SizedBox(width: 8),
                             ValueListenableBuilder<TextEditingValue>(
                               valueListenable: nameController,
                               builder: (context, value, child) {
@@ -1116,8 +1123,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
       if (mounted) _triggerToast("auth.social.preparingLogin".tr());
       try {
         await DbService.wipeAllLocalData();
-        await FirebaseAuth.instance.currentUser?.delete();
-        await FirebaseAuth.instance.signOut();
+        await _auth.currentUser?.delete();
+        await _auth.signOut();
       } catch (e) {
         if (mounted) _triggerToast("Errore: $e");
       }
@@ -1155,7 +1162,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       if (mounted) _triggerToast("settings.account.signingOut".tr());
       try {
         await DbService.wipeAllLocalData();
-        await FirebaseAuth.instance.signOut();
+        await _auth.signOut();
       } catch (e) {
         if (mounted) _triggerToast("Errore durante la disconnessione: $e");
       }
@@ -1163,7 +1170,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
   }
 
   Future<void> _handleDeleteAccount() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) return;
 
     final lastSignIn = user.metadata.lastSignInTime;
@@ -1217,7 +1224,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       );
 
       if (confirm == true) {
-        await FirebaseAuth.instance.signOut();
+        await _auth.signOut();
         if (mounted) {
           Navigator.pop(context); // Chiude il Bottom Sheet settings
         }
@@ -1286,7 +1293,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                         }
 
                         await user.delete();
-                        await FirebaseAuth.instance.signOut();
+                        await _auth.signOut();
                       } on FirebaseAuthException catch (e) {
                         if (dialogCtx.mounted) Navigator.pop(dialogCtx);
                         if (e.code == 'requires-recent-login') {
@@ -1295,7 +1302,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                               "common.status.securityForcedLogout".tr(),
                             );
                           }
-                          await FirebaseAuth.instance.signOut();
+                          await _auth.signOut();
                         } else {
                           if (mounted) _triggerToast("Errore: ${e.message}");
                         }
@@ -1416,13 +1423,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
       children: [
         Icon(icon, size: 20, color: color),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-            color: color,
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+              color: color,
+            ),
           ),
         ),
       ],
@@ -1487,20 +1496,24 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 PopupMenuItem(value: 'light', child: Text("common.themes.light".tr())),
                 PopupMenuItem(value: 'dark', child: Text("common.themes.dark".tr())),
               ],
-              child: SizedBox(
-                width: 110,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 100, maxWidth: 140),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          themeLabels[widget.settings.preferredTheme] ?? 'Sistema',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
+                        Flexible(
+                          child: Text(
+                            themeLabels[widget.settings.preferredTheme] ?? 'Sistema',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -1581,21 +1594,25 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 PopupMenuItem(value: 'de', child: Text("common.languages.de".tr())),
                 PopupMenuItem(value: 'fr', child: Text("common.languages.fr".tr())),
               ],
-              child: SizedBox(
-                width: 110,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 100, maxWidth: 140),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          langLabels[widget.settings.preferredLanguage] ??
-                              'Italiano',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
+                        Flexible(
+                          child: Text(
+                            langLabels[widget.settings.preferredLanguage] ??
+                                'Italiano',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 4),

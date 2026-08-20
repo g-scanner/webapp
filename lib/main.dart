@@ -20,7 +20,7 @@ import 'theme/theme_notifier.dart';
 
 import 'widgets/camera_module.dart';
 import 'widgets/history_list.dart';
-import 'widgets/database_products.dart';
+import 'widgets/reports_list.dart';
 import 'widgets/settings_panel.dart';
 import 'widgets/product_detail_card.dart';
 import 'widgets/report_detail_card.dart';
@@ -55,10 +55,12 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final FirebaseAuth? auth;
+  const MyApp({super.key, this.auth});
 
   @override
   Widget build(BuildContext context) {
+    final firebaseAuth = auth ?? FirebaseAuth.instance;
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentThemeMode, _) {
@@ -72,7 +74,7 @@ class MyApp extends StatelessWidget {
           locale: context.locale,
           // LOGICA DI ROUTING: Ascolta i cambiamenti di stato di Firebase
           home: StreamBuilder<User?>(
-            stream: FirebaseAuth.instance.authStateChanges(),
+            stream: firebaseAuth.authStateChanges(),
             builder: (context, snapshot) {
               // 1. In attesa della risposta da Firebase
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -87,11 +89,11 @@ class MyApp extends StatelessWidget {
 
               // 2. Utente Loggato (Social o Anonimo) -> Vai all'app
               if (snapshot.hasData && snapshot.data != null) {
-                return const MainScreen();
+                return MainScreen(auth: firebaseAuth);
               }
 
               // 3. Nessun utente loggato -> Mostra la UI di Login
-              return const AuthScreen();
+              return AuthScreen(firebaseAuth: firebaseAuth);
             },
           ),
         );
@@ -101,13 +103,15 @@ class MyApp extends StatelessWidget {
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final FirebaseAuth? auth;
+  const MainScreen({super.key, this.auth});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
+  FirebaseAuth get _auth => widget.auth ?? FirebaseAuth.instance;
   int _currentIndex = 0;
   bool _isCameraActive = true;
   double _maxKeyboardHeight = 0.0;
@@ -206,7 +210,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   Future<void> _initApp() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (mounted) setState(() => userId = user?.uid);
 
       if (user != null) {
@@ -304,7 +308,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           print("Failed to delta sync products: $e");
         });
 
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null || user.isAnonymous) {
       // Per utenti anonimi non c'è nulla da sincronizzare per cronologia e segnalazioni personali, segna come completato
       if (mounted) {
@@ -924,7 +928,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             await _loadLocalHistory();
           },
         ),
-        DatabaseProducts(
+        ReportsList(
           products: products,
           reportedBarcodes: userSettings.reportedBarcodes,
           onRefresh: refreshAllData,
@@ -943,6 +947,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           },
         ),
         SettingsPanel(
+          firebaseAuth: _auth,
           settings: userSettings,
           onSettingsChange: (newSet) async {
             setState(() => userSettings = newSet);

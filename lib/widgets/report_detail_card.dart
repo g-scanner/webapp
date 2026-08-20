@@ -32,6 +32,9 @@ class ReportDetailCard extends StatefulWidget {
   final bool useResponsiveWrapper;
   final bool showProductLink;
 
+  // Iniezione opzionale per i test (usa FirebaseFirestore.instance in produzione)
+  final FirebaseFirestore? firebaseFirestore;
+
   const ReportDetailCard({
     super.key,
     required this.product,
@@ -50,6 +53,7 @@ class ReportDetailCard extends StatefulWidget {
     this.onDeleteReport,
     this.useResponsiveWrapper = true,
     this.showProductLink = true,
+    this.firebaseFirestore,
   });
 
   @override
@@ -73,8 +77,9 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
   Future<void> _loadInitialData() async {
     try {
+      final firestoreInstance = widget.firebaseFirestore ?? FirebaseFirestore.instance;
       final results = await Future.wait([
-        FirebaseFirestore.instance
+        firestoreInstance
             .collection('reports')
             .where('barcode', isEqualTo: widget.product.barcode)
             .where('status', isEqualTo: 'open')

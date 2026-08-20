@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: G-Scanner â€” See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +11,7 @@ import '../models/types.dart';
 import '../theme/app_theme.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class DatabaseProducts extends StatefulWidget {
+class ReportsList extends StatefulWidget {
   final List<Product> products;
   final List<String> reportedBarcodes;
   final Function(String) onSelectItem;
@@ -21,7 +21,7 @@ class DatabaseProducts extends StatefulWidget {
   final List<ProductReport>? userReports;
   final Future<void> Function(String reportId)? onDeleteReport;
 
-  const DatabaseProducts({
+  const ReportsList({
     super.key,
     required this.products,
     required this.reportedBarcodes,
@@ -34,10 +34,10 @@ class DatabaseProducts extends StatefulWidget {
   });
 
   @override
-  State<DatabaseProducts> createState() => _DatabaseProductsState();
+  State<ReportsList> createState() => _ReportsListState();
 }
 
-class _DatabaseProductsState extends State<DatabaseProducts> {
+class _ReportsListState extends State<ReportsList> {
   String _searchTerm = "";
   String _reportFilter = "Tutte"; // "Tutte" o "Mie"
 
@@ -145,7 +145,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Intestazione Pagina ─────────────────────────────────────
+            // â”€â”€ Intestazione Pagina â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Text(
               "database.title".tr(),
               style: TextStyle(
@@ -165,7 +165,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
             ),
             const SizedBox(height: 24),
 
-            // ── Card "In attesa" (Separata e indipendente) ───────────────
+            // â”€â”€ Card "In attesa" (Separata e indipendente) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             if (reportedProducts.isNotEmpty || showSkeleton) ...[
               Skeletonizer(
                 enabled: showSkeleton,
@@ -241,7 +241,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
               const SizedBox(height: 24),
             ],
 
-            // ── Ricerca e Filtri ────────────────────────────────────────
+            // â”€â”€ Ricerca e Filtri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Row(
               children: [
                 Expanded(
@@ -319,6 +319,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
                 Flexible(
                   flex: 2,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     initialValue: _reportFilter,
                     icon: Icon(
                       Icons.filter_list,
@@ -443,7 +444,7 @@ class _DatabaseProductsState extends State<DatabaseProducts> {
     );
   }
 
-  // ── Costruzione Card Prodotto Segnalato ──
+  // â”€â”€ Costruzione Card Prodotto Segnalato â”€â”€
   Widget _buildReportCard(Product prod) {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
