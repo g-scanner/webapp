@@ -153,7 +153,10 @@ class _CameraModuleState extends State<CameraModule>
 
   void _handleManualSearch() {
     if (_manualCodeController.text.trim().isEmpty) return;
-    widget.onScanSuccess(_manualCodeController.text.trim());
+    final code = _manualCodeController.text.trim();
+    _manualCodeController.clear();
+    _manualFocusNode.unfocus();
+    widget.onScanSuccess(code);
   }
 
   void _onDetect(BarcodeCapture capture) async {
@@ -552,6 +555,8 @@ class _CameraModuleState extends State<CameraModule>
                 controller: _manualCodeController,
                 focusNode: _manualFocusNode,
                 keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _handleManualSearch(),
                 style: TextStyle(
                   fontSize: 15,
                   color: colorScheme.onSurface,

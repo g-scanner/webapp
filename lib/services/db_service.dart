@@ -1158,13 +1158,13 @@ class DbService {
     try {
       final snapshot = await db
           .collection(reportsCollection)
-          .where('user_id', isEqualTo: uid)
+          .where('userId', isEqualTo: uid)
           .get();
       if (snapshot.docs.isEmpty) return;
       final batch = db.batch();
       for (final doc in snapshot.docs) {
         batch.update(doc.reference, {
-          'user_id': 'deleted',
+          'userId': 'deleted',
           'anonymized': true,
         });
       }

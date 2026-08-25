@@ -2,8 +2,7 @@
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 // This is a basic Flutter widget test.
 
-// flutter test test/widgets/auth_screen_test.dart
-// flutter test test/widgets/product_detail_card_test.dart
+// flutter test test/widgets/
 
 // To perform an interaction with a widget in your test, use the WidgetTester
 // utility in the flutter_test package. For example, you can send tap and scroll

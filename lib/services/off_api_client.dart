@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:http/http.dart' as http;
 
 class OffApiClient {
@@ -12,18 +12,24 @@ class OffApiClient {
     defaultValue: '',
   );
 
-  static Map<String, String> _headers() {
-    if (kIsWeb) {
+  static Map<String, String> _headers({bool? isWebOverride}) {
+    final bool web = isWebOverride ?? kIsWeb;
+    if (web) {
       return const {'Accept': 'application/json'};
     }
 
     return const {'User-Agent': _userAgent, 'Accept': 'application/json'};
   }
 
-  static Uri _buildProductUri(String barcode, {Map<String, String>? query}) {
+  static Uri _buildProductUri(
+    String barcode, {
+    Map<String, String>? query,
+    bool? isWebOverride,
+  }) {
+    final bool web = isWebOverride ?? kIsWeb;
     final path = '/api/v2/product/$barcode.json';
 
-    if (kIsWeb) {
+    if (web) {
       final String proxy = _webProxyBaseUrl.trim().isNotEmpty
           ? _webProxyBaseUrl
           : 'https://corsproxy.io/?https://world.openfoodfacts.org';
@@ -40,14 +46,19 @@ class OffApiClient {
     String barcode, {
     List<String>? fields,
     Duration? timeout,
+    http.Client? client,
+    @visibleForTesting bool? isWebOverride,
   }) async {
     final query = fields == null || fields.isEmpty
         ? null
         : {'fields': fields.join(',')};
-    final request = http.get(
-      _buildProductUri(barcode, query: query),
-      headers: _headers(),
-    );
+
+    final uri = _buildProductUri(barcode, query: query, isWebOverride: isWebOverride);
+    final headers = _headers(isWebOverride: isWebOverride);
+
+    final request = client != null
+        ? client.get(uri, headers: headers)
+        : http.get(uri, headers: headers);
 
     if (timeout == null) {
       return request;
