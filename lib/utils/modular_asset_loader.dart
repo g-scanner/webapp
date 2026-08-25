@@ -17,9 +17,13 @@ class ModularAssetLoader extends AssetLoader {
         .where((key) => key.startsWith('assets/locales/$languageCode/') && key.endsWith('.json'));
 
     for (final assetPath in jsonAssets) {
-      final String content = await rootBundle.loadString(assetPath);
-      final Map<String, dynamic> jsonMap = json.decode(content) as Map<String, dynamic>;
-      mergedResult.addAll(jsonMap);
+      try {
+        final String content = await rootBundle.loadString(assetPath);
+        final Map<String, dynamic> jsonMap = json.decode(content) as Map<String, dynamic>;
+        mergedResult.addAll(jsonMap);
+      } catch (e) {
+        debugPrint("ERRORE CRITICO: Il file JSON $assetPath è malformato o mancante! Errore: $e");
+      }
     }
 
     return mergedResult;

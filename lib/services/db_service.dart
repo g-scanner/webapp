@@ -26,7 +26,18 @@ class DbService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final list = prefs.getStringList(_productsKey) ?? [];
-      return list.map((e) => Product.fromJson(json.decode(e))).toList();
+      final List<Product> result = [];
+      for (final e in list) {
+        try {
+          final decoded = json.decode(e);
+          if (decoded is Map<String, dynamic>) {
+            result.add(Product.fromJson(decoded));
+          }
+        } catch (err) {
+          print("Error decoding single local product: $err");
+        }
+      }
+      return result;
     } catch (e) {
       print("Error loading local products: $e");
       return [];
@@ -486,9 +497,18 @@ class DbService {
       final key = _getHistoryKey();
       final prefs = await SharedPreferences.getInstance();
       List<String> histStr = prefs.getStringList(key) ?? [];
-      return histStr
-          .map((e) => ScanHistoryItem.fromJson(json.decode(e)))
-          .toList();
+      final List<ScanHistoryItem> result = [];
+      for (final e in histStr) {
+        try {
+          final decoded = json.decode(e);
+          if (decoded is Map<String, dynamic>) {
+            result.add(ScanHistoryItem.fromJson(decoded));
+          }
+        } catch (err) {
+          print("Failed decoding single history item: $err");
+        }
+      }
+      return result;
     } catch (e) {
       print("Failed fetching local history: $e");
       return [];
@@ -614,9 +634,18 @@ class DbService {
       final key = _getReportsKey();
       final prefs = await SharedPreferences.getInstance();
       List<String> reportsStr = prefs.getStringList(key) ?? [];
-      return reportsStr
-          .map((e) => ProductReport.fromJson(json.decode(e)))
-          .toList();
+      final List<ProductReport> result = [];
+      for (final e in reportsStr) {
+        try {
+          final decoded = json.decode(e);
+          if (decoded is Map<String, dynamic>) {
+            result.add(ProductReport.fromJson(decoded));
+          }
+        } catch (err) {
+          print("Error decoding single local report: $err");
+        }
+      }
+      return result;
     } catch (e) {
       print("Error fetching local user reports: $e");
       return [];
