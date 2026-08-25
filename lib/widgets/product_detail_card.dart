@@ -526,6 +526,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         break;
     }
 
+    final bool canDeleteHistory = widget.onDeleteHistoryByBarcode != null &&
+        (widget.isInHistoryNotifier?.value ?? true);
+    final bool canDeleteReport = widget.onDeleteReport != null &&
+        _effectiveUserReportId != null &&
+        _effectiveUserReportId!.isNotEmpty;
+    final bool showActionsSkeleton = widget.isInHistoryNotifier != null &&
+        !widget.isInHistoryNotifier!.value &&
+        _effectiveUserReportId == null;
+
     // Utilizziamo uno Scaffold interno per gestire la sua AppBar personale
     final scaffold = Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -550,9 +559,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         actions: [
           // Durante il caricamento (prodotto non ancora in cronologia): shimmer skeleton.
           // Una volta salvato in history o se c'è già una segnalazione: bottone reale.
-          if (widget.isInHistoryNotifier != null &&
-              !widget.isInHistoryNotifier!.value &&
-              _effectiveUserReportId == null)
+          if (showActionsSkeleton)
             Padding(
               padding: const EdgeInsets.only(right: 4.0),
               child: Skeletonizer(
@@ -567,9 +574,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 ),
               ),
             )
-          else if ((widget.isInHistoryNotifier?.value ??
-                  widget.onDeleteHistoryByBarcode != null) ||
-              _effectiveUserReportId != null)
+          else if (canDeleteHistory || canDeleteReport)
             PopupMenuButton<String>(
               icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
               color: cardBg,
@@ -652,8 +657,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 }
               },
               itemBuilder: (BuildContext context) => [
-                if ((widget.isInHistoryNotifier?.value ?? false) &&
-                    widget.onDeleteHistoryByBarcode != null)
+                if (canDeleteHistory)
                   PopupMenuItem(
                     value: 'delete_history',
                     child: Row(
@@ -669,9 +673,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                       ],
                     ),
                   ),
-                if (_effectiveUserReportId != null &&
-                    _effectiveUserReportId!.isNotEmpty &&
-                    widget.onDeleteReport != null)
+                if (canDeleteReport)
                   PopupMenuItem(
                     value: 'delete_report',
                     child: Row(

@@ -539,13 +539,14 @@ void main() {
   // GROUP 8 – Lactose Detection (alertLactose & checkLactose)
   // ═══════════════════════════════════════════════════════════════════════════
   group('GROUP 8 – Lactose Detection', () {
-    test('checkLactose identifies all common dairy keywords', () {
+    test('checkLactose identifies all common dairy keywords and compound words', () {
       expect(AnalyzerService.checkLactose('latte scremato', []), isTrue);
       expect(AnalyzerService.checkLactose('burro chiarificato', []), isTrue);
       expect(AnalyzerService.checkLactose('siero di latte in polvere', []), isTrue);
       expect(AnalyzerService.checkLactose('mascarpone fresco', []), isTrue);
       expect(AnalyzerService.checkLactose('whey protein isolate', []), isTrue);
       expect(AnalyzerService.checkLactose('beurre de cuisine', []), isTrue);
+      expect(AnalyzerService.checkLactose('vollmilchpulver', []), isTrue);
       expect(AnalyzerService.checkLactose('farina di riso, olio', []), isFalse);
     });
 
@@ -738,6 +739,98 @@ void main() {
       );
 
       expect(res.status, GlutenSafetyStatus.adatto);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 12 – Agglutinative Languages & Compound Words Detection
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 12 – Agglutinative Languages & Compound Words Detection', () {
+    test('identifies German compound wheat flour (weizenmehl) as nonAdatto (Red)', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Mehl',
+        brand: 'Bio',
+        ingredients: 'weizenmehl',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+      );
+
+      expect(res.status, GlutenSafetyStatus.nonAdatto);
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isTrue,
+      );
+    });
+
+    test('identifies Dutch compound wheat flour (tarwebloem) as nonAdatto (Red)', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Bloem',
+        brand: 'Bio',
+        ingredients: 'tarwebloem',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+      );
+
+      expect(res.status, GlutenSafetyStatus.nonAdatto);
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isTrue,
+      );
+    });
+
+    test('identifies German compound whole milk powder (vollmilchpulver) as adatto with lactose reason when alertLactose is true', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Milchpulver',
+        brand: 'Bio',
+        ingredients: 'vollmilchpulver',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:milks'],
+        alertLactose: true,
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+      expect(res.reason, contains('product.analysis.lactoseAlert'));
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isTrue,
+      );
+    });
+
+    test('buckwheat flour (grano saraceno) is NOT flagged as wheat (Safe / adatto)', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Buckwheat Flour',
+        brand: 'Healthy Grain',
+        ingredients: 'buckwheat flour',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isFalse,
+      );
+    });
+
+    test('succo di melograno (pomegranate juice) is NOT flagged as grano (Safe / adatto)', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Succo Bio',
+        brand: 'Nature',
+        ingredients: 'succo di melograno',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:fruits'],
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isFalse,
+      );
     });
   });
 }

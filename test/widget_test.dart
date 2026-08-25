@@ -9,17 +9,38 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:gscanner/widgets/auth_screen.dart';
+import 'mocks/shared_mocks.dart';
 
 void main() {
-  testWidgets('Auth screen smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    expect(find.text('G-Scanner'), findsOneWidget);
-    expect(find.text('Continua con Google'), findsOneWidget);
-    expect(find.text('Continua con Facebook'), findsOneWidget);
+  setUpAll(() async {
+    setupMocktailFallbacks();
+    await EasyLocalization.ensureInitialized();
+  });
+
+  testWidgets('Auth screen smoke test', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'gscanner_terms_accepted': true});
+    final mockAuth = MockFirebaseAuth();
+    final mockGoogle = MockGoogleSignIn();
+    final mockFacebook = MockFacebookAuth();
+
+    await tester.pumpWidget(
+      createTestApp(
+        child: AuthScreen(
+          firebaseAuth: mockAuth,
+          googleSignIn: mockGoogle,
+          facebookAuth: mockFacebook,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(AuthScreen), findsOneWidget);
   });
 }

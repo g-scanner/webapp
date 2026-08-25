@@ -564,11 +564,19 @@ class DbService {
 
       if (user != null && !user.isAnonymous) {
         final q = await db.collection("users/${user.uid}/history").get();
-        final batch = db.batch();
-        for (var d in q.docs) {
-          batch.delete(d.reference);
+        // Chunked delete: Firestore WriteBatch max 500 ops — use 450 for safety margin
+        const int chunkSize = 450;
+        for (int i = 0; i < q.docs.length; i += chunkSize) {
+          final chunk = q.docs.sublist(
+            i,
+            (i + chunkSize < q.docs.length) ? i + chunkSize : q.docs.length,
+          );
+          final batch = db.batch();
+          for (var d in chunk) {
+            batch.delete(d.reference);
+          }
+          await batch.commit();
         }
-        await batch.commit();
       }
     } catch (e) {
       print("Could not wipe history: $e");
@@ -1172,11 +1180,19 @@ class DbService {
           .doc(uid)
           .collection('history')
           .get();
-      final batch = db.batch();
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
+      // Chunked delete: Firestore WriteBatch max 500 ops — use 450 for safety margin
+      const int chunkSize = 450;
+      for (int i = 0; i < snapshot.docs.length; i += chunkSize) {
+        final chunk = snapshot.docs.sublist(
+          i,
+          (i + chunkSize < snapshot.docs.length) ? i + chunkSize : snapshot.docs.length,
+        );
+        final batch = db.batch();
+        for (final doc in chunk) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
       }
-      await batch.commit();
     } catch (e) {
       print('deleteUserHistory error: $e');
     }
@@ -1190,14 +1206,22 @@ class DbService {
           .where('userId', isEqualTo: uid)
           .get();
       if (snapshot.docs.isEmpty) return;
-      final batch = db.batch();
-      for (final doc in snapshot.docs) {
-        batch.update(doc.reference, {
-          'userId': 'deleted',
-          'anonymized': true,
-        });
+      // Chunked update: Firestore WriteBatch max 500 ops — use 450 for safety margin
+      const int chunkSize = 450;
+      for (int i = 0; i < snapshot.docs.length; i += chunkSize) {
+        final chunk = snapshot.docs.sublist(
+          i,
+          (i + chunkSize < snapshot.docs.length) ? i + chunkSize : snapshot.docs.length,
+        );
+        final batch = db.batch();
+        for (final doc in chunk) {
+          batch.update(doc.reference, {
+            'userId': 'deleted',
+            'anonymized': true,
+          });
+        }
+        await batch.commit();
       }
-      await batch.commit();
     } catch (e) {
       print('anonymizeUserReports error: $e');
     }

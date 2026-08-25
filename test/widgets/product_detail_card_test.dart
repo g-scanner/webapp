@@ -230,6 +230,24 @@ void main() {
       verify(() => mockCallbacks.onDeleteReport('report_abc')).called(1);
     });
 
+    testWidgets('3-Dots menu: renders and opens when isInHistoryNotifier is null but onDeleteHistoryByBarcode is provided',
+        (WidgetTester tester) async {
+      final product = createSampleProduct(barcode: '8001234567890');
+
+      await pumpProductDetailCard(
+        tester,
+        product: product,
+        isInHistoryNotifier: null, // null notifier should not block popup menu
+      );
+
+      final moreVertFinder = find.byIcon(Icons.more_vert);
+      expect(moreVertFinder, findsOneWidget);
+      await tester.tap(moreVertFinder);
+      await tester.pumpAndSettle();
+
+      expect(find.text('product.deleteHistory.menuLabel'), findsOneWidget);
+    });
+
     // ==========================================
     // 3. GLUTEN SAFETY STATUS EVALUATION
     // ==========================================

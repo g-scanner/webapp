@@ -575,7 +575,27 @@ class AnalyzerService {
     "lait",
     "beurre",
     "lactosérum",
+    "milch",
+    "molke",
+    "melk",
+    "leche",
+    "laktose",
   ];
+
+  static const Set<String> _agglutinativeRoots = {
+    'weizen',
+    'gerste',
+    'roggen',
+    'dinkel',
+    'tarwe',
+    'gerst',
+    'rogge',
+    'milch',
+    'laktose',
+    'malz',
+    'hafer',
+    'avoine',
+  };
 
   static const List<String> _naturallySafeCategories = [
     'en:waters',
@@ -702,10 +722,10 @@ class AnalyzerService {
     // ─── STEP 2: Controlla ingredienti PERICOLOSI (usando il testo pulito) ───
     List<String> foundDanger = [];
     for (String k in _dangerKeywords) {
-      final regex = RegExp(
-        r'\b' + RegExp.escape(k) + r'\b',
-        caseSensitive: false,
-      );
+      final isAgglutinative = _agglutinativeRoots.contains(k);
+      final regex = isAgglutinative
+          ? RegExp(RegExp.escape(k), caseSensitive: false)
+          : RegExp(r'\b' + RegExp.escape(k) + r'\b', caseSensitive: false);
       if (regex.hasMatch(safeIng) || regex.hasMatch(safeName)) {
         foundDanger.add(k);
       }
@@ -713,7 +733,11 @@ class AnalyzerService {
 
     bool hasMalto = false;
     for (String m in _maltoKeywords) {
-      if (lowerIng.contains(m)) {
+      final isAgglutinative = _agglutinativeRoots.contains(m);
+      final regex = isAgglutinative
+          ? RegExp(RegExp.escape(m), caseSensitive: false)
+          : RegExp(r'\b' + RegExp.escape(m) + r'\b', caseSensitive: false);
+      if (regex.hasMatch(lowerIng)) {
         if (!lowerIng.contains("malto di riso") &&
             !lowerIng.contains("rice malt")) {
           hasMalto = true;
@@ -768,10 +792,10 @@ class AnalyzerService {
     List<String> foundDoubtful = [];
     if (warnAdditives) {
       for (String d in _doubtfulAdditives) {
-        final regex = RegExp(
-          r'\b' + RegExp.escape(d) + r'\b',
-          caseSensitive: false,
-        );
+        final isAgglutinative = _agglutinativeRoots.contains(d);
+        final regex = isAgglutinative
+            ? RegExp(RegExp.escape(d), caseSensitive: false)
+            : RegExp(r'\b' + RegExp.escape(d) + r'\b', caseSensitive: false);
         if (regex.hasMatch(lowerIng)) foundDoubtful.add(d);
       }
     }
@@ -781,17 +805,18 @@ class AnalyzerService {
     if (alertLactose) {
       final String safeLactoseIng = _sanitizeForLactose(lowerIng);
       for (String l in _lactoseKeywords) {
-        final regex = RegExp(
-          r'\b' + RegExp.escape(l) + r'\b',
-          caseSensitive: false,
-        );
+        final isAgglutinative = _agglutinativeRoots.contains(l);
+        final regex = isAgglutinative
+            ? RegExp(RegExp.escape(l), caseSensitive: false)
+            : RegExp(r'\b' + RegExp.escape(l) + r'\b', caseSensitive: false);
         if (regex.hasMatch(safeLactoseIng)) foundLactose.add(l);
       }
       if (offTags != null) {
         bool hasMilk = offTags.allergensTags.any(
           (t) =>
               t.toLowerCase().contains('milk') ||
-              t.toLowerCase().contains('lait'),
+              t.toLowerCase().contains('lait') ||
+              t.toLowerCase().contains('milch'),
         );
         if (hasMilk && foundLactose.isEmpty) {
           foundLactose.add("Allergene Latte (OFF)");
@@ -1025,10 +1050,10 @@ class AnalyzerService {
     final String lowerIng = safeIngredients.toLowerCase();
     final String safeLactoseIng = _sanitizeForLactose(lowerIng);
     for (String l in _lactoseKeywords) {
-      final regex = RegExp(
-        r'\b' + RegExp.escape(l) + r'\b',
-        caseSensitive: false,
-      );
+      final isAgglutinative = _agglutinativeRoots.contains(l);
+      final regex = isAgglutinative
+          ? RegExp(RegExp.escape(l), caseSensitive: false)
+          : RegExp(r'\b' + RegExp.escape(l) + r'\b', caseSensitive: false);
       if (regex.hasMatch(safeLactoseIng)) return true;
     }
     for (String a in allergens) {
@@ -1036,7 +1061,9 @@ class AnalyzerService {
       if (lowerA == "latte" ||
           lowerA.contains("milk") ||
           lowerA.contains("lait") ||
-          lowerA.contains("lattosio")) {
+          lowerA.contains("milch") ||
+          lowerA.contains("lattosio") ||
+          lowerA.contains("laktose")) {
         return true;
       }
     }
