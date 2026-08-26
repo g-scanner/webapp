@@ -43,3 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# ─── SIGNING SECRETS (MAI committare in repo) ───────────────────────────────
+# Keystore Android (firma APK/AAB)
+*.keystore
+*.jks
+# File con password keystore
+android/key.properties
+# Variabili d'ambiente locali
+.env
+.env.*

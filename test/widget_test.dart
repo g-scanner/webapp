@@ -21,11 +21,11 @@ void main() {
 
   setUpAll(() async {
     setupMocktailFallbacks();
+    SharedPreferences.setMockInitialValues({'gscanner_terms_accepted': true});
     await EasyLocalization.ensureInitialized();
   });
 
   testWidgets('Auth screen smoke test', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({'gscanner_terms_accepted': true});
     final mockAuth = MockFirebaseAuth();
     final mockGoogle = MockGoogleSignIn();
     final mockFacebook = MockFacebookAuth();

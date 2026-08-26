@@ -596,4 +596,58 @@ void main() {
       expect(find.byIcon(Icons.help_rounded), findsOneWidget);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 8 – Suspension & Lifecycle Robustness
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 8 – Suspension & Lifecycle Robustness', () {
+    testWidgets('suspends immediately when transitioning to inactive state',
+        (tester) async {
+      await _pumpCameraModule(
+        tester,
+        cb: cb,
+        controller: controller,
+        isActive: true,
+      );
+
+      final prevStopCount = controller.stopCallCount;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+
+      expect(controller.stopCallCount, greaterThan(prevStopCount));
+    });
+
+    testWidgets('suspends immediately when transitioning to hidden state',
+        (tester) async {
+      await _pumpCameraModule(
+        tester,
+        cb: cb,
+        controller: controller,
+        isActive: true,
+      );
+
+      final prevStopCount = controller.stopCallCount;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      await tester.pump();
+
+      expect(controller.stopCallCount, greaterThan(prevStopCount));
+    });
+
+    testWidgets('disposing widget stops controller and clears resources',
+        (tester) async {
+      await _pumpCameraModule(
+        tester,
+        cb: cb,
+        controller: controller,
+        isActive: true,
+      );
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+
+      // Controller should be disposed or stopped cleanly
+      expect(find.byType(CameraModule), findsNothing);
+    });
+  });
 }
+

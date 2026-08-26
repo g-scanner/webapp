@@ -833,4 +833,104 @@ void main() {
       );
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 13 – Gluten-Free Claims in Allergens List & Tag Immunity
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 13 – Gluten-Free Claims in Allergens List & Tag Immunity', () {
+    test('handles "Senza glutine" improperly placed in allergensList without flagging as trace', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Prodotto Test',
+        brand: 'Brand',
+        ingredients: 'Acqua, aromi',
+        allergensList: ['Senza Glutine'],
+        strictMode: true,
+        reportCount: 0,
+        categoriesTags: [],
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isFalse,
+      );
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'warning'),
+        isFalse,
+      );
+    });
+
+    test('ignores safe tags such as "it:senza-glutine" or "en:gluten-free" in OFF allergensTags without triggering nonAdatto', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Biscotti Senza Glutine',
+        brand: 'Brand',
+        ingredients: 'Farina di riso, zucchero',
+        allergensList: ['it:senza-glutine'],
+        reportCount: 0,
+        categoriesTags: [],
+        strictMode: true,
+        offTags: OffTags(
+          allergensTags: ['it:senza-glutine', 'en:gluten-free'],
+          tracesTags: [],
+          labelsTags: [],
+          ingredientsAnalysisTags: [],
+        ),
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isFalse,
+      );
+    });
+
+    test('translateAllergens excludes gluten-free claims in all languages from displayed allergens list', () {
+      // Questi NON sono allergeni: non devono apparire nella lista finale
+      final safeInputs = [
+        'Senza Glutine',          // IT testuale
+        'it:senza-glutine',       // IT tag OFF
+        'en:gluten-free',         // EN tag OFF
+        'gluten-free',            // EN testuale
+        'gluten free',            // EN testuale senza trattino
+        'sans gluten',            // FR
+        'glutenfrei',             // DE
+        'glutenvrij',             // NL
+        'sin gluten',             // ES
+        'sem glúten',             // PT
+        'bezglutenowy',           // PL
+        'bez glutenu',            // PL alt
+        'glutensiz',              // TR
+        'gluténmentes',           // HU
+      ];
+
+      for (final input in safeInputs) {
+        final result = AnalyzerService.translateAllergens([input, 'en:milk'], 'it');
+        expect(
+          result.any((a) => a.toLowerCase().contains('glutin') || a.toLowerCase().contains('gluten')),
+          isFalse,
+          reason: '"$input" non deve apparire nella lista allergeni',
+        );
+        // Il latte (en:milk) deve passare normalmente
+        expect(result, contains('Latte'));
+      }
+    });
+
+    test('translateAllergens preserves real allergens alongside safe claims', () {
+      // Mix di allergene reale + claim sicura
+      final result = AnalyzerService.translateAllergens(
+        ['en:milk', 'Senza Glutine', 'en:soy', 'it:senza-glutine'],
+        'it',
+      );
+
+      // Allergeni reali devono essere presenti
+      expect(result, contains('Latte'));
+      expect(result, contains('Soia'));
+      // Claims sicure NON devono essere presenti
+      expect(result.length, equals(2));
+      expect(
+        result.any((a) => a.toLowerCase().contains('gluten') || a.toLowerCase().contains('glutin')),
+        isFalse,
+      );
+    });
+  });
 }

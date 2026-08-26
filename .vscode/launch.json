@@ -13,6 +13,8 @@
             "program": "lib/main.dart",
             "flutterMode": "debug",
             "args": [
+                "--web-port",
+                "54162",
                 "--dart-define=OFF_PROXY_BASE_URL=https://gscanner-off-proxy.g-scanner.workers.dev"
             ],
             "preLaunchTask": "flutter build web (OFF proxy)"

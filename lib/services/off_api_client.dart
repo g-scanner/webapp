@@ -25,14 +25,24 @@ class OffApiClient {
     String barcode, {
     Map<String, String>? query,
     bool? isWebOverride,
+    String? proxyBaseUrlOverride,
   }) {
     final bool web = isWebOverride ?? kIsWeb;
     final path = '/api/v2/product/$barcode.json';
 
     if (web) {
-      final String proxy = _webProxyBaseUrl.trim().isNotEmpty
-          ? _webProxyBaseUrl
-          : 'https://corsproxy.io/?https://world.openfoodfacts.org';
+      final String proxy = (proxyBaseUrlOverride ?? _webProxyBaseUrl).trim();
+      assert(
+        proxy.isNotEmpty,
+        'OFF_PROXY_BASE_URL must be set via --dart-define for web builds. '
+        'Run: flutter build web --dart-define=OFF_PROXY_BASE_URL=https://your-proxy.workers.dev',
+      );
+      if (proxy.isEmpty) {
+        throw StateError(
+          'OFF_PROXY_BASE_URL is not configured. '
+          'Pass --dart-define=OFF_PROXY_BASE_URL=<url> when building for web.',
+        );
+      }
       final String fullUrl = proxy.endsWith('/') || proxy.contains('?')
           ? '$proxy$path'
           : '$proxy/$path';
@@ -48,12 +58,18 @@ class OffApiClient {
     Duration? timeout,
     http.Client? client,
     @visibleForTesting bool? isWebOverride,
+    @visibleForTesting String? proxyBaseUrlOverride,
   }) async {
     final query = fields == null || fields.isEmpty
         ? null
         : {'fields': fields.join(',')};
 
-    final uri = _buildProductUri(barcode, query: query, isWebOverride: isWebOverride);
+    final uri = _buildProductUri(
+      barcode,
+      query: query,
+      isWebOverride: isWebOverride,
+      proxyBaseUrlOverride: proxyBaseUrlOverride,
+    );
     final headers = _headers(isWebOverride: isWebOverride);
 
     final request = client != null

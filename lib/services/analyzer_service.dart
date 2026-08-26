@@ -406,6 +406,17 @@ class AnalyzerService {
     ];
 
     List<String> translatedAllergens = allergensList
+        .where((a) {
+          // Scarta subito qualsiasi voce che sia una dicitura "senza glutine"
+          // (in qualsiasi lingua), perché non è un allergene ma una claim sicura.
+          final lowerA = a.trim().toLowerCase();
+          // Rimuove prefisso lingua OFF per il confronto (es. "it:senza-glutine" → "senza-glutine")
+          final withoutPrefix =
+              lowerA.contains(':') ? lowerA.split(':').last : lowerA;
+          return !_safeTextKeywords.any((safe) =>
+              lowerA.contains(safe) ||
+              withoutPrefix.contains(safe.replaceAll(' ', '-')));
+        })
         .map((a) {
           String clean = a.trim().toLowerCase();
           // Rimuove prefissi lingua OFF (es. "en:milk" -> "milk", "en:cereals-containing-gluten" -> "cereals-containing-gluten")
@@ -687,7 +698,8 @@ class AnalyzerService {
     final String lowerIng = safeIngredients.toLowerCase();
     final String lowerName = name.toLowerCase();
     final String lowerBrand = brand.toLowerCase();
-    final String combinedRaw = "$lowerIng $lowerName $lowerBrand";
+    final String allergensRaw = allergensList.join(' ').toLowerCase();
+    final String combinedRaw = "$lowerIng $lowerName $lowerBrand $allergensRaw";
 
     // SANITIZZAZIONE (Risolve il bug "Pasta Senza Glutine")
     final String safeIng = _sanitizeForGluten(lowerIng);
@@ -752,6 +764,12 @@ class AnalyzerService {
     if (offTags != null) {
       bool isGlutenTag(String t) {
         final lowerT = t.toLowerCase();
+        // Ignora tag come "en:gluten-free" o "it:senza-glutine"
+        if (_safeTextKeywords.any((safe) =>
+            lowerT.contains(safe.replaceAll(' ', '-')) ||
+            lowerT.contains(safe))) {
+          return false;
+        }
         return lowerT.contains('gluten') ||
             lowerT.contains('wheat') ||
             lowerT.contains('barley') ||
@@ -780,6 +798,7 @@ class AnalyzerService {
     }
     for (String a in allergensList) {
       final lowerA = a.toLowerCase();
+      if (_safeTextKeywords.any((safe) => lowerA.contains(safe))) continue;
       if (_dangerKeywords.any((k) => lowerA.contains(k)) &&
           !foundDanger.contains(lowerA)) {
         foundTraces.add(lowerA);

@@ -8,13 +8,14 @@ class ModularAssetLoader extends AssetLoader {
 
   @override
   Future<Map<String, dynamic>> load(String path, Locale locale) async {
-    final String languageCode = locale.languageCode;
+    String languageCode = locale.languageCode;
     final Map<String, dynamic> mergedResult = {};
 
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final jsonAssets = manifest
         .listAssets()
-        .where((key) => key.startsWith('assets/locales/$languageCode/') && key.endsWith('.json'));
+        .where((key) => key.startsWith('assets/locales/$languageCode/') && key.endsWith('.json'))
+        .toList();
 
     for (final assetPath in jsonAssets) {
       try {

@@ -3,7 +3,7 @@
 import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
@@ -204,7 +204,7 @@ class _AuthScreenState extends State<AuthScreen> {
             await user.reload();
           }
         } catch (e) {
-          print("Errore recupero info Facebook: $e");
+          debugPrint("Errore recupero info Facebook: $e");
         }
       }
     } on FirebaseAuthException catch (e) {

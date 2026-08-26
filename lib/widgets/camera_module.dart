@@ -8,6 +8,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../theme/app_theme.dart';
+import '../utils/web_camera_helper.dart';
 
 class CameraModule extends StatefulWidget {
   final MobileScannerController? controller;
@@ -55,17 +56,38 @@ class _CameraModuleState extends State<CameraModule>
         widget.controller ??
         MobileScannerController(
           autoStart: false,
-          detectionSpeed: DetectionSpeed.noDuplicates,
+          facing: CameraFacing.back,
+          detectionSpeed:
+              kIsWeb ? DetectionSpeed.normal : DetectionSpeed.noDuplicates,
+          detectionTimeoutMs: 250,
           formats: const [
             BarcodeFormat.ean13,
             BarcodeFormat.ean8,
             BarcodeFormat.qrCode,
+            BarcodeFormat.upcA,
+            BarcodeFormat.upcE,
+            BarcodeFormat.code128,
+            BarcodeFormat.code39,
+            BarcodeFormat.dataMatrix,
           ],
-          cameraResolution: const Size(480, 640),
+          cameraResolution: kIsWeb ? null : const Size(480, 640),
         );
 
     _manualFocusNode = FocusNode();
     _manualFocusNode.addListener(_onManualFocusChange);
+
+    if (kIsWeb) {
+      setupWebVisibilityListener((isVisible) {
+        if (!mounted) return;
+        if (isVisible) {
+          if (widget.isActive) {
+            _startCamera();
+          }
+        } else {
+          _stopCamera();
+        }
+      });
+    }
 
     // Avvio deterministico della fotocamera dopo il primo frame (widget montato)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,7 +104,7 @@ class _CameraModuleState extends State<CameraModule>
       if (widget.isActive) {
         _startCamera();
       } else {
-        _controller.stop();
+        _stopCamera();
         if (mounted) {
           setState(() => _cameraError = null); // Reset errore al cambio tab
         }
@@ -92,11 +114,11 @@ class _CameraModuleState extends State<CameraModule>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Su Web, la minimizzazione/cambio scheda emette `inactive` o `hidden` invece di `paused`.
+    // Su Web e Mobile, la minimizzazione/sospensione ferma la fotocamera
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
-      _controller.stop();
+      _stopCamera();
     } else if (state == AppLifecycleState.resumed) {
       if (widget.isActive) {
         _startCamera();
@@ -107,12 +129,27 @@ class _CameraModuleState extends State<CameraModule>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (kIsWeb) {
+      removeWebVisibilityListener();
+      stopWebMediaTracks();
+    }
     _manualFocusNode.removeListener(_onManualFocusChange);
     _manualFocusNode.dispose();
     _manualCodeController.dispose();
 
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _stopCamera() async {
+    try {
+      await _controller.stop();
+    } catch (e) {
+      debugPrint('Error stopping camera controller: $e');
+    }
+    if (kIsWeb) {
+      stopWebMediaTracks();
+    }
   }
 
   Future<void> _startCamera() async {
@@ -163,10 +200,16 @@ class _CameraModuleState extends State<CameraModule>
     if (!widget.isActive) return;
     if (_isProcessing || widget.scanningProgress) return;
     final List<Barcode> barcodes = capture.barcodes;
-    if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+    final String? raw = barcodes.firstOrNull?.rawValue?.trim();
+    if (raw != null && raw.isNotEmpty) {
       _isProcessing = true;
-      await widget.onScanSuccess(barcodes.first.rawValue!);
-      _isProcessing = false;
+      try {
+        await widget.onScanSuccess(raw);
+      } finally {
+        if (mounted) {
+          _isProcessing = false;
+        }
+      }
     }
   }
 

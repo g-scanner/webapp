@@ -290,11 +290,18 @@ void main() {
   // GROUP 7 – Web Platform Logic (Proxy & Headers via isWebOverride)
   // ═══════════════════════════════════════════════════════════════════════════
   group('GROUP 7 – Web Platform Logic', () {
+    const testProxy = 'https://corsproxy.io/?https://world.openfoodfacts.org';
+
     test('Web: excludes User-Agent from headers to avoid CORS preflight issues', () async {
       when(() => mockClient.get(any(), headers: any(named: 'headers')))
           .thenAnswer((_) async => _fakeOkResponse('999'));
 
-      await OffApiClient.getProduct('999', client: mockClient, isWebOverride: true);
+      await OffApiClient.getProduct(
+        '999',
+        client: mockClient,
+        isWebOverride: true,
+        proxyBaseUrlOverride: testProxy,
+      );
 
       final capturedHeaders = verify(
         () => mockClient.get(any(), headers: captureAny(named: 'headers')),
@@ -308,7 +315,12 @@ void main() {
       when(() => mockClient.get(any(), headers: any(named: 'headers')))
           .thenAnswer((_) async => _fakeOkResponse('888'));
 
-      await OffApiClient.getProduct('888', client: mockClient, isWebOverride: true);
+      await OffApiClient.getProduct(
+        '888',
+        client: mockClient,
+        isWebOverride: true,
+        proxyBaseUrlOverride: testProxy,
+      );
 
       final capturedUri = verify(
         () => mockClient.get(captureAny(), headers: any(named: 'headers')),
@@ -329,6 +341,7 @@ void main() {
         fields: ['product_name', 'brands'],
         client: mockClient,
         isWebOverride: true,
+        proxyBaseUrlOverride: testProxy,
       );
 
       final capturedUri = verify(

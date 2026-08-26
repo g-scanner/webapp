@@ -83,12 +83,15 @@ class _ReportsListState extends State<ReportsList> {
 
     final bool showSkeleton = reportedProducts.isEmpty && !widget.isSynced;
 
+    final lang = widget.userSettings?.preferredLanguage ?? context.locale.languageCode;
+
     // Filtra per ricerca testuale e tipo di segnalazione
     final filtered = reportedProducts.where((p) {
       final queryMatches =
-          p.name.toLowerCase().contains(_searchTerm.toLowerCase()) ||
-          p.brand.toLowerCase().contains(_searchTerm.toLowerCase()) ||
-          p.barcode.contains(_searchTerm);
+          _searchTerm.trim().isEmpty ||
+          p.getName(lang).toLowerCase().contains(_searchTerm.trim().toLowerCase()) ||
+          p.getBrand(lang).toLowerCase().contains(_searchTerm.trim().toLowerCase()) ||
+          p.barcode.contains(_searchTerm.trim());
 
       final filterMatches = _reportFilter == "Tutte"
           ? true
@@ -145,9 +148,9 @@ class _ReportsListState extends State<ReportsList> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // â”€â”€ Intestazione Pagina â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Intestazione Pagina ─────────────────────────────────────
             Text(
-              "database.title".tr(),
+              "report.listTitle".tr(),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
@@ -156,7 +159,7 @@ class _ReportsListState extends State<ReportsList> {
             ),
             const SizedBox(height: 8),
             Text(
-              "report.empty".tr(),
+              "report.subtitle".tr(),
               style: TextStyle(
                 fontSize: 14,
                 color: colorScheme.onSurfaceVariant,
@@ -396,48 +399,75 @@ class _ReportsListState extends State<ReportsList> {
                   return _buildReportCard(prod);
                 },
               )
-            else
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 48,
-                  horizontal: 24,
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
+            else ...[
+              Builder(builder: (context) {
+                final IconData emptyIcon;
+                final String emptyTitle;
+                final String emptySubtitle;
+
+                final trimmedSearch = _searchTerm.trim();
+                if (trimmedSearch.isNotEmpty) {
+                  // 1. La ricerca da textfield prevale sempre
+                  emptyIcon = Icons.search_off_rounded;
+                  emptyTitle = "report.search.noResultsTitle".tr();
+                  emptySubtitle = "database.search.noResults".tr(
+                    namedArgs: {"query": trimmedSearch},
+                  );
+                } else if (_reportFilter == "Mie") {
+                  // 2. Filtro "Mie" attivo senza segnalazioni dell'utente
+                  emptyIcon = Icons.assignment_outlined;
+                  emptyTitle = "report.empty.mineTitle".tr();
+                  emptySubtitle = "report.empty.mineSubtitle".tr();
+                } else {
+                  // 3. Nessuna segnalazione nel database di base
+                  emptyIcon = Icons.task_alt;
+                  emptyTitle = "report.empty.title".tr();
+                  emptySubtitle = "report.empty.subtitle".tr();
+                }
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 48,
+                    horizontal: 24,
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          emptyIcon,
+                          size: 40,
+                          color: colorScheme.outlineVariant,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.task_alt,
-                        size: 40,
-                        color: colorScheme.outlineVariant,
+                      const SizedBox(height: 16),
+                      Text(
+                        emptyTitle,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "report.empty".tr(),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
+                      const SizedBox(height: 8),
+                      Text(
+                        emptySubtitle,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "database.search.noResults".tr(namedArgs: {"query": _searchTerm}),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    ],
+                  ),
+                );
+              }),
+            ],
           ],
         ),
       ),

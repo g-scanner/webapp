@@ -301,11 +301,11 @@ class UserSettings {
 
   static String get defaultSystemLanguage {
     try {
-      const supportedLangs = ['en', 'it', 'de', 'fr', 'es'];
+      const supportedLangs = ['it'];
       final sys = WidgetsBinding.instance.platformDispatcher.locale.languageCode;
-      return supportedLangs.contains(sys) ? sys : 'en';
+      return supportedLangs.contains(sys) ? sys : 'it';
     } catch (_) {
-      return 'en';
+      return 'it';
     }
   }
 

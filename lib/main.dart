@@ -1,6 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
 
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -46,7 +45,7 @@ void main() async {
         Locale('es'),
       ],
       path: 'assets/locales',
-      fallbackLocale: const Locale('en'),
+      fallbackLocale: const Locale('it'),
       useOnlyLangCode: true,
       assetLoader: const ModularAssetLoader(),
       child: const MyApp(),
@@ -170,7 +169,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       return defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS;
     }
-    return !Platform.isWindows && !Platform.isMacOS && !Platform.isLinux;
+    return defaultTargetPlatform != TargetPlatform.windows &&
+        defaultTargetPlatform != TargetPlatform.macOS &&
+        defaultTargetPlatform != TargetPlatform.linux;
   }
 
   @override
@@ -242,7 +243,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       // FASE 2: Sincronizza con Firestore in background (fire-and-forget)
       _syncEverythingWithFirestore();
     } catch (e) {
-      print("Inizializzazione fallita: $e");
+      debugPrint("Inizializzazione fallita: $e");
     }
   }
 
@@ -305,7 +306,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           if (mounted) setState(() => products = updated);
         })
         .catchError((e) {
-          print("Failed to delta sync products: $e");
+          debugPrint("Failed to delta sync products: $e");
         });
 
     final user = _auth.currentUser;
@@ -326,7 +327,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           if (mounted) setState(() => userSettings = syncedSettings);
         })
         .catchError((e) {
-          print("Failed to sync settings from Firestore: $e");
+          debugPrint("Failed to sync settings from Firestore: $e");
         });
 
     // Sincronizza cronologia in background
@@ -340,7 +341,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           }
         })
         .catchError((e) {
-          print("Failed to sync history from Firestore: $e");
+          debugPrint("Failed to sync history from Firestore: $e");
           if (mounted) setState(() => _isHistorySynced = true);
         });
 
@@ -355,7 +356,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           }
         })
         .catchError((e) {
-          print("Failed to sync reports from Firestore: $e");
+          debugPrint("Failed to sync reports from Firestore: $e");
           if (mounted) setState(() => _isReportsSynced = true);
         });
   }
@@ -397,7 +398,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           }
         })
         .catchError((e) {
-          print('Delta sync error: $e');
+          debugPrint('Delta sync error: $e');
           return null;
         });
   }
@@ -651,7 +652,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await DbService.saveSettings(userSettings);
       await Future.wait([_loadLocalReports(), _fetchProducts()]);
     } catch (e) {
-      print("Segnalazione fallita: $e");
+      debugPrint("Segnalazione fallita: $e");
     }
   }
 
@@ -679,7 +680,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       }
       await _fetchProducts();
     } catch (e) {
-      print("Aggiornamento fallito: $e");
+      debugPrint("Aggiornamento fallito: $e");
     }
   }
 

@@ -312,14 +312,16 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                               foregroundColor:
                                   sheetCtx.colorScheme.onSurfaceVariant,
                               minimumSize: const Size(0, 48),
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                             ),
                             child: Text(
                               "common.actions.cancel".tr(),
                               overflow: TextOverflow.ellipsis,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -329,95 +331,97 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           child: SizedBox(
                             height: 48,
                             child: FilledButton(
-                            onPressed: _submittingReport
-                                ? null
-                                : () async {
-                                    setSheetState(
-                                      () => _submittingReport = true,
-                                    );
-                                    try {
-                                      final currentLang =
-                                          widget.userSettings.preferredLanguage;
-                                      final origAnalysis =
-                                          AnalyzerService.analyzeGlutenSafety(
-                                            name: currentProduct.getName(
-                                              currentLang,
-                                            ),
-                                            brand: currentProduct.getBrand(
-                                              currentLang,
-                                            ),
-                                            ingredients: currentProduct
-                                                .getIngredients(currentLang),
-                                            allergensList: currentProduct
-                                                .getAllergens(currentLang),
-                                            reportCount: 0,
-                                            categoriesTags: const [],
-                                            strictMode:
-                                                widget.userSettings.strictMode,
-                                            warnAdditives: widget
-                                                .userSettings
-                                                .warnAdditives,
-                                            alertLactose: widget
-                                                .userSettings
-                                                .alertLactose,
-                                            preferredLanguage: currentLang,
-                                            ignoreReports: true,
-                                          );
-                                      await widget.onReportSubmit(
-                                        currentProduct.barcode,
-                                        {
-                                          "type": _reportType,
-                                          "comments":
-                                              _reportCommentsController.text,
-                                          "originalStatus":
-                                              origAnalysis.status.name,
-                                        },
-                                      );
-                                      setState(() {
-                                        _hasJustReported = true;
-                                      });
-                                      if (sheetCtx.mounted) {
-                                        Navigator.pop(sheetCtx);
-                                      }
-                                      _reportCommentsController.clear();
-                                    } catch (err) {
-                                      print(err);
-                                    } finally {
+                              onPressed: _submittingReport
+                                  ? null
+                                  : () async {
                                       setSheetState(
-                                        () => _submittingReport = false,
+                                        () => _submittingReport = true,
                                       );
-                                    }
-                                  },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: sheetCtx.colorScheme.error,
-                              foregroundColor: sheetCtx.colorScheme.onError,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                                      try {
+                                        final currentLang = widget
+                                            .userSettings
+                                            .preferredLanguage;
+                                        final origAnalysis =
+                                            AnalyzerService.analyzeGlutenSafety(
+                                              name: currentProduct.getName(
+                                                currentLang,
+                                              ),
+                                              brand: currentProduct.getBrand(
+                                                currentLang,
+                                              ),
+                                              ingredients: currentProduct
+                                                  .getIngredients(currentLang),
+                                              allergensList: currentProduct
+                                                  .getAllergens(currentLang),
+                                              reportCount: 0,
+                                              categoriesTags: const [],
+                                              strictMode: widget
+                                                  .userSettings
+                                                  .strictMode,
+                                              warnAdditives: widget
+                                                  .userSettings
+                                                  .warnAdditives,
+                                              alertLactose: widget
+                                                  .userSettings
+                                                  .alertLactose,
+                                              preferredLanguage: currentLang,
+                                              ignoreReports: true,
+                                            );
+                                        await widget.onReportSubmit(
+                                          currentProduct.barcode,
+                                          {
+                                            "type": _reportType,
+                                            "comments":
+                                                _reportCommentsController.text,
+                                            "originalStatus":
+                                                origAnalysis.status.name,
+                                          },
+                                        );
+                                        setState(() {
+                                          _hasJustReported = true;
+                                        });
+                                        if (sheetCtx.mounted) {
+                                          Navigator.pop(sheetCtx);
+                                        }
+                                        _reportCommentsController.clear();
+                                      } catch (err) {
+                                        debugPrint('Report submit error: $err');
+                                      } finally {
+                                        setSheetState(
+                                          () => _submittingReport = false,
+                                        );
+                                      }
+                                    },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: sheetCtx.colorScheme.error,
+                                foregroundColor: sheetCtx.colorScheme.onError,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
+                              child: _submittingReport
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: sheetCtx.colorScheme.onError
+                                            .withValues(alpha: 0.5),
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      "product.report.submit".tr(),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                             ),
-                            child: _submittingReport
-                                ? SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: sheetCtx.colorScheme.onError
-                                          .withValues(alpha: 0.5),
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    "product.report.submit".tr(),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
                     ),
                   ],
                 ),
@@ -472,14 +476,12 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
     final GlutenSafetyStatus effectiveStatus = showSkeleton
         ? GlutenSafetyStatus.sconosciuto
-        : (isReported
-            ? GlutenSafetyStatus.incerto
-            : analysis.status);
+        : (isReported ? GlutenSafetyStatus.incerto : analysis.status);
     final String displayedReason = showSkeleton
         ? "product.analysis.unknown".tr()
         : (isReported
-            ? "product.alert.activeReportWarning".tr()
-            : analysis.reason);
+              ? "product.alert.activeReportWarning".tr()
+              : analysis.reason);
     final List<IngredientAnalyzed> displayedIngredientsAnalyzed =
         analysis.ingredientsAnalyzed;
 
@@ -526,12 +528,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         break;
     }
 
-    final bool canDeleteHistory = widget.onDeleteHistoryByBarcode != null &&
+    final bool canDeleteHistory =
+        widget.onDeleteHistoryByBarcode != null &&
         (widget.isInHistoryNotifier?.value ?? true);
-    final bool canDeleteReport = widget.onDeleteReport != null &&
+    final bool canDeleteReport =
+        widget.onDeleteReport != null &&
         _effectiveUserReportId != null &&
         _effectiveUserReportId!.isNotEmpty;
-    final bool showActionsSkeleton = widget.isInHistoryNotifier != null &&
+    final bool showActionsSkeleton =
+        widget.isInHistoryNotifier != null &&
         !widget.isInHistoryNotifier!.value &&
         _effectiveUserReportId == null;
 

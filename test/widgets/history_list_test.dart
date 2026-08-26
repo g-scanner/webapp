@@ -275,7 +275,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Pasta'), findsNothing);
-      expect(find.text('history.empty.title'), findsOneWidget);
+      expect(find.text('history.search.noResultsTitle'), findsOneWidget);
     });
   });
 

@@ -24,7 +24,8 @@
       "scanHint": "Inquadra il codice a barre",
       "torchOn": "Torcia ON",
       "torchOff": "Torcia OFF",
-      "switchCamera": "Cambia fotocamera"
+      "switchCamera": "Cambia fotocamera",
+      "mirrorCamera": "Specchia fotocamera"
     },
     "manualInput": {
       "title": "Inserimento manuale",

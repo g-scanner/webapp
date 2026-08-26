@@ -9,8 +9,8 @@
     "start_url": "/webapp/",
     "display": "standalone",
     "orientation": "portrait-primary",
-    "background_color": "#BFDEB4",
-    "theme_color": "#0D631B",
+    "theme_color": "#BFDEB4",
+    "background_color": "#FAF9FC",
     "categories": [
         "health",
         "food",

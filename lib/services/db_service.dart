@@ -2,6 +2,7 @@
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,12 +35,12 @@ class DbService {
             result.add(Product.fromJson(decoded));
           }
         } catch (err) {
-          print("Error decoding single local product: $err");
+          debugPrint("Error decoding single local product: $err");
         }
       }
       return result;
     } catch (e) {
-      print("Error loading local products: $e");
+      debugPrint("Error loading local products: $e");
       return [];
     }
   }
@@ -61,7 +62,7 @@ class DbService {
         products.map((p) => json.encode(p.toJson())).toList(),
       );
     } catch (e) {
-      print("Error saving local products: $e");
+      debugPrint("Error saving local products: $e");
     }
   }
 
@@ -76,7 +77,7 @@ class DbService {
       }
       await saveLocalProducts(products);
     } catch (e) {
-      print("Error upserting local product: $e");
+      debugPrint("Error upserting local product: $e");
     }
   }
 
@@ -129,7 +130,7 @@ class DbService {
 
       return newList;
     } catch (e) {
-      print("Error performing delta sync: $e");
+      debugPrint("Error performing delta sync: $e");
       return getLocalProducts();
     }
   }
@@ -144,7 +145,7 @@ class DbService {
       }
       return null;
     } catch (e) {
-      print("Error getting product from Firestore: $e");
+      debugPrint("Error getting product from Firestore: $e");
       return null;
     }
   }
@@ -180,7 +181,7 @@ class DbService {
         return remoteProduct;
       }
     } catch (e) {
-      print("Firestore product lookup failed: $e");
+      debugPrint("Firestore product lookup failed: $e");
     }
 
     // 3. PRODOTTO NUOVO (OFF API): Se manca sia in locale che in Firestore, chiama OFF
@@ -193,7 +194,7 @@ class DbService {
             .doc(barcode)
             .set(offProduct.toJson(), SetOptions(merge: true));
       } catch (e) {
-        print("Error saving new OFF product to Firestore: $e");
+        debugPrint("Error saving new OFF product to Firestore: $e");
       }
 
       // Salva in locale
@@ -227,7 +228,7 @@ class DbService {
           .doc(barcode)
           .set(ghostProduct.toJson(), SetOptions(merge: true));
     } catch (e) {
-      print("Error saving ghost product to Firestore: $e");
+      debugPrint("Error saving ghost product to Firestore: $e");
     }
 
     // Salva in cache locale
@@ -259,11 +260,11 @@ class DbService {
             await upsertLocalProduct(newOffProduct);
           }
         }).catchError((e) {
-          print("Background OFF stale refresh error: $e");
+          debugPrint("Background OFF stale refresh error: $e");
         });
       }
     } catch (e) {
-      print("Stale check error: $e");
+      debugPrint("Stale check error: $e");
     }
   }
 
@@ -412,7 +413,7 @@ class DbService {
         }
       }
     } catch (e) {
-      print("OFF fetch and parse error: $e");
+      debugPrint("OFF fetch and parse error: $e");
     }
     return null;
   }
@@ -488,7 +489,7 @@ class DbService {
         }
       }
     } catch (e) {
-      print("Failed saving history item: $e");
+      debugPrint("Failed saving history item: $e");
     }
   }
 
@@ -505,12 +506,12 @@ class DbService {
             result.add(ScanHistoryItem.fromJson(decoded));
           }
         } catch (err) {
-          print("Failed decoding single history item: $err");
+          debugPrint("Failed decoding single history item: $err");
         }
       }
       return result;
     } catch (e) {
-      print("Failed fetching local history: $e");
+      debugPrint("Failed fetching local history: $e");
       return [];
     }
   }
@@ -549,7 +550,7 @@ class DbService {
       );
       return remoteHistory;
     } catch (e) {
-      print("Failed syncing Firestore history: $e");
+      debugPrint("Failed syncing Firestore history: $e");
       return getHistory();
     }
   }
@@ -579,7 +580,7 @@ class DbService {
         }
       }
     } catch (e) {
-      print("Could not wipe history: $e");
+      debugPrint("Could not wipe history: $e");
     }
   }
 
@@ -609,7 +610,7 @@ class DbService {
         await batch.commit();
       }
     } catch (e) {
-      print("Could not delete history items by barcode: $e");
+      debugPrint("Could not delete history items by barcode: $e");
     }
   }
 
@@ -631,7 +632,7 @@ class DbService {
         await db.collection("users/${user.uid}/history").doc(id).delete();
       }
     } catch (e) {
-      print("Could not delete history item: $e");
+      debugPrint("Could not delete history item: $e");
     }
   }
 
@@ -650,12 +651,12 @@ class DbService {
             result.add(ProductReport.fromJson(decoded));
           }
         } catch (err) {
-          print("Error decoding single local report: $err");
+          debugPrint("Error decoding single local report: $err");
         }
       }
       return result;
     } catch (e) {
-      print("Error fetching local user reports: $e");
+      debugPrint("Error fetching local user reports: $e");
       return [];
     }
   }
@@ -684,7 +685,7 @@ class DbService {
       );
       return remoteReports;
     } catch (e) {
-      print("Error syncing user reports: $e");
+      debugPrint("Error syncing user reports: $e");
       return fetchUserReports();
     }
   }
@@ -759,7 +760,7 @@ class DbService {
 
       return finalReport;
     } catch (error) {
-      print("Error submit report: $error");
+      debugPrint("Error submit report: $error");
       rethrow;
     }
   }
@@ -807,7 +808,7 @@ class DbService {
 
       await batch.commit();
     } catch (error) {
-      print("Could not delete report $error");
+      debugPrint("Could not delete report $error");
     }
   }
 
@@ -840,7 +841,7 @@ class DbService {
         }
       }
     } catch (e) {
-      print("Error deleting local report: $e");
+      debugPrint("Error deleting local report: $e");
     }
   }
 
@@ -876,7 +877,7 @@ class DbService {
       batch.update(reportRef, {'score': FieldValue.increment(scoreDiff)});
       await batch.commit();
     } catch (e) {
-      print("Errore durante il salvataggio del voto: $e");
+      debugPrint("Errore durante il salvataggio del voto: $e");
     }
   }
 
@@ -909,7 +910,7 @@ class DbService {
 
       return {'score': score, 'userVote': userVote};
     } catch (e) {
-      print("Errore durante il recupero del voto: $e");
+      debugPrint("Errore durante il recupero del voto: $e");
       return {'score': 0, 'userVote': 0};
     }
   }
@@ -923,7 +924,7 @@ class DbService {
       try {
         return UserSettings.fromJson(json.decode(settingsStr));
       } catch (e) {
-        print("Error parsing local settings: $e");
+        debugPrint("Error parsing local settings: $e");
       }
     }
 
@@ -970,7 +971,7 @@ class DbService {
             .doc(user.uid)
             .set(effectiveSettings.toJson(), SetOptions(merge: true));
       } catch (e) {
-        print("Failed saving settings to Firestore: $e");
+        debugPrint("Failed saving settings to Firestore: $e");
       }
     }
   }
@@ -1003,7 +1004,7 @@ class DbService {
         return mergedSettings;
       }
     } catch (e) {
-      print("Failed syncing settings: $e");
+      debugPrint("Failed syncing settings: $e");
     }
     return localSettings;
   }
@@ -1078,7 +1079,7 @@ class DbService {
       await prefs.remove('celiac_reports');
       await prefs.remove('celiac_reported_barcodes');
     } catch (e) {
-      print("Errore durante la migrazione: $e");
+      debugPrint("Errore durante la migrazione: $e");
     }
   }
 
@@ -1098,7 +1099,7 @@ class DbService {
         await prefs.remove('celiac_reports_${user.uid}');
       }
     } catch (e) {
-      print("Errore durante il wipe dei dati locali: $e");
+      debugPrint("Errore durante il wipe dei dati locali: $e");
     }
   }
 
@@ -1168,7 +1169,7 @@ class DbService {
     try {
       await db.collection('users').doc(uid).delete();
     } catch (e) {
-      print('deleteUserSettings error: $e');
+      debugPrint('deleteUserSettings error: $e');
     }
   }
 
@@ -1194,7 +1195,7 @@ class DbService {
         await batch.commit();
       }
     } catch (e) {
-      print('deleteUserHistory error: $e');
+      debugPrint('deleteUserHistory error: $e');
     }
   }
 
@@ -1223,7 +1224,7 @@ class DbService {
         await batch.commit();
       }
     } catch (e) {
-      print('anonymizeUserReports error: $e');
+      debugPrint('anonymizeUserReports error: $e');
     }
   }
 }

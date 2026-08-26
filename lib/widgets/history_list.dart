@@ -326,7 +326,7 @@ class _HistoryListState extends State<HistoryList> {
             ),
             const SizedBox(height: 8),
             Text(
-              "history.empty.subtitle".tr(),
+              "history.subtitle".tr(),
               style: TextStyle(
                 fontSize: 14,
                 color: colorScheme.onSurfaceVariant,
@@ -543,48 +543,75 @@ class _HistoryListState extends State<HistoryList> {
                   return _buildHistoryCard(entry.key, entry.value);
                 },
               )
-            else
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 48,
-                  horizontal: 24,
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
+            else ...[
+              Builder(builder: (context) {
+                final IconData emptyIcon;
+                final String emptyTitle;
+                final String emptySubtitle;
+
+                final trimmedSearch = _search.trim();
+                if (trimmedSearch.isNotEmpty) {
+                  // 1. La ricerca da textfield prevale sempre
+                  emptyIcon = Icons.search_off_rounded;
+                  emptyTitle = "history.search.noResultsTitle".tr();
+                  emptySubtitle = "history.search.noResults".tr(
+                    namedArgs: {"query": trimmedSearch},
+                  );
+                } else if (_filter != null) {
+                  // 2. Filtro attivo senza risultati
+                  emptyIcon = Icons.filter_alt_off_outlined;
+                  emptyTitle = "history.filters.noResultsTitle".tr();
+                  emptySubtitle = "history.filters.noResultsForFilter".tr();
+                } else {
+                  // 3. Cronologia vuota di base
+                  emptyIcon = Icons.history;
+                  emptyTitle = "history.empty.title".tr();
+                  emptySubtitle = "history.empty.subtitle".tr();
+                }
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 48,
+                    horizontal: 24,
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          emptyIcon,
+                          size: 40,
+                          color: colorScheme.outlineVariant,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.history,
-                        size: 40,
-                        color: colorScheme.outlineVariant,
+                      const SizedBox(height: 16),
+                      Text(
+                        emptyTitle,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "history.empty.title".tr(),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
+                      const SizedBox(height: 8),
+                      Text(
+                        emptySubtitle,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "history.empty.subtitle".tr(),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    ],
+                  ),
+                );
+              }),
+            ],
           ],
         ),
       ),

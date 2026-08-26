@@ -33,6 +33,18 @@
       "examineDetails": "Esamina dettagli segnalazione"
     },
     "title": "Dettaglio segnalazione",
+    "listTitle": "Segnalazioni attive",
+    "subtitle": "Consulta i prodotti con segnalazioni della community.",
+    "empty": {
+      "title": "Nessuna segnalazione disponibile",
+      "subtitle": "Non ci sono prodotti segnalati al momento.",
+      "mineTitle": "Nessuna segnalazione inviata",
+      "mineSubtitle": "Non hai ancora inviato alcuna segnalazione."
+    },
+    "search": {
+      "noResultsTitle": "Nessun risultato",
+      "noResults": "Nessun prodotto trovato per \"{query}\"."
+    },
     "status": {
       "open": "Aperta",
       "inProgress": "In lavorazione",
@@ -50,7 +62,6 @@
       "markResolved": "Segna come risolto",
       "addComment": "Aggiungi commento",
       "escalate": "Scala la segnalazione"
-    },
-    "empty": "Nessuna segnalazione disponibile."
+    }
   }
 }

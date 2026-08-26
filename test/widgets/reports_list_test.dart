@@ -146,8 +146,9 @@ void main() {
         isSynced: true,
       );
 
-      expect(find.text('database.title'), findsOneWidget);
-      expect(find.text('report.empty'), findsWidgets);
+      expect(find.text('report.listTitle'), findsOneWidget);
+      expect(find.text('report.subtitle'), findsOneWidget);
+      expect(find.text('report.empty.title'), findsWidgets);
     });
   });
 
@@ -221,7 +222,7 @@ void main() {
       );
 
       expect(find.byIcon(Icons.task_alt), findsOneWidget);
-      expect(find.text('report.empty'), findsWidgets);
+      expect(find.text('report.empty.title'), findsWidgets);
     });
 
     testWidgets('shows empty search state when search returns 0 results',
@@ -241,7 +242,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('Pasta Riso'), findsNothing);
-      expect(find.byIcon(Icons.task_alt), findsOneWidget);
+      expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+      expect(find.text('report.search.noResultsTitle'), findsOneWidget);
     });
   });
 
