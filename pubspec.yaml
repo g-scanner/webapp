@@ -2,7 +2,7 @@
 PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 name: gscanner
-description: "A new Flutter project."
+description: "Scan food barcodes instantly to detect hidden gluten, lactose, and suspicious additives. A 100% free, privacy-focused ingredient scanner for celiacs and food intolerances."
 publish_to: 'none'
 
 version: 1.0.0+1
