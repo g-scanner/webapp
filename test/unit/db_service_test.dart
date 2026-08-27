@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:gscanner/models/types.dart';
 import 'package:gscanner/services/db_service.dart';
+import 'package:gscanner/services/analyzer_service.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {
@@ -425,6 +426,66 @@ void main() {
         expect(result.nameMap['en'], 'Ciastka'); // Fallback to en map slot
         expect(result.ingredientsMap['en'], 'Maka ryzowa, cukier');
         expect(result.allergensMap['it'], containsAll(['Soia', 'Uova']));
+      },
+    );
+
+    test(
+      'OFF product with "Senza Glutine" in allergens uploads sanitized product to Firestore and marks ingredients with safe claim',
+      () async {
+        when(() => mockProductsCol.doc('off_safe_1')).thenReturn(mockDocRef);
+        when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
+        when(() => mockDocSnap.exists).thenReturn(false);
+        when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
+
+        final rawOffJson = {
+          "status": 1,
+          "product": {
+            "_id": "off_safe_1",
+            "product_name_it": "Biscotti di Mais",
+            "ingredients_text_it": "Farina di mais, zucchero, sale",
+            "allergens_tags": ["it:senza-glutine", "en:milk"],
+          },
+        };
+
+        final result = await http.runWithClient(
+          () async {
+            return DbService.scanBarcodeClientSide('off_safe_1', settings);
+          },
+          () {
+            when(
+              () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+            ).thenAnswer(
+              (_) async => http.Response(
+                json.encode(rawOffJson),
+                200,
+                headers: {'content-type': 'application/json; charset=utf-8'},
+              ),
+            );
+            return mockHttpClient;
+          },
+        );
+
+        // Verifica che sia stato salvato su Firestore
+        verify(() => mockDocRef.set(any(), any())).called(1);
+
+        // Gli allergeni non devono contenere "Senza Glutine", solo "Latte"
+        expect(result.allergensMap['it'], ['Latte']);
+        expect(result.allergensMap['it']!.contains('Senza Glutine'), isFalse);
+        expect(result.allergensMap['it']!.contains('it:senza-glutine'), isFalse);
+
+        // La claim è stata inclusa negli ingredienti per garantire la valutazione sicura
+        expect(result.ingredientsMap['it'], contains('Senza glutine'));
+
+        // Valutazione tramite analyzer service risulta Adatto (Verde)
+        final analysis = AnalyzerService.analyzeGlutenSafety(
+          name: result.nameMap['it']!,
+          brand: '',
+          ingredients: result.ingredientsMap['it']!,
+          allergensList: result.allergensMap['it']!,
+          reportCount: 0,
+          categoriesTags: [],
+        );
+        expect(analysis.status, GlutenSafetyStatus.adatto);
       },
     );
 
