@@ -447,7 +447,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         .getIngredients(currentLang)
         .replaceAll('\$', '')
         .trim();
-    final List<String> displayedAllergens = currentProduct
+    final List<String> rawAllergens = currentProduct
         .getAllergens(currentLang)
         .map((a) => a.replaceAll('\$', '').trim())
         .toList();
@@ -465,7 +465,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       name: productName,
       brand: productBrand,
       ingredients: displayedIngredients,
-      allergensList: displayedAllergens,
+      allergensList: rawAllergens,
       reportCount: currentProduct.pendingReportsCount,
       categoriesTags: const [],
       strictMode: widget.userSettings.strictMode,
@@ -473,6 +473,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       alertLactose: widget.userSettings.alertLactose,
       preferredLanguage: currentLang,
     );
+
+    final List<String> displayedAllergens = analysis.allergens;
 
     final GlutenSafetyStatus effectiveStatus = showSkeleton
         ? GlutenSafetyStatus.sconosciuto

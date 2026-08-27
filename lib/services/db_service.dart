@@ -390,6 +390,20 @@ class DbService {
             for (final lang in supportedLangs) {
               allergensMap[lang] = AnalyzerService.translateAllergens(rawAllergens, lang);
             }
+
+            // Se OFF conteneva una dicitura safe negli allergeni (es. "it:senza-glutine"),
+            // la preserviamo negli ingredienti per informare l'analisi di sicurezza
+            final safeClaims = rawAllergens.where(AnalyzerService.isSafeGlutenClaim).toList();
+            if (safeClaims.isNotEmpty) {
+              for (final lang in supportedLangs) {
+                final currentIng = ingredientsMap[lang] ?? '';
+                if (!AnalyzerService.isSafeGlutenClaim(currentIng)) {
+                  ingredientsMap[lang] = currentIng.isEmpty
+                      ? 'Senza glutine'
+                      : '$currentIng (Senza glutine)';
+                }
+              }
+            }
           }
 
           final imageUrl = pData['image_url'] ??

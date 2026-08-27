@@ -858,6 +858,33 @@ void main() {
         res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'warning'),
         isFalse,
       );
+      // La lista allergeni finale deve essere vuota (nessun chip "Senza Glutine")
+      expect(res.allergens, isEmpty);
+    });
+
+    test('offTags with safe allergensTags (it:senza-glutine) marks product as adatto and leaves res.allergens empty', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Prodotto Test',
+        brand: 'Brand',
+        ingredients: 'Acqua, aromi',
+        allergensList: [],
+        strictMode: true,
+        reportCount: 0,
+        categoriesTags: [],
+        offTags: OffTags(
+          allergensTags: ['it:senza-glutine'],
+          tracesTags: [],
+          labelsTags: [],
+          ingredientsAnalysisTags: [],
+        ),
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isFalse,
+      );
+      expect(res.allergens, isEmpty);
     });
 
     test('ignores safe tags such as "it:senza-glutine" or "en:gluten-free" in OFF allergensTags without triggering nonAdatto', () {

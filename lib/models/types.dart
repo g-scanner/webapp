@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../services/analyzer_service.dart';
 
 enum GlutenSafetyStatus { adatto, nonAdatto, incerto, sconosciuto }
 
@@ -121,12 +122,14 @@ class Product {
   int get reportCount => pendingReportsCount;
 
   /// `true` se abbiamo dati certi sugli allergeni:
-  /// - se ci sono allergeni dichiarati nella lista (> 0)
+  /// - se ci sono allergeni dichiarati nella lista (> 0) escluse le diciture safe "Senza Glutine"
   /// - OPPURE se abbiamo la lista degli ingredienti da cui è stato accertato che non ci sono allergeni
   /// Se non abbiamo né ingredienti né allergeni dichiarati (es. prodotto incompleto su OFF), restituisce `false`.
   bool get hasAllergenData {
     if (allergensMap.isEmpty) return false;
-    final bool hasAnyDeclaredAllergen = allergensMap.values.any((list) => list.isNotEmpty);
+    final bool hasAnyDeclaredAllergen = allergensMap.values.any(
+      (list) => list.any((a) => a.trim().isNotEmpty && !AnalyzerService.isSafeGlutenClaim(a)),
+    );
     if (hasAnyDeclaredAllergen) return true;
     return hasIngredientData;
   }

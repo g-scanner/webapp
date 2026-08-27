@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import 'package:gscanner/models/types.dart';
+import 'package:gscanner/services/analyzer_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -195,6 +196,28 @@ void main() {
       );
       expect(blankListP.getAllergens('it'), isEmpty);
     });
+
+    test('getAllergens preserves allergens for analysis while translateAllergens strips safe claims for UI', () {
+      final p = Product(
+        barcode: '123',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {
+          'it': ['en:milk', 'Senza Glutine', 'it:senza-glutine', 'en:gluten-free', 'en:eggs'],
+        },
+        lastUpdated: '2026-08-01T00:00:00Z',
+      );
+
+      final raw = p.getAllergens('it');
+      expect(raw, contains('Senza Glutine')); // Preservato per il motore di analisi
+
+      final translated = AnalyzerService.translateAllergens(raw, 'it');
+      expect(translated, ['Latte', 'Uova']);
+      expect(translated.contains('Senza Glutine'), isFalse);
+      expect(translated.contains('it:senza-glutine'), isFalse);
+      expect(translated.contains('en:gluten-free'), isFalse);
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -295,6 +318,28 @@ void main() {
         lastUpdated: '2026-08-01T00:00:00Z',
       );
       expect(p4.hasAllergenData, isFalse);
+
+      // 5. Declared allergens only contain safe gluten claims and NO ingredients -> false (treated as empty/insufficient data)
+      final p5 = Product(
+        barcode: '5',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {'it': ['Senza Glutine', 'en:gluten-free']},
+        lastUpdated: '2026-08-01T00:00:00Z',
+      );
+      expect(p5.hasAllergenData, isFalse);
+
+      // 6. Declared allergens only contain safe gluten claims, but ingredients exist -> true (0 genuine allergens declared)
+      final p6 = Product(
+        barcode: '6',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {'it': 'Acqua, zucchero'},
+        allergensMap: {'it': ['Senza Glutine', 'en:gluten-free']},
+        lastUpdated: '2026-08-01T00:00:00Z',
+      );
+      expect(p6.hasAllergenData, isTrue);
     });
   });
 
@@ -302,6 +347,30 @@ void main() {
   // GROUP 4 – Product Serialization & Legacy Migration
   // ═══════════════════════════════════════════════════════════════════════════
   group('GROUP 4 – Product Serialization & Legacy Migration', () {
+    test('fromJson preserves allergens_map and allergens array for analysis engine', () {
+      final jsonMap = {
+        'barcode': '8000000000001',
+        'name_map': {'it': 'Biscotti'},
+        'brand_map': {'it': 'Mulino'},
+        'ingredients_map': {'it': 'Farina di riso'},
+        'allergens_map': {
+          'it': ['Latte', 'Senza Glutine', 'it:senza-glutine', 'en:gluten-free'],
+        },
+      };
+
+      final p = Product.fromJson(jsonMap);
+      expect(p.allergensMap['it'], ['Latte', 'Senza Glutine', 'it:senza-glutine', 'en:gluten-free']);
+      expect(p.getAllergens('it'), contains('Senza Glutine'));
+
+      final legacyJson = {
+        'barcode': '8000000000002',
+        'allergens': ['Senza Glutine', 'en:gluten-free', 'Uova'],
+      };
+      final pLegacy = Product.fromJson(legacyJson);
+      expect(pLegacy.allergensMap['it'], ['Senza Glutine', 'en:gluten-free', 'Uova']);
+      expect(pLegacy.getAllergens('it'), contains('Senza Glutine'));
+    });
+
     test('fromJson parses modern Map structures correctly', () {
       final jsonMap = {
         'barcode': '8000000000001',

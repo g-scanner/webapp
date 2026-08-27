@@ -391,6 +391,30 @@ class AnalyzerService {
     },
   };
 
+  /// Restituisce `true` se il testo o tag è una dichiarazione di sicurezza/assenza di glutine
+  /// (es. "Senza Glutine", "en:gluten-free", "it:senza-glutine", "glutenfrei", "sin gluten", ecc.).
+  static bool isSafeGlutenClaim(String text) {
+    if (text.trim().isEmpty) return false;
+    final lowerA = text.trim().toLowerCase();
+    final withoutPrefix =
+        lowerA.contains(':') ? lowerA.split(':').last.trim() : lowerA;
+
+    return _safeTextKeywords.any((safe) {
+      final safeClean = safe.toLowerCase().trim();
+      final safeHyphen = safeClean.replaceAll(' ', '-');
+      final safeUnderscore = safeClean.replaceAll(' ', '_');
+      return lowerA == safeClean ||
+          lowerA == safeHyphen ||
+          lowerA == safeUnderscore ||
+          withoutPrefix == safeClean ||
+          withoutPrefix == safeHyphen ||
+          withoutPrefix == safeUnderscore ||
+          lowerA.contains(safeClean) ||
+          withoutPrefix.contains(safeHyphen) ||
+          withoutPrefix.contains(safeUnderscore);
+    });
+  }
+
   static List<String> translateAllergens(
     List<String> allergensList,
     String preferredLanguage,
@@ -406,17 +430,7 @@ class AnalyzerService {
     ];
 
     List<String> translatedAllergens = allergensList
-        .where((a) {
-          // Scarta subito qualsiasi voce che sia una dicitura "senza glutine"
-          // (in qualsiasi lingua), perché non è un allergene ma una claim sicura.
-          final lowerA = a.trim().toLowerCase();
-          // Rimuove prefisso lingua OFF per il confronto (es. "it:senza-glutine" → "senza-glutine")
-          final withoutPrefix =
-              lowerA.contains(':') ? lowerA.split(':').last : lowerA;
-          return !_safeTextKeywords.any((safe) =>
-              lowerA.contains(safe) ||
-              withoutPrefix.contains(safe.replaceAll(' ', '-')));
-        })
+        .where((a) => !isSafeGlutenClaim(a))
         .map((a) {
           String clean = a.trim().toLowerCase();
           // Rimuove prefissi lingua OFF (es. "en:milk" -> "milk", "en:cereals-containing-gluten" -> "cereals-containing-gluten")
@@ -439,6 +453,7 @@ class AnalyzerService {
           if (clean.isEmpty) return clean;
           return clean[0].toUpperCase() + clean.substring(1);
         })
+        .where((a) => !isSafeGlutenClaim(a))
         .toSet()
         .toList();
 
@@ -712,7 +727,7 @@ class AnalyzerService {
     );
 
     if (offTags != null) {
-      hasGlutenFreeBollino = offTags.labelsTags.any((t) {
+      bool isSafeTag(String t) {
         final lt = t.toLowerCase();
         return lt.contains('gluten-free') ||
             lt.contains('senza-glutine') ||
@@ -727,8 +742,13 @@ class AnalyzerService {
             lt.contains('glutenvrij') ||
             lt.contains('bezglutenowy') ||
             lt.contains('glutensiz') ||
-            lt.contains('celiac');
-      });
+            lt.contains('celiac') ||
+            isSafeGlutenClaim(t);
+      }
+
+      hasGlutenFreeBollino = offTags.labelsTags.any(isSafeTag) ||
+          offTags.allergensTags.any(isSafeTag) ||
+          offTags.tracesTags.any(isSafeTag);
     }
 
     // ─── STEP 2: Controlla ingredienti PERICOLOSI (usando il testo pulito) ───
@@ -767,7 +787,8 @@ class AnalyzerService {
         // Ignora tag come "en:gluten-free" o "it:senza-glutine"
         if (_safeTextKeywords.any((safe) =>
             lowerT.contains(safe.replaceAll(' ', '-')) ||
-            lowerT.contains(safe))) {
+            lowerT.contains(safe)) ||
+            isSafeGlutenClaim(t)) {
           return false;
         }
         return lowerT.contains('gluten') ||
@@ -798,7 +819,7 @@ class AnalyzerService {
     }
     for (String a in allergensList) {
       final lowerA = a.toLowerCase();
-      if (_safeTextKeywords.any((safe) => lowerA.contains(safe))) continue;
+      if (_safeTextKeywords.any((safe) => lowerA.contains(safe)) || isSafeGlutenClaim(a)) continue;
       if (_dangerKeywords.any((k) => lowerA.contains(k)) &&
           !foundDanger.contains(lowerA)) {
         foundTraces.add(lowerA);

@@ -395,8 +395,42 @@ void main() {
 
       await pumpProductDetailCard(tester, product: allergenProduct);
 
-      expect(find.text('soia'), findsOneWidget);
-      expect(find.text('frutta a guscio'), findsOneWidget);
+      expect(find.text('Soia'), findsOneWidget);
+      expect(find.text('Frutta a guscio'), findsOneWidget);
+    });
+
+    testWidgets('Allergens: does NOT render chip for "Senza Glutine" or "en:gluten-free" and shows noneLabel when ingredients exist',
+        (WidgetTester tester) async {
+      final safeGlutenAllergenProduct = createSampleProduct(
+        ingredientsMap: {'it': 'Acqua, aromi'},
+        allergensMap: {
+          'it': ['Senza Glutine', 'it:senza-glutine', 'en:gluten-free']
+        },
+      );
+
+      await pumpProductDetailCard(tester, product: safeGlutenAllergenProduct);
+
+      expect(find.text('Senza Glutine'), findsNothing);
+      expect(find.text('it:senza-glutine'), findsNothing);
+      expect(find.text('en:gluten-free'), findsNothing);
+      expect(find.text('product.ingredients.noneLabel'), findsOneWidget);
+    });
+
+    testWidgets('Allergens: does NOT render chip for "Senza Glutine" but renders real allergens alongside it',
+        (WidgetTester tester) async {
+      final mixedProduct = createSampleProduct(
+        ingredientsMap: {'it': 'Farina di riso, soia, latte'},
+        allergensMap: {
+          'it': ['Senza Glutine', 'soia', 'en:gluten-free', 'latte']
+        },
+      );
+
+      await pumpProductDetailCard(tester, product: mixedProduct);
+
+      expect(find.text('Senza Glutine'), findsNothing);
+      expect(find.text('en:gluten-free'), findsNothing);
+      expect(find.text('Soia'), findsOneWidget);
+      expect(find.text('Latte'), findsOneWidget);
     });
 
     // ==========================================
