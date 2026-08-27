@@ -1,0 +1,283 @@
+<!-- Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms. --><!DOCTYPE html><!-- Il default è l'inglese per assecondare Googlebot --><html lang="en"><head>
+  <!-- BASE HREF gestito dinamicamente dal comando di build di Flutter -->
+  <base href="/webapp/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+
+  <!-- Base SEO -->
+  <title>G-Scanner - Free Gluten, Lactose &amp; Food Scanner App</title>
+  <meta name="description" content="Scan food barcodes instantly to detect hidden gluten, lactose, and suspicious additives. A 100% free, privacy-focused ingredient scanner for celiacs and food intolerances.">
+  <meta name="keywords" content="gluten free food scanner, celiac barcode app, ingredient checker, lactose intolerance app, additive scanner, open food facts, free food barcode scanner, vegan scanner">
+  <meta name="author" content="Emanuele Ciotola">
+  <meta name="theme-color" content="#BFDEB4">
+  <link rel="icon" href="icons/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- ICONE (iOS e PWA) -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="G-Scanner">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- VERIFICA OAUTH2 -->
+  <meta name="google-signin-client_id" content="1026607445667-17rnkrlq2rb5csff47m8832htnco8964.apps.googleusercontent.com">
+
+  <!-- DIRETTIVE ROBOTS E IA -->
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="Google-Extended" content="noindex">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script>window.flutterfire_web_sdk_version = '12.17.0';</script>
+
+  <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://g-scanner.github.io/webapp/">
+  <meta property="og:title" content="G-Scanner - The Ultimate Free Food &amp; Gluten Scanner">
+  <meta property="og:description" content="Instantly check food ingredients for gluten, lactose, and harmful additives. Designed for your health. 100% Free &amp; No Ads.">    
+  <meta property="og:image" content="https://g-scanner.github.io/assets/images/seo-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image" content="https://g-scanner.github.io/assets/images/seo-banner-square.png">
+  <meta property="og:image:width" content="800">
+  <meta property="og:image:height" content="800">
+  <meta property="og:image:type" content="image/png">
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="G-Scanner - Safe Eating, Simplified.">
+  <meta name="twitter:description" content="Scan barcodes to check for gluten, lactose, and additives. Zero ads, maximum privacy.">
+  <meta name="twitter:image" content="https://g-scanner.github.io/assets/images/seo-banner.png">
+
+  <!-- CANONICAL -->
+  <link rel="canonical" href="https://g-scanner.github.io/webapp/">
+
+  <!-- SCRIPT DI TRADUZIONE DINAMICA (Eseguito istantaneamente) -->
+  <script>
+    const translations = {
+      "it": {
+        title: "G-Scanner | Scansiona Con Un Tap e Dici Addio a Glutine e Lattosio",
+        desc: "Scansiona i codici a barre degli alimenti con G-Scanner. Scopri istantaneamente la presenza di glutine, additivi sospetti o lattosio. Gratuita e senza pubblicità!",
+        ogDesc: "Semplifica la tua spesa con G-Scanner! Inquadra il codice a barre e scopri subito se un prodotto è adatto alla tua dieta. 100% gratuita e zero pubblicità.",
+        bodyHtml: `<h1>G-Scanner: Lo Scanner Alimentare</h1>
+                   <p>G-Scanner è un'app gratuita sviluppata da Emanuele Ciotola che ti aiuta a consultare istantaneamente le informazioni sui prodotti alimentari. Sfruttando Open Food Facts, offre filtri per:</p>
+                   <ul><li><strong>Celiachia:</strong> Filtro per glutine o tracce.</li><li><strong>Additivi:</strong> Segnalazione amidi modificati e aromi.</li><li><strong>Lattosio:</strong> Ricerca di latte, burro, siero.</li></ul>
+                   <p>Risultato immediato con semaforo (Verde, Giallo, Rosso). <em>Solo scopo informativo.</em></p>`
+      },
+      "es": {
+        title: "G-Scanner | Escanea con un toque y dile adiós al gluten y la lactosa",
+        desc: "Escanea códigos de barras de alimentos con G-Scanner. Descubre al instante gluten, aditivos sospechosos o lactosa. ¡Gratis y sin publicidad!",
+        ogDesc: "¡Simplifica tus compras! Escanea el código de barras y descubre al instante si un producto se adapta a tu dieta. 100% gratis y sin anuncios.",
+        bodyHtml: `<h1>G-Scanner: El Escáner de Alimentos</h1>
+                   <p>G-Scanner es una aplicación gratuita desarrollada por Emanuele Ciotola para consultar información de productos alimenticios. Utiliza Open Food Facts y ofrece filtros para:</p>
+                   <ul><li><strong>Celiaquía:</strong> Filtro de gluten o trazas.</li><li><strong>Aditivos:</strong> Alerta de almidones y aromas.</li><li><strong>Lactosa:</strong> Búsqueda de leche, mantequilla, suero.</li></ul>
+                   <p>Resultado con semáforo (Verde, Amarillo, Rojo). <em>Solo con fines informativos.</em></p>`
+      },
+      "fr": {
+        title: "G-Scanner | Scannez d'un geste et dites adieu au gluten et au lactose",
+        desc: "Scannez les codes-barres des aliments avec G-Scanner. Découvrez instantanément le gluten, les additifs suspects ou le lactose. Gratuit et sans pub !",
+        ogDesc: "Simplifiez vos courses ! Scannez le code-barres et découvrez si un produit convient à votre régime. 100% gratuit et sans publicité.",
+        bodyHtml: `<h1>G-Scanner : Le Scanner Alimentaire</h1>
+                   <p>G-Scanner est une application gratuite développée par Emanuele Ciotola pour vérifier les produits alimentaires. Basée sur Open Food Facts, elle propose des filtres pour :</p>
+                   <ul><li><strong>Maladie Cœliaque :</strong> Filtre pour le gluten ou les traces.</li><li><strong>Additifs :</strong> Alerte sur les amidons et arômes.</li><li><strong>Lactose :</strong> Recherche de lait, beurre, lactosérum.</li></ul>
+                   <p>Résultat par feu tricolore (Vert, Jaune, Rouge). <em>À but informatif uniquement.</em></p>`
+      },
+      "de": {
+        title: "G-Scanner | Scannen mit einem Klick und Tschüss zu Gluten und Laktose",
+        desc: "Scannen Sie Lebensmittel-Barcodes mit G-Scanner. Entdecken Sie sofort Gluten, verdächtige Zusatzstoffe oder Laktose. Kostenlos und werbefrei!",
+        ogDesc: "Vereinfachen Sie Ihren Einkauf! Scannen Sie den Barcode und finden Sie heraus, ob ein Produkt zu Ihrer Ernährung passt. 100% kostenlos.",
+        bodyHtml: `<h1>G-Scanner: Der Lebensmittel-Scanner</h1>
+                   <p>G-Scanner ist eine kostenlose App von Emanuele Ciotola zur Überprüfung von Lebensmitteln. Basierend auf Open Food Facts bietet sie Filter für:</p>
+                   <ul><li><strong>Zöliakie:</strong> Filter für Gluten oder Spuren.</li><li><strong>Zusatzstoffe:</strong> Warnung vor Stärken und Aromen.</li><li><strong>Laktose:</strong> Suche nach Milch, Butter, Molke.</li></ul>
+                   <p>Ampel-Ergebnis (Grün, Gelb, Rot). <em>Nur zu Informationszwecken.</em></p>`
+      }
+    };
+
+    // Lettura della lingua del browser (es. "it-IT" -> "it")
+    const userLang = (navigator.language || navigator.userLanguage).substring(0, 2).toLowerCase();
+    const t = translations[userLang];
+
+    // Se la lingua è supportata, cambia i tag (se è inglese usa il default dell'HTML)
+    if (t) {
+      document.documentElement.lang = userLang;
+      document.title = t.title;
+      document.querySelector('meta[name="description"]').setAttribute("content", t.desc);
+      document.querySelector('meta[property="og:title"]').setAttribute("content", t.title);
+      document.querySelector('meta[property="og:description"]').setAttribute("content", t.ogDesc);
+      document.querySelector('meta[name="twitter:title"]').setAttribute("content", t.title);
+      document.querySelector('meta[name="twitter:description"]').setAttribute("content", t.desc);
+      
+      // Aspetta che il body carichi per tradurre il testo SEO
+      document.addEventListener("DOMContentLoaded", function() {
+        const seoDiv = document.getElementById("seo-fallback");
+        if(seoDiv) seoDiv.innerHTML = t.bodyHtml;
+      });
+    }
+  </script>
+
+  <!-- DATI STRUTTURATI (SCHEMA.ORG) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "G-Scanner",
+    "url": "https://g-scanner.github.io/webapp/",
+
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://g-scanner.github.io/"
+    },
+
+    "sameAs": [
+      "https://g-scanner.github.io/it/",
+      "https://g-scanner.github.io/es/",
+      "https://g-scanner.github.io/fr/",
+      "https://g-scanner.github.io/de/"
+    ],
+
+    "description": "Scan food barcodes to instantly discover the presence of gluten, suspicious additives, or lactose. A totally free, ad-free mobile and web app.",
+    "applicationCategory": "HealthAndFitnessApplication",
+    "operatingSystem": "Android, Web",
+    "author": {
+      "@type": "Person",
+      "name": "Emanuele Ciotola"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0.00",
+      "priceCurrency": "EUR"
+    },
+    "featureList": [
+      "Barcode scanning",
+      "Open Food Facts database",
+      "Celiac strict gluten filter",
+      "Lactose intolerance filter",
+      "Suspicious additives warning",
+      "Traffic light system (Green, Yellow, Red)",
+      "Ad-free, privacy focused"
+    ],
+
+    "termsOfService": "https://g-scanner.github.io/termsofservice.html",
+    "privacyPolicy": "https://g-scanner.github.io/privacypolicy.html"
+  }
+  </script>
+
+  
+  
+  <style id="splash-screen-style">
+    html {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      background-color: #BFDEB4;
+          background-size: 100% 100%;
+    }
+
+    .center {
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+    }
+
+    .contain {
+      display:block;
+      width:100%; height:100%;
+      object-fit: contain;
+    }
+
+    .stretch {
+      display:block;
+      width:100%; height:100%;
+    }
+
+    .cover {
+      display:block;
+      width:100%; height:100%;
+      object-fit: cover;
+    }
+
+    .bottom {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      -ms-transform: translate(-50%, 0);
+      transform: translate(-50%, 0);
+    }
+
+    .bottomLeft {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+
+    .bottomRight {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+    }
+  </style>
+  <script id="splash-screen-script">
+    function removeSplashFromWeb() {
+      document.getElementById("splash")?.remove();
+      document.getElementById("splash-branding")?.remove();
+      document.body.style.background = "transparent";
+    }
+  </script>
+</head>
+<body>
+  <picture id="splash">
+      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
+      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
+      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
+  </picture>
+  <!-- CONTENUTO SEO (Verrà tradotto dallo script in JS, altrimenti resta Inglese) -->
+  <div id="seo-fallback" style="display:none;">
+    <h1>G-Scanner: The Food Scanner</h1>
+    <p>G-Scanner is a free app developed by Emanuele Ciotola that helps you instantly consult food product information by scanning barcodes. Using Open Food Facts, it offers filters for:</p>
+    <ul>
+      <li><strong>Celiac Disease:</strong> Strict filter for gluten or traces.</li>
+      <li><strong>Additives:</strong> Warning for modified starches and flavors.</li>
+      <li><strong>Lactose Intolerance:</strong> Search for milk, butter, whey, and lactose.</li>
+    </ul>
+    <p>Immediate result with a traffic light system (Green, Yellow, Red). <em>Note: For informational purposes only.</em></p>
+  </div>
+  
+  <noscript>
+    Please enable JavaScript to run G-Scanner.
+  </noscript>
+
+  
+  
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <!-- Popup tracker per rilevamento rapido chiusura popup auth -->
+  <script>
+    let _activePopup = null;
+    const _originalOpen = window.open;
+    window.open = function (...args) {
+      const popup = _originalOpen.apply(window, args);
+      _activePopup = popup;
+      return popup;
+    };
+    window.isLastPopupClosed = function () {
+      return _activePopup ? _activePopup.closed : false;
+    };
+  </script>
+  <script src="flutter_bootstrap.js" async=""></script>
+
+
+</body></html>

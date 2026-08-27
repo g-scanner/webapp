@@ -1,0 +1,22 @@
+{
+  "database": {
+    "title": "Database Prodotti",
+    "search": {
+      "hint": "Cerca per nome o codice a barre...",
+      "resultsCount": "{count} risultati",
+      "noResults": "Nessun prodotto trovato per \"{query}\".",
+      "searching": "Ricerca in corso..."
+    },
+    "filters": {
+      "title": "Filtri",
+      "glutenFree": "Solo senza glutine",
+      "withImage": "Solo con immagine",
+      "apply": "Applica filtri",
+      "reset": "Reimposta"
+    },
+    "item": {
+      "unknownBrand": "Marca sconosciuta",
+      "noName": "Nome non disponibile"
+    }
+  }
+}

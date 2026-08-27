@@ -1,0 +1,139 @@
+{
+  "product": {
+    "titles": {
+      "scanDetail": "Dettaglio scansione",
+      "glutenEvaluation": "VALUTAZIONE GLUTINE",
+      "lactosePresence": "PRESENZA LATTOSIO",
+      "declaredAllergens": "ALLERGENI DICHIARATI",
+      "ingredientsAnalysis": "ANALISI INGREDIENTI",
+      "infoAndWarnings": "INFORMAZIONI E AVVERTENZE"
+    },
+    "warnings": {
+      "notSuitableCeliac": "NON ADATTO ai celiaci. Rilevati ingredienti vietati.",
+      "lactoseAlertHeader": "ALLERTA LATTOSIO: Il prodotto contiene lattosio/latte.",
+      "lactoseAlertBody": "Questo prodotto contiene ingredienti o allergeni che indicano la presenza di lattosio. Non adatto agli intolleranti.",
+      "directGlutenSource": "Fonte diretta di glutine.",
+      "strictFilterBlocked": "Bloccato dal Filtro Rigido Contaminazioni.",
+      "detectedForLactoseSettings": "Rilevato per le tue impostazioni sul lattosio.",
+      "infoTitle": "INFORMAZIONI E AVVERTENZE",
+      "infoPre": "I dati sono forniti dalla community di ",
+      "infoSource": "Open Food Facts",
+      "infoPost": ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico."
+    },
+    "status": {
+      "unknownProductName": "Prodotto Sconosciuto",
+      "unknownBrand": "Produttore sconosciuto"
+    },
+    "analysis": {
+      "notSuitable": "NON ADATTO ai celiaci. Rilevati ingredienti vietati.",
+      "strictFilterBlocked": "VIETATO DAL FILTRO: Rilevate possibili tracce di contaminazione crociata (Filtro Rigido attivo).",
+      "safe": "ADATTO ai celiaci. Certificazione o etichetta 'Senza Glutine' rilevata.",
+      "naturallySafe": "ADATTO ai celiaci. Prodotto di base naturalmente privo di glutine.",
+      "uncertainNoLabel": "ATTENZIONE: Prodotto lavorato senza dicitura 'Senza glutine'. Verifica l'etichetta.",
+      "uncertainTraces": "ATTENZIONE: Trovate diciture di contaminazione. Consumo a tuo rischio.",
+      "userReported": "ATTENZIONE: Questo prodotto ha {count} segnalazione/i dagli utenti.",
+      "unknown": "SCONOSCIUTO. Informazioni insufficienti. Leggi l'etichetta fisica.",
+      "lactoseAlert": "ALLERTA LATTOSIO: Il prodotto contiene lattosio/latte.",
+      "lactosePresenceDesc": "Questo prodotto contiene ingredienti o allergeni che indicano la presenza di lattosio. Non adatto agli intolleranti.",
+      "glutenSource": "Fonte diretta di glutine.",
+      "contaminationBlocked": "Bloccato dal Filtro Rigido Contaminazioni.",
+      "lactoseDetected": "Rilevato per le tue impostazioni sul lattosio."
+    },
+    "actions": {
+      "reportUnclearData": "Segnala dati errati o poco chiari",
+      "openOnOff": "Apri su Open Food Facts",
+      "reportError": "Segnala dati errati o poco chiari",
+      "alreadyReported": "Prodotto già segnalato",
+      "addToFavorites": "Aggiungi ai preferiti",
+      "removeFromFavorites": "Rimuovi dai preferiti"
+    },
+    "labels": {
+      "brand": "Marca",
+      "quantity": "Quantità",
+      "categories": "Categorie",
+      "stores": "Venduto in",
+      "countries": "Paesi",
+      "ingredients": "Ingredienti",
+      "allergens": "Allergeni",
+      "traces": "Può contenere tracce di",
+      "nutriscore": "Nutri-Score",
+      "novaGroup": "Gruppo NOVA",
+      "ecoscore": "Eco-Score",
+      "barcode": "Codice a barre",
+      "lastModified": "Ultimo aggiornamento"
+    },
+    "glutenStatus": {
+      "safe": "Senza Glutine",
+      "unsafe": "Contiene Glutine",
+      "uncertain": "Stato incerto",
+      "noData": "Dati insufficienti"
+    },
+    "sections": {
+      "generalInfo": "Informazioni generali",
+      "nutritionFacts": "Valori nutrizionali",
+      "ingredientsList": "Lista ingredienti",
+      "analysis": "Analisi G-Scanner",
+      "certifications": "Certificazioni"
+    },
+    "notFound": {
+      "title": "Prodotto non trovato",
+      "subtitle": "Il codice {barcode} non è presente nel database.",
+      "addProduct": "Aggiungi il prodotto",
+      "tryAgain": "Riprova"
+    },
+    "perHundredGrams": "Per 100g",
+    "energy": "Energia",
+    "fat": "Grassi",
+    "saturatedFat": "di cui saturi",
+    "carbs": "Carboidrati",
+    "sugars": "di cui zuccheri",
+    "fiber": "Fibre",
+    "proteins": "Proteine",
+    "salt": "Sale",
+    "bigStatus": {
+      "safe": "SICURO",
+      "unsafe": "VIETATO",
+      "uncertain": "INCERTO",
+      "unknown": "SCONOSCIUTO"
+    },
+    "deleteHistory": {
+      "confirmTitle": "Eliminare scansione?",
+      "confirmBody": "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
+      "menuLabel": "Elimina dalla cronologia"
+    },
+    "deleteReport": {
+      "confirmTitle": "Eliminare segnalazione?",
+      "confirmBody": "Sei sicuro di voler eliminare questa segnalazione?",
+      "menuLabel": "Elimina segnalazione",
+      "errorMessage": "Errore durante l'eliminazione. Riprova."
+    },
+    "report": {
+      "communityCallout": "Aiuta la community segnalando informazioni inesatte o etichette poco chiare.",
+      "reasonLabel": "Motivo della segnalazione",
+      "reasonUnclear": "Etichetta poco chiara o ambigua",
+      "reasonOutdated": "Informazione obsoleta",
+      "reasonWrongStatus": "Stato glutine errato",
+      "reasonOther": "Altro",
+      "detailsHint": "Dettagli (Opzionale)",
+      "submit": "Invia segnalazione",
+      "goToReport": "Vai alla segnalazione"
+    },
+    "alert": {
+      "activeReportWarning": "ATTENZIONE: Questo prodotto presenta una segnalazione attiva o incongruenze."
+    },
+    "ingredients": {
+      "dangerBadge": "Pericolo",
+      "warningBadge": "Attenzione",
+      "safeBadge": "Sicuro",
+      "uncertainBadge": "Incerto",
+      "noneLabel": "Nessuno dichiarato",
+      "insufficientDataLabel": "Informazioni Insufficienti",
+      "noRisksDetected": "Nessun ingrediente a rischio rilevato."
+    },
+    "scanDate": {
+      "today": "Scansionato oggi, {time}",
+      "yesterday": "Scansionato ieri, {time}",
+      "default": "Scansionato il {date}, {time}"
+    }
+  }
+}

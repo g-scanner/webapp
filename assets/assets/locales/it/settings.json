@@ -1,0 +1,118 @@
+{
+  "settings": {
+    "title": "Impostazioni",
+    "subtitle": "Gestisci il tuo profilo, l'analisi degli ingredienti e i dati salvati.",
+    "sectionTitles": {
+      "account": "Il tuo Account",
+      "analysisRules": "Regole di Analisi",
+      "appearance": "Aspetto",
+      "language": "Lingua",
+      "dataAndHistory": "Dati e Cronologia",
+      "legalInfo": "Informazioni Legali"
+    },
+    "account": {
+      "syncedCloudSubtitle": "Il tuo profilo e le scansioni sono sincronizzati sul cloud.",
+      "manageAccount": "Gestisci Account",
+      "editName": "Modifica Nome",
+      "editNameSubtitle": "Scegli come vuoi farti chiamare. Questo nome sarà visibile all'interno dell'app.",
+      "editNameHint": "Es. Mario Rossi",
+      "linkedGoogle": "Collegato con Google",
+      "signOut": "Esci dall'account",
+      "signOutShort": "Esci",
+      "signOutConfirmTitle": "Vuoi uscire?",
+      "signOutConfirmBody": "Uscendo dal tuo account, i dati salvati su questo dispositivo verranno rimossi per privacy.\nPotrai ripristinarli al prossimo accesso.",
+      "signingOut": "Uscita in corso...",
+      "deleteAccount": "Elimina Account",
+      "deleteConfirmTitle": "Eliminazione Definitiva",
+      "deleteConfirmBody": "Sei sicuro di voler eliminare il tuo account e tutti i dati cloud? Questa azione è IRREVERSIBILE.\n\nSaranno eliminati:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nI tuoi report inseriti rimarranno ma verranno anonimizzati.",
+      "deleteReauthTitle": "Accesso richiesto per sicurezza",
+      "deleteReauthBody": "Per motivi di sicurezza, prima di procedere all'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo 'Procedi' verrai disconnesso per poter rientrare e completare l'operazione.",
+      "loggedInAs": "Accesso come",
+      "anonymous": "Ospite anonimo",
+      "deleteConfirmLegacy": "Verrai reindirizzato alla schermata di accesso.",
+      "deleteConfirmLegacyTitle": "Eliminare l'account?",
+      "deleteConfirmLegacyBody": "Tutti i dati cloud associati verranno eliminati definitivamente. I dati locali rimarranno sul dispositivo.",
+      "linkGoogle": "Collega Google",
+      "linkFacebook": "Collega Facebook"
+    },
+    "toggles": {
+      "warnAdditivesTitle": "Avvertimento Additivi",
+      "warnAdditivesSubtitle": "Genera un avviso per amidi modificati o aromi senza origine specificata.",
+      "strictFilterTitle": "Filtro Rigido Contaminazioni",
+      "strictFilterSubtitle": "Segnala come 'Vietato' qualsiasi alimento con dicitura 'può contenere tracce di glutine'.",
+      "lactoseIntoleranceTitle": "Intolleranza al Lattosio",
+      "lactoseIntoleranceSubtitle": "Verifica la presenza di lattosio, burro, polvere di latte o siero."
+    },
+    "uiOptions": {
+      "appThemeTitle": "Tema dell'app",
+      "appThemeSubtitle": "Chiaro, scuro o uguale al sistema",
+      "preferredLanguageTitle": "Lingua preferita",
+      "preferredLanguageSubtitle": "Lingua preferita per gli ingredienti"
+    },
+    "destructive": {
+      "clearHistoryTitle": "Svuota Cronologia",
+      "clearHistorySubtitle": "Rimuove in modo permanente la tua cronologia scansioni.",
+      "deleteFromHistory": "Elimina dalla cronologia"
+    },
+    "legalMenu": {
+      "termsAndConditionsTitle": "Termini e Condizioni",
+      "termsAndConditionsSubtitle": "Consulta le regole di utilizzo dell'applicazione e dei servizi offerti.",
+      "privacyPolicyTitle": "Privacy Policy",
+      "privacyPolicySubtitle": "Scopri come raccogliamo, gestiamo e proteggiamo i tuoi dati personali.",
+      "licensesTitle": "Licenze",
+      "licensesSubtitle": "Consulta le licenze open source dei pacchetti e delle librerie utilizzate in questa app."
+    },
+    "sections": {
+      "account": "Account",
+      "appearance": "Aspetto",
+      "scanner": "Scanner",
+      "notifications": "Notifiche",
+      "data": "Dati e Privacy",
+      "about": "Informazioni"
+    },
+    "appearance": {
+      "theme": "Tema",
+      "themeLight": "Chiaro",
+      "themeDark": "Scuro",
+      "themeSystem": "Sistema",
+      "language": "Lingua",
+      "colorScheme": "Schema colori"
+    },
+    "scanner": {
+      "vibration": "Vibrazione alla scansione",
+      "sound": "Suono alla scansione",
+      "autoSearch": "Ricerca automatica",
+      "torchDefault": "Torcia attiva di default"
+    },
+    "data": {
+      "clearHistory": "Cancella cronologia",
+      "clearHistoryConfirm": "Confermi di voler eliminare tutta la cronologia?",
+      "exportData": "Esporta dati",
+      "syncNow": "Sincronizza ora",
+      "termsOfService": "Termini di Servizio",
+      "privacyPolicy": "Privacy Policy",
+      "licenses": "Licenze open-source"
+    },
+    "about": {
+      "version": "Versione",
+      "buildNumber": "Build",
+      "developer": "Sviluppatore",
+      "website": "Sito web",
+      "sourceCode": "Codice sorgente",
+      "rateApp": "Valuta l'app"
+    },
+    "licensesPage": {
+      "title": "Licenze e Note Legali",
+      "appLicenseTitle": "Licenza G-Scanner",
+      "appLicenseCopyright": "Copyright (c) 2026 Emanuele Ciotola. Tutti i diritti riservati.",
+      "appLicenseBody": "G-Scanner è un software closed-source e proprietario. Il codice sorgente è reso pubblicamente visibile (\"Source-Available\") esclusivamente a scopo di trasparenza, verifica tecnica e portfolio personale.",
+      "appLicenseAsk": "Per qualsiasi dubbio, consulta la ",
+      "appLicenseLink": "Licenza Completa",
+      "dataSourceTitle": "Fonte Dati",
+      "dataSourcePre": "I dati sui prodotti sono forniti dalla community di ",
+      "dataSourceMid": ". I dati sono rilasciati sotto licenza ",
+      "dataSourceDisclaimer": "Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico.",
+      "openSourceTitle": "Librerie Open Source"
+    }
+  }
+}

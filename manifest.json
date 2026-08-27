@@ -1,0 +1,59 @@
+{
+    "//": "Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved. PROJECT: G-Scanner — See LICENSE file in root for terms.",
+    "id": "/webapp/",
+    "name": "G-Scanner | Food Scanner",
+    "short_name": "G-Scanner",
+    "description": "Scan food barcodes with G-Scanner. Instantly discover gluten, suspicious additives, or lactose. Free and ad-free!",
+    "lang": "en",
+    "dir": "ltr",
+    "start_url": "/webapp/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "theme_color": "#BFDEB4",
+    "background_color": "#FAF9FC",
+    "categories": [
+        "health",
+        "food",
+        "lifestyle",
+        "medical"
+    ],
+    "prefer_related_applications": false,
+    "shortcuts": [
+        {
+            "name": "Start a new scan",
+            "short_name": "Scan Now",
+            "description": "Quickly scan a new barcode",
+            "url": "/webapp/",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ],
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

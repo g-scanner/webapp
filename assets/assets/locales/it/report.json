@@ -1,0 +1,67 @@
+{
+  "report": {
+    "ui": {
+      "showProductCard": "Mostra scheda prodotto",
+      "ingredientsAllergensNotes": "Ingredienti, allergeni e note.",
+      "previousStatus": "STATO PRECEDENTE",
+      "resultFromOnOff": "Risultato registrato da Open Food Facts",
+      "reportDetails": "DETTAGLI SEGNALAZIONE",
+      "reasonLabel": "Motivo:",
+      "labelUnclear": "Etichetta poco chiara o ambigua",
+      "userComment": "Commento dell'utente",
+      "noAdditionalComment": "Nessun commento aggiuntivo fornito.",
+      "agreeQuestion": "Sei d'accordo con questa segnalazione?",
+      "outdated": "Informazione obsoleta / Ricetta cambiata",
+      "incorrectStatus": "Stato glutine errato",
+      "other": "Altro",
+      "generic": "Segnalazione generica",
+      "reportDate": {
+        "today": "Segnalato oggi, {time}",
+        "yesterday": "Segnalato ieri, {time}",
+        "default": "Segnalato il {date}, {time}"
+      },
+      "deleteConfirmTitle": "Eliminare segnalazione?",
+      "deleteConfirmBody": "Sei sicuro di voler eliminare questa segnalazione?"
+    },
+    "dropdown": {
+      "all": "Tutte",
+      "mine": "Le mie",
+      "deleteReport": "Elimina segnalazione"
+    },
+    "lists": {
+      "activeReports": "Segnalazioni attive",
+      "examineDetails": "Esamina dettagli segnalazione"
+    },
+    "title": "Dettaglio segnalazione",
+    "listTitle": "Segnalazioni attive",
+    "subtitle": "Consulta i prodotti con segnalazioni della community.",
+    "empty": {
+      "title": "Nessuna segnalazione disponibile",
+      "subtitle": "Non ci sono prodotti segnalati al momento.",
+      "mineTitle": "Nessuna segnalazione inviata",
+      "mineSubtitle": "Non hai ancora inviato alcuna segnalazione."
+    },
+    "search": {
+      "noResultsTitle": "Nessun risultato",
+      "noResults": "Nessun prodotto trovato per \"{query}\"."
+    },
+    "status": {
+      "open": "Aperta",
+      "inProgress": "In lavorazione",
+      "resolved": "Risolta",
+      "closed": "Chiusa"
+    },
+    "fields": {
+      "reportedAt": "Segnalato il",
+      "category": "Categoria",
+      "description": "Descrizione",
+      "product": "Prodotto",
+      "reporter": "Segnalato da"
+    },
+    "actions": {
+      "markResolved": "Segna come risolto",
+      "addComment": "Aggiungi commento",
+      "escalate": "Scala la segnalazione"
+    }
+  }
+}
