@@ -74,6 +74,7 @@ class _CameraModuleState extends State<CameraModule>
   bool _isProcessing = false;
   bool _isManualFocused = false;
   bool _isStarting = false;
+  bool _isRetrying = false; // Previene retry sovrapposti per falsi negativi (es. iOS memoria piena)
   Object? _cameraError;
 
   bool get _isMobile =>
@@ -200,20 +201,82 @@ class _CameraModuleState extends State<CameraModule>
       await _controller.start();
     } catch (e) {
       final errorString = e.toString().toLowerCase();
+
       // Su Web, il browser potrebbe tenere il video appeso. Ignoriamo questo "falso errore".
       if (errorString.contains('already running') ||
           errorString.contains('already playing')) {
         debugPrint('Web Camera already running, ignoring exception.');
-      } else {
+        _isStarting = false;
+        return;
+      }
+
+      final category = categorizeCameraError(e);
+
+      if (category == CameraErrorCategory.permissionDenied) {
+        // 1. Mostra subito l'errore permessi per dare feedback immediato all'utente.
         if (mounted) {
-          setState(() {
-            _cameraError = e;
-          });
+          setState(() => _cameraError = e);
+        }
+        // 2. Su iOS Web con memoria piena il permesso potrebbe essere un falso negativo:
+        //    Safari non riesce a salvare la preferenza. Avvia un retry silenzioso in background.
+        _schedulePermissionRetry();
+      } else {
+        // Errore hardware/memoria: nessun retry, mostra subito l'overlay corretto.
+        if (mounted) {
+          setState(() => _cameraError = e);
         }
       }
     } finally {
       _isStarting = false;
     }
+  }
+
+  /// Attende 1 secondo e ritenta silenziosamente l'avvio della fotocamera.
+  /// Usato per gestire i falsi negativi di permesso su Safari iOS con memoria piena.
+  ///
+  /// Esiti possibili:
+  /// - Successo: la fotocamera parte, l'overlay errore sparisce da solo (via ValueListenableBuilder).
+  /// - Hardware/Memoria: aggiorna lo stato mostrando l'errore corretto.
+  /// - Permesso negato di nuovo: non fa nulla, lascia visibile l'overlay permessi attuale.
+  void _schedulePermissionRetry() {
+    if (_isRetrying) return;
+    _isRetrying = true;
+
+    Future.delayed(const Duration(seconds: 1), () async {
+      if (!mounted) {
+        _isRetrying = false;
+        return;
+      }
+
+      // Non ritentare se nel frattempo il widget è diventato inattivo o la camera è già partita.
+      if (!widget.isActive || _controller.value.isRunning) {
+        _isRetrying = false;
+        return;
+      }
+
+      try {
+        await _controller.start();
+        // Retry riuscito (raro): rimuove l'overlay errore. Il ValueListenableBuilder
+        // si aggiorna automaticamente tramite lo stato del controller.
+        if (mounted) {
+          setState(() => _cameraError = null);
+        }
+      } catch (e) {
+        final retryCategory = categorizeCameraError(e);
+
+        if (retryCategory == CameraErrorCategory.hardwareOrMemory) {
+          // Il permesso era valido ma la fotocamera ha fallito per risorse esaurite:
+          // aggiorna l'overlay con il messaggio hardware/memoria, più accurato.
+          if (mounted) {
+            setState(() => _cameraError = e);
+          }
+        }
+        // Se è ancora permesso negato: non fare nulla.
+        // L'overlay "permessi" già visibile è corretto in questo caso.
+      } finally {
+        _isRetrying = false;
+      }
+    });
   }
 
   void _onManualFocusChange() {

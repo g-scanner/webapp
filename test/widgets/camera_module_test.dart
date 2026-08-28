@@ -33,6 +33,12 @@ class TestMobileScannerController extends MobileScannerController {
   bool shouldThrowOnStart = false;
   bool shouldThrowHardwareError = false;
 
+  // Comportamento a due fasi per testare il retry su iOS "falso negativo":
+  // Al primo start() lancia permissionDenied, al secondo start() lancia hardware
+  bool throwPermissionThenHardware = false;
+  // Al primo start() lancia permissionDenied, al secondo start() ha successo
+  bool throwPermissionThenSucceed = false;
+
   @override
   Future<void> start({
     CameraFacing? cameraDirection,
@@ -40,6 +46,7 @@ class TestMobileScannerController extends MobileScannerController {
     int? timeout,
   }) async {
     startCallCount++;
+
     if (shouldThrowOnStart) {
       throw const MobileScannerException(
         errorCode: MobileScannerErrorCode.permissionDenied,
@@ -48,6 +55,30 @@ class TestMobileScannerController extends MobileScannerController {
     if (shouldThrowHardwareError) {
       throw Exception('DOMException: NotReadableError: Could not start video source');
     }
+
+    // Fase 1: primo tentativo → permissionDenied
+    // Fase 2: secondo tentativo → hardware error (simula memoria piena)
+    if (throwPermissionThenHardware) {
+      if (startCallCount == 1) {
+        throw const MobileScannerException(
+          errorCode: MobileScannerErrorCode.permissionDenied,
+        );
+      } else {
+        throw Exception('DOMException: NotReadableError: Could not start video source');
+      }
+    }
+
+    // Fase 1: primo tentativo → permissionDenied
+    // Fase 2: secondo tentativo → successo (simula falso negativo risolto)
+    if (throwPermissionThenSucceed) {
+      if (startCallCount == 1) {
+        throw const MobileScannerException(
+          errorCode: MobileScannerErrorCode.permissionDenied,
+        );
+      }
+      // startCallCount >= 2: cade nel blocco successivo e ha successo
+    }
+
     value = value.copyWith(isRunning: true, error: null);
   }
 
@@ -257,10 +288,14 @@ void main() {
         errorController.shouldThrowOnStart = true;
 
         await _pumpCameraModule(tester, cb: cb, controller: errorController);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
         expect(find.byIcon(Icons.flashlight_off), findsNothing);
         expect(find.byIcon(Icons.flashlight_on), findsNothing);
+
+        // Svuota il timer del retry silenzioso per evitare timersPending
+        await tester.pump(const Duration(seconds: 2));
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -285,12 +320,16 @@ void main() {
       errorController.shouldThrowOnStart = true;
 
       await _pumpCameraModule(tester, cb: cb, controller: errorController);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(
         find.text('scanner.camera.permissionDeniedMobile'),
         findsOneWidget,
       );
+
+      // Svuota il timer del retry silenzioso per evitare timersPending
+      await tester.pump(const Duration(seconds: 2));
     });
 
     testWidgets('3A-2: permission error shows error_outline icon', (tester) async {
@@ -304,10 +343,14 @@ void main() {
       errorController.shouldThrowOnStart = true;
 
       await _pumpCameraModule(tester, cb: cb, controller: errorController);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
       expect(find.byIcon(Icons.memory_outlined), findsNothing);
+
+      // Svuota il timer del retry silenzioso per evitare timersPending
+      await tester.pump(const Duration(seconds: 2));
     });
 
     testWidgets('3A-3: permission error on mobile shows openSettings button',
@@ -324,10 +367,14 @@ void main() {
         errorController.shouldThrowOnStart = true;
 
         await _pumpCameraModule(tester, cb: cb, controller: errorController);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
         expect(find.text('scanner.camera.openSettings'), findsOneWidget);
         expect(find.text('scanner.camera.retry'), findsNothing);
+
+        // Svuota il timer del retry silenzioso per evitare timersPending
+        await tester.pump(const Duration(seconds: 2));
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -344,14 +391,19 @@ void main() {
         controller: throwController,
         isActive: true,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(
         find.text('scanner.camera.permissionDeniedMobile'),
         findsOneWidget,
       );
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
+
+      // Svuota il timer del retry silenzioso per evitare timersPending
+      await tester.pump(const Duration(seconds: 2));
     });
+
 
     // ── 3B Hardware / Memory Error ──────────────────────────────────────────
 
@@ -462,6 +514,118 @@ void main() {
 
       // The overlay must be visible with hardware message
       expect(find.text('scanner.camera.hardwareOrMemoryError'), findsOneWidget);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 3C – Permission Retry (iOS false-negative / full-storage edge case)
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 3C – Permission Retry (iOS false-negative / full-storage)', () {
+    testWidgets(
+        '3C-1: permission denied shows immediately, retry escalates to hardware overlay',
+        (tester) async {
+      final retryController = TestMobileScannerController();
+      retryController.throwPermissionThenHardware = true;
+
+      await _pumpCameraModule(
+        tester,
+        cb: cb,
+        controller: retryController,
+        isActive: true,
+      );
+
+      // Dopo il primo start(), UI mostra subito l'overlay permessi
+      await tester.pump(); // primo frame post-initState
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('scanner.camera.permissionDeniedMobile'), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+
+      // Avanza oltre il delay del retry (1 secondo)
+      await tester.pump(const Duration(seconds: 2));
+
+      // Dopo il retry, il controller ha lanciato hardware error:
+      // la UI deve aggiornare all'overlay hardware/memoria
+      expect(find.text('scanner.camera.hardwareOrMemoryError'), findsOneWidget);
+      expect(find.byIcon(Icons.memory_outlined), findsOneWidget);
+      // Il vecchio overlay permessi non deve essere più visibile
+      expect(find.text('scanner.camera.permissionDeniedMobile'), findsNothing);
+    });
+
+    testWidgets(
+        '3C-2: permission denied mostra subito errore, retry con successo torna alla camera',
+        (tester) async {
+      final retryController = TestMobileScannerController();
+      retryController.throwPermissionThenSucceed = true;
+
+      await _pumpCameraModule(
+        tester,
+        cb: cb,
+        controller: retryController,
+        isActive: true,
+      );
+
+      // Primo frame: overlay permessi visibile
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('scanner.camera.permissionDeniedMobile'), findsOneWidget);
+
+      // Avanza oltre il delay del retry
+      await tester.pump(const Duration(seconds: 2));
+
+      // Retry riuscito: il controller è in running, l'overlay errore scompare
+      expect(find.text('scanner.camera.permissionDeniedMobile'), findsNothing);
+      expect(find.text('scanner.camera.hardwareOrMemoryError'), findsNothing);
+      expect(find.byType(MobileScanner), findsOneWidget);
+    });
+
+    testWidgets(
+        '3C-3: permission denied ripetuto al retry non cambia la UI (overlay permessi resta)',
+        (tester) async {
+      final retryController = TestMobileScannerController();
+      retryController.shouldThrowOnStart = true; // Entrambi i tentativi falliscono con permesso
+
+      await _pumpCameraModule(
+        tester,
+        cb: cb,
+        controller: retryController,
+        isActive: true,
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('scanner.camera.permissionDeniedMobile'), findsOneWidget);
+
+      // Avanza oltre il delay del retry
+      await tester.pump(const Duration(seconds: 2));
+
+      // Il retry ha ri-lanciato permissionDenied: la UI resta invariata (overlay permessi)
+      expect(find.text('scanner.camera.permissionDeniedMobile'), findsOneWidget);
+      expect(find.text('scanner.camera.hardwareOrMemoryError'), findsNothing);
+    });
+
+    testWidgets(
+        '3C-4: il retry non parte se il widget è stato dismesso durante il delay',
+        (tester) async {
+      final retryController = TestMobileScannerController();
+      retryController.throwPermissionThenHardware = true;
+
+      await _pumpCameraModule(
+        tester,
+        cb: cb,
+        controller: retryController,
+        isActive: true,
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      // Dismetti il widget prima che scada il delay del retry
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+
+      // Avanza il tempo: il retry non deve lanciare eccezioni
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(find.byType(CameraModule), findsNothing);
     });
   });
 
