@@ -223,7 +223,73 @@
       bottom: 0;
       right: 0;
     }
+
+    /* Fix per iOS Safari: forza il video a rimanere confinato nel widget Flutter */
+    video {
+      object-fit: cover !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      position: relative !important;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
   </style>
+  <!-- Fix iOS Safari: impedisce l'apertura del player nativo a schermo intero e garantisce il rendering inline -->
+  <script>
+    (function() {
+      function enforceInlineVideo(video) {
+        if (!video || !(video instanceof HTMLVideoElement)) return;
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('muted', 'true');
+        video.setAttribute('autoplay', 'true');
+        video.muted = true;
+        video.playsInline = true;
+        video.controls = false;
+        video.removeAttribute('controls');
+      }
+
+      function scanAndEnforce() {
+        try {
+          const videos = document.querySelectorAll('video');
+          videos.forEach(enforceInlineVideo);
+        } catch (_) {}
+      }
+
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          mutation.addedNodes.forEach(function(node) {
+            if (node.nodeType === 1) {
+              if (node.tagName === 'VIDEO') {
+                enforceInlineVideo(node);
+              } else if (node.querySelectorAll) {
+                const videos = node.querySelectorAll('video');
+                videos.forEach(enforceInlineVideo);
+              }
+            }
+          });
+        });
+      });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          scanAndEnforce();
+          observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true
+          });
+        });
+      } else {
+        scanAndEnforce();
+        observer.observe(document.documentElement, {
+          childList: true,
+          subtree: true
+        });
+      }
+    })();
+  </script>
   <script id="splash-screen-script">
     function removeSplashFromWeb() {
       document.getElementById("splash")?.remove();
