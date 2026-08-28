@@ -10,6 +10,40 @@ import 'package:easy_localization/easy_localization.dart';
 import '../theme/app_theme.dart';
 import '../utils/web_camera_helper.dart';
 
+/// Categoria di errore della fotocamera
+enum CameraErrorCategory {
+  /// Permesso negato o bloccato dall'utente/OS
+  permissionDenied,
+
+  /// Memoria piena, NotReadableError, AbortError o guasto hardware
+  hardwareOrMemory,
+}
+
+/// Analizza l'eccezione della fotocamera e la mappa sulla categoria corretta.
+CameraErrorCategory categorizeCameraError(Object error) {
+  if (error is MobileScannerException) {
+    if (error.errorCode == MobileScannerErrorCode.permissionDenied) {
+      return CameraErrorCategory.permissionDenied;
+    }
+  }
+
+  final errorStr = error.toString().toLowerCase();
+
+  // Controlli per permessi negati
+  if (errorStr.contains('permission') ||
+      errorStr.contains('denied') ||
+      errorStr.contains('notallowederror') ||
+      errorStr.contains('not allowed') ||
+      errorStr.contains('securityerror') ||
+      errorStr.contains('restricted') ||
+      errorStr.contains('unauthorized')) {
+    return CameraErrorCategory.permissionDenied;
+  }
+
+  // NotReadableError, AbortError, esaurimento memoria o fallimento hardware
+  return CameraErrorCategory.hardwareOrMemory;
+}
+
 class CameraModule extends StatefulWidget {
   final MobileScannerController? controller;
   final Future<void> Function(String barcode) onScanSuccess;
@@ -532,12 +566,26 @@ class _CameraModuleState extends State<CameraModule>
 
   Widget _buildInPageErrorOverlay(Object? error) {
     final colorScheme = context.colorScheme;
-    // Su Web i browser restituiscono stringhe d'errore incoerenti: evitiamo il parsing.
+    final category = error != null
+        ? categorizeCameraError(error)
+        : CameraErrorCategory.permissionDenied;
+
     final String cleanMessage;
-    if (kIsWeb) {
-      cleanMessage = "scanner.camera.permissionDeniedWeb".tr();
-    } else {
-      cleanMessage = "scanner.camera.permissionDeniedMobile".tr();
+    final IconData iconData;
+
+    switch (category) {
+      case CameraErrorCategory.permissionDenied:
+        iconData = Icons.error_outline;
+        if (kIsWeb) {
+          cleanMessage = "scanner.camera.permissionDeniedWeb".tr();
+        } else {
+          cleanMessage = "scanner.camera.permissionDeniedMobile".tr();
+        }
+        break;
+      case CameraErrorCategory.hardwareOrMemory:
+        iconData = Icons.memory_outlined;
+        cleanMessage = "scanner.camera.hardwareOrMemoryError".tr();
+        break;
     }
 
     return Container(
@@ -548,7 +596,7 @@ class _CameraModuleState extends State<CameraModule>
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 48),
+            Icon(iconData, color: Colors.white, size: 48),
             const SizedBox(height: 16),
             Text(
               cleanMessage,
@@ -560,8 +608,8 @@ class _CameraModuleState extends State<CameraModule>
               ),
               textAlign: TextAlign.center,
             ),
-            // Su Web nessun bottone: l'utente deve agire sul browser (lucchetto URL)
-            if (!kIsWeb) ...[
+            // Su Mobile con errore permessi mostra Impostazioni
+            if (!kIsWeb && category == CameraErrorCategory.permissionDenied) ...[
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: () async {
@@ -570,6 +618,20 @@ class _CameraModuleState extends State<CameraModule>
                 },
                 icon: const Icon(Icons.refresh, size: 18),
                 label: Text('scanner.camera.openSettings'.tr()),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primaryContainer,
+                  foregroundColor: colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ] else if (category == CameraErrorCategory.hardwareOrMemory) ...[
+              // Bottone Riprova per errore hardware/memoria
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () async {
+                  await _startCamera();
+                },
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text('scanner.camera.retry'.tr()),
                 style: FilledButton.styleFrom(
                   backgroundColor: colorScheme.primaryContainer,
                   foregroundColor: colorScheme.onPrimaryContainer,
