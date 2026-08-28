@@ -16,9 +16,11 @@
       "notFound": "Not found"
     },
     "camera": {
-      "permissionDeniedWeb": "Permesso fotocamera negato o hardware non disponibile.\nClicca sull'icona del lucchetto nella barra degli indirizzi del browser per consentire l'accesso, poi ricarica la pagina.",
+      "permissionDeniedWeb": "Permesso fotocamera negato.\nClicca sull'icona del lucchetto nella barra degli indirizzi del browser per consentire l'accesso, poi ricarica la pagina.",
       "permissionDeniedMobile": "Permesso fotocamera negato.\nConcedi l'accesso alla fotocamera nelle impostazioni del dispositivo.",
-      "openSettings": "Impostazioni"
+      "hardwareOrMemoryError": "Impossibile avviare la fotocamera. Il problema potrebbe essere causato dalla memoria del dispositivo piena o da un errore hardware. Prova a liberare spazio sul dispositivo, ricarica la pagina e riprova.",
+      "openSettings": "Impostazioni",
+      "retry": "Riprova"
     },
     "overlay": {
       "scanHint": "Inquadra il codice a barre",
