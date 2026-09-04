@@ -1,8 +1,4 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
-void stopWebMediaTracks() {}
-
-void setupWebVisibilityListener(void Function(bool isVisible) onVisibilityChanged) {}
-
-void removeWebVisibilityListener() {}
+export '../core/utils/web_camera_helper_stub.dart';

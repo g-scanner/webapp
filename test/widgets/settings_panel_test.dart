@@ -9,8 +9,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:gscanner/models/models.dart';
+import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/widgets/settings_panel.dart';
 import 'package:gscanner/widgets/licenses_screen.dart';
 import '../mocks/shared_mocks.dart';
@@ -91,6 +93,7 @@ void main() {
 
   late MockCallbacks cb;
   late MockFirebaseAuth auth;
+  late MockFirebaseFirestore mockDb;
   late MockUser user;
   late MockUserMetadata metadata;
 
@@ -104,8 +107,15 @@ void main() {
   setUp(() {
     cb = MockCallbacks();
     auth = MockFirebaseAuth();
+    mockDb = MockFirebaseFirestore();
     user = MockUser();
     metadata = MockUserMetadata();
+
+    // Inject mocks into DbService static fields so account-deletion helpers
+    // use the mock instances instead of FirebaseAuth/Firestore singletons.
+    // Note: no tearDown needed — setUp re-injects fresh mocks before every test.
+    DbService.auth = auth;
+    DbService.db = mockDb;
 
     when(() => cb.onSettingsChange(any())).thenAnswer((_) async {});
     when(() => cb.onResetDB()).thenAnswer((_) async {});
