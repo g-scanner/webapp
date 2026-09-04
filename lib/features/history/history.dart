@@ -1,4 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
-export '../features/history/history_list.dart';
+export 'history_list.dart';
+export 'widgets/widgets.dart';
