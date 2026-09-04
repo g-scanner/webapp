@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:gscanner/theme/theme_notifier.dart';
-import 'package:gscanner/theme/app_theme.dart';
+import 'package:gscanner/core/theme/theme.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

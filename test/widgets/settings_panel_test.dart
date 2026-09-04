@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget Tests: SettingsPanel
 
 // ignore_for_file: subtype_of_sealed_class
@@ -12,8 +12,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/db_service.dart';
-import 'package:gscanner/widgets/settings_panel.dart';
-import 'package:gscanner/widgets/licenses_screen.dart';
+import 'package:gscanner/features/settings/settings_panel.dart';
+import 'package:gscanner/features/licenses/licenses_screen.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

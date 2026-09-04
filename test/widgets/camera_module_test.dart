@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget Tests: CameraModule
 
 // ignore_for_file: subtype_of_sealed_class
@@ -11,7 +11,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import 'package:gscanner/widgets/camera_module.dart';
+import 'package:gscanner/features/scanner/camera_module.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget & Business Logic Tests: AuthScreen
 
 import 'package:flutter/material.dart';
@@ -9,7 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:gscanner/widgets/auth_screen.dart';
+import 'package:gscanner/features/auth/auth_screen.dart';
 import 'package:gscanner/services/db_service.dart';
 import '../mocks/shared_mocks.dart';
 

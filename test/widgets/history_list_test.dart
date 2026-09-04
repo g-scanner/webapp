@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget & Business Logic Tests: HistoryList
 
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:gscanner/models/models.dart';
-import 'package:gscanner/widgets/history_list.dart';
+import 'package:gscanner/features/history/history_list.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

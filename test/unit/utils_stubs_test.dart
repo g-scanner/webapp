@@ -1,9 +1,9 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Pure Unit Tests: Utils Platform Stubs
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/utils/camera_permission_stub.dart';
-import 'package:gscanner/utils/popup_tracker_stub.dart';
+import 'package:gscanner/core/utils/camera_permission_stub.dart';
+import 'package:gscanner/core/utils/popup_tracker_stub.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

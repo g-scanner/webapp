@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Pure Unit Tests: OffApiClient
 
 import 'dart:async';
@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
-import 'package:gscanner/services/off_api_client.dart';
+import 'package:gscanner/core/network/off_api_client.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────

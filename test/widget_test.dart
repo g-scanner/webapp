@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 // This is a basic Flutter widget test.
 
@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:gscanner/widgets/auth_screen.dart';
+import 'package:gscanner/features/auth/auth_screen.dart';
 import 'mocks/shared_mocks.dart';
 
 void main() {

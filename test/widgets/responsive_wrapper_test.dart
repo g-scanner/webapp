@@ -1,9 +1,9 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget Tests: ResponsiveMaxCardWidth
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/widgets/responsive_wrapper.dart';
+import 'package:gscanner/core/utils/responsive_wrapper.dart';
 import '../mocks/shared_mocks.dart';
 
 Future<void> _pumpWrapper(

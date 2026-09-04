@@ -1,9 +1,9 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Pure Unit Tests: Camera Error Categorization
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:gscanner/widgets/camera_module.dart';
+import 'package:gscanner/features/scanner/camera_module.dart';
 
 void main() {
   group('Camera Error Categorization Unit Tests', () {

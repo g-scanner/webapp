@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:gscanner/widgets/sync_data_screen.dart';
+import 'features/sync/sync_data_screen.dart';
 import 'firebase_options.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -14,18 +14,17 @@ import 'package:easy_localization/easy_localization.dart';
 import 'models/models.dart';
 import 'services/analyzer_service.dart';
 import 'services/db_service.dart';
-import 'theme/app_theme.dart';
-import 'theme/theme_notifier.dart';
+import 'core/theme/theme.dart';
 
-import 'widgets/camera_module.dart';
-import 'widgets/history_list.dart';
-import 'widgets/reports_list.dart';
-import 'widgets/settings_panel.dart';
-import 'widgets/product_detail_card.dart';
-import 'widgets/report_detail_card.dart';
+import 'features/scanner/camera_module.dart';
+import 'features/history/history_list.dart';
+import 'features/reports/reports_list.dart';
+import 'features/settings/settings_panel.dart';
+import 'features/product_detail/product_detail_card.dart';
+import 'features/reports/report_detail_card.dart';
 
-import 'widgets/auth_screen.dart';
-import 'widgets/responsive_wrapper.dart';
+import 'features/auth/auth_screen.dart';
+import 'core/utils/responsive_wrapper.dart';
 import 'core/localization/modular_asset_loader.dart';
 
 void main() async {

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget & Business Logic Tests: ReportDetailCard
 
 // ignore_for_file: unused_import
@@ -12,8 +12,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:gscanner/models/models.dart';
-import 'package:gscanner/widgets/report_detail_card.dart';
-import 'package:gscanner/widgets/product_detail_card.dart';
+import 'package:gscanner/features/reports/report_detail_card.dart';
+import 'package:gscanner/features/product_detail/product_detail_card.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

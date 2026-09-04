@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../core/theme/theme.dart';
 import '../../models/models.dart';
-import '../../widgets/responsive_wrapper.dart';
+import '../../core/utils/responsive_wrapper.dart';
 import '../product_detail/product_detail_card.dart';
 import 'widgets/report_voting_section.dart';
 

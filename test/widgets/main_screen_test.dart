@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget Tests: MyApp & MainScreen Orchestrators
 
 // ignore_for_file: subtype_of_sealed_class
@@ -15,12 +15,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:gscanner/main.dart';
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/db_service.dart';
-import 'package:gscanner/theme/theme_notifier.dart';
-import 'package:gscanner/widgets/auth_screen.dart';
-import 'package:gscanner/widgets/camera_module.dart';
-import 'package:gscanner/widgets/settings_panel.dart';
-import 'package:gscanner/widgets/product_detail_card.dart';
-import 'package:gscanner/widgets/sync_data_screen.dart';
+import 'package:gscanner/core/theme/theme_notifier.dart';
+import 'package:gscanner/features/auth/auth_screen.dart';
+import 'package:gscanner/features/scanner/camera_module.dart';
+import 'package:gscanner/features/settings/settings_panel.dart';
+import 'package:gscanner/features/product_detail/product_detail_card.dart';
+import 'package:gscanner/features/sync/sync_data_screen.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
