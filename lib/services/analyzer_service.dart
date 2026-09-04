@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:easy_localization/easy_localization.dart';
-import '../models/types.dart';
+import '../models/models.dart';
 
 class OffTags {
   final List<String> allergensTags;

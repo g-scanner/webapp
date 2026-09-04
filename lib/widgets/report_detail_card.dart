@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../models/types.dart';
+import '../models/models.dart';
 import '../theme/app_theme.dart';
 import 'responsive_wrapper.dart';
 import 'product_detail_card.dart';

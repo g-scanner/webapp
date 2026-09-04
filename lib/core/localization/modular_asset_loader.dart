@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// PROJECT: G-Scanner — See LICENSE file in root for terms.
+
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -14,16 +17,23 @@ class ModularAssetLoader extends AssetLoader {
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final jsonAssets = manifest
         .listAssets()
-        .where((key) => key.startsWith('assets/locales/$languageCode/') && key.endsWith('.json'))
+        .where(
+          (key) =>
+              key.startsWith('assets/locales/$languageCode/') &&
+              key.endsWith('.json'),
+        )
         .toList();
 
     for (final assetPath in jsonAssets) {
       try {
         final String content = await rootBundle.loadString(assetPath);
-        final Map<String, dynamic> jsonMap = json.decode(content) as Map<String, dynamic>;
+        final Map<String, dynamic> jsonMap =
+            json.decode(content) as Map<String, dynamic>;
         mergedResult.addAll(jsonMap);
       } catch (e) {
-        debugPrint("ERRORE CRITICO: Il file JSON $assetPath è malformato o mancante! Errore: $e");
+        debugPrint(
+          "ERRORE CRITICO: Il file JSON $assetPath è malformato o mancante! Errore: $e",
+        );
       }
     }
 

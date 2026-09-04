@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' show SetOptions;
 import 'package:http/http.dart' as http;
 
-import 'package:gscanner/models/types.dart';
+import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/services/analyzer_service.dart';
 import '../mocks/shared_mocks.dart';

@@ -13,7 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:gscanner/main.dart';
-import 'package:gscanner/models/types.dart';
+import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/theme/theme_notifier.dart';
 import 'package:gscanner/widgets/auth_screen.dart';

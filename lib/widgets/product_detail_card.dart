@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../models/types.dart';
+import '../models/models.dart';
 import 'responsive_wrapper.dart';
 import '../services/analyzer_service.dart';
 

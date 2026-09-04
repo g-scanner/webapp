@@ -11,7 +11,7 @@ import 'firebase_options.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-import 'models/types.dart';
+import 'models/models.dart';
 import 'services/analyzer_service.dart';
 import 'services/db_service.dart';
 import 'theme/app_theme.dart';
@@ -26,7 +26,7 @@ import 'widgets/report_detail_card.dart';
 
 import 'widgets/auth_screen.dart';
 import 'widgets/responsive_wrapper.dart';
-import 'utils/modular_asset_loader.dart';
+import 'core/localization/modular_asset_loader.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -3,7 +3,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/utils/modular_asset_loader.dart';
+import 'package:gscanner/core/localization/modular_asset_loader.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

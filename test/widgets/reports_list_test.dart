@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:gscanner/models/types.dart';
+import 'package:gscanner/models/models.dart';
 import 'package:gscanner/widgets/reports_list.dart';
 import 'package:gscanner/widgets/report_detail_card.dart';
 import '../mocks/shared_mocks.dart';

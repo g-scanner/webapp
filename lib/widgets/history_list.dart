@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../models/types.dart';
+import '../models/models.dart';
 import '../services/analyzer_service.dart';
 import '../theme/app_theme.dart';
 import 'package:skeletonizer/skeletonizer.dart';

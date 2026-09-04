@@ -7,7 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/services/analyzer_service.dart';
 import 'package:gscanner/widgets/report_detail_card.dart';
-import '../models/types.dart';
+import '../models/models.dart';
 import '../theme/app_theme.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 

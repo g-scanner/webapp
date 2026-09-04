@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:gscanner/widgets/licenses_screen.dart';
-import '../models/types.dart';
+import '../models/models.dart';
 import '../services/db_service.dart';
 
 import '../theme/app_theme.dart';

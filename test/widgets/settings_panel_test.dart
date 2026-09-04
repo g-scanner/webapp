@@ -10,7 +10,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:gscanner/models/types.dart';
+import 'package:gscanner/models/models.dart';
 import 'package:gscanner/widgets/settings_panel.dart';
 import 'package:gscanner/widgets/licenses_screen.dart';
 import '../mocks/shared_mocks.dart';
