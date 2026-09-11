@@ -561,7 +561,7 @@ void main() {
       expect(AnalyzerService.checkLactose('', ['en:soy']), isFalse);
     });
 
-    test('analyzeGlutenSafety with alertLactose = true appends lactose warning and red entry', () {
+    test('analyzeGlutenSafety with alertLactose does not pollute gluten analysis results', () {
       final res = AnalyzerService.analyzeGlutenSafety(
         name: 'Yogurt Intero',
         brand: 'Dairy',
@@ -573,20 +573,16 @@ void main() {
       );
 
       expect(res.status, GlutenSafetyStatus.adatto); // Gluten-wise safe
-      expect(res.reason, contains('🥛'));
+      expect(res.reason.contains('🥛'), isFalse);
       expect(
-        res.ingredientsAnalyzed.any((i) => i.ingredient == 'latte' && i.dangerLevel == 'danger'),
-        isTrue,
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isFalse,
       );
     });
 
-    // ── BUCO 1 ──────────────────────────────────────────────────────────────
     test(
-        'OFF tag en:milk triggers "Allergene Latte (OFF)" when ingredient text is clean '
-        '(hasMilk && foundLactose.isEmpty branch)',
+        'OFF tag en:milk does not pollute gluten analysis even if alertLactose is true',
         () {
-      // Ingredienti senza nessuna parola casearia → foundLactose.isEmpty sarà true
-      // ma offTags.allergensTags contiene 'en:milk' → deve aggiungere la voce speciale
       final res = AnalyzerService.analyzeGlutenSafety(
         name: 'Cracker Salati',
         brand: 'Brand',
@@ -596,18 +592,17 @@ void main() {
         categoriesTags: [],
         alertLactose: true,
         offTags: OffTags(
-          allergensTags: ['en:milk'], // tag ufficiale OFF, non citato negli ingredienti
+          allergensTags: ['en:milk'],
           tracesTags: [],
           labelsTags: [],
           ingredientsAnalysisTags: [],
         ),
       );
 
-      // Lo stato glutine non cambia (mais + olio + sale = safe category non attiva, ma niente glutine)
-      expect(res.reason, contains('🥛'));
+      expect(res.reason.contains('🥛'), isFalse);
       expect(
         res.ingredientsAnalyzed.any((i) => i.ingredient == 'Allergene Latte (OFF)'),
-        isTrue,
+        isFalse,
       );
     });
   });
@@ -790,7 +785,7 @@ void main() {
       );
     });
 
-    test('identifies German compound whole milk powder (vollmilchpulver) as adatto with lactose reason when alertLactose is true', () {
+    test('identifies German compound whole milk powder (vollmilchpulver) as adatto on gluten and checkLactose as true', () {
       final res = AnalyzerService.analyzeGlutenSafety(
         name: 'Milchpulver',
         brand: 'Bio',
@@ -802,11 +797,12 @@ void main() {
       );
 
       expect(res.status, GlutenSafetyStatus.adatto);
-      expect(res.reason, contains('product.analysis.lactoseAlert'));
+      expect(res.reason.contains('🥛'), isFalse);
       expect(
         res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
-        isTrue,
+        isFalse,
       );
+      expect(AnalyzerService.checkLactose('vollmilchpulver', []), isTrue);
     });
 
     test('buckwheat flour (grano saraceno) is NOT flagged as wheat (Safe / adatto)', () {

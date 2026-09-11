@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget Tests: MyApp & MainScreen Orchestrators
 
 // ignore_for_file: subtype_of_sealed_class
@@ -21,6 +21,7 @@ import 'package:gscanner/features/scanner/camera_module.dart';
 import 'package:gscanner/features/settings/settings_panel.dart';
 import 'package:gscanner/features/product_detail/product_detail_card.dart';
 import 'package:gscanner/features/sync/sync_data_screen.dart';
+import 'package:gscanner/core/network/connectivity_helper.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -405,6 +406,9 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
   group('GROUP 5 – Scan Barcode Handler & Product Detail Navigation', () {
     testWidgets('handleScanSuccess pushes ProductDetailCard', (tester) async {
+      ConnectivityHelper.mockIsConnected = true;
+      addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
       final testProduct = Product(
         barcode: '8001234567890',
         nameMap: const {'it': 'Pasta Senza Glutine'},
@@ -412,6 +416,7 @@ void main() {
         ingredientsMap: const {'it': 'Farina di riso'},
         allergensMap: const {'it': <String>[]},
         lastUpdated: DateTime.now().toIso8601String(),
+        fetchedFromOffAt: DateTime.now().toIso8601String(),
         pendingReportsCount: 0,
       );
       await DbService.saveLocalProducts([testProduct]);

@@ -44,6 +44,7 @@ class _CameraModuleState extends State<CameraModule>
   bool _isManualFocused = false;
   bool _isStarting = false;
   bool _isRetrying = false;
+  Timer? _retryTimer;
   Object? _cameraError;
 
   @override
@@ -134,6 +135,7 @@ class _CameraModuleState extends State<CameraModule>
     _manualFocusNode.dispose();
     _manualCodeController.dispose();
 
+    _retryTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -191,8 +193,9 @@ class _CameraModuleState extends State<CameraModule>
   void _schedulePermissionRetry() {
     if (_isRetrying) return;
     _isRetrying = true;
+    _retryTimer?.cancel();
 
-    Future.delayed(const Duration(seconds: 1), () async {
+    _retryTimer = Timer(const Duration(seconds: 1), () async {
       if (!mounted) {
         _isRetrying = false;
         return;

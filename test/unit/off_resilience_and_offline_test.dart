@@ -300,9 +300,9 @@ void main() {
       final fresh = DateTime.now().subtract(const Duration(days: 29)).toIso8601String();
       final p = Product(
         barcode: '444',
-        nameMap: {},
+        nameMap: {'it': 'Pasta Buona'},
         brandMap: {},
-        ingredientsMap: {},
+        ingredientsMap: {'it': 'Farina di riso'},
         allergensMap: {},
         lastUpdated: fresh,
         fetchedFromOffAt: fresh,

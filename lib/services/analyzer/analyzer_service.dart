@@ -181,31 +181,7 @@ class AnalyzerService {
       foundDoubtful = AdditivesChecker.findDoubtfulAdditives(lowerIng);
     }
 
-    // ─── STEP 6: Filtro Lattosio ────────────────────────────────────────────
-    List<String> foundLactose = [];
-    if (alertLactose) {
-      final String safeLactoseIng = GlutenRules.sanitizeForLactose(lowerIng);
-      for (String l in LactoseChecker.lactoseKeywords) {
-        final isAgglutinative = GlutenRules.agglutinativeRoots.contains(l);
-        final regex = isAgglutinative
-            ? RegExp(RegExp.escape(l), caseSensitive: false)
-            : RegExp(r'\b' + RegExp.escape(l) + r'\b', caseSensitive: false);
-        if (regex.hasMatch(safeLactoseIng)) foundLactose.add(l);
-      }
-      if (offTags != null) {
-        bool hasMilk = offTags.allergensTags.any(
-          (t) =>
-              t.toLowerCase().contains('milk') ||
-              t.toLowerCase().contains('lait') ||
-              t.toLowerCase().contains('milch'),
-        );
-        if (hasMilk && foundLactose.isEmpty) {
-          foundLactose.add("Allergene Latte (OFF)");
-        }
-      }
-    }
-
-    // ─── STEP 7: Naturalmente Sicuro ─────────────────────────────────────────
+    // ─── STEP 6: Naturalmente Sicuro ─────────────────────────────────────────
     bool isInSafeCategory = categoriesTags.any(
       (cat) => GlutenRules.naturallySafeCategories.contains(cat.toLowerCase()),
     );
@@ -220,7 +196,7 @@ class AnalyzerService {
         !hasMalto &&
         foundDoubtful.isEmpty;
 
-    // ─── STEP 8: Informazioni sufficienti? ──────────────────────────────────
+    // ─── STEP 7: Informazioni sufficienti? ──────────────────────────────────
     bool hasNoInfo =
         lowerIng.length < 5 &&
         !hasGlutenFreeBollino &&
@@ -228,7 +204,7 @@ class AnalyzerService {
         !hasOffGlutenTrace &&
         !hasGlutenFreeTextClaim;
 
-    // ─── STEP 9: DETERMINA LO STATUS FINALE SUL GLUTINE ─────────────────────
+    // ─── STEP 8: DETERMINA LO STATUS FINALE SUL GLUTINE ─────────────────────
     GlutenSafetyStatus status;
     String reason;
     List<IngredientAnalyzed> ingredientsAnalyzed = [];

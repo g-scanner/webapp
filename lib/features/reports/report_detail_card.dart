@@ -293,9 +293,11 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         size: 20,
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        "common.actions.deleteReportConfirmTitle".tr(),
-                        style: TextStyle(color: colorScheme.error),
+                      Expanded(
+                        child: Text(
+                          "common.actions.deleteReportConfirmTitle".tr(),
+                          style: TextStyle(color: colorScheme.error),
+                        ),
                       ),
                     ],
                   ),
