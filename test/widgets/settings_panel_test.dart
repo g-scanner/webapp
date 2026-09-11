@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget Tests: SettingsPanel
 
 // ignore_for_file: subtype_of_sealed_class
@@ -1110,6 +1110,8 @@ void main() {
           matching: find.byType(FilledButton),
         );
         await tester.tap(confirmBtn);
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
         verify(() => user.delete()).called(1);
@@ -1143,6 +1145,8 @@ void main() {
           matching: find.byType(FilledButton),
         );
         await tester.tap(confirmBtn);
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
         // Forces signOut on requires-recent-login exception

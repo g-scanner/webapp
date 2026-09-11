@@ -14,6 +14,7 @@ class MainNavigationController extends ChangeNotifier {
       GlobalKey<NavigatorState>();
   final Map<String, ValueNotifier<Product?>> openProductNotifiers = {};
   final Map<String, ValueNotifier<String?>> openReportIdNotifiers = {};
+  final Map<String, ValueNotifier<bool>> openStaleNotifiers = {};
 
   int get currentIndex => _currentIndex;
   bool get isCameraActive => _isCameraActive;

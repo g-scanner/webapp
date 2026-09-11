@@ -223,6 +223,7 @@ class OffIngestionService {
     required FirebaseFirestore db,
     required Product product,
     required UserSettings settings,
+    void Function(Product freshProduct)? onRefreshed,
   }) async {
     // Se il prodotto è Super Fresco (0 - 7 giorni), nessun refresh in background è necessario!
     if (product.isSuperFresh) return;
@@ -247,6 +248,9 @@ class OffIngestionService {
             // Contenuto invariato: aggiorna solo la data locale per prolungare la validità senza scritture Firestore
             await LocalCacheService.upsertLocalProduct(newOffProduct);
           }
+          // Notifica chi ne ha bisogno (es. main_screen per aggiornare productNotifier)
+          // che il prodotto è stato rinfrescato con successo.
+          onRefreshed?.call(newOffProduct);
         }
       }).catchError((e) {
         debugPrint("Background OFF stale refresh error: $e");

@@ -144,10 +144,17 @@ class Product {
   /// Riconosciuto dall'assenza completa di ingredienti e di nomi in lingua.
   bool get isGhostProduct => !hasIngredientData && nameMap.isEmpty;
 
-  /// Restituisce la finestra temporale di freschezza del prodotto secondo l'architettura a 3 livelli:
+  /// Restituisce la finestra temporale di freschezza del prodotto secondo l'architettura a 3 livelli.
+  ///
+  /// **Prodotti completi** (con ingredienti):
   /// - [ProductFreshnessWindow.superFresh] (0 - 7 giorni): Ritorno immediato, zero chiamate di rete.
   /// - [ProductFreshnessWindow.tolerance] (8 - 30 giorni): Ritorno immediato con check asincrono fire-and-forget.
-  /// - [ProductFreshnessWindow.hardStale] (> 30 giorni, incompleto o ghost > 24h): Check sincrono bloccante.
+  /// - [ProductFreshnessWindow.hardStale] (> 30 giorni): Check sincrono bloccante.
+  ///
+  /// **Prodotti senza dati** (Ghost o Incompleto — nessun ingrediente):
+  /// - [ProductFreshnessWindow.superFresh] (0 - 24 ore): Appena fetchato, inutile richiedere di nuovo.
+  /// - [ProductFreshnessWindow.tolerance] (25 ore - 7 giorni): OFF potrebbe aver aggiornato i dati.
+  /// - [ProductFreshnessWindow.hardStale] (> 7 giorni): Quasi certamente OFF ha dati nuovi.
   ProductFreshnessWindow get freshnessWindow {
     final dateStr = (fetchedFromOffAt != null && fetchedFromOffAt!.trim().isNotEmpty)
         ? fetchedFromOffAt!
@@ -158,19 +165,17 @@ class Product {
 
     final diff = DateTime.now().difference(fetchedDate);
 
-    // REGOLA AUREOLA GHOST PRODUCT: TTL massimo di 24 ore
-    if (isGhostProduct) {
-      return diff.inHours >= 24
-          ? ProductFreshnessWindow.hardStale
-          : ProductFreshnessWindow.superFresh;
-    }
-
-    // Se mancano dati critici sugli ingredienti, è incompleto -> Hard Stale
+    // REGOLA PRODOTTI SENZA DATI (Ghost + Incompleto): stessa finestra 24h / 7gg.
+    // Ghost = non trovato su OFF (nameMap vuoto + no ingredienti).
+    // Incompleto = trovato su OFF ma senza lista ingredienti.
+    // Entrambi beneficiano di check frequenti perché OFF aggiorna continuamente.
     if (!hasIngredientData) {
+      if (diff.inHours < 24) return ProductFreshnessWindow.superFresh;
+      if (diff.inDays < 7) return ProductFreshnessWindow.tolerance;
       return ProductFreshnessWindow.hardStale;
     }
 
-    // Prodotto normale con ingredienti
+    // PRODOTTI NORMALI (con ingredienti): finestra standard 7 / 30 giorni.
     if (diff.inDays <= 7) {
       return ProductFreshnessWindow.superFresh;
     } else if (diff.inDays < 30) {

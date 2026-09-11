@@ -8,6 +8,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:gscanner/models/models.dart';
+import 'package:gscanner/core/core.dart';
 import 'package:gscanner/features/product_detail/product_detail_card.dart';
 import '../mocks/shared_mocks.dart';
 
@@ -104,6 +105,7 @@ void main() {
     bool passViewReportCallback = true,
     bool isStaleData = false,
     ValueNotifier<bool>? isStaleDataNotifier,
+    Future<void> Function(String barcode)? onRefreshOnline,
   }) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -137,6 +139,7 @@ void main() {
               : null,
           isStaleData: isStaleData,
           isStaleDataNotifier: isStaleDataNotifier,
+          onRefreshOnline: onRefreshOnline,
         ),
       ),
     );
@@ -686,6 +689,84 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('product.warnings.staleDataTitle'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Stale Data: removes warning card when productNotifier emits fresh (non-stale) product',
+      (WidgetTester tester) async {
+        final staleProduct = createSampleProduct(
+          lastUpdated: DateTime.now().subtract(const Duration(days: 35)).toIso8601String(),
+        );
+        final productNotifier = ValueNotifier<Product?>(staleProduct);
+        final staleNotifier = ValueNotifier<bool>(true);
+
+        await pumpProductDetailCard(
+          tester,
+          product: staleProduct,
+          productNotifier: productNotifier,
+          isStaleDataNotifier: staleNotifier,
+        );
+
+        // All'inizio è stale -> card visibile
+        expect(find.text('product.warnings.staleDataTitle'), findsOneWidget);
+
+        // Viene fatto il check/refresh online: nuovo prodotto fresco
+        final freshProduct = createSampleProduct(
+          lastUpdated: DateTime.now().toIso8601String(),
+        );
+        productNotifier.value = freshProduct;
+        await tester.pumpAndSettle();
+
+        // L'avviso DEVE sparire automaticamente
+        expect(find.text('product.warnings.staleDataTitle'), findsNothing);
+        expect(staleNotifier.value, isFalse);
+      },
+    );
+
+    testWidgets(
+      'Stale Data: automatically triggers onRefreshOnline when connectivity is restored',
+      (WidgetTester tester) async {
+        ConnectivityHelper.mockIsConnected = false;
+        final staleProduct = createSampleProduct(
+          lastUpdated: DateTime.now().subtract(const Duration(days: 35)).toIso8601String(),
+        );
+        final productNotifier = ValueNotifier<Product?>(staleProduct);
+        final staleNotifier = ValueNotifier<bool>(true);
+        bool refreshOnlineCalled = false;
+
+        await pumpProductDetailCard(
+          tester,
+          product: staleProduct,
+          productNotifier: productNotifier,
+          isStaleDataNotifier: staleNotifier,
+          onRefreshOnline: (barcode) async {
+            refreshOnlineCalled = true;
+            final freshProduct = createSampleProduct(
+              barcode: barcode,
+              lastUpdated: DateTime.now().toIso8601String(),
+            );
+            productNotifier.value = freshProduct;
+          },
+        );
+
+        // All'inizio è offline -> non chiama refresh, card visibile
+        expect(find.text('product.warnings.staleDataTitle'), findsOneWidget);
+        expect(refreshOnlineCalled, isFalse);
+
+        // Il dispositivo torna online
+        ConnectivityHelper.mockIsConnected = true;
+
+        // Avanza il timer di retry (3 secondi)
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pumpAndSettle();
+
+        // Ha invocato onRefreshOnline e la card è sparita!
+        expect(refreshOnlineCalled, isTrue);
+        expect(find.text('product.warnings.staleDataTitle'), findsNothing);
+        expect(staleNotifier.value, isFalse);
+
+        ConnectivityHelper.mockIsConnected = null;
       },
     );
   });

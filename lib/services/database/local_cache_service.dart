@@ -7,15 +7,26 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
+import 'daos/product_dao.dart';
+import 'daos/sync_metadata_dao.dart';
 
 const String productsCollection = "products";
 
+/// Servizio per la gestione della cache locale dei prodotti alimentari e delta-sync.
+/// I dati sono memorizzati su SQLite (sqflite) per evitare saturazione della memoria RAM.
 class LocalCacheService {
   static const String productsKey = 'celiac_products_cache';
   static const String lastSyncKey = 'celiac_app_last_sync_time';
 
+  static const ProductDao _productDao = ProductDao();
+  static const SyncMetadataDao _syncMetadataDao = SyncMetadataDao();
+
+  /// Recupera tutti i prodotti salvati nella cache locale SQLite.
   static Future<List<Product>> getLocalProducts() async {
     try {
+      final fromDb = await _productDao.getAllProducts();
+      if (fromDb.isNotEmpty) return fromDb;
+
       final prefs = await SharedPreferences.getInstance();
       final list = prefs.getStringList(productsKey) ?? [];
       final List<Product> result = [];
@@ -25,65 +36,64 @@ class LocalCacheService {
           if (decoded is Map<String, dynamic>) {
             result.add(Product.fromJson(decoded));
           }
-        } catch (err) {
-          debugPrint("Error decoding single local product: $err");
-        }
+        } catch (_) {}
       }
       return result;
     } catch (e) {
-      debugPrint("Error loading local products: $e");
+      debugPrint("Error loading local products from SQLite: $e");
       return [];
     }
   }
 
+  /// Recupera un singolo prodotto per barcode direttamente con query SQL indicizzata.
   static Future<Product?> getLocalProductByBarcode(String barcode) async {
-    final list = await getLocalProducts();
     try {
-      return list.firstWhere((p) => p.barcode == barcode);
-    } catch (_) {
+      return await _productDao.getProductByBarcode(barcode);
+    } catch (e) {
+      debugPrint("Error fetching product by barcode from SQLite: $e");
       return null;
     }
   }
 
+  /// Salva o aggiorna un elenco di prodotti nel database SQLite.
   static Future<void> saveLocalProducts(List<Product> products) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(
-        productsKey,
-        products.map((p) => json.encode(p.toJson())).toList(),
-      );
+      await _productDao.upsertProducts(products);
     } catch (e) {
-      debugPrint("Error saving local products: $e");
+      debugPrint("Error saving local products to SQLite: $e");
     }
   }
 
+  /// Inserisce o aggiorna un singolo prodotto nel database SQLite.
   static Future<void> upsertLocalProduct(Product product) async {
     try {
-      final products = await getLocalProducts();
-      final index = products.indexWhere((p) => p.barcode == product.barcode);
-      if (index != -1) {
-        products[index] = product;
-      } else {
-        products.insert(0, product);
-      }
-      await saveLocalProducts(products);
+      await _productDao.upsertProduct(product);
     } catch (e) {
-      debugPrint("Error upserting local product: $e");
+      debugPrint("Error upserting local product into SQLite: $e");
     }
   }
 
+  /// Recupera il timestamp dell'ultima sincronizzazione delta.
   static Future<String?> getLastSyncTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(lastSyncKey);
+    try {
+      return await _syncMetadataDao.getMetadata(lastSyncKey);
+    } catch (e) {
+      debugPrint("Error getting last sync time: $e");
+      return null;
+    }
   }
 
+  /// Salva il timestamp dell'ultima sincronizzazione delta.
   static Future<void> saveLastSyncTime(String timeIso) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(lastSyncKey, timeIso);
+    try {
+      await _syncMetadataDao.setMetadata(lastSyncKey, timeIso);
+    } catch (e) {
+      debugPrint("Error saving last sync time: $e");
+    }
   }
 
   /// Delta Sync (Pilastro 2, Punto 3 & 4)
-  /// Fa una singola query a Firestore per scaricare SOLO i prodotti modificati dai mod:
+  /// Fa una singola query a Firestore per scaricare SOLO i prodotti modificati:
   /// `db.collection('products').where('last_updated', '>', app_last_sync_time)`
   static Future<List<Product>> performDeltaSync(FirebaseFirestore db) async {
     try {
@@ -106,26 +116,18 @@ class LocalCacheService {
           .map((d) => Product.fromJson(d.data()))
           .toList();
 
-      final localProducts = await getLocalProducts();
-      final Map<String, Product> productMap = {
-        for (var p in localProducts) p.barcode: p,
-      };
-
-      for (var p in updatedProducts) {
-        productMap[p.barcode] = p;
-      }
-
-      final newList = productMap.values.toList();
-      await saveLocalProducts(newList);
+      // Upsert batch in SQLite (massima efficienza, zero saturazione RAM)
+      await _productDao.upsertProducts(updatedProducts);
       await saveLastSyncTime(DateTime.now().toIso8601String());
 
-      return newList;
+      return await _productDao.getAllProducts();
     } catch (e) {
       debugPrint("Error performing delta sync: $e");
       return getLocalProducts();
     }
   }
 
+  /// Recupera un prodotto puntuale da Firestore e lo inserisce nella cache SQLite.
   static Future<Product?> getProductByBarcode(
     FirebaseFirestore db,
     String barcode,

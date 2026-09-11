@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../models/models.dart';
-import '../../core/theme/theme.dart';
-import '../../core/utils/utils.dart';
+import '../../core/core.dart';
 import '../../services/analyzer_service.dart';
 import 'widgets/widgets.dart';
 
@@ -34,6 +34,7 @@ class ProductDetailCard extends StatefulWidget {
   final void Function(Product product)? onViewReport;
   final bool isStaleData;
   final ValueNotifier<bool>? isStaleDataNotifier;
+  final Future<void> Function(String barcode)? onRefreshOnline;
 
   const ProductDetailCard({
     super.key,
@@ -57,6 +58,7 @@ class ProductDetailCard extends StatefulWidget {
     this.onViewReport,
     this.isStaleData = false,
     this.isStaleDataNotifier,
+    this.onRefreshOnline,
   });
 
   @override
@@ -87,8 +89,17 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     if (widget.isStaleDataNotifier != null) {
       return widget.isStaleDataNotifier!.value;
     }
+    // Se è disponibile un productNotifier live, il dato reattivo di currentProduct.isStale
+    // prevale sul bool congelato widget.isStaleData catturato al momento del build della route.
+    // Questo garantisce che il banner sparisca non appena il notifier emette un prodotto fresco.
+    if (widget.productNotifier != null) {
+      return currentProduct.isStale;
+    }
     return widget.isStaleData || currentProduct.isStale;
   }
+
+  Timer? _onlineRetryTimer;
+  bool _isRefreshingOnline = false;
 
   @override
   void initState() {
@@ -97,10 +108,56 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     widget.reportIdNotifier?.addListener(_onReportIdNotifierChanged);
     widget.isInHistoryNotifier?.addListener(_onIsInHistoryChanged);
     widget.isStaleDataNotifier?.addListener(_onStaleDataNotifierChanged);
+
+    // Se la card viene visualizzata in stato stale, avvia il listener/timer
+    // che effettua il check appena la connessione a Internet torna disponibile.
+    _initOnlineRefreshTimerIfNeeded();
+  }
+
+  void _initOnlineRefreshTimerIfNeeded() {
+    _onlineRetryTimer?.cancel();
+    if (!_isEffectiveStaleData || widget.onRefreshOnline == null) return;
+
+    // Esegui subito un primo tentativo asincrono rapido
+    _checkAndRefreshIfOnline();
+
+    // Se ancora stale, controlla periodicamente ogni 3 secondi se torna online
+    _onlineRetryTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!_isEffectiveStaleData || !mounted) {
+        _onlineRetryTimer?.cancel();
+        _onlineRetryTimer = null;
+        return;
+      }
+      _checkAndRefreshIfOnline();
+    });
+  }
+
+  Future<void> _checkAndRefreshIfOnline() async {
+    if (_isRefreshingOnline || !mounted || !_isEffectiveStaleData) return;
+    final isOnline = await ConnectivityHelper.hasInternetConnection();
+    if (!isOnline || !mounted || !_isEffectiveStaleData) return;
+
+    _isRefreshingOnline = true;
+    try {
+      if (widget.onRefreshOnline != null) {
+        await widget.onRefreshOnline!(currentProduct.barcode);
+      }
+    } catch (_) {
+      // Ignora errori di rete momentanei, il timer riproverà
+    } finally {
+      if (mounted) {
+        _isRefreshingOnline = false;
+        if (!_isEffectiveStaleData) {
+          _onlineRetryTimer?.cancel();
+          _onlineRetryTimer = null;
+        }
+      }
+    }
   }
 
   @override
   void dispose() {
+    _onlineRetryTimer?.cancel();
     widget.productNotifier?.removeListener(_onProductNotifierChanged);
     widget.reportIdNotifier?.removeListener(_onReportIdNotifierChanged);
     widget.isInHistoryNotifier?.removeListener(_onIsInHistoryChanged);
@@ -110,6 +167,14 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   void _onProductNotifierChanged() {
+    // Quando il prodotto viene aggiornato (ad es. check online o delta sync),
+    // se non è più stale, azzera immediatamente il notifier dello stale data
+    // e cancella il timer di retry.
+    if (widget.isStaleDataNotifier != null && !currentProduct.isStale) {
+      widget.isStaleDataNotifier!.value = false;
+      _onlineRetryTimer?.cancel();
+      _onlineRetryTimer = null;
+    }
     if (mounted) setState(() {});
   }
 
@@ -122,7 +187,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   void _onStaleDataNotifierChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      if (!_isEffectiveStaleData) {
+        _onlineRetryTimer?.cancel();
+        _onlineRetryTimer = null;
+      } else {
+        _initOnlineRefreshTimerIfNeeded();
+      }
+      setState(() {});
+    }
   }
 
   String _translateGlutenStatus(GlutenSafetyStatus status) {

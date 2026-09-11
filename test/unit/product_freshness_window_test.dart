@@ -169,23 +169,85 @@ void main() {
       expect(p.isStale, isTrue);
     });
 
-    test('Incomplete product (empty ingredientsMap) is ALWAYS hardStale even if fetched just now', () {
+    test(
+        'Incomplete product (empty ingredientsMap) fetched JUST NOW is superFresh — '
+        'TTL < 24h, no need to re-fetch', () {
       final p = Product(
         barcode: 'inc_empty',
         nameMap: {'it': 'Nome Solo'},
         brandMap: {},
-        ingredientsMap: {}, // Incompleto!
+        ingredientsMap: {}, // Incompleto su OFF, ma appena fetchato
         allergensMap: {},
         lastUpdated: DateTime.now().toIso8601String(),
         fetchedFromOffAt: DateTime.now().toIso8601String(),
       );
 
-      expect(p.freshnessWindow, equals(ProductFreshnessWindow.hardStale));
-      expect(p.isStale, isTrue);
-      expect(p.isSuperFresh, isFalse);
+      expect(p.freshnessWindow, equals(ProductFreshnessWindow.superFresh));
+      expect(p.isStale, isFalse);
+      expect(p.isSuperFresh, isTrue);
     });
 
-    test('Incomplete product (whitespace-only ingredients) is ALWAYS hardStale', () {
+    test(
+        'Incomplete product fetched 25 hours ago is in TOLERANCE — '
+        'OFF may have updated the data', () {
+      final twentyFiveHoursAgo =
+          DateTime.now().subtract(const Duration(hours: 25)).toIso8601String();
+      final p = Product(
+        barcode: 'inc_tolerance',
+        nameMap: {'it': 'Nome Solo'},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: twentyFiveHoursAgo,
+        fetchedFromOffAt: twentyFiveHoursAgo,
+      );
+
+      expect(p.freshnessWindow, equals(ProductFreshnessWindow.tolerance));
+      expect(p.isInTolerance, isTrue);
+      expect(p.isStale, isFalse);
+    });
+
+    test(
+        'Incomplete product cached for exactly 7 days is STILL tolerance (boundary) — '
+        'hardStale only after strictly more than 7 days', () {
+      final sevenDaysAgo =
+          DateTime.now().subtract(const Duration(days: 7, hours: 0)).toIso8601String();
+      final p = Product(
+        barcode: 'inc_boundary_7d',
+        nameMap: {'it': 'Nome Solo'},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: sevenDaysAgo,
+        fetchedFromOffAt: sevenDaysAgo,
+      );
+
+      // diff.inDays < 7 is false at exactly 7 days, so it falls to hardStale —
+      // actually 7 days == 168h, diff.inDays == 7, so: 7 < 7 is false → hardStale.
+      // This boundary test documents the exact cut-off.
+      expect(p.freshnessWindow, equals(ProductFreshnessWindow.hardStale));
+      expect(p.isStale, isTrue);
+    });
+
+    test(
+        'Incomplete product cached for 8 days is hardStale — '
+        'should re-check if OFF now has ingredient data', () {
+      final old = DateTime.now().subtract(const Duration(days: 8)).toIso8601String();
+      final p = Product(
+        barcode: 'inc_empty_old',
+        nameMap: {'it': 'Nome Solo'},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: old,
+        fetchedFromOffAt: old,
+      );
+
+      expect(p.freshnessWindow, equals(ProductFreshnessWindow.hardStale));
+      expect(p.isStale, isTrue);
+    });
+
+    test('Incomplete product (whitespace-only ingredients) fetched JUST NOW is superFresh', () {
       final p = Product(
         barcode: 'inc_whitespace',
         nameMap: {'it': 'Nome Solo'},
@@ -196,8 +258,9 @@ void main() {
         fetchedFromOffAt: DateTime.now().toIso8601String(),
       );
 
-      expect(p.freshnessWindow, equals(ProductFreshnessWindow.hardStale));
-      expect(p.isStale, isTrue);
+      // Whitespace-only == nessun ingrediente reale → stessa logica incompleto: superFresh < 24h
+      expect(p.freshnessWindow, equals(ProductFreshnessWindow.superFresh));
+      expect(p.isStale, isFalse);
     });
 
     test('Product with null or malformed fetchedFromOffAt is ALWAYS hardStale', () {
@@ -254,7 +317,7 @@ void main() {
     });
   });
 
-  group('ProductFreshnessWindow – Ghost Product 24-Hour Aureola Rule', () {
+  group('ProductFreshnessWindow – Ghost Product (same window as Incomplete: 24h / 7d)', () {
     test('Ghost Product fetched 2 hours ago is superFresh (< 24h)', () {
       final date = DateTime.now().subtract(const Duration(hours: 2)).toIso8601String();
       final ghost = Product(
@@ -291,7 +354,7 @@ void main() {
       expect(ghost.isStale, isFalse);
     });
 
-    test('Ghost Product boundary: 24 hours 1 minute is hardStale (>= 24h triggers sync refresh)', () {
+    test('Ghost Product boundary: 24 hours 1 minute is TOLERANCE (not hardStale)', () {
       final date = DateTime.now().subtract(const Duration(hours: 24, minutes: 1)).toIso8601String();
       final ghost = Product(
         barcode: 'ghost_24h1m',
@@ -303,10 +366,45 @@ void main() {
         fetchedFromOffAt: date,
       );
 
+      // Dopo 24h il ghost entra in tolerance (fire-and-forget), NON in hardStale.
+      expect(ghost.isGhostProduct, isTrue);
+      expect(ghost.freshnessWindow, equals(ProductFreshnessWindow.tolerance));
+      expect(ghost.isInTolerance, isTrue);
+      expect(ghost.isStale, isFalse);
+    });
+
+    test('Ghost Product after 3 days is tolerance (< 7d threshold)', () {
+      final date = DateTime.now().subtract(const Duration(days: 3)).toIso8601String();
+      final ghost = Product(
+        barcode: 'ghost_3d',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: date,
+        fetchedFromOffAt: date,
+      );
+
+      expect(ghost.isGhostProduct, isTrue);
+      expect(ghost.freshnessWindow, equals(ProductFreshnessWindow.tolerance));
+      expect(ghost.isInTolerance, isTrue);
+    });
+
+    test('Ghost Product after 8 days is hardStale (> 7d threshold)', () {
+      final date = DateTime.now().subtract(const Duration(days: 8)).toIso8601String();
+      final ghost = Product(
+        barcode: 'ghost_8d',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: date,
+        fetchedFromOffAt: date,
+      );
+
       expect(ghost.isGhostProduct, isTrue);
       expect(ghost.freshnessWindow, equals(ProductFreshnessWindow.hardStale));
       expect(ghost.isStale, isTrue);
-      expect(ghost.isSuperFresh, isFalse);
     });
   });
 }

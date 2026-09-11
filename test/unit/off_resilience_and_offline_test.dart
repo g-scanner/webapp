@@ -228,14 +228,16 @@ void main() {
       expect(result.product.nameMap['it'], 'Prodotto Vecchio');
     });
 
-    test('Incomplete product (no ingredients) WITHOUT network falls back to local cache', () async {
+    test(
+        'Incomplete product (no ingredients) fetched NOW offline is served as FRESH — '
+        'missing ingredients = OFF has no data, not a stale cache', () async {
       ConnectivityHelper.mockIsConnected = false;
 
       final incompleteProduct = Product(
         barcode: '8000000000030',
         nameMap: {'it': 'Solo Nome'},
         brandMap: {},
-        ingredientsMap: {}, // VUOTO: incompleto
+        ingredientsMap: {}, // VUOTO: prodotto incompleto su OFF ma appena fetchato
         allergensMap: {},
         lastUpdated: DateTime.now().toIso8601String(),
         fetchedFromOffAt: DateTime.now().toIso8601String(),
@@ -249,9 +251,40 @@ void main() {
         settings: testSettings,
       );
 
-      // Incompleto + offline → ScanResult.stale (fallback sicuro)
-      expect(result.isStaleResult, isTrue);
+      // Prodotto incompleto ma appena fetchato → superFresh → servito come fresh
+      // Il banner "DATI NON AGGIORNATI" NON deve comparire.
+      expect(result.isFresh, isTrue);
+      expect(result.isStaleResult, isFalse);
       expect(result.product.barcode, '8000000000030');
+    });
+
+    test(
+        'Incomplete product (no ingredients) cached >7 days offline falls back to stale cache — '
+        'old enough to warrant a re-check from OFF (incomplete threshold: 7 days)', () async {
+      ConnectivityHelper.mockIsConnected = false;
+
+      final old = DateTime.now().subtract(const Duration(days: 8)).toIso8601String();
+      final incompleteOldProduct = Product(
+        barcode: '8000000000031',
+        nameMap: {'it': 'Solo Nome Vecchio'},
+        brandMap: {},
+        ingredientsMap: {}, // VUOTO e VECCHIO (>7gg)
+        allergensMap: {},
+        lastUpdated: old,
+        fetchedFromOffAt: old,
+      );
+      await LocalCacheService.upsertLocalProduct(incompleteOldProduct);
+
+      final result = await OffIngestionService.scanBarcodeClientSide(
+        db: mockDb,
+        auth: mockAuth,
+        barcode: '8000000000031',
+        settings: testSettings,
+      );
+
+      // Incompleto E vecchio (>7gg) + offline → hardStale → ScanResult.stale
+      expect(result.isStaleResult, isTrue);
+      expect(result.product.barcode, '8000000000031');
     });
   });
 
@@ -740,8 +773,8 @@ void main() {
     });
   });
 
-  group('GROUP 10 – Ghost Product 24-Hour TTL Rule (Anti-Shadowing)', () {
-    test('Ghost Product created 2 hours ago is fresh (< 24h TTL)', () {
+  group('GROUP 10 – Ghost Product TTL Rule (same as Incomplete: 24h / 7d)', () {
+    test('Ghost Product created 2 hours ago is fresh (< 24h)', () {
       final ghost = Product(
         barcode: 'ghost_recent',
         nameMap: {},
@@ -754,9 +787,10 @@ void main() {
 
       expect(ghost.isGhostProduct, isTrue);
       expect(ghost.isStale, isFalse);
+      expect(ghost.isSuperFresh, isTrue);
     });
 
-    test('Ghost Product boundary: 23 hours 59 minutes is fresh (< 24h TTL)', () {
+    test('Ghost Product boundary: 23 hours 59 minutes is fresh (< 24h)', () {
       final ghostBoundaryFresh = Product(
         barcode: 'ghost_boundary_fresh',
         nameMap: {},
@@ -769,11 +803,12 @@ void main() {
 
       expect(ghostBoundaryFresh.isGhostProduct, isTrue);
       expect(ghostBoundaryFresh.isStale, isFalse);
+      expect(ghostBoundaryFresh.isSuperFresh, isTrue);
     });
 
-    test('Ghost Product boundary: 24 hours 1 minute is STALE (>= 24h TTL)', () {
-      final ghostBoundaryStale = Product(
-        barcode: 'ghost_boundary_stale',
+    test('Ghost Product boundary: 24 hours 1 minute is TOLERANCE (not hardStale)', () {
+      final ghostBoundaryTolerance = Product(
+        barcode: 'ghost_boundary_tolerance',
         nameMap: {},
         brandMap: {},
         ingredientsMap: {},
@@ -782,11 +817,13 @@ void main() {
         fetchedFromOffAt: DateTime.now().subtract(const Duration(hours: 24, minutes: 1)).toIso8601String(),
       );
 
-      expect(ghostBoundaryStale.isGhostProduct, isTrue);
-      expect(ghostBoundaryStale.isStale, isTrue);
+      // Ora entra in tolerance (background fire-and-forget), NON in hardStale
+      expect(ghostBoundaryTolerance.isGhostProduct, isTrue);
+      expect(ghostBoundaryTolerance.isInTolerance, isTrue);
+      expect(ghostBoundaryTolerance.isStale, isFalse);
     });
 
-    test('Ghost Product created 25 hours ago is STALE (> 24h TTL) and will trigger refresh', () {
+    test('Ghost Product created 25 hours ago is TOLERANCE (triggers background refresh)', () {
       final ghost = Product(
         barcode: 'ghost_old',
         nameMap: {},
@@ -798,7 +835,23 @@ void main() {
       );
 
       expect(ghost.isGhostProduct, isTrue);
-      expect(ghost.isStale, isTrue); // Regola Aureola: stale dopo 24 ore!
+      expect(ghost.isInTolerance, isTrue);
+      expect(ghost.isStale, isFalse); // Non ancora stale: c'è tutta la finestra di 7gg
+    });
+
+    test('Ghost Product after 8 days is hardStale (> 7d threshold)', () {
+      final ghost = Product(
+        barcode: 'ghost_very_old',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: DateTime.now().subtract(const Duration(days: 8)).toIso8601String(),
+        fetchedFromOffAt: DateTime.now().subtract(const Duration(days: 8)).toIso8601String(),
+      );
+
+      expect(ghost.isGhostProduct, isTrue);
+      expect(ghost.isStale, isTrue);
     });
 
     test('Normal product with ingredients is NOT stale after 25 hours (keeps 30-day TTL)', () {

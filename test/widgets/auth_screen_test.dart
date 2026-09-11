@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget & Business Logic Tests: AuthScreen
 
 import 'package:flutter/material.dart';
@@ -63,6 +63,8 @@ void main() {
         ),
       ),
     );
+    // Avanza il timer di eventuali SnackBar pendenti dal test precedente
+    await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
   }
 
@@ -328,7 +330,8 @@ void main() {
 
       final googleBtn = find.text('auth.social.continueWithGoogle');
       await tester.tap(googleBtn);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('auth.errors.googleSignInError'), findsOneWidget);
@@ -350,7 +353,10 @@ void main() {
 
       final fbBtn = find.text('auth.social.continueWithFacebook');
       await tester.tap(fbBtn);
-      await tester.pumpAndSettle();
+      // pumpAndSettle si blocca perché la SnackBar floating ha durata 4s
+      // (FakeAsync non avanza il tempo automaticamente).
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('auth.errors.facebookCancelled'), findsOneWidget);
@@ -370,7 +376,8 @@ void main() {
 
       final fbBtn = find.text('auth.social.continueWithFacebook');
       await tester.tap(fbBtn);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('auth.errors.facebookError'), findsOneWidget);
@@ -483,7 +490,8 @@ void main() {
 
         final fbBtn = find.text('auth.social.continueWithFacebook');
         await tester.tap(fbBtn);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 50));
 
         expect(find.byType(SnackBar), findsOneWidget);
         expect(
@@ -517,7 +525,8 @@ void main() {
 
         final fbBtn = find.text('auth.social.continueWithFacebook');
         await tester.tap(fbBtn);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 50));
 
         expect(find.byType(SnackBar), findsOneWidget);
         expect(find.text('auth.errors.firebaseError'), findsOneWidget);
@@ -535,7 +544,8 @@ void main() {
 
       final fbBtn = find.text('auth.social.continueWithFacebook');
       await tester.tap(fbBtn);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('auth.errors.facebookSignInError'), findsOneWidget);

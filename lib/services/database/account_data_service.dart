@@ -8,22 +8,58 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
+import 'daos/product_dao.dart';
+import 'daos/scan_history_dao.dart';
+import 'daos/product_report_dao.dart';
+import 'daos/sync_metadata_dao.dart';
 import 'local_cache_service.dart';
 import 'reports_db_service.dart' show reportsCollection;
 
+/// Servizio responsabile della migrazione dei dati anonimi post-login
+/// e della cancellazione/pulizia di tutti i dati locali.
 class AccountDataService {
+  static const ScanHistoryDao _historyDao = ScanHistoryDao();
+  static const ProductReportDao _reportDao = ProductReportDao();
+  static const ProductDao _productDao = ProductDao();
+  static const SyncMetadataDao _syncMetadataDao = SyncMetadataDao();
+
+  /// Recupera la cronologia creata in modalità anonima (non sincronizzata).
   static Future<List<ScanHistoryItem>> getLocalUnsyncedHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> histStr = prefs.getStringList('celiac_history') ?? [];
-    return histStr.map((e) => ScanHistoryItem.fromJson(json.decode(e))).toList();
+    try {
+      final list = await _historyDao.getHistory('anonymous');
+      if (list.isNotEmpty) return list;
+
+      // Fallback per test o sessioni legacy
+      final prefs = await SharedPreferences.getInstance();
+      final histStr = prefs.getStringList('celiac_history') ?? [];
+      return histStr
+          .map((e) => ScanHistoryItem.fromJson(json.decode(e) as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint("Error fetching unsynced history: $e");
+      return [];
+    }
   }
 
+  /// Recupera le segnalazioni create in modalità anonima.
   static Future<List<ProductReport>> getLocalUnsyncedReports() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> reportsStr = prefs.getStringList('celiac_reports') ?? [];
-    return reportsStr.map((e) => ProductReport.fromJson(json.decode(e))).toList();
+    try {
+      final list = await _reportDao.getUserReports('anonymous');
+      if (list.isNotEmpty) return list;
+
+      // Fallback per test o sessioni legacy
+      final prefs = await SharedPreferences.getInstance();
+      final reportsStr = prefs.getStringList('celiac_reports') ?? [];
+      return reportsStr
+          .map((e) => ProductReport.fromJson(json.decode(e) as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint("Error fetching unsynced reports: $e");
+      return [];
+    }
   }
 
+  /// Migra la cronologia e le segnalazioni locali anonime su Firestore al momento dell'autenticazione.
   static Future<void> migrateLocalDataToFirestore(
     FirebaseFirestore db,
     String newUid,
@@ -32,53 +68,61 @@ class AccountDataService {
       final prefs = await SharedPreferences.getInstance();
 
       // 1. MIGRAZIONE CRONOLOGIA
-      List<String> histStr = prefs.getStringList('celiac_history') ?? [];
-      if (histStr.isNotEmpty) {
-        final localHistory = histStr
-            .map((e) => ScanHistoryItem.fromJson(json.decode(e)))
+      var localHistory = await _historyDao.getHistory('anonymous');
+      if (localHistory.isEmpty) {
+        final histStr = prefs.getStringList('celiac_history') ?? [];
+        localHistory = histStr
+            .map((e) => ScanHistoryItem.fromJson(json.decode(e) as Map<String, dynamic>))
             .toList();
-
+      }
+      if (localHistory.isNotEmpty) {
         final historyBatch = db.batch();
         final historyRefBase = db.collection("users/$newUid/history");
 
-        for (var item in localHistory) {
+        for (final item in localHistory) {
           final docRef = historyRefBase.doc(
             item.id.isNotEmpty ? item.id : historyRefBase.doc().id,
           );
           historyBatch.set(docRef, item.toJson());
         }
         await historyBatch.commit();
+        await _historyDao.reassignAnonymousHistory(newUid);
       }
 
       // 2. MIGRAZIONE SEGNALAZIONI
-      List<String> reportsStr = prefs.getStringList('celiac_reports') ?? [];
-      if (reportsStr.isNotEmpty) {
-        final localReports = reportsStr
-            .map((e) => ProductReport.fromJson(json.decode(e)))
+      var localReports = await _reportDao.getUserReports('anonymous');
+      if (localReports.isEmpty) {
+        final reportsStr = prefs.getStringList('celiac_reports') ?? [];
+        localReports = reportsStr
+            .map((e) => ProductReport.fromJson(json.decode(e) as Map<String, dynamic>))
             .toList();
-
+      }
+      if (localReports.isNotEmpty) {
         final reportsBatch = db.batch();
-        for (var report in localReports) {
-          final docRef = db
-              .collection(reportsCollection)
-              .doc(report.id.isNotEmpty ? report.id : db.collection(reportsCollection).doc().id);
+        for (final report in localReports) {
+          final docRef = db.collection(reportsCollection).doc(
+            report.id.isNotEmpty ? report.id : db.collection(reportsCollection).doc().id,
+          );
           final rMap = report.toJson();
           rMap['userId'] = newUid;
           reportsBatch.set(docRef, rMap);
         }
         await reportsBatch.commit();
+        await _reportDao.reassignAnonymousReports(newUid);
       }
 
       // 3. REPORTED BARCODES
-      List<String> localReportedBarcodes =
-          prefs.getStringList('celiac_reported_barcodes') ?? [];
-      if (localReportedBarcodes.isNotEmpty) {
+      var reportedBarcodes = await _reportDao.getReportedBarcodes(newUid);
+      if (reportedBarcodes.isEmpty) {
+        reportedBarcodes = prefs.getStringList('celiac_reported_barcodes') ?? [];
+      }
+      if (reportedBarcodes.isNotEmpty) {
         await db.collection("users").doc(newUid).set({
-          'reportedBarcodes': FieldValue.arrayUnion(localReportedBarcodes),
+          'reportedBarcodes': FieldValue.arrayUnion(reportedBarcodes),
         }, SetOptions(merge: true));
       }
 
-      // 4. PULIZIA SHAREDPREFERENCES
+      // 4. Pulizia chiavi residue SharedPreferences se presenti
       await prefs.remove('celiac_history');
       await prefs.remove('celiac_reports');
       await prefs.remove('celiac_reported_barcodes');
@@ -87,17 +131,29 @@ class AccountDataService {
     }
   }
 
+  /// Svuota completamente tutti i dati locali (SQLite per entità, SharedPreferences per settings).
   static Future<void> wipeAllLocalData(FirebaseAuth auth) async {
     try {
+      // 1. Svuota tabelle SQLite
+      await _productDao.deleteAllProducts();
+      await _historyDao.wipeHistory('anonymous');
+      await _reportDao.wipeReports('anonymous');
+      await _syncMetadataDao.clearAll();
+
+      final user = auth.currentUser;
+      if (user != null) {
+        await _historyDao.wipeHistory(user.uid);
+        await _reportDao.wipeReports(user.uid);
+      }
+
+      // 2. Svuota SharedPreferences (settings e chiavi residue)
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('celiac_history');
-      await prefs.remove('celiac_reports');
-      await prefs.remove('celiac_reported_barcodes');
       await prefs.remove('celiac_settings');
       await prefs.remove(LocalCacheService.productsKey);
       await prefs.remove(LocalCacheService.lastSyncKey);
-
-      final user = auth.currentUser;
+      await prefs.remove('celiac_history');
+      await prefs.remove('celiac_reports');
+      await prefs.remove('celiac_reported_barcodes');
       if (user != null) {
         await prefs.remove('celiac_history_${user.uid}');
         await prefs.remove('celiac_reports_${user.uid}');
@@ -130,7 +186,6 @@ class AccountDataService {
           .doc(uid)
           .collection('history')
           .get();
-      // Chunked delete: Firestore WriteBatch max 500 ops — use 450 for safety margin
       const int chunkSize = 450;
       for (int i = 0; i < snapshot.docs.length; i += chunkSize) {
         final chunk = snapshot.docs.sublist(
@@ -156,7 +211,6 @@ class AccountDataService {
           .where('userId', isEqualTo: uid)
           .get();
       if (snapshot.docs.isEmpty) return;
-      // Chunked update: Firestore WriteBatch max 500 ops — use 450 for safety margin
       const int chunkSize = 450;
       for (int i = 0; i < snapshot.docs.length; i += chunkSize) {
         final chunk = snapshot.docs.sublist(

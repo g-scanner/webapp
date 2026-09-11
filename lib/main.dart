@@ -8,6 +8,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import 'firebase_options.dart';
+import 'services/database/app_database.dart';
 import 'core/theme/theme.dart';
 import 'core/localization/modular_asset_loader.dart';
 import 'features/auth/auth_screen.dart';
@@ -20,6 +21,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await EasyLocalization.ensureInitialized();
+  await AppDatabase.instance.database;
 
   usePathUrlStrategy();
 

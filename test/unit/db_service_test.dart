@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/services/analyzer_service.dart';
+import 'package:gscanner/services/database/app_database.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {
@@ -32,8 +33,9 @@ void main() {
     registerFallbackValue(SetOptions(merge: true));
   });
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    await AppDatabase.instance.initForTesting(inMemory: true);
 
     mockDb = MockFirebaseFirestore();
     mockAuth = MockFirebaseAuth();

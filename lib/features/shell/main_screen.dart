@@ -69,6 +69,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _navController.openProductNotifiers;
   Map<String, ValueNotifier<String?>> get _openReportIdNotifiers =>
       _navController.openReportIdNotifiers;
+  Map<String, ValueNotifier<bool>> get _openStaleNotifiers =>
+      _navController.openStaleNotifiers;
 
   bool _requiresSyncDecision = false;
   int _anonymousHistoryCount = 0;
@@ -387,6 +389,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           onDeleteReport: handleDeleteReport,
           onViewReport: (loadedProduct) =>
               _openReportDetail(context, loadedProduct),
+          onRefreshOnline: _refreshProductOnline,
         ),
       );
 
@@ -421,6 +424,22 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await _loadLocalHistory();
       isInHistoryNotifier.value = true;
       _fetchProducts();
+
+      // Se il risultato è stale (dispositivo offline o fallback da cache), avvia un check
+      // in background con callback: quando il prodotto viene rinfrescato da OFF,
+      // aggiorna productNotifier così che il banner stale sparisca automaticamente.
+      if (scanResult.isStaleResult) {
+        OffIngestionService.checkAndRefreshOffStaleCache(
+          db: DbService.db,
+          product: scanResult.product,
+          settings: userSettings,
+          onRefreshed: (freshProduct) {
+            if (_openProductNotifiers.containsKey(freshProduct.barcode)) {
+              _openProductNotifiers[freshProduct.barcode]!.value = freshProduct;
+            }
+          },
+        );
+      }
     } on OfflineWithoutDbException catch (e) {
       _handleScanError(e.localizationKey);
     } on OffNetworkException catch (e) {
@@ -446,6 +465,48 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(localizationKey.tr())));
+  }
+
+  /// Effettua il refresh asincrono da Open Food Facts per un prodotto attualmente
+  /// visualizzato e stale, non appena la connessione torna disponibile.
+  Future<void> _refreshProductOnline(String barcode) async {
+    try {
+      final offResult = await OffIngestionService.fetchOffProduct(
+        barcode,
+        userSettings,
+      );
+
+      Product? updatedProduct;
+      if (offResult.status == OffFetchStatus.found && offResult.product != null) {
+        updatedProduct = offResult.product!;
+      } else if (offResult.status == OffFetchStatus.notFound) {
+        // Se OFF conferma che non esiste, crea un ghost product fresco
+        final nowIso = DateTime.now().toIso8601String();
+        updatedProduct = Product(
+          barcode: barcode,
+          nameMap: {},
+          brandMap: {},
+          ingredientsMap: {},
+          allergensMap: {},
+          pendingReportsCount: 0,
+          lastUpdated: nowIso,
+          fetchedFromOffAt: nowIso,
+        );
+      }
+
+      if (updatedProduct != null) {
+        await DbService.upsertLocalProduct(updatedProduct);
+        if (_openProductNotifiers.containsKey(barcode)) {
+          _openProductNotifiers[barcode]!.value = updatedProduct;
+        }
+        if (_openStaleNotifiers.containsKey(barcode)) {
+          _openStaleNotifiers[barcode]!.value = false;
+        }
+        _fetchProducts();
+      }
+    } catch (e) {
+      debugPrint("Errore durante il refresh online del prodotto stale: $e");
+    }
   }
 
   Future<void> handleReportSubmit(
@@ -642,6 +703,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
     reportIdNotifier.value = userReport?.id;
 
+    // Crea il notifier reattivo per lo stato stale, inizializzato dal valore corrente.
+    // Viene passato al ProductDetailCard così che _onProductNotifierChanged
+    // possa azzerarlo quando il prodotto viene rinfrescato da delta sync o background check.
+    final staleNotifier = _openStaleNotifiers.putIfAbsent(
+      match.barcode,
+      () => ValueNotifier<bool>(match.isStale),
+    );
+    staleNotifier.value = match.isStale;
+
     final historyItem = history.cast<ScanHistoryItem?>().firstWhere(
       (h) => h?.barcode == match.barcode,
       orElse: () => null,
@@ -652,8 +722,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         product: match,
         productNotifier: notifier,
         reportIdNotifier: reportIdNotifier,
+        isStaleDataNotifier: staleNotifier,
         scannedAt: historyItem?.scannedAt,
-        isStaleData: match.isStale,
         onBack: () => Navigator.pop(context),
         onReportSubmit: handleReportSubmit,
         onProductUpdate: handleProductUpdate,
@@ -668,6 +738,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         onDeleteReport: handleDeleteReport,
         onViewReport: (loadedProduct) =>
             _openReportDetail(context, loadedProduct),
+        onRefreshOnline: _refreshProductOnline,
       ),
     );
 
@@ -683,6 +754,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     await pushFuture;
     _openProductNotifiers.remove(match.barcode);
     _openReportIdNotifiers.remove(match.barcode);
+    _openStaleNotifiers.remove(match.barcode)?.dispose();
 
     if (mounted) {
       setState(() => _navController.setCameraActive(true));

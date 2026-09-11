@@ -8,11 +8,26 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
+import 'daos/product_report_dao.dart';
 import 'local_cache_service.dart' show productsCollection;
 
 const String reportsCollection = "reports";
 
+/// Servizio per la gestione delle segnalazioni e della cronologia segnalazioni.
+/// I dati locali sono memorizzati in SQLite (sqflite) per evitare saturazione RAM.
 class ReportsDbService {
+  static const ProductReportDao _reportDao = ProductReportDao();
+
+  /// Identificatore logico dell'utente per il partizionamento dei report.
+  static String getUserId(FirebaseAuth auth) {
+    final user = auth.currentUser;
+    if (user != null && !user.isAnonymous) {
+      return user.uid;
+    }
+    return 'anonymous';
+  }
+
+  /// Mantiene compatibilità di interfaccia per eventuali test o chiamate storiche.
   static String getReportsKey(FirebaseAuth auth) {
     final user = auth.currentUser;
     if (user != null && !user.isAnonymous) {
@@ -21,11 +36,16 @@ class ReportsDbService {
     return 'celiac_reports';
   }
 
+  /// Recupera le segnalazioni locali dell'utente (cronologia segnalazioni).
   static Future<List<ProductReport>> fetchUserReports(FirebaseAuth auth) async {
     try {
+      final userId = getUserId(auth);
+      final fromDb = await _reportDao.getUserReports(userId);
+      if (fromDb.isNotEmpty) return fromDb;
+
       final key = getReportsKey(auth);
       final prefs = await SharedPreferences.getInstance();
-      List<String> reportsStr = prefs.getStringList(key) ?? [];
+      final reportsStr = prefs.getStringList(key) ?? [];
       final List<ProductReport> result = [];
       for (final e in reportsStr) {
         try {
@@ -33,17 +53,16 @@ class ReportsDbService {
           if (decoded is Map<String, dynamic>) {
             result.add(ProductReport.fromJson(decoded));
           }
-        } catch (err) {
-          debugPrint("Error decoding single local report: $err");
-        }
+        } catch (_) {}
       }
       return result;
     } catch (e) {
-      debugPrint("Error fetching local user reports: $e");
+      debugPrint("Error fetching local user reports from SQLite: $e");
       return [];
     }
   }
 
+  /// Sincronizza le segnalazioni con Firestore e aggiorna la cache locale SQLite.
   static Future<List<ProductReport>> syncReportsWithFirestore(
     FirebaseFirestore db,
     FirebaseAuth auth,
@@ -63,12 +82,7 @@ class ReportsDbService {
 
       remoteReports.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
 
-      final key = getReportsKey(auth);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(
-        key,
-        remoteReports.map((e) => json.encode(e.toJson())).toList(),
-      );
+      await _reportDao.setReports(user.uid, remoteReports);
       return remoteReports;
     } catch (e) {
       debugPrint("Error syncing user reports: $e");
@@ -86,14 +100,9 @@ class ReportsDbService {
     Map<String, dynamic> reportData,
   ) async {
     final user = auth.currentUser;
-    final userId = user?.uid ?? "anonymous";
-    final key = getReportsKey(auth);
+    final userId = getUserId(auth);
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      List<String> reportsStr = prefs.getStringList(key) ?? [];
-      List<dynamic> localReports = reportsStr.map((e) => json.decode(e)).toList();
-
       final reportId = db.collection(reportsCollection).doc().id;
       final nowIso = DateTime.now().toIso8601String();
 
@@ -109,13 +118,10 @@ class ReportsDbService {
         userId: userId,
       );
 
-      localReports.insert(0, finalReport.toJson());
-      await prefs.setStringList(
-        key,
-        localReports.map((e) => json.encode(e)).toList(),
-      );
+      // Persistenza locale SQLite immediata
+      await _reportDao.insertReport(finalReport);
 
-      // ATOMIC WRITE BATCH
+      // ATOMIC WRITE BATCH SU FIRESTORE
       final batch = db.batch();
 
       // 1. Doc in `reports`
@@ -138,13 +144,6 @@ class ReportsDbService {
       }
 
       await batch.commit();
-
-      // Salva barcode nei segnalati personali locali
-      List<String> reportedBarcodes = prefs.getStringList('celiac_reported_barcodes') ?? [];
-      if (!reportedBarcodes.contains(barcode)) {
-        reportedBarcodes.add(barcode);
-        await prefs.setStringList('celiac_reported_barcodes', reportedBarcodes);
-      }
 
       return finalReport;
     } catch (error) {
@@ -204,39 +203,37 @@ class ReportsDbService {
     }
   }
 
+  /// Elimina una segnalazione dal database locale SQLite.
   static Future<void> deleteLocalReport(
     FirebaseAuth auth,
     String reportId,
   ) async {
     try {
+      final userId = getUserId(auth);
+      await _reportDao.deleteReport(userId, reportId);
+
+      // Supporta pulizia prefs per test che iniettano in SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final key = getReportsKey(auth);
-      List<String> reportsStr = prefs.getStringList(key) ?? [];
-      List<ProductReport> reports = reportsStr
-          .map((e) => ProductReport.fromJson(json.decode(e)))
-          .toList();
-
-      final index = reports.indexWhere((r) => r.id == reportId);
-      if (index != -1) {
-        final reportToDelete = reports[index];
-        reports.removeAt(index);
-        await prefs.setStringList(
-          key,
-          reports.map((e) => json.encode(e.toJson())).toList(),
-        );
-
-        if (reportToDelete.barcode.isNotEmpty) {
-          List<String> reportedBarcodes =
-              prefs.getStringList('celiac_reported_barcodes') ?? [];
-          reportedBarcodes.remove(reportToDelete.barcode);
+      final reportsStr = prefs.getStringList(key) ?? [];
+      if (reportsStr.isNotEmpty) {
+        final reports = reportsStr
+            .map((e) => ProductReport.fromJson(json.decode(e) as Map<String, dynamic>))
+            .toList();
+        final index = reports.indexWhere((r) => r.id == reportId);
+        if (index != -1) {
+          final toDel = reports.removeAt(index);
           await prefs.setStringList(
-            'celiac_reported_barcodes',
-            reportedBarcodes,
+            key,
+            reports.map((e) => json.encode(e.toJson())).toList(),
           );
+          final barList = prefs.getStringList('celiac_reported_barcodes') ?? [];
+          barList.remove(toDel.barcode);
+          await prefs.setStringList('celiac_reported_barcodes', barList);
         }
       }
     } catch (e) {
-      debugPrint("Error deleting local report: $e");
+      debugPrint("Error deleting local report from SQLite: $e");
     }
   }
 

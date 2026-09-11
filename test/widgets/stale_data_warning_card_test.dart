@@ -31,7 +31,7 @@ void main() {
 
       expect(find.byType(StaleDataWarningCard), findsOneWidget);
       expect(find.byType(SectionCard), findsOneWidget);
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      expect(find.byIcon(Icons.safety_check_outlined), findsOneWidget);
 
       // SectionCard is caution styled with default grey background (identical to ProductWarningCard)
       final sectionCard = tester.widget<SectionCard>(find.byType(SectionCard));
