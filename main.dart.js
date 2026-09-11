@@ -112274,14 +112274,14 @@ A.aX5.prototype={
 $0(){this.a.l()},
 $S:9}
 A.aX8.prototype={
-$1(a){var s=null,r="settings.destructive.clearHistoryTitle",q=A.l(a).ax.a===B.E?B.a5:B.k,p=A.aW(24),o=A.T(A.x(r,s),s,s,s,A.Z(s,s,A.l(a).ax.k3,s,s,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s),n=A.x("settings.data.clearHistoryConfirm",s),m=A.l(a).ax,l=m.rx
-n=A.T(n,s,s,s,A.Z(s,s,l==null?m.k3:l,s,s,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s)
-m=A.l(a).ax
-l=m.rx
-m=A.eJ(s,s,s,s,s,s,s,s,s,l==null?m.k3:l,s,s,s,s,s,s,s,s,s,s)
-m=A.f_(A.T(A.x("common.actions.cancel",s),s,s,s,s,s,s),new A.aX6(a),m)
-l=A.eJ(s,s,s,s,s,s,s,s,s,A.l(a).ax.fy,s,s,s,s,s,s,s,s,s,s)
-return A.mK(A.b([m,A.f_(A.T(A.x(r,s),s,s,s,s,s,s),new A.aX7(a),l)],t.p),s,q,n,s,new A.bW(p,B.o),B.x,o)},
+$1(a){var s=null,r=A.l(a).ax.a===B.E?B.a5:B.k,q=A.aW(24),p=A.T(A.x("settings.destructive.clearHistoryTitle",s),s,s,s,A.Z(s,s,A.l(a).ax.k3,s,s,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s),o=A.x("settings.destructive.clearHistoryConfirm",s),n=A.l(a).ax,m=n.rx
+o=A.T(o,s,s,s,A.Z(s,s,m==null?n.k3:m,s,s,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s)
+n=A.l(a).ax
+m=n.rx
+n=A.eJ(s,s,s,s,s,s,s,s,s,m==null?n.k3:m,s,s,s,s,s,s,s,s,s,s)
+n=A.f_(A.T(A.x("common.actions.cancel",s),s,s,s,s,s,s),new A.aX6(a),n)
+m=A.eJ(s,s,s,s,s,s,s,s,s,A.l(a).ax.fy,s,s,s,s,s,s,s,s,s,s)
+return A.mK(A.b([n,A.f_(A.T(A.x("settings.destructive.clearHistoryAction",s),s,s,s,s,s,s),new A.aX7(a),m)],t.p),s,r,o,s,new A.bW(q,B.o),B.x,p)},
 $S:42}
 A.aX6.prototype={
 $0(){A.bP(this.a,!1).da(!1)
@@ -112586,7 +112586,7 @@ m=n.rx
 n=A.eJ(s,s,s,s,s,s,s,s,s,m==null?n.k3:m,s,s,s,s,s,s,s,s,s,s)
 n=A.f_(A.T(A.x("common.actions.cancel",s),s,s,s,s,s,s),new A.afj(a),n)
 m=A.eJ(s,s,s,s,s,s,s,s,s,A.l(a).ax.fy,s,s,s,s,s,s,s,s,s,s)
-return A.mK(A.b([n,A.f_(A.T(A.x("settings.account.signOutShort",s),s,s,s,s,s,s),new A.afk(a),m)],t.p),s,r,o,s,new A.bW(q,B.o),B.x,p)},
+return A.mK(A.b([n,A.f_(A.T(A.x("common.actions.signOut",s),s,s,s,s,s,s),new A.afk(a),m)],t.p),s,r,o,s,new A.bW(q,B.o),B.x,p)},
 $S:42}
 A.afj.prototype={
 $0(){A.bP(this.a,!1).da(!1)

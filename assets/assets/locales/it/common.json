@@ -29,6 +29,7 @@
       "retry": "Riprova",
       "close": "Chiudi",
       "delete": "Elimina",
+      "signOut": "Esci",
       "deleteHistoryConfirmTitle": "Elimina scansione",
       "deleteHistoryConfirmBody": "Sei sicuro di voler eliminare questa scansione dalla cronologia? Questa azione è irreversibile.",
       "deleteReportConfirmTitle": "Elimina segnalazione",

@@ -1,7 +1,7 @@
 {
   "settings": {
     "title": "Impostazioni",
-    "subtitle": "Gestisci il tuo profilo, l'analisi degli ingredienti e i dati salvati.",
+    "subtitle": "Gestisci e personalizza il tuo profilo.",
     "sectionTitles": {
       "account": "Il tuo Account",
       "analysisRules": "Regole di Analisi",
@@ -16,90 +16,43 @@
       "editName": "Modifica Nome",
       "editNameSubtitle": "Scegli come vuoi farti chiamare. Questo nome sarà visibile all'interno dell'app.",
       "editNameHint": "Es. Mario Rossi",
-      "linkedGoogle": "Collegato con Google",
       "signOut": "Esci dall'account",
-      "signOutShort": "Esci",
-      "signOutConfirmTitle": "Vuoi uscire?",
-      "signOutConfirmBody": "Uscendo dal tuo account, i dati salvati su questo dispositivo verranno rimossi per privacy.\nPotrai ripristinarli al prossimo accesso.",
+      "signOutConfirmTitle": "Disconnessione",
+      "signOutConfirmBody": "Uscendo dal tuo account, i dati salvati su questo dispositivo verranno rimossi.\nSaranno ripristinati al prossimo accesso.",
       "signingOut": "Uscita in corso...",
       "deleteAccount": "Elimina Account",
-      "deleteConfirmTitle": "Eliminazione Definitiva",
-      "deleteConfirmBody": "Sei sicuro di voler eliminare il tuo account e tutti i dati cloud? Questa azione è IRREVERSIBILE.\n\nSaranno eliminati:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nI tuoi report inseriti rimarranno ma verranno anonimizzati.",
+      "deleteConfirmTitle": "Eliminazione Account",
+      "deleteConfirmBody": "Sei sicuro di voler eliminare il tuo account? Questa azione è irreversibile.\n\nPerderai:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nLe tue segnalazioni rimarranno attive ma verranno anonimizzate.",
       "deleteReauthTitle": "Accesso richiesto per sicurezza",
-      "deleteReauthBody": "Per motivi di sicurezza, prima di procedere all'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo 'Procedi' verrai disconnesso per poter rientrare e completare l'operazione.",
-      "loggedInAs": "Accesso come",
-      "anonymous": "Ospite anonimo",
-      "deleteConfirmLegacy": "Verrai reindirizzato alla schermata di accesso.",
-      "deleteConfirmLegacyTitle": "Eliminare l'account?",
-      "deleteConfirmLegacyBody": "Tutti i dati cloud associati verranno eliminati definitivamente. I dati locali rimarranno sul dispositivo.",
-      "linkGoogle": "Collega Google",
-      "linkFacebook": "Collega Facebook"
+      "deleteReauthBody": "Per motivi di sicurezza, prima di procedere con l'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo \"Procedi\" verrai disconnesso automaticamente."
     },
     "toggles": {
       "warnAdditivesTitle": "Avvertimento Additivi",
       "warnAdditivesSubtitle": "Genera un avviso per amidi modificati o aromi senza origine specificata.",
       "strictFilterTitle": "Filtro Rigido Contaminazioni",
-      "strictFilterSubtitle": "Segnala come 'Vietato' qualsiasi alimento con dicitura 'può contenere tracce di glutine'.",
+      "strictFilterSubtitle": "Rende \"Vietato\" qualsiasi prodotto con dicitura \"può contenere tracce di glutine\".",
       "lactoseIntoleranceTitle": "Intolleranza al Lattosio",
-      "lactoseIntoleranceSubtitle": "Verifica la presenza di lattosio, burro, polvere di latte o siero."
+      "lactoseIntoleranceSubtitle": "Genera un avviso per la presenza di lattosio, burro, polvere di latte o siero."
     },
     "uiOptions": {
       "appThemeTitle": "Tema dell'app",
-      "appThemeSubtitle": "Chiaro, scuro o uguale al sistema",
+      "appThemeSubtitle": "Scegli tra chiaro, scuro o tema di sistema",
       "preferredLanguageTitle": "Lingua preferita",
-      "preferredLanguageSubtitle": "Lingua preferita per gli ingredienti"
+      "preferredLanguageSubtitle": "Usata dall'interfaccia quando possibile"
     },
     "destructive": {
       "clearHistoryTitle": "Svuota Cronologia",
       "clearHistorySubtitle": "Rimuove in modo permanente la tua cronologia scansioni.",
-      "deleteFromHistory": "Elimina dalla cronologia"
+      "clearHistoryConfirm": "Confermi di voler eliminare tutta la cronologia? Questa azione è irreversibile.",
+      "clearHistoryAction": "Svuota"
     },
     "legalMenu": {
       "termsAndConditionsTitle": "Termini e Condizioni",
       "termsAndConditionsSubtitle": "Consulta le regole di utilizzo dell'applicazione e dei servizi offerti.",
       "privacyPolicyTitle": "Privacy Policy",
-      "privacyPolicySubtitle": "Scopri come raccogliamo, gestiamo e proteggiamo i tuoi dati personali.",
+      "privacyPolicySubtitle": "Scopri come raccogliamo, gestiamo e usiamo i tuoi dati personali.",
       "licensesTitle": "Licenze",
-      "licensesSubtitle": "Consulta le licenze open source dei pacchetti e delle librerie utilizzate in questa app."
-    },
-    "sections": {
-      "account": "Account",
-      "appearance": "Aspetto",
-      "scanner": "Scanner",
-      "notifications": "Notifiche",
-      "data": "Dati e Privacy",
-      "about": "Informazioni"
-    },
-    "appearance": {
-      "theme": "Tema",
-      "themeLight": "Chiaro",
-      "themeDark": "Scuro",
-      "themeSystem": "Sistema",
-      "language": "Lingua",
-      "colorScheme": "Schema colori"
-    },
-    "scanner": {
-      "vibration": "Vibrazione alla scansione",
-      "sound": "Suono alla scansione",
-      "autoSearch": "Ricerca automatica",
-      "torchDefault": "Torcia attiva di default"
-    },
-    "data": {
-      "clearHistory": "Cancella cronologia",
-      "clearHistoryConfirm": "Confermi di voler eliminare tutta la cronologia?",
-      "exportData": "Esporta dati",
-      "syncNow": "Sincronizza ora",
-      "termsOfService": "Termini di Servizio",
-      "privacyPolicy": "Privacy Policy",
-      "licenses": "Licenze open-source"
-    },
-    "about": {
-      "version": "Versione",
-      "buildNumber": "Build",
-      "developer": "Sviluppatore",
-      "website": "Sito web",
-      "sourceCode": "Codice sorgente",
-      "rateApp": "Valuta l'app"
+      "licensesSubtitle": "Consulta le licenze open source dei servizi usati in questa app."
     },
     "licensesPage": {
       "title": "Licenze e Note Legali",
