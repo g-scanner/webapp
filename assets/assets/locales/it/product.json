@@ -9,58 +9,53 @@
       "infoAndWarnings": "INFORMAZIONI E AVVERTENZE"
     },
     "warnings": {
-      "notSuitableCeliac": "NON ADATTO ai celiaci. Rilevati ingredienti vietati.",
-      "lactoseAlertHeader": "ALLERTA LATTOSIO: Il prodotto contiene lattosio/latte.",
       "lactoseAlertBody": "Questo prodotto contiene ingredienti o allergeni che indicano la presenza di lattosio. Non adatto agli intolleranti.",
-      "directGlutenSource": "Fonte diretta di glutine.",
-      "strictFilterBlocked": "Bloccato dal Filtro Rigido Contaminazioni.",
-      "detectedForLactoseSettings": "Rilevato per le tue impostazioni sul lattosio.",
-      "infoTitle": "INFORMAZIONI E AVVERTENZE",
       "infoPre": "I dati sono forniti dalla community di ",
       "infoSource": "Open Food Facts",
-      "infoPost": ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico."
+      "infoPost": ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico.",
+      "staleDataTitle": "ATTENZIONE: DATI NON AGGIORNATI",
+      "staleDataBody": "Questo prodotto proviene dalla cache locale salvata oltre 30 giorni fa o con dati incompleti. Non è stato possibile verificare la ricetta aggiornata online a causa dell'assenza di connessione o di mancata risposta dei server.",
+      "staleDataCaution": "Le ricette e gli stabilimenti possono cambiare nel tempo. Controlla tassativamente l'etichetta fisica prima del consumo."
     },
     "status": {
       "unknownProductName": "Prodotto Sconosciuto",
-      "unknownBrand": "Produttore sconosciuto"
+      "unknownBrand": "Marca sconosciuta"
     },
     "analysis": {
-      "notSuitable": "NON ADATTO ai celiaci. Rilevati ingredienti vietati.",
-      "strictFilterBlocked": "VIETATO DAL FILTRO: Rilevate possibili tracce di contaminazione crociata (Filtro Rigido attivo).",
-      "safe": "ADATTO ai celiaci. Certificazione o etichetta 'Senza Glutine' rilevata.",
-      "naturallySafe": "ADATTO ai celiaci. Prodotto di base naturalmente privo di glutine.",
-      "uncertainNoLabel": "ATTENZIONE: Prodotto lavorato senza dicitura 'Senza glutine'. Verifica l'etichetta.",
-      "uncertainTraces": "ATTENZIONE: Trovate diciture di contaminazione. Consumo a tuo rischio.",
+      "notSuitable": "Rilevati ingredienti contententi glutine.",
+      "safe": "Certificazione o dicitura \"Senza Glutine\" rilevata.",
+      "naturallySafe": "Prodotto di base naturalmente privo di glutine.",
+      "uncertainNoLabel": "Prodotto lavorato senza dicitura \"Senza glutine\". Verifica l'etichetta.",
+      "uncertainTraces": "Trovate diciture di contaminazione. Verifica l'etichetta.",
+      "unknown": "Informazioni insufficienti. Leggi l'etichetta fisica.",
+      "strictFilterBlocked": "Rilevate possibili tracce di contaminazione crociata dal Filtro Rigido Contaminazioni.",
       "userReported": "ATTENZIONE: Questo prodotto ha {count} segnalazione/i dagli utenti.",
-      "unknown": "SCONOSCIUTO. Informazioni insufficienti. Leggi l'etichetta fisica.",
-      "lactoseAlert": "ALLERTA LATTOSIO: Il prodotto contiene lattosio/latte.",
-      "lactosePresenceDesc": "Questo prodotto contiene ingredienti o allergeni che indicano la presenza di lattosio. Non adatto agli intolleranti.",
+      
+      "missingDataIngredient": "Dati Assenti",
+      "missingDataReason": "Nessun ingrediente trovato.",
+      "glutenFreeIngredient": "Etichetta Senza Glutine",
+      "glutenFreeReason": "Prodotto certificato o dichiarato senza glutine.",
+      "naturalSafeIngredient": "Naturalmente Sicuro",
+      "naturalSafeReason": "Prodotto di base a bassissimo rischio (es. olio, acqua).",
+      "userReportIngredient": "Segnalazione Utenti",
+      "userReportReason": "Incongruenze segnalate dalla community.",
+      "debloatedIngredientReason": "Ingrediente deglutinato (Sicuro grazie al bollino).",
+      "safeTraceIngredient": "Tracce (<20ppm)",
+      "safeTraceReason": "Tracce segnalate, ma il bollino garantisce limiti sicuri.",
+      "offAllergensIngredient": "Allergeni OFF",
+      "offAllergensReason": "Glutine tra gli allergeni ufficiali.",
+      "traceWarningReason": "Contaminazione crociata. Il filtro rigido è disattivato.",
+      "maltIngredient": "Malto",
+      "maltReason": "Possibile malto d'orzo. Origine non specificata.",
+      "uncertainIngredientReason": "Ingrediente ambiguo.",
+      
       "glutenSource": "Fonte diretta di glutine.",
-      "contaminationBlocked": "Bloccato dal Filtro Rigido Contaminazioni.",
-      "lactoseDetected": "Rilevato per le tue impostazioni sul lattosio."
+      "contaminationBlocked": "Vietato dal Filtro Rigido Contaminazioni.",
+      "lactoseDetected": "Vietato per Intolleranza al Lattosio."
     },
     "actions": {
-      "reportUnclearData": "Segnala dati errati o poco chiari",
-      "openOnOff": "Apri su Open Food Facts",
-      "reportError": "Segnala dati errati o poco chiari",
-      "alreadyReported": "Prodotto già segnalato",
-      "addToFavorites": "Aggiungi ai preferiti",
-      "removeFromFavorites": "Rimuovi dai preferiti"
-    },
-    "labels": {
-      "brand": "Marca",
-      "quantity": "Quantità",
-      "categories": "Categorie",
-      "stores": "Venduto in",
-      "countries": "Paesi",
-      "ingredients": "Ingredienti",
-      "allergens": "Allergeni",
-      "traces": "Può contenere tracce di",
-      "nutriscore": "Nutri-Score",
-      "novaGroup": "Gruppo NOVA",
-      "ecoscore": "Eco-Score",
-      "barcode": "Codice a barre",
-      "lastModified": "Ultimo aggiornamento"
+      "reportError": "Segnala errore o inesattezza",
+      "alreadyReported": "Prodotto già segnalato"
     },
     "glutenStatus": {
       "safe": "Senza Glutine",
@@ -68,58 +63,23 @@
       "uncertain": "Stato incerto",
       "noData": "Dati insufficienti"
     },
-    "sections": {
-      "generalInfo": "Informazioni generali",
-      "nutritionFacts": "Valori nutrizionali",
-      "ingredientsList": "Lista ingredienti",
-      "analysis": "Analisi G-Scanner",
-      "certifications": "Certificazioni"
-    },
-    "notFound": {
-      "title": "Prodotto non trovato",
-      "subtitle": "Il codice {barcode} non è presente nel database.",
-      "addProduct": "Aggiungi il prodotto",
-      "tryAgain": "Riprova"
-    },
-    "perHundredGrams": "Per 100g",
-    "energy": "Energia",
-    "fat": "Grassi",
-    "saturatedFat": "di cui saturi",
-    "carbs": "Carboidrati",
-    "sugars": "di cui zuccheri",
-    "fiber": "Fibre",
-    "proteins": "Proteine",
-    "salt": "Sale",
     "bigStatus": {
       "safe": "SICURO",
       "unsafe": "VIETATO",
       "uncertain": "INCERTO",
       "unknown": "SCONOSCIUTO"
     },
-    "deleteHistory": {
-      "confirmTitle": "Eliminare scansione?",
-      "confirmBody": "Sei sicuro di voler eliminare questa scansione dalla tua cronologia locale?",
-      "menuLabel": "Elimina dalla cronologia"
-    },
-    "deleteReport": {
-      "confirmTitle": "Eliminare segnalazione?",
-      "confirmBody": "Sei sicuro di voler eliminare questa segnalazione?",
-      "menuLabel": "Elimina segnalazione",
-      "errorMessage": "Errore durante l'eliminazione. Riprova."
-    },
     "report": {
-      "communityCallout": "Aiuta la community segnalando informazioni inesatte o etichette poco chiare.",
+      "communityCallout": "Aiuta la community segnalando eventuali informazioni errate o inesatte riportate per questo prodotto.",
       "reasonLabel": "Motivo della segnalazione",
-      "reasonUnclear": "Etichetta poco chiara o ambigua",
-      "reasonOutdated": "Informazione obsoleta",
-      "reasonWrongStatus": "Stato glutine errato",
-      "reasonOther": "Altro",
-      "detailsHint": "Dettagli (Opzionale)",
+      "detailsLabel": "Dettagli (Opzionale)",
+      "detailsHint": "Es: La confezione dice \"Senza Glutine\", ma l'app segnala il prodotto come Vietato.",
       "submit": "Invia segnalazione",
       "goToReport": "Vai alla segnalazione"
     },
     "alert": {
-      "activeReportWarning": "ATTENZIONE: Questo prodotto presenta una segnalazione attiva o incongruenze."
+      "activeReportWarning": "Questo prodotto è stato segnalato da un utente. Consulta la segnalazione per maggiori dettagli.",
+      "previousStatus": "Lo stato precedente alla segnalazione era \"{status}\"."
     },
     "ingredients": {
       "dangerBadge": "Pericolo",
