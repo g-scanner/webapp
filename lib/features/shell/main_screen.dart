@@ -385,70 +385,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               reportedSessionBarcodes.contains(barcode) || userReport != null,
           userReportId: userReport?.id,
           onDeleteReport: handleDeleteReport,
-          useResponsiveWrapper: MediaQuery.of(context).size.width <= 960,
-          onViewReport: (loadedProduct) {
-            final double screenWidth = MediaQuery.of(context).size.width;
-            final bool isWideScreen = screenWidth > 960;
-            final reportOfProduct = reports.cast<ProductReport?>().firstWhere(
-              (r) => r?.barcode == loadedProduct.barcode && r?.userId == userId,
-              orElse: () => null,
-            );
-            final bool isOwn =
-                reportedSessionBarcodes.contains(loadedProduct.barcode) ||
-                reportOfProduct != null;
-            final String comment = reportOfProduct?.comments ?? '';
-            final String rDate = reportOfProduct != null
-                ? reportOfProduct.submittedAt
-                : "";
-
-            final origLang = userSettings.preferredLanguage;
-            final origAnalysis = AnalyzerService.analyzeGlutenSafety(
-              name: loadedProduct.getName(origLang),
-              brand: loadedProduct.getBrand(origLang),
-              ingredients: loadedProduct.getIngredients(origLang),
-              allergensList: loadedProduct.getAllergens(origLang),
-              reportCount: 0,
-              categoriesTags: const [],
-              strictMode: userSettings.strictMode,
-              warnAdditives: userSettings.warnAdditives,
-              alertLactose: userSettings.alertLactose,
-              preferredLanguage: origLang,
-              ignoreReports: true,
-            );
-            final routeReport = MaterialPageRoute(
-              builder: (context) => ReportDetailCard(
-                product: loadedProduct,
-                originalStatus: origAnalysis.status,
-                onBack: () => Navigator.pop(context),
-                reportReasonKey: reportOfProduct?.type ?? "label_unclear",
-                reportComment: comment.isNotEmpty ? comment : "Nessun commento",
-                reportDate: rDate,
-                onVote: (vote) async {
-                  await DbService.voteOnReportByBarcode(
-                    loadedProduct.barcode,
-                    vote,
-                  );
-                },
-                onInitVote: () async {
-                  return await DbService.getReportVoteDataByBarcode(
-                    loadedProduct.barcode,
-                  );
-                },
-                userSettings: userSettings,
-                isOwnReport: isOwn,
-                reportId: reportOfProduct?.id,
-                onDeleteReport: handleDeleteReport,
-                showProductLink: false,
-                useResponsiveWrapper: !isWideScreen,
-              ),
-            );
-
-            if (isWideScreen) {
-              _contentNavigatorKey.currentState?.push(routeReport);
-            } else {
-              Navigator.push(context, routeReport);
-            }
-          },
+          onViewReport: (loadedProduct) =>
+              _openReportDetail(context, loadedProduct),
         ),
       );
 
@@ -727,70 +665,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             userReport != null,
         userReportId: userReport?.id,
         onDeleteReport: handleDeleteReport,
-        useResponsiveWrapper: MediaQuery.of(context).size.width <= 960,
-        onViewReport: (loadedProduct) {
-          final double screenWidth = MediaQuery.of(context).size.width;
-          final bool isWideScreen = screenWidth > 960;
-          final reportOfProduct = reports.cast<ProductReport?>().firstWhere(
-            (r) => r?.barcode == loadedProduct.barcode && r?.userId == userId,
-            orElse: () => null,
-          );
-          final bool isOwn =
-              reportedSessionBarcodes.contains(loadedProduct.barcode) ||
-              reportOfProduct != null;
-          final String comment = reportOfProduct?.comments ?? '';
-          final String rDate = reportOfProduct != null
-              ? reportOfProduct.submittedAt
-              : "";
-
-          final oLang = userSettings.preferredLanguage;
-          final oAnalysis = AnalyzerService.analyzeGlutenSafety(
-            name: loadedProduct.getName(oLang),
-            brand: loadedProduct.getBrand(oLang),
-            ingredients: loadedProduct.getIngredients(oLang),
-            allergensList: loadedProduct.getAllergens(oLang),
-            reportCount: 0,
-            categoriesTags: const [],
-            strictMode: userSettings.strictMode,
-            warnAdditives: userSettings.warnAdditives,
-            alertLactose: userSettings.alertLactose,
-            preferredLanguage: oLang,
-            ignoreReports: true,
-          );
-          final routeReport = MaterialPageRoute(
-            builder: (context) => ReportDetailCard(
-              product: loadedProduct,
-              originalStatus: oAnalysis.status,
-              onBack: () => Navigator.pop(context),
-              reportReasonKey: reportOfProduct?.type ?? "label_unclear",
-              reportComment: comment.isNotEmpty ? comment : "Nessun commento",
-              reportDate: rDate,
-              onVote: (vote) async {
-                await DbService.voteOnReportByBarcode(
-                  loadedProduct.barcode,
-                  vote,
-                );
-              },
-              onInitVote: () async {
-                return await DbService.getReportVoteDataByBarcode(
-                  loadedProduct.barcode,
-                );
-              },
-              userSettings: userSettings,
-              isOwnReport: isOwn,
-              reportId: reportOfProduct?.id,
-              onDeleteReport: handleDeleteReport,
-              showProductLink: false,
-              useResponsiveWrapper: !isWideScreen,
-            ),
-          );
-
-          if (isWideScreen) {
-            _contentNavigatorKey.currentState?.push(routeReport);
-          } else {
-            Navigator.push(context, routeReport);
-          }
-        },
+        onViewReport: (loadedProduct) =>
+            _openReportDetail(context, loadedProduct),
       ),
     );
 
@@ -809,6 +685,69 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     if (mounted) {
       setState(() => _navController.setCameraActive(true));
+    }
+  }
+
+  void _openReportDetail(BuildContext context, Product loadedProduct) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isWideScreen = screenWidth > 960;
+    final reportOfProduct = reports.cast<ProductReport?>().firstWhere(
+      (r) => r?.barcode == loadedProduct.barcode && r?.userId == userId,
+      orElse: () => null,
+    );
+    final bool isOwn =
+        reportedSessionBarcodes.contains(loadedProduct.barcode) ||
+        reportOfProduct != null;
+    final String comment = reportOfProduct?.comments ?? '';
+    final String rDate =
+        reportOfProduct != null ? reportOfProduct.submittedAt : "";
+
+    final origLang = userSettings.preferredLanguage;
+    final origAnalysis = AnalyzerService.analyzeGlutenSafety(
+      name: loadedProduct.getName(origLang),
+      brand: loadedProduct.getBrand(origLang),
+      ingredients: loadedProduct.getIngredients(origLang),
+      allergensList: loadedProduct.getAllergens(origLang),
+      reportCount: 0,
+      categoriesTags: const [],
+      strictMode: userSettings.strictMode,
+      warnAdditives: userSettings.warnAdditives,
+      alertLactose: userSettings.alertLactose,
+      preferredLanguage: origLang,
+      ignoreReports: true,
+    );
+    final routeReport = MaterialPageRoute(
+      builder: (context) => ReportDetailCard(
+        product: loadedProduct,
+        originalStatus: origAnalysis.status,
+        onBack: () => Navigator.pop(context),
+        reportReasonKey: reportOfProduct?.type ?? "label_unclear",
+        reportComment: comment.isNotEmpty ? comment : "Nessun commento",
+        reportDate: rDate,
+        onVote: (vote) async {
+          await DbService.voteOnReportByBarcode(
+            loadedProduct.barcode,
+            vote,
+          );
+        },
+        onInitVote: () async {
+          return await DbService.getReportVoteDataByBarcode(
+            loadedProduct.barcode,
+          );
+        },
+        userSettings: userSettings,
+        isOwnReport: isOwn,
+        reportId: reportOfProduct?.id,
+        onDeleteReport: handleDeleteReport,
+        showProductLink: false,
+        useResponsiveWrapper: !isWideScreen,
+      ),
+    );
+
+    if (isWideScreen) {
+      _contentNavigatorKey.currentState?.push(routeReport);
+    } else {
+      Navigator.push(context, routeReport);
     }
   }
 

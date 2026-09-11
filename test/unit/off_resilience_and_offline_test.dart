@@ -309,6 +309,69 @@ void main() {
       );
       expect(p.isStale, isFalse);
     });
+
+    test('Normal Product boundary: 29 days 23 hours is fresh (< 30 days)', () {
+      final freshBoundary = DateTime.now().subtract(const Duration(days: 29, hours: 23)).toIso8601String();
+      final p = Product(
+        barcode: 'boundary_fresh',
+        nameMap: {'it': 'Biscotti Freschi'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Farina di riso'},
+        allergensMap: {},
+        lastUpdated: freshBoundary,
+        fetchedFromOffAt: freshBoundary,
+      );
+      expect(p.isStale, isFalse);
+    });
+
+    test('Normal Product boundary: 30 days 1 hour is stale (>= 30 days)', () {
+      final staleBoundary = DateTime.now().subtract(const Duration(days: 30, hours: 1)).toIso8601String();
+      final p = Product(
+        barcode: 'boundary_stale',
+        nameMap: {'it': 'Biscotti Vecchi'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Farina di riso'},
+        allergensMap: {},
+        lastUpdated: staleBoundary,
+        fetchedFromOffAt: staleBoundary,
+      );
+      expect(p.isStale, isTrue);
+    });
+
+    test('Malformed or blank fetchedFromOffAt string safely falls back to isStale=true', () {
+      final p1 = Product(
+        barcode: 'malformed_1',
+        nameMap: {'it': 'Test'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Riso'},
+        allergensMap: {},
+        lastUpdated: 'invalid-date',
+        fetchedFromOffAt: 'invalid-date-string',
+      );
+      expect(p1.isStale, isTrue);
+
+      final p2 = Product(
+        barcode: 'malformed_2',
+        nameMap: {'it': 'Test'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Riso'},
+        allergensMap: {},
+        lastUpdated: '',
+        fetchedFromOffAt: '',
+      );
+      expect(p2.isStale, isTrue);
+
+      final p3 = Product(
+        barcode: 'malformed_3',
+        nameMap: {'it': 'Test'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Riso'},
+        allergensMap: {},
+        lastUpdated: '',
+        fetchedFromOffAt: '   ',
+      );
+      expect(p3.isStale, isTrue);
+    });
   });
 
   group('GROUP 6 – ScanResult Sealed Class Contract', () {
@@ -533,6 +596,148 @@ void main() {
 
       expect(ProductContentHasher.hasContentChanged(original, modified), isTrue);
     });
+
+    test('Modified brand generates different content hash', () {
+      final original = Product(
+        barcode: 'hash_test_brand',
+        nameMap: {'it': 'Pasta'},
+        brandMap: {'it': 'Barilla'},
+        ingredientsMap: {'it': 'Semola'},
+        allergensMap: {},
+        lastUpdated: '2026-01-01',
+      );
+
+      final modified = Product(
+        barcode: 'hash_test_brand',
+        nameMap: {'it': 'Pasta'},
+        brandMap: {'it': 'De Cecco'},
+        ingredientsMap: {'it': 'Semola'},
+        allergensMap: {},
+        lastUpdated: '2026-01-01',
+      );
+
+      expect(ProductContentHasher.hasContentChanged(original, modified), isTrue);
+    });
+
+    test('Modified name generates different content hash', () {
+      final original = Product(
+        barcode: 'hash_test_name',
+        nameMap: {'it': 'Pasta Corta'},
+        brandMap: {'it': 'Marca'},
+        ingredientsMap: {'it': 'Semola'},
+        allergensMap: {},
+        lastUpdated: '2026-01-01',
+      );
+
+      final modified = Product(
+        barcode: 'hash_test_name',
+        nameMap: {'it': 'Pasta Lunga'},
+        brandMap: {'it': 'Marca'},
+        ingredientsMap: {'it': 'Semola'},
+        allergensMap: {},
+        lastUpdated: '2026-01-01',
+      );
+
+      expect(ProductContentHasher.hasContentChanged(original, modified), isTrue);
+    });
+
+    test('Empty maps hash deterministically without throwing', () {
+      final empty1 = Product(
+        barcode: 'empty_1',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: '',
+      );
+
+      final empty2 = Product(
+        barcode: 'empty_2',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: '2026-09-01',
+      );
+
+      final hash1 = ProductContentHasher.computeContentHash(empty1);
+      final hash2 = ProductContentHasher.computeContentHash(empty2);
+
+      expect(hash1, isNotEmpty);
+      expect(hash1, equals(hash2));
+    });
+
+    test('Whitespace trimming insensitivity produces identical hash', () {
+      final p1 = Product(
+        barcode: 'trim_1',
+        nameMap: {'it': '  Biscotti  '},
+        brandMap: {'it': '  Mulino  '},
+        ingredientsMap: {'it': '  Farina  '},
+        allergensMap: {},
+        lastUpdated: '',
+      );
+
+      final p2 = Product(
+        barcode: 'trim_1',
+        nameMap: {'it': 'Biscotti'},
+        brandMap: {'it': 'Mulino'},
+        ingredientsMap: {'it': 'Farina'},
+        allergensMap: {},
+        lastUpdated: '',
+      );
+
+      expect(ProductContentHasher.computeContentHash(p1),
+          ProductContentHasher.computeContentHash(p2));
+    });
+
+    test('Allergen list order insensitivity produces identical hash', () {
+      final p1 = Product(
+        barcode: 'alg_order',
+        nameMap: {'it': 'Cioccolato'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Cacao'},
+        allergensMap: {
+          'it': ['Latte', 'Glutine', 'Frutta a guscio']
+        },
+        lastUpdated: '',
+      );
+
+      final p2 = Product(
+        barcode: 'alg_order',
+        nameMap: {'it': 'Cioccolato'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Cacao'},
+        allergensMap: {
+          'it': ['Frutta a guscio', 'Latte', 'Glutine']
+        },
+        lastUpdated: '',
+      );
+
+      expect(ProductContentHasher.computeContentHash(p1),
+          ProductContentHasher.computeContentHash(p2));
+    });
+
+    test('Unicode accents difference produces different hash', () {
+      final p1 = Product(
+        barcode: 'unicode_1',
+        nameMap: {'it': 'Caffè'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Caffè'},
+        allergensMap: {},
+        lastUpdated: '',
+      );
+
+      final p2 = Product(
+        barcode: 'unicode_2',
+        nameMap: {'it': 'Caffe'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Caffe'},
+        allergensMap: {},
+        lastUpdated: '',
+      );
+
+      expect(ProductContentHasher.hasContentChanged(p1, p2), isTrue);
+    });
   });
 
   group('GROUP 10 – Ghost Product 24-Hour TTL Rule (Anti-Shadowing)', () {
@@ -549,6 +754,36 @@ void main() {
 
       expect(ghost.isGhostProduct, isTrue);
       expect(ghost.isStale, isFalse);
+    });
+
+    test('Ghost Product boundary: 23 hours 59 minutes is fresh (< 24h TTL)', () {
+      final ghostBoundaryFresh = Product(
+        barcode: 'ghost_boundary_fresh',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: DateTime.now().subtract(const Duration(hours: 23, minutes: 59)).toIso8601String(),
+        fetchedFromOffAt: DateTime.now().subtract(const Duration(hours: 23, minutes: 59)).toIso8601String(),
+      );
+
+      expect(ghostBoundaryFresh.isGhostProduct, isTrue);
+      expect(ghostBoundaryFresh.isStale, isFalse);
+    });
+
+    test('Ghost Product boundary: 24 hours 1 minute is STALE (>= 24h TTL)', () {
+      final ghostBoundaryStale = Product(
+        barcode: 'ghost_boundary_stale',
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        lastUpdated: DateTime.now().subtract(const Duration(hours: 24, minutes: 1)).toIso8601String(),
+        fetchedFromOffAt: DateTime.now().subtract(const Duration(hours: 24, minutes: 1)).toIso8601String(),
+      );
+
+      expect(ghostBoundaryStale.isGhostProduct, isTrue);
+      expect(ghostBoundaryStale.isStale, isTrue);
     });
 
     test('Ghost Product created 25 hours ago is STALE (> 24h TTL) and will trigger refresh', () {
@@ -579,6 +814,29 @@ void main() {
 
       expect(normalProduct.isGhostProduct, isFalse);
       expect(normalProduct.isStale, isFalse); // Prodotto normale: 30gg TTL
+    });
+  });
+
+  group('GROUP 11 – checkAndRefreshOffStaleCache Guard Conditions', () {
+    test('Fresh product immediately early-returns without calling Firestore', () async {
+      final freshProduct = Product(
+        barcode: 'early_return_fresh',
+        nameMap: {'it': 'Fresco'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Farina di riso'},
+        allergensMap: {},
+        lastUpdated: DateTime.now().toIso8601String(),
+        fetchedFromOffAt: DateTime.now().toIso8601String(),
+      );
+
+      OffIngestionService.checkAndRefreshOffStaleCache(
+        db: mockDb,
+        product: freshProduct,
+        settings: testSettings,
+      );
+
+      // Verify no Firestore interactions occurred
+      verifyNever(() => mockDb.collection(any()));
     });
   });
 }

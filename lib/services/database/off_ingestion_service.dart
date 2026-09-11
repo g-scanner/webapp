@@ -6,10 +6,10 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/models.dart';
-import '../analyzer/analyzer.dart';
 import '../../core/core.dart';
 import 'local_cache_service.dart';
 import 'history_db_service.dart';
+import 'off_product_parser.dart';
 
 class OffIngestionService {
   static Future<ScanResult> scanBarcodeClientSide({
@@ -244,152 +244,11 @@ class OffIngestionService {
         final offData = json.decode(response.body);
         if (offData != null && offData['status'] == 1) {
           final pData = offData['product'] as Map<String, dynamic>;
-
-          final Map<String, String> nameMap = {};
-          final Map<String, String> brandMap = {};
-          final Map<String, String> ingredientsMap = {};
-          final Map<String, List<String>> allergensMap = {};
-
-          final supportedLangs = ['it', 'en', 'es', 'fr', 'de'];
-
-          // Estrazione Multilingua NOMI
-          for (final lang in supportedLangs) {
-            final n = getFirstNonEmptyString(pData, [
-              'product_name_$lang',
-              'product_name',
-            ], '');
-            if (n.isNotEmpty) nameMap[lang] = n;
-          }
-
-          // Estrazione Multilingua BRANDS (solo se presente su OFF)
-          final brandStr = getFirstNonEmptyString(pData, [
-            'brands',
-            'brand_tags',
-          ], '');
-          if (brandStr.isNotEmpty && brandStr != '-') {
-            for (final lang in supportedLangs) {
-              brandMap[lang] = brandStr;
-            }
-          }
-
-          // Estrazione Multilingua INGREDIENTI
-          for (final lang in supportedLangs) {
-            String ing = getFirstNonEmptyString(pData, [
-              'ingredients_text_$lang',
-            ], '');
-            if (ing.isNotEmpty) {
-              ingredientsMap[lang] = cleanIngredientsText(ing);
-            }
-          }
-
-          // Fallback Lingua Estremo (Punto 4 Specifica)
-          // Se su OFF mancano IT, EN, ES, FR, DE, prendi la primissima lingua disponibile
-          if (ingredientsMap.isEmpty) {
-            String fallbackIng = '';
-            for (final key in pData.keys) {
-              if (key.startsWith('ingredients_text_') &&
-                  key != 'ingredients_text_with_allergens') {
-                final val = pData[key];
-                if (val is String && val.trim().isNotEmpty) {
-                  fallbackIng = cleanIngredientsText(val.trim());
-                  break;
-                }
-              }
-            }
-            if (fallbackIng.isNotEmpty) {
-              ingredientsMap['en'] = fallbackIng; // Salva nella mappa sotto 'en'
-            }
-          }
-
-          // Se nameMap è vuoto, cerca prima qualunque chiave di nome su OFF
-          if (nameMap.isEmpty) {
-            String fallbackName = '';
-            for (final key in pData.keys) {
-              if (key.startsWith('product_name')) {
-                final val = pData[key];
-                if (val is String && val.trim().isNotEmpty) {
-                  fallbackName = val.trim();
-                  break;
-                }
-              }
-            }
-            if (fallbackName.isNotEmpty) {
-              nameMap['en'] = fallbackName;
-            }
-            // Se su OFF non esiste alcun nome, nameMap rimane vuota {} (UI userà "product.status.unknownProductName".tr())
-          }
-
-          // Estrazione Allergeni con rilevamento accurato dei dati mancanti:
-          List<String>? rawAllergens;
-          if (pData['allergens_tags'] != null &&
-              (pData['allergens_tags'] as List).isNotEmpty) {
-            rawAllergens = List<String>.from(pData['allergens_tags']);
-          } else if (pData['allergens_from_ingredients'] != null &&
-              pData['allergens_from_ingredients']
-                  .toString()
-                  .trim()
-                  .isNotEmpty) {
-            rawAllergens = pData['allergens_from_ingredients']
-                .toString()
-                .split(',')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList();
-          } else if (pData['allergens'] != null &&
-              pData['allergens'].toString().trim().isNotEmpty) {
-            rawAllergens = pData['allergens']
-                .toString()
-                .split(',')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList();
-          } else if (ingredientsMap.isNotEmpty) {
-            rawAllergens = [];
-          } else if (pData['allergens_tags'] is List &&
-              (pData['allergens_tags'] as List).isEmpty) {
-            rawAllergens = [];
-          }
-
-          if (rawAllergens != null) {
-            for (final lang in supportedLangs) {
-              allergensMap[lang] =
-                  AllergenCanonicalizer.translateAllergens(rawAllergens, lang);
-            }
-
-            final safeClaims = rawAllergens
-                .where(AllergenCanonicalizer.isSafeGlutenClaim)
-                .toList();
-            if (safeClaims.isNotEmpty) {
-              for (final lang in supportedLangs) {
-                final currentIng = ingredientsMap[lang] ?? '';
-                if (!AllergenCanonicalizer.isSafeGlutenClaim(currentIng)) {
-                  ingredientsMap[lang] = currentIng.isEmpty
-                      ? 'Senza glutine'
-                      : '$currentIng (Senza glutine)';
-                }
-              }
-            }
-          }
-
-          final imageUrl = pData['image_url'] ??
-              pData['image_front_url'] ??
-              pData['image_thumb_url'] ??
-              "";
-
-          final nowIso = DateTime.now().toIso8601String();
-
-          final product = Product(
-            barcode: barcode,
-            nameMap: nameMap,
-            brandMap: brandMap,
-            ingredientsMap: ingredientsMap,
-            allergensMap: allergensMap,
-            imageUrl: imageUrl,
-            pendingReportsCount: 0,
-            lastUpdated: nowIso,
-            fetchedFromOffAt: nowIso,
+          final product = OffProductParser.parseProduct(
+            barcode,
+            pData,
+            settings,
           );
-
           return OffFetchResult.found(product);
         }
 
@@ -424,48 +283,14 @@ class OffIngestionService {
     return result.product;
   }
 
-  static String cleanIngredientsText(String text) {
-    if (text.trim().isEmpty) return text;
-    return text
-        .replaceAllMapped(RegExp(r'_([^_]+)_'), (m) => m[1]!)
-        .replaceAll('_', '')
-        .replaceAllMapped(RegExp(r'\{[a-z]{2}:([^}]+)\}'), (m) => m[1]!)
-        .replaceAll(RegExp(r'\{[^}]*\}'), '')
-        .replaceAll('{', '')
-        .replaceAll('}', '')
-        .replaceAll('\$', '')
-        .replaceAllMapped(RegExp(r'\(([^()]+)\(([^()]+)\)\)'), (m) {
-          return '(${m[1]!.trim()}, ${m[2]!.trim()})';
-        })
-        .replaceAllMapped(RegExp(r'\(\s*([^()]+)\s*\(\s*([^()]+)\s*\)\s*\)'), (m) {
-          return '(${m[1]!.trim()}, ${m[2]!.trim()})';
-        })
-        .replaceAll(RegExp(r'\(\s+'), '(')
-        .replaceAll(RegExp(r'\s+\)'), ')')
-        .replaceAll(RegExp(r'\([^a-zA-Z0-9À-ÿ]*\)'), '')
-        .replaceAll('))', ')')
-        .replaceAllMapped(RegExp(r'\s+([,.;])'), (m) => m[1]!)
-        .replaceAll(RegExp(r'  +'), ' ')
-        .trim();
-  }
+  /// Delega a [OffProductParser.cleanIngredientsText] per retrocompatibilità.
+  static String cleanIngredientsText(String text) =>
+      OffProductParser.cleanIngredientsText(text);
 
+  /// Delega a [OffProductParser.getFirstNonEmptyString] per retrocompatibilità.
   static String getFirstNonEmptyString(
     Map<String, dynamic> data,
     List<String> keys,
     String defaultValue,
-  ) {
-    for (final key in keys) {
-      final val = data[key];
-      if (val == null) continue;
-      if (val is List && val.isNotEmpty) {
-        final firstVal = val[0].toString().trim();
-        if (firstVal.isNotEmpty) return firstVal;
-      } else if (val is String && val.trim().isNotEmpty) {
-        return val.trim();
-      } else if (val is! List && val.toString().trim().isNotEmpty) {
-        return val.toString().trim();
-      }
-    }
-    return defaultValue;
-  }
+  ) => OffProductParser.getFirstNonEmptyString(data, keys, defaultValue);
 }

@@ -253,140 +253,18 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
           ),
         ),
         actions: [
-          // Durante il caricamento (prodotto non ancora in cronologia): shimmer skeleton.
-          // Una volta salvato in history o se c'è già una segnalazione: bottone reale.
-          if (showActionsSkeleton)
-            Padding(
-              padding: const EdgeInsets.only(right: 4.0),
-              child: Skeletonizer(
-                enabled: true,
-                child: IconButton(
-                  color: cardBg,
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            )
-          else if (canDeleteHistory || canDeleteReport)
-            PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
-              color: cardBg,
-              onSelected: (value) {
-                if (value == 'delete_history') {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: cardBg,
-                      title: Text(
-                        "common.actions.deleteHistoryConfirmTitle".tr(),
-                        style: TextStyle(color: colorScheme.onSurface),
-                      ),
-                      content: Text(
-                        "common.actions.deleteHistoryConfirmBody".tr(),
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.onSurfaceVariant,
-                          ),
-                          child: Text("common.actions.cancel".tr()),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            widget.onDeleteHistoryByBarcode!(
-                              currentProduct.barcode,
-                            );
-                            widget.onBack();
-                          },
-                          style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.error,
-                          ),
-                          child: Text("common.actions.delete".tr()),
-                        ),
-                      ],
-                    ),
-                  );
-                } else if (value == 'delete_report') {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: cardBg,
-                      title: Text(
-                        "common.actions.deleteReportConfirmTitle".tr(),
-                        style: TextStyle(color: colorScheme.onSurface),
-                      ),
-                      content: Text(
-                        "common.actions.deleteReportConfirmBody".tr(),
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.onSurfaceVariant,
-                          ),
-                          child: Text("common.actions.cancel".tr()),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            Navigator.pop(ctx);
-                            if (_effectiveUserReportId != null) {
-                              await widget.onDeleteReport!(
-                                _effectiveUserReportId!,
-                              );
-                            }
-                          },
-                          style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.error,
-                          ),
-                          child: Text("common.actions.delete".tr()),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-              },
-              itemBuilder: (BuildContext context) => [
-                if (canDeleteHistory)
-                  PopupMenuItem(
-                    value: 'delete_history',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, color: colorScheme.error, size: 20),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            "common.actions.deleteHistoryConfirmTitle".tr(),
-                            style: TextStyle(color: colorScheme.error),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (canDeleteReport)
-                  PopupMenuItem(
-                    value: 'delete_report',
-                    child: Row(
-                      children: [
-                        Icon(Icons.warning, color: colorScheme.error, size: 20),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            "common.actions.deleteReportConfirmTitle".tr(),
-                            style: TextStyle(color: colorScheme.error),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+          ProductDetailAppBarActions(
+            showActionsSkeleton: showActionsSkeleton,
+            canDeleteHistory: canDeleteHistory,
+            canDeleteReport: canDeleteReport,
+            barcode: currentProduct.barcode,
+            effectiveUserReportId: _effectiveUserReportId,
+            onDeleteHistoryByBarcode: widget.onDeleteHistoryByBarcode,
+            onDeleteReport: widget.onDeleteReport,
+            onBack: widget.onBack,
+            cardBg: cardBg,
+            colorScheme: colorScheme,
+          ),
         ],
       ),
       body: Skeletonizer(
