@@ -839,5 +839,89 @@ void main() {
       verifyNever(() => mockDb.collection(any()));
     });
   });
+
+  group('GROUP 12 – 3-Window Pipeline Execution (scanBarcodeClientSide)', () {
+    test('Level A (0 - 7 days): Super Fresh product served immediately as fresh', () async {
+      ConnectivityHelper.mockIsConnected = false; // Even completely offline
+
+      final date = DateTime.now().subtract(const Duration(days: 2)).toIso8601String();
+      final superFreshProduct = Product(
+        barcode: 'level_a_prod',
+        nameMap: {'it': 'Pasta Super Fresca'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Semola di grano duro'},
+        allergensMap: {},
+        lastUpdated: date,
+        fetchedFromOffAt: date,
+      );
+      await LocalCacheService.upsertLocalProduct(superFreshProduct);
+
+      final result = await OffIngestionService.scanBarcodeClientSide(
+        db: mockDb,
+        auth: mockAuth,
+        barcode: 'level_a_prod',
+        settings: testSettings,
+      );
+
+      expect(result.isFresh, isTrue);
+      expect(result.isStaleResult, isFalse);
+      expect(result.product.isSuperFresh, isTrue);
+      expect(result.product.barcode, 'level_a_prod');
+    });
+
+    test('Level B (8 - 30 days): Tolerance product served immediately with zero latency', () async {
+      final date = DateTime.now().subtract(const Duration(days: 14)).toIso8601String();
+      final toleranceProduct = Product(
+        barcode: 'level_b_prod',
+        nameMap: {'it': 'Biscotti Tolleranza'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Farina di riso'},
+        allergensMap: {},
+        lastUpdated: date,
+        fetchedFromOffAt: date,
+      );
+      await LocalCacheService.upsertLocalProduct(toleranceProduct);
+
+      final result = await OffIngestionService.scanBarcodeClientSide(
+        db: mockDb,
+        auth: mockAuth,
+        barcode: 'level_b_prod',
+        settings: testSettings,
+      );
+
+      expect(result.isFresh, isTrue);
+      expect(result.product.isInTolerance, isTrue);
+      expect(result.product.barcode, 'level_b_prod');
+    });
+
+    test('Level C (> 30 days): Hard Stale product falls back to stale result if offline', () async {
+      ConnectivityHelper.mockIsConnected = false;
+
+      final date = DateTime.now().subtract(const Duration(days: 45)).toIso8601String();
+      final hardStaleProduct = Product(
+        barcode: 'level_c_prod',
+        nameMap: {'it': 'Cereali Scaduti'},
+        brandMap: {},
+        ingredientsMap: {'it': 'Mais'},
+        allergensMap: {},
+        lastUpdated: date,
+        fetchedFromOffAt: date,
+      );
+      await LocalCacheService.upsertLocalProduct(hardStaleProduct);
+
+      final result = await OffIngestionService.scanBarcodeClientSide(
+        db: mockDb,
+        auth: mockAuth,
+        barcode: 'level_c_prod',
+        settings: testSettings,
+      );
+
+      expect(result.isStaleResult, isTrue);
+      expect(result.isFresh, isFalse);
+      expect(result.product.isStale, isTrue);
+      expect(result.product.barcode, 'level_c_prod');
+    });
+  });
 }
+
 

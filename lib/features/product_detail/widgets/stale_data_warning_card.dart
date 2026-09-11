@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner -- See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
@@ -18,9 +18,8 @@ class StaleDataWarningCard extends StatelessWidget {
 
     return SectionCard(
       title: 'product.warnings.staleDataTitle'.tr(),
-      icon: Icons.history_toggle_off_rounded,
+      icon: Icons.safety_check_outlined,
       isCaution: true,
-      bgColor: colorScheme.errorContainer.withValues(alpha: 0.18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -28,19 +27,18 @@ class StaleDataWarningCard extends StatelessWidget {
             'product.warnings.staleDataBody'.tr(),
             style: TextStyle(
               fontSize: 14,
-              height: 1.45,
-              fontWeight: FontWeight.w400,
-              color: colorScheme.onSurface,
+              height: 1.4,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'product.warnings.staleDataCaution'.tr(),
             style: TextStyle(
-              fontSize: 12,
-              height: 1.35,
+              fontSize: 13,
+              height: 1.4,
               fontWeight: FontWeight.w600,
-              color: colorScheme.error,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],

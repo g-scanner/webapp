@@ -87,7 +87,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     if (widget.isStaleDataNotifier != null) {
       return widget.isStaleDataNotifier!.value;
     }
-    return widget.isStaleData;
+    return widget.isStaleData || currentProduct.isStale;
   }
 
   @override
@@ -287,6 +287,12 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               ),
               const SizedBox(height: 24),
 
+              // ── Avviso Dati Cache Stale / Non Verificati Online ───────────
+              if (_isEffectiveStaleData && !showSkeleton) ...[
+                const StaleDataWarningCard(),
+                const SizedBox(height: 24),
+              ],
+
               // ── Valutazione Glutine ───────────────────────────────────
               Builder(
                 builder: (context) {
@@ -362,12 +368,6 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 hasIngredientData: hasIngredientData,
               ),
               const SizedBox(height: 24),
-
-              // ── Avviso Dati Cache Stale / Non Verificati Online ───────────
-              if (_isEffectiveStaleData) ...[
-                const StaleDataWarningCard(),
-                const SizedBox(height: 24),
-              ],
 
               // ── Blocco Info / Avvertenze Generali ─────────────────────
               const ProductWarningCard(),

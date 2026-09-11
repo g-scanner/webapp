@@ -22,13 +22,21 @@ class OffIngestionService {
     final localProduct =
         await LocalCacheService.getLocalProductByBarcode(barcode);
     if (localProduct != null) {
-      // 1a. PRODOTTO FRESCO E COMPLETO: Ha ingredienti e meno di 30 giorni.
-      // Sicuro da servire immediatamente all'utente con zero latenza.
-      if (!localProduct.isStale && localProduct.hasIngredientData) {
+      // 1a. LIVELLO A: SUPER FRESCO (0 - 7 giorni)
+      // Dati freschissimi: restituisce subito dalla cache locale con ZERO chiamate di rete.
+      if (localProduct.isSuperFresh) {
         if (settings.autoSaveHistory) {
           await HistoryDbService.saveHistoryItem(db, auth, localProduct);
         }
-        // In background verifica/prepara l'aggiornamento silenzioso senza bloccare
+        return ScanResult.fresh(localProduct);
+      }
+
+      // 1b. LIVELLO B: ZONA DI TOLLERANZA (8 - 30 giorni)
+      // Dati affidabili: restituisce subito all'utente (0ms) e lancia check background fire-and-forget.
+      if (localProduct.isInTolerance) {
+        if (settings.autoSaveHistory) {
+          await HistoryDbService.saveHistoryItem(db, auth, localProduct);
+        }
         checkAndRefreshOffStaleCache(
           db: db,
           product: localProduct,
@@ -37,7 +45,7 @@ class OffIngestionService {
         return ScanResult.fresh(localProduct);
       }
 
-      // 1b. PRODOTTO STALE O INCOMPLETO: Ha più di 30 giorni oppure mancano gli ingredienti.
+      // 1c. LIVELLO C: HARD STALE (>30 giorni) O INCOMPLETO
       // Per sicurezza alimentare, se c'è connessione tentiamo un refresh SINCRONO da OFF
       // prima di restituire il dato potenzialmente obsoleto all'utente.
       final bool isConnected = await ConnectivityHelper.hasInternetConnection();
@@ -78,9 +86,9 @@ class OffIngestionService {
     try {
       remoteProduct = await LocalCacheService.getProductByBarcode(db, barcode);
       if (remoteProduct != null) {
-        // Se il prodotto su Firestore è stale (>30gg) o incompleto, applichiamo
-        // la stessa massima sicurezza alimentare con refresh sincrono da OFF:
-        if (remoteProduct.isStale || !remoteProduct.hasIngredientData) {
+        // Se il prodotto su Firestore è Hard Stale (>30gg o incompleto), applichiamo
+        // la massima sicurezza alimentare con refresh sincrono da OFF:
+        if (remoteProduct.isStale) {
           final freshResult = await fetchOffProduct(barcode, settings);
           if (freshResult.status == OffFetchStatus.found &&
               freshResult.product != null) {
@@ -92,14 +100,27 @@ class OffIngestionService {
               saveToFirestore: true,
             );
           }
+          // Se OFF non risponde, restituisce il dato remoto salvandolo localmente come stale
+          return await _persistAndEmitResult(
+            db: db,
+            auth: auth,
+            product: remoteProduct,
+            settings: settings,
+            saveToFirestore: false,
+            forceStale: true,
+          );
         }
 
-        // Prodotto fresco da Firestore: avvia eventuale controllo asincrono e restituisce
-        checkAndRefreshOffStaleCache(
-          db: db,
-          product: remoteProduct,
-          settings: settings,
-        );
+        // Livello B (Zona di Tolleranza 8 - 30 giorni): avvia check background fire-and-forget
+        if (remoteProduct.isInTolerance) {
+          checkAndRefreshOffStaleCache(
+            db: db,
+            product: remoteProduct,
+            settings: settings,
+          );
+        }
+        // Livello A (Super Fresco 0 - 7 giorni): NESSUN check in background!
+
         return await _persistAndEmitResult(
           db: db,
           auth: auth,
@@ -176,6 +197,7 @@ class OffIngestionService {
     required Product product,
     required UserSettings settings,
     required bool saveToFirestore,
+    bool forceStale = false,
   }) async {
     if (saveToFirestore) {
       try {
@@ -194,7 +216,7 @@ class OffIngestionService {
       await HistoryDbService.saveHistoryItem(db, auth, product);
     }
 
-    return ScanResult.fresh(product);
+    return forceStale ? ScanResult.stale(product) : ScanResult.fresh(product);
   }
 
   static void checkAndRefreshOffStaleCache({
@@ -202,8 +224,8 @@ class OffIngestionService {
     required Product product,
     required UserSettings settings,
   }) async {
-    // Se il prodotto non è obsoleto (stale), nessun refresh in background è necessario
-    if (!product.isStale) return;
+    // Se il prodotto è Super Fresco (0 - 7 giorni), nessun refresh in background è necessario!
+    if (product.isSuperFresh) return;
 
     try {
       // Innesca ricalcolo asincrono silenzioso in background solo se online

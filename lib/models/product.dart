@@ -4,6 +4,16 @@
 import 'package:easy_localization/easy_localization.dart';
 import '../services/analyzer_service.dart';
 
+/// Finestre temporali di freschezza per l'architettura a 3 livelli:
+/// - [superFresh]: Livello A (0 - 7 giorni). Nessuna chiamata di rete, zero check in background.
+/// - [tolerance]: Livello B (8 - 30 giorni). Ritorno immediato con check in background fire-and-forget.
+/// - [hardStale]: Livello C (> 30 giorni, incompleto o ghost > 24h). Check sincrono bloccante.
+enum ProductFreshnessWindow {
+  superFresh,
+  tolerance,
+  hardStale,
+}
+
 class Product {
   final String barcode;
   final Map<String, String> nameMap;
@@ -134,22 +144,50 @@ class Product {
   /// Riconosciuto dall'assenza completa di ingredienti e di nomi in lingua.
   bool get isGhostProduct => !hasIngredientData && nameMap.isEmpty;
 
-  /// `true` se il dato in cache è obsoleto o se la data di acquisizione è assente.
-  ///
-  /// - REGOLA AUREOLA GHOST PRODUCT: TTL massimo di 24 ore (1 giorno) per non oscurare
-  ///   prodotti aggiunti dalla community su OFF poco dopo la prima scansione.
-  /// - PRODOTTI NORMALI: TTL di 30 giorni.
-  bool get isStale {
-    if (fetchedFromOffAt == null) return true;
-    final fetchedDate = DateTime.tryParse(fetchedFromOffAt!);
-    if (fetchedDate == null) return true;
+  /// Restituisce la finestra temporale di freschezza del prodotto secondo l'architettura a 3 livelli:
+  /// - [ProductFreshnessWindow.superFresh] (0 - 7 giorni): Ritorno immediato, zero chiamate di rete.
+  /// - [ProductFreshnessWindow.tolerance] (8 - 30 giorni): Ritorno immediato con check asincrono fire-and-forget.
+  /// - [ProductFreshnessWindow.hardStale] (> 30 giorni, incompleto o ghost > 24h): Check sincrono bloccante.
+  ProductFreshnessWindow get freshnessWindow {
+    final dateStr = (fetchedFromOffAt != null && fetchedFromOffAt!.trim().isNotEmpty)
+        ? fetchedFromOffAt!
+        : lastUpdated;
+    if (dateStr.trim().isEmpty) return ProductFreshnessWindow.hardStale;
+    final fetchedDate = DateTime.tryParse(dateStr);
+    if (fetchedDate == null) return ProductFreshnessWindow.hardStale;
 
     final diff = DateTime.now().difference(fetchedDate);
+
+    // REGOLA AUREOLA GHOST PRODUCT: TTL massimo di 24 ore
     if (isGhostProduct) {
-      return diff.inHours >= 24;
+      return diff.inHours >= 24
+          ? ProductFreshnessWindow.hardStale
+          : ProductFreshnessWindow.superFresh;
     }
-    return diff.inDays >= 30;
+
+    // Se mancano dati critici sugli ingredienti, è incompleto -> Hard Stale
+    if (!hasIngredientData) {
+      return ProductFreshnessWindow.hardStale;
+    }
+
+    // Prodotto normale con ingredienti
+    if (diff.inDays <= 7) {
+      return ProductFreshnessWindow.superFresh;
+    } else if (diff.inDays < 30) {
+      return ProductFreshnessWindow.tolerance;
+    } else {
+      return ProductFreshnessWindow.hardStale;
+    }
   }
+
+  /// `true` se il prodotto si trova nel Livello A: Super Fresco (0 - 7 giorni).
+  bool get isSuperFresh => freshnessWindow == ProductFreshnessWindow.superFresh;
+
+  /// `true` se il prodotto si trova nel Livello B: Zona di Tolleranza (8 - 30 giorni).
+  bool get isInTolerance => freshnessWindow == ProductFreshnessWindow.tolerance;
+
+  /// `true` se il prodotto si trova nel Livello C: Hard Stale (> 30 giorni, incompleto o ghost > 24h).
+  bool get isStale => freshnessWindow == ProductFreshnessWindow.hardStale;
 
   factory Product.fromJson(Map<String, dynamic> json) {
     // Gestione nameMap

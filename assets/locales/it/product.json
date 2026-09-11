@@ -13,9 +13,9 @@
       "infoPre": "I dati sono forniti dalla community di ",
       "infoSource": "Open Food Facts",
       "infoPost": ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico.",
-      "staleDataTitle": "ATTENZIONE: DATI NON AGGIORNATI",
-      "staleDataBody": "Questo prodotto proviene dalla cache locale salvata oltre 30 giorni fa o con dati incompleti. Non è stato possibile verificare la ricetta aggiornata online a causa dell'assenza di connessione o di mancata risposta dei server.",
-      "staleDataCaution": "Le ricette e gli stabilimenti possono cambiare nel tempo. Controlla tassativamente l'etichetta fisica prima del consumo."
+      "staleDataTitle": "AVVISO DATI NON AGGIORNATI",
+      "staleDataBody": "I dati di questo prodotto provengono dalla memoria locale e non vengono aggiornati da oltre 30 giorni. L'aggiornamento automatico avverrà appena il dispositivo sarà connesso a Internet.",
+      "staleDataCaution": "Le ricette e gli stabilimenti possono cambiare nel tempo. Leggi l'etichetta fisica per sicurezza."
     },
     "status": {
       "unknownProductName": "Prodotto Sconosciuto",

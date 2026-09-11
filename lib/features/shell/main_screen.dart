@@ -653,6 +653,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         productNotifier: notifier,
         reportIdNotifier: reportIdNotifier,
         scannedAt: historyItem?.scannedAt,
+        isStaleData: match.isStale,
         onBack: () => Navigator.pop(context),
         onReportSubmit: handleReportSubmit,
         onProductUpdate: handleProductUpdate,
