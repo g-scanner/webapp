@@ -5,3 +5,4 @@ export 'camera_permission.dart';
 export 'popup_tracker.dart';
 export 'responsive_wrapper.dart';
 export 'web_camera_helper.dart';
+export 'product_content_hasher.dart';

@@ -78,7 +78,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
   Future<void> _loadInitialData() async {
     try {
-      final firestoreInstance = widget.firebaseFirestore ?? FirebaseFirestore.instance;
+      final firestoreInstance =
+          widget.firebaseFirestore ?? FirebaseFirestore.instance;
       final results = await Future.wait([
         firestoreInstance
             .collection('reports')
@@ -150,13 +151,13 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   String _translateReason(String key) {
     switch (key) {
       case "label_unclear":
-        return "report.ui.labelUnclear".tr();
+        return "common.reportReasons.unclear".tr();
       case "outdated":
-        return "report.ui.outdated".tr();
+        return "common.reportReasons.outdated".tr();
       case "incorrect_status":
-        return "report.ui.incorrectStatus".tr();
+        return "common.reportReasons.wrongStatus".tr();
       case "other":
-        return "report.ui.other".tr();
+        return "common.reportReasons.other".tr();
       default:
         return "report.ui.generic".tr();
     }
@@ -247,10 +248,10 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       return AlertDialog(
                         backgroundColor: ctxCardBg,
                         title: Text(
-                          "history.actions.clearAllConfirmTitle".tr(),
+                          "common.actions.deleteReportConfirmTitle".tr(),
                         ),
                         content: Text(
-                          "history.actions.clearAllConfirmBody".tr(),
+                          "common.actions.deleteReportConfirmBody".tr(),
                         ),
                         actions: [
                           TextButton(
@@ -293,7 +294,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        "report.dropdown.deleteReport".tr(),
+                        "common.actions.deleteReportConfirmTitle".tr(),
                         style: TextStyle(color: colorScheme.error),
                       ),
                     ],
@@ -390,8 +391,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                               _activeReport!.submittedAt.isNotEmpty)
                           ? _activeReport!.submittedAt
                           : (widget.reportDate.isNotEmpty
-                              ? widget.reportDate
-                              : widget.product.lastUpdated);
+                                ? widget.reportDate
+                                : widget.product.lastUpdated);
 
                       if (rawReportDate.isNotEmpty) {
                         return Padding(
@@ -631,11 +632,11 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       builder: (context) {
                         // Usa il commento da _activeReport se disponibile,
                         // altrimenti quello passato dal padre (già noto subito).
-                        final String effectiveComment =
-                            _activeReport != null
+                        final String effectiveComment = _activeReport != null
                             ? _activeReport!.comments
                             : widget.reportComment;
-                        final bool isEmpty = effectiveComment.trim().isEmpty ||
+                        final bool isEmpty =
+                            effectiveComment.trim().isEmpty ||
                             effectiveComment == "Nessun commento";
                         return Text(
                           isEmpty

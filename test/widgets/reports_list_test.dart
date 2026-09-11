@@ -78,7 +78,8 @@ Future<void> _pumpReportsList(
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  final settings = userSettings ??
+  final settings =
+      userSettings ??
       UserSettings(
         userId: 'user_test',
         strictMode: false,
@@ -101,8 +102,9 @@ Future<void> _pumpReportsList(
           isSynced: isSynced,
           userSettings: settings,
           userReports: userReports,
-          onDeleteReport:
-              passOnDeleteReport ? (id) => callbacks.onDeleteReport(id) : null,
+          onDeleteReport: passOnDeleteReport
+              ? (id) => callbacks.onDeleteReport(id)
+              : null,
         ),
       ),
     ),
@@ -156,8 +158,9 @@ void main() {
   // GROUP 2: Active Reports Summary Card
   // ═══════════════════════════════════════════════════════════════════════════
   group('Active Reports Summary Card', () {
-    testWidgets('displays active reports count and label when reports exist',
-        (tester) async {
+    testWidgets('displays active reports count and label when reports exist', (
+      tester,
+    ) async {
       final p1 = _createReportedProduct(barcode: '111', pendingReportsCount: 2);
       final p2 = _createReportedProduct(barcode: '222', pendingReportsCount: 1);
       final pNormal = _createReportedProduct(
@@ -177,23 +180,26 @@ void main() {
       expect(find.byIcon(Icons.pending_actions), findsOneWidget);
     });
 
-    testWidgets('summary card is hidden when there are no reported products and synced',
-        (tester) async {
-      await _pumpReportsList(
-        tester,
-        callbacks: mockCallbacks,
-        products: [
-          _createReportedProduct(barcode: '111', pendingReportsCount: 0),
-        ],
-        isSynced: true,
-      );
+    testWidgets(
+      'summary card is hidden when there are no reported products and synced',
+      (tester) async {
+        await _pumpReportsList(
+          tester,
+          callbacks: mockCallbacks,
+          products: [
+            _createReportedProduct(barcode: '111', pendingReportsCount: 0),
+          ],
+          isSynced: true,
+        );
 
-      expect(find.text('report.lists.activeReports'), findsNothing);
-      expect(find.byIcon(Icons.pending_actions), findsNothing);
-    });
+        expect(find.text('report.lists.activeReports'), findsNothing);
+        expect(find.byIcon(Icons.pending_actions), findsNothing);
+      },
+    );
 
-    testWidgets('summary card shows skeleton when empty and NOT synced',
-        (tester) async {
+    testWidgets('summary card shows skeleton when empty and NOT synced', (
+      tester,
+    ) async {
       await _pumpReportsList(
         tester,
         callbacks: mockCallbacks,
@@ -210,8 +216,9 @@ void main() {
   // GROUP 3: Empty State & Skeleton
   // ═══════════════════════════════════════════════════════════════════════════
   group('Empty State & Skeleton', () {
-    testWidgets('shows empty state when no products have pending reports',
-        (tester) async {
+    testWidgets('shows empty state when no products have pending reports', (
+      tester,
+    ) async {
       await _pumpReportsList(
         tester,
         callbacks: mockCallbacks,
@@ -225,8 +232,9 @@ void main() {
       expect(find.text('report.empty.title'), findsWidgets);
     });
 
-    testWidgets('shows empty search state when search returns 0 results',
-        (tester) async {
+    testWidgets('shows empty search state when search returns 0 results', (
+      tester,
+    ) async {
       final p1 = _createReportedProduct(barcode: '111', nameIt: 'Pasta Riso');
 
       await _pumpReportsList(
@@ -243,7 +251,7 @@ void main() {
 
       expect(find.text('Pasta Riso'), findsNothing);
       expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
-      expect(find.text('report.search.noResultsTitle'), findsOneWidget);
+      expect(find.text('common.search.noResultsTitle'), findsOneWidget);
     });
   });
 
@@ -251,8 +259,9 @@ void main() {
   // GROUP 4: Report Card Content & Sorting
   // ═══════════════════════════════════════════════════════════════════════════
   group('Report Card Content & Sorting', () {
-    testWidgets('displays product name, brand, barcode, date and CTA',
-        (tester) async {
+    testWidgets('displays product name, brand, barcode, date and CTA', (
+      tester,
+    ) async {
       final p1 = _createReportedProduct(
         barcode: '8001234567890',
         nameIt: 'Biscotti Senza Glutine',
@@ -276,8 +285,9 @@ void main() {
       expect(find.byIcon(Icons.qr_code_2), findsOneWidget);
     });
 
-    testWidgets('sorts reported products by lastUpdated descending',
-        (tester) async {
+    testWidgets('sorts reported products by lastUpdated descending', (
+      tester,
+    ) async {
       final pOlder = _createReportedProduct(
         barcode: '111',
         nameIt: 'Prodotto Vecchio',
@@ -314,7 +324,10 @@ void main() {
   group('Search & Report Filter Dropdown', () {
     testWidgets('searches by product name', (tester) async {
       final p1 = _createReportedProduct(barcode: '111', nameIt: 'Pasta Riso');
-      final p2 = _createReportedProduct(barcode: '222', nameIt: 'Biscotti Mais');
+      final p2 = _createReportedProduct(
+        barcode: '222',
+        nameIt: 'Biscotti Mais',
+      );
 
       await _pumpReportsList(
         tester,
@@ -402,8 +415,9 @@ void main() {
       expect(find.text('Pasta'), findsOneWidget);
     });
 
-    testWidgets('filter "Mie" shows only user-reported products',
-        (tester) async {
+    testWidgets('filter "Mie" shows only user-reported products', (
+      tester,
+    ) async {
       final pMine = _createReportedProduct(
         barcode: '111',
         nameIt: 'Mia Segnalazione',
@@ -467,8 +481,9 @@ void main() {
   // GROUP 7: Long-Press Deletion Flow
   // ═══════════════════════════════════════════════════════════════════════════
   group('Long-Press Deletion Flow', () {
-    testWidgets('long press on own report opens delete confirmation dialog',
-        (tester) async {
+    testWidgets('long press on own report opens delete confirmation dialog', (
+      tester,
+    ) async {
       final p1 = _createReportedProduct(
         barcode: '111',
         nameIt: 'Mio Prodotto Segnalato',
@@ -487,14 +502,21 @@ void main() {
       await tester.longPress(find.text('Mio Prodotto Segnalato'));
       await tester.pumpAndSettle();
 
-      expect(find.text('report.ui.deleteConfirmTitle'), findsOneWidget);
-      expect(find.text('report.ui.deleteConfirmBody'), findsOneWidget);
+      expect(
+        find.text('common.actions.deleteReportConfirmTitle'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('common.actions.deleteReportConfirmBody'),
+        findsOneWidget,
+      );
       expect(find.text('common.actions.cancel'), findsOneWidget);
       expect(find.text('common.actions.delete'), findsOneWidget);
     });
 
-    testWidgets('long press on other users report does NOT open dialog',
-        (tester) async {
+    testWidgets('long press on other users report does NOT open dialog', (
+      tester,
+    ) async {
       final p1 = _createReportedProduct(
         barcode: '111',
         nameIt: 'Prodotto di Altri',
@@ -511,11 +533,15 @@ void main() {
       await tester.longPress(find.text('Prodotto di Altri'));
       await tester.pumpAndSettle();
 
-      expect(find.text('report.ui.deleteConfirmTitle'), findsNothing);
+      expect(
+        find.text('common.actions.deleteReportConfirmTitle'),
+        findsNothing,
+      );
     });
 
-    testWidgets('cancelling dialog does NOT call onDeleteReport',
-        (tester) async {
+    testWidgets('cancelling dialog does NOT call onDeleteReport', (
+      tester,
+    ) async {
       final p1 = _createReportedProduct(barcode: '111', nameIt: 'Mio Prodotto');
       final report = _createProductReport(id: 'rep_1', barcode: '111');
 
@@ -537,28 +563,33 @@ void main() {
       verifyNever(() => mockCallbacks.onDeleteReport(any()));
     });
 
-    testWidgets('confirming dialog calls onDeleteReport with correct report id',
-        (tester) async {
-      final p1 = _createReportedProduct(barcode: '111', nameIt: 'Mio Prodotto');
-      final report = _createProductReport(id: 'rep_999_xyz', barcode: '111');
+    testWidgets(
+      'confirming dialog calls onDeleteReport with correct report id',
+      (tester) async {
+        final p1 = _createReportedProduct(
+          barcode: '111',
+          nameIt: 'Mio Prodotto',
+        );
+        final report = _createProductReport(id: 'rep_999_xyz', barcode: '111');
 
-      await _pumpReportsList(
-        tester,
-        callbacks: mockCallbacks,
-        products: [p1],
-        reportedBarcodes: ['111'],
-        userReports: [report],
-        isSynced: true,
-      );
+        await _pumpReportsList(
+          tester,
+          callbacks: mockCallbacks,
+          products: [p1],
+          reportedBarcodes: ['111'],
+          userReports: [report],
+          isSynced: true,
+        );
 
-      await tester.longPress(find.text('Mio Prodotto'));
-      await tester.pumpAndSettle();
+        await tester.longPress(find.text('Mio Prodotto'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('common.actions.delete'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('common.actions.delete'));
+        await tester.pumpAndSettle();
 
-      verify(() => mockCallbacks.onDeleteReport('rep_999_xyz')).called(1);
-    });
+        verify(() => mockCallbacks.onDeleteReport('rep_999_xyz')).called(1);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

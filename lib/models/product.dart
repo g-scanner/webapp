@@ -130,6 +130,27 @@ class Product {
     return ingredientsMap.values.any((ing) => ing.trim().isNotEmpty);
   }
 
+  /// `true` se il prodotto è un Ghost Product (prodotto legittimamente non trovato su OFF al momento della scansione).
+  /// Riconosciuto dall'assenza completa di ingredienti e di nomi in lingua.
+  bool get isGhostProduct => !hasIngredientData && nameMap.isEmpty;
+
+  /// `true` se il dato in cache è obsoleto o se la data di acquisizione è assente.
+  ///
+  /// - REGOLA AUREOLA GHOST PRODUCT: TTL massimo di 24 ore (1 giorno) per non oscurare
+  ///   prodotti aggiunti dalla community su OFF poco dopo la prima scansione.
+  /// - PRODOTTI NORMALI: TTL di 30 giorni.
+  bool get isStale {
+    if (fetchedFromOffAt == null) return true;
+    final fetchedDate = DateTime.tryParse(fetchedFromOffAt!);
+    if (fetchedDate == null) return true;
+
+    final diff = DateTime.now().difference(fetchedDate);
+    if (isGhostProduct) {
+      return diff.inHours >= 24;
+    }
+    return diff.inDays >= 30;
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
     // Gestione nameMap
     Map<String, String> nMap = {};

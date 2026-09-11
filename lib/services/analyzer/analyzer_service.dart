@@ -23,8 +23,10 @@ class AnalyzerService {
   static List<String> translateAllergens(
     List<String> allergensList,
     String preferredLanguage,
-  ) =>
-      AllergenCanonicalizer.translateAllergens(allergensList, preferredLanguage);
+  ) => AllergenCanonicalizer.translateAllergens(
+    allergensList,
+    preferredLanguage,
+  );
 
   static bool checkLactose(String ingredients, List<String> allergens) =>
       LactoseChecker.checkLactose(ingredients, allergens);
@@ -85,7 +87,8 @@ class AnalyzerService {
             isSafeGlutenClaim(t);
       }
 
-      hasGlutenFreeBollino = offTags.labelsTags.any(isSafeTag) ||
+      hasGlutenFreeBollino =
+          offTags.labelsTags.any(isSafeTag) ||
           offTags.allergensTags.any(isSafeTag) ||
           offTags.tracesTags.any(isSafeTag);
     }
@@ -124,9 +127,11 @@ class AnalyzerService {
       bool isGlutenTag(String t) {
         final lowerT = t.toLowerCase();
         // Ignora tag come "en:gluten-free" o "it:senza-glutine"
-        if (GlutenRules.safeTextKeywords.any((safe) =>
-                lowerT.contains(safe.replaceAll(' ', '-')) ||
-                lowerT.contains(safe)) ||
+        if (GlutenRules.safeTextKeywords.any(
+              (safe) =>
+                  lowerT.contains(safe.replaceAll(' ', '-')) ||
+                  lowerT.contains(safe),
+            ) ||
             isSafeGlutenClaim(t)) {
           return false;
         }
@@ -231,13 +236,14 @@ class AnalyzerService {
     // CASO 1: SEGNALAZIONI (Vince su tutto se non si richiede ignoreReports)
     if (!ignoreReports && reportCount > 0) {
       status = GlutenSafetyStatus.incerto;
-      reason = "product.analysis.userReported"
-          .tr(namedArgs: {"count": reportCount.toString()});
+      reason = "product.analysis.userReported".tr(
+        namedArgs: {"count": reportCount.toString()},
+      );
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
-          ingredient: "Segnalazione Utenti",
+          ingredient: "product.analysis.userReportIngredient".tr(),
           dangerLevel: "warning",
-          reason: "Incongruenze segnalate dalla community.",
+          reason: "product.analysis.userReportReason".tr(),
         ),
       );
     }
@@ -247,9 +253,9 @@ class AnalyzerService {
       reason = "product.analysis.safe".tr();
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
-          ingredient: "Etichetta Gluten-Free",
+          ingredient: "product.analysis.glutenFreeIngredient".tr(),
           dangerLevel: "safe",
-          reason: "Prodotto certificato o dichiarato senza glutine.",
+          reason: "product.analysis.glutenFreeReason".tr(),
         ),
       );
 
@@ -258,16 +264,16 @@ class AnalyzerService {
           IngredientAnalyzed(
             ingredient: foundDanger.join(', '),
             dangerLevel: "safe",
-            reason: "Ingrediente deglutinato (Sicuro grazie al bollino).",
+            reason: "product.analysis.debloatedIngredientReason".tr(),
           ),
         );
       }
       if (hasAnyTrace) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
-            ingredient: "Tracce (<20ppm)",
+            ingredient: "product.analysis.safeTraceIngredient".tr(),
             dangerLevel: "warning",
-            reason: "Tracce segnalate, ma il bollino garantisce limiti sicuri.",
+            reason: "product.analysis.safeTraceReason".tr(),
           ),
         );
       }
@@ -295,9 +301,9 @@ class AnalyzerService {
       if (hasOffGlutenAllergen) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
-            ingredient: "Allergeni OFF",
+            ingredient: "product.analysis.offAllergensIngredient".tr(),
             dangerLevel: "danger",
-            reason: "Glutine tra gli allergeni ufficiali.",
+            reason: "product.analysis.offAllergensReason".tr(),
           ),
         );
       }
@@ -317,9 +323,9 @@ class AnalyzerService {
       reason = "product.analysis.unknown".tr();
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
-          ingredient: "Dati Assenti",
+          ingredient: "product.analysis.missingDataIngredient".tr(),
           dangerLevel: "warning",
-          reason: "Nessuna specifica trovata.",
+          reason: "product.analysis.missingDataReason".tr(),
         ),
       );
     }
@@ -329,9 +335,9 @@ class AnalyzerService {
       reason = "product.analysis.naturallySafe".tr();
       ingredientsAnalyzed.add(
         IngredientAnalyzed(
-          ingredient: "Naturalmente Sicuro",
+          ingredient: "product.analysis.naturalSafeIngredient".tr(),
           dangerLevel: "safe",
-          reason: "Categoria a bassissimo rischio (es. olio, acqua).",
+          reason: "product.analysis.naturalSafeReason".tr(),
         ),
       );
     }
@@ -346,16 +352,16 @@ class AnalyzerService {
           IngredientAnalyzed(
             ingredient: "Tracce",
             dangerLevel: "warning",
-            reason: "Contaminazione crociata. Il filtro rigido è disattivato.",
+            reason: "product.analysis.traceWarningReason".tr(),
           ),
         );
       }
       if (hasMalto) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
-            ingredient: "Malto",
+            ingredient: "product.analysis.maltIngredient".tr(),
             dangerLevel: "warning",
-            reason: "Possibile malto d'orzo. Origine non specificata.",
+            reason: "product.analysis.maltReason".tr(),
           ),
         );
       }
@@ -364,31 +370,19 @@ class AnalyzerService {
           IngredientAnalyzed(
             ingredient: d,
             dangerLevel: "warning",
-            reason: "Ingrediente ambiguo.",
-          ),
-        );
-      }
-    }
-
-    // ─── AGGIUNTA ALLERTA LATTOSIO ALLA UI ──────────────────────────────────
-    if (alertLactose && foundLactose.isNotEmpty) {
-      reason += "\n\n🥛 ${'product.analysis.lactoseAlert'.tr()}";
-      for (var l in foundLactose) {
-        ingredientsAnalyzed.add(
-          IngredientAnalyzed(
-            ingredient: l,
-            dangerLevel: "danger",
-            reason: "product.analysis.lactoseDetected".tr(),
+            reason: "product.analysis.uncertainIngredientReason".tr(),
           ),
         );
       }
     }
 
     // Lingua target: preferita, con fallback a italiano
-    final String targetLang = AllergenCanonicalizer.allergenDisplayNames.values
-            .any((m) => m.containsKey(preferredLanguage))
+    final String targetLang =
+        AllergenCanonicalizer.allergenDisplayNames.values.any(
+          (m) => m.containsKey(preferredLanguage),
+        )
         ? preferredLanguage
-        : 'it';
+        : 'en';
 
     List<String> finalAllergens = translateAllergens(
       allergensList,
@@ -403,8 +397,8 @@ class AnalyzerService {
         !strictMode) {
       final glutenLabel =
           AllergenCanonicalizer.allergenDisplayNames['gluten']?[targetLang] ??
-              AllergenCanonicalizer.allergenDisplayNames['gluten']?['it'] ??
-              'Glutine';
+          AllergenCanonicalizer.allergenDisplayNames['gluten']?['it'] ??
+          'Glutine';
       finalAllergens.add(glutenLabel);
     }
 

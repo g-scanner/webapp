@@ -32,6 +32,8 @@ class ProductDetailCard extends StatefulWidget {
   final bool showScanDate;
   final String? scannedAt;
   final void Function(Product product)? onViewReport;
+  final bool isStaleData;
+  final ValueNotifier<bool>? isStaleDataNotifier;
 
   const ProductDetailCard({
     super.key,
@@ -53,6 +55,8 @@ class ProductDetailCard extends StatefulWidget {
     this.showScanDate = true,
     this.scannedAt,
     this.onViewReport,
+    this.isStaleData = false,
+    this.isStaleDataNotifier,
   });
 
   @override
@@ -79,12 +83,20 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     return widget.userReportId;
   }
 
+  bool get _isEffectiveStaleData {
+    if (widget.isStaleDataNotifier != null) {
+      return widget.isStaleDataNotifier!.value;
+    }
+    return widget.isStaleData;
+  }
+
   @override
   void initState() {
     super.initState();
     widget.productNotifier?.addListener(_onProductNotifierChanged);
     widget.reportIdNotifier?.addListener(_onReportIdNotifierChanged);
     widget.isInHistoryNotifier?.addListener(_onIsInHistoryChanged);
+    widget.isStaleDataNotifier?.addListener(_onStaleDataNotifierChanged);
   }
 
   @override
@@ -92,6 +104,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     widget.productNotifier?.removeListener(_onProductNotifierChanged);
     widget.reportIdNotifier?.removeListener(_onReportIdNotifierChanged);
     widget.isInHistoryNotifier?.removeListener(_onIsInHistoryChanged);
+    widget.isStaleDataNotifier?.removeListener(_onStaleDataNotifierChanged);
     _scrollController.dispose();
     super.dispose();
   }
@@ -105,6 +118,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   void _onIsInHistoryChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onStaleDataNotifierChanged() {
     if (mounted) setState(() {});
   }
 
@@ -264,11 +281,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     builder: (ctx) => AlertDialog(
                       backgroundColor: cardBg,
                       title: Text(
-                        "product.deleteHistory.confirmTitle".tr(),
+                        "common.actions.deleteHistoryConfirmTitle".tr(),
                         style: TextStyle(color: colorScheme.onSurface),
                       ),
                       content: Text(
-                        "product.deleteHistory.confirmBody".tr(),
+                        "common.actions.deleteHistoryConfirmBody".tr(),
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                       actions: [
@@ -301,11 +318,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     builder: (ctx) => AlertDialog(
                       backgroundColor: cardBg,
                       title: Text(
-                        "product.deleteReport.confirmTitle".tr(),
+                        "common.actions.deleteReportConfirmTitle".tr(),
                         style: TextStyle(color: colorScheme.onSurface),
                       ),
                       content: Text(
-                        "product.deleteReport.confirmBody".tr(),
+                        "common.actions.deleteReportConfirmBody".tr(),
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                       actions: [
@@ -345,7 +362,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            "product.deleteHistory.menuLabel".tr(),
+                            "common.actions.deleteHistoryConfirmTitle".tr(),
                             style: TextStyle(color: colorScheme.error),
                           ),
                         ),
@@ -361,7 +378,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            "product.deleteReport.menuLabel".tr(),
+                            "common.actions.deleteReportConfirmTitle".tr(),
                             style: TextStyle(color: colorScheme.error),
                           ),
                         ),
@@ -468,7 +485,13 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               ),
               const SizedBox(height: 24),
 
-              // ── Blocco Info / Avvertenze ─────────────────────────────
+              // ── Avviso Dati Cache Stale / Non Verificati Online ───────────
+              if (_isEffectiveStaleData) ...[
+                const StaleDataWarningCard(),
+                const SizedBox(height: 24),
+              ],
+
+              // ── Blocco Info / Avvertenze Generali ─────────────────────
               const ProductWarningCard(),
               const SizedBox(height: 24),
 

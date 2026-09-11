@@ -4,5 +4,6 @@
 export 'constants/constants.dart';
 export 'localization/localization.dart';
 export 'network/network.dart';
+export 'scan/scan.dart';
 export 'theme/theme.dart';
 export 'utils/utils.dart';

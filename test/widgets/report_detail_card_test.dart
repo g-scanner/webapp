@@ -39,10 +39,12 @@ void _stubFirestoreEmptyQuery(MockFirebaseFirestore mockFirestore) {
   final mockSnapshot = MockQuerySnapshot();
 
   when(() => mockFirestore.collection('reports')).thenReturn(mockCollection);
-  when(() => mockCollection.where('barcode', isEqualTo: any(named: 'isEqualTo')))
-      .thenReturn(mockQuery1);
-  when(() => mockQuery1.where('status', isEqualTo: any(named: 'isEqualTo')))
-      .thenReturn(mockQuery2);
+  when(
+    () => mockCollection.where('barcode', isEqualTo: any(named: 'isEqualTo')),
+  ).thenReturn(mockQuery1);
+  when(
+    () => mockQuery1.where('status', isEqualTo: any(named: 'isEqualTo')),
+  ).thenReturn(mockQuery2);
   when(() => mockQuery2.limit(any())).thenReturn(mockQuery2);
   when(() => mockQuery2.get()).thenAnswer((_) async => mockSnapshot);
   when(() => mockSnapshot.docs).thenReturn([]);
@@ -60,10 +62,12 @@ void _stubFirestoreWithReport(
   final mockDocSnap = MockQueryDocumentSnapshot();
 
   when(() => mockFirestore.collection('reports')).thenReturn(mockCollection);
-  when(() => mockCollection.where('barcode', isEqualTo: any(named: 'isEqualTo')))
-      .thenReturn(mockQuery1);
-  when(() => mockQuery1.where('status', isEqualTo: any(named: 'isEqualTo')))
-      .thenReturn(mockQuery2);
+  when(
+    () => mockCollection.where('barcode', isEqualTo: any(named: 'isEqualTo')),
+  ).thenReturn(mockQuery1);
+  when(
+    () => mockQuery1.where('status', isEqualTo: any(named: 'isEqualTo')),
+  ).thenReturn(mockQuery2);
   when(() => mockQuery2.limit(any())).thenReturn(mockQuery2);
   when(() => mockQuery2.get()).thenAnswer((_) async => mockSnapshot);
   when(() => mockSnapshot.docs).thenReturn([mockDocSnap]);
@@ -188,15 +192,21 @@ void main() {
   group('AppBar & Header', () {
     testWidgets('renders AppBar title (report.title key)', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+      );
       expect(find.text('report.title'), findsOneWidget);
     });
 
     testWidgets('back button calls onBack callback', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+      );
       await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
       await tester.pump();
       verify(() => mockCallbacks.onBack()).called(1);
@@ -204,22 +214,31 @@ void main() {
 
     testWidgets('product name displayed in hero section', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+      );
       expect(find.text('Pasta Senza Glutine'), findsOneWidget);
     });
 
     testWidgets('product brand displayed in hero section', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+      );
       expect(find.text('Marca Buona'), findsOneWidget);
     });
 
     testWidgets('product barcode displayed in hero section', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+      );
       expect(find.text(_kBarcode), findsOneWidget);
     });
   });
@@ -230,40 +249,51 @@ void main() {
   group('Previous Status Card', () {
     testWidgets('shows "product.bigStatus.safe" for adatto', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          originalStatus: GlutenSafetyStatus.adatto);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        originalStatus: GlutenSafetyStatus.adatto,
+      );
       expect(find.text('product.bigStatus.safe'), findsOneWidget);
     });
 
-    testWidgets('shows "product.bigStatus.unsafe" for nonAdatto',
-        (tester) async {
+    testWidgets('shows "product.bigStatus.unsafe" for nonAdatto', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          originalStatus: GlutenSafetyStatus.nonAdatto);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        originalStatus: GlutenSafetyStatus.nonAdatto,
+      );
       expect(find.text('product.bigStatus.unsafe'), findsOneWidget);
     });
 
-    testWidgets('shows "product.bigStatus.uncertain" for incerto',
-        (tester) async {
+    testWidgets('shows "product.bigStatus.uncertain" for incerto', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          originalStatus: GlutenSafetyStatus.incerto);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        originalStatus: GlutenSafetyStatus.incerto,
+      );
       expect(find.text('product.bigStatus.uncertain'), findsOneWidget);
     });
 
-    testWidgets('shows "product.bigStatus.unknown" for sconosciuto',
-        (tester) async {
+    testWidgets('shows "product.bigStatus.unknown" for sconosciuto', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          originalStatus: GlutenSafetyStatus.sconosciuto);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        originalStatus: GlutenSafetyStatus.sconosciuto,
+      );
       expect(find.text('product.bigStatus.unknown'), findsOneWidget);
     });
   });
@@ -273,198 +303,273 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   // Il motivo è dentro un RichText (TextSpan) → usa byWidgetPredicate
-  Finder findRichTextContaining(String substring) =>
-      find.byWidgetPredicate(
-        (w) => w is RichText && w.text.toPlainText().contains(substring),
-      );
+  Finder findRichTextContaining(String substring) => find.byWidgetPredicate(
+    (w) => w is RichText && w.text.toPlainText().contains(substring),
+  );
 
   group('Report Details Section', () {
     testWidgets('shows translated reason for "label_unclear"', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportReasonKey: 'label_unclear');
-      expect(findRichTextContaining('report.ui.labelUnclear'),
-          findsAtLeastNWidgets(1));
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportReasonKey: 'label_unclear',
+      );
+      expect(
+        findRichTextContaining('common.reportReasons.unclear'),
+        findsAtLeastNWidgets(1),
+      );
     });
 
     testWidgets('shows translated reason for "outdated"', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportReasonKey: 'outdated');
-      expect(findRichTextContaining('report.ui.outdated'),
-          findsAtLeastNWidgets(1));
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportReasonKey: 'outdated',
+      );
+      expect(
+        findRichTextContaining('common.reportReasons.outdated'),
+        findsAtLeastNWidgets(1),
+      );
     });
 
-    testWidgets('shows translated reason for "incorrect_status"',
-        (tester) async {
+    testWidgets('shows translated reason for "incorrect_status"', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportReasonKey: 'incorrect_status');
-      expect(findRichTextContaining('report.ui.incorrectStatus'),
-          findsAtLeastNWidgets(1));
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportReasonKey: 'incorrect_status',
+      );
+      expect(
+        findRichTextContaining('common.reportReasons.wrongStatus'),
+        findsAtLeastNWidgets(1),
+      );
     });
 
     testWidgets('shows translated reason for "other"', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportReasonKey: 'other');
-      expect(findRichTextContaining('report.ui.other'),
-          findsAtLeastNWidgets(1));
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportReasonKey: 'other',
+      );
+      expect(
+        findRichTextContaining('common.reportReasons.other'),
+        findsAtLeastNWidgets(1),
+      );
     });
 
-    testWidgets('shows "report.ui.generic" for unknown reason key',
-        (tester) async {
+    testWidgets('shows "report.ui.generic" for unknown reason key', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportReasonKey: 'some_unknown_key_xyz');
-      expect(findRichTextContaining('report.ui.generic'),
-          findsAtLeastNWidgets(1));
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportReasonKey: 'some_unknown_key_xyz',
+      );
+      expect(
+        findRichTextContaining('report.ui.generic'),
+        findsAtLeastNWidgets(1),
+      );
     });
 
-    testWidgets('shows user comment in blockquote when non-empty',
-        (tester) async {
+    testWidgets('shows user comment in blockquote when non-empty', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportComment: 'Il prodotto non è certificato.');
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportComment: 'Il prodotto non è certificato.',
+      );
       expect(find.text('"Il prodotto non è certificato."'), findsOneWidget);
     });
 
     testWidgets(
-        'shows "report.ui.noAdditionalComment" when reportComment is empty',
-        (tester) async {
-      _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
+      'shows "report.ui.noAdditionalComment" when reportComment is empty',
+      (tester) async {
+        _stubFirestoreEmptyQuery(mockFirestore);
+        await _pumpReportDetailCard(
+          tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
-          reportComment: '');
-      expect(find.text('report.ui.noAdditionalComment'), findsOneWidget);
-    });
+          reportComment: '',
+        );
+        expect(find.text('report.ui.noAdditionalComment'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'shows "report.ui.noAdditionalComment" when reportComment is "Nessun commento"',
-        (tester) async {
-      _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
+      'shows "report.ui.noAdditionalComment" when reportComment is "Nessun commento"',
+      (tester) async {
+        _stubFirestoreEmptyQuery(mockFirestore);
+        await _pumpReportDetailCard(
+          tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
-          reportComment: 'Nessun commento');
-      expect(find.text('report.ui.noAdditionalComment'), findsOneWidget);
-    });
+          reportComment: 'Nessun commento',
+        );
+        expect(find.text('report.ui.noAdditionalComment'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'shows "report.ui.noAdditionalComment" when reportComment is whitespace',
-        (tester) async {
-      _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
+      'shows "report.ui.noAdditionalComment" when reportComment is whitespace',
+      (tester) async {
+        _stubFirestoreEmptyQuery(mockFirestore);
+        await _pumpReportDetailCard(
+          tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
-          reportComment: '   ');
-      expect(find.text('report.ui.noAdditionalComment'), findsOneWidget);
-    });
+          reportComment: '   ',
+        );
+        expect(find.text('report.ui.noAdditionalComment'), findsOneWidget);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // GROUP 4: Report Date Display
   // ═══════════════════════════════════════════════════════════════════════════
   group('Report Date Display', () {
-    testWidgets('shows "report.ui.reportDate.today" for today ISO date',
-        (tester) async {
+    testWidgets('shows "report.ui.reportDate.today" for today ISO date', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       final now = DateTime.now();
-      final todayIso = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}T10:30:00Z';
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportDate: todayIso);
+      final todayIso =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}T10:30:00Z';
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportDate: todayIso,
+      );
       expect(find.textContaining('report.ui.reportDate.today'), findsOneWidget);
     });
 
-    testWidgets('shows "report.ui.reportDate.yesterday" for yesterday',
-        (tester) async {
+    testWidgets('shows "report.ui.reportDate.yesterday" for yesterday', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final iso = '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}T08:00:00Z';
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportDate: iso);
-      expect(find.textContaining('report.ui.reportDate.yesterday'), findsOneWidget);
+      final iso =
+          '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}T08:00:00Z';
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportDate: iso,
+      );
+      expect(
+        find.textContaining('report.ui.reportDate.yesterday'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('shows "report.ui.reportDate.default" for older dates',
-        (tester) async {
+    testWidgets('shows "report.ui.reportDate.default" for older dates', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportDate: '2024-01-15T14:30:00Z');
-      expect(find.textContaining('report.ui.reportDate.default'), findsOneWidget);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportDate: '2024-01-15T14:30:00Z',
+      );
+      expect(
+        find.textContaining('report.ui.reportDate.default'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('falls back to raw string if date is malformed', (tester) async {
+    testWidgets('falls back to raw string if date is malformed', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportDate: 'not-a-valid-date');
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportDate: 'not-a-valid-date',
+      );
       expect(find.text('not-a-valid-date'), findsOneWidget);
     });
 
-    testWidgets('shows nothing when reportDate and lastUpdated are both empty',
-        (tester) async {
-      _stubFirestoreEmptyQuery(mockFirestore);
-      final productNoDate = _createSampleProduct(lastUpdated: '');
-      await _pumpReportDetailCard(tester,
+    testWidgets(
+      'shows nothing when reportDate and lastUpdated are both empty',
+      (tester) async {
+        _stubFirestoreEmptyQuery(mockFirestore);
+        final productNoDate = _createSampleProduct(lastUpdated: '');
+        await _pumpReportDetailCard(
+          tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
           product: productNoDate,
-          reportDate: '');
-      expect(find.textContaining('report.ui.reportDate'), findsNothing);
-    });
+          reportDate: '',
+        );
+        expect(find.textContaining('report.ui.reportDate'), findsNothing);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // GROUP 5: Voting System
   // ═══════════════════════════════════════════════════════════════════════════
   group('Voting System', () {
-    testWidgets('shows initial score from widget.score parameter',
-        (tester) async {
+    testWidgets('shows initial score from widget.score parameter', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 42);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 42,
+      );
       expect(find.text('42'), findsOneWidget);
     });
 
-    testWidgets('shows score from onInitVote when it returns non-empty map',
-        (tester) async {
+    testWidgets('shows score from onInitVote when it returns non-empty map', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 99, 'userVote': 0});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 5);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 99, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 5,
+      );
       await tester.pump(const Duration(milliseconds: 200));
       expect(find.text('99'), findsOneWidget);
     });
 
-    testWidgets('upvote increases score by 1 and calls onVote(1)',
-        (tester) async {
+    testWidgets('upvote increases score by 1 and calls onVote(1)', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 10, 'userVote': 0});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 10);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 10,
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_up_outlined));
@@ -475,13 +580,19 @@ void main() {
       verify(() => mockCallbacks.onVote(1)).called(1);
     });
 
-    testWidgets('tapping upvote twice retracts vote (score back to initial)',
-        (tester) async {
+    testWidgets('tapping upvote twice retracts vote (score back to initial)', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 10, 'userVote': 0});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 10);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 10,
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_up_outlined));
@@ -499,13 +610,19 @@ void main() {
       ]);
     });
 
-    testWidgets('downvote decreases score by 1 and calls onVote(-1)',
-        (tester) async {
+    testWidgets('downvote decreases score by 1 and calls onVote(-1)', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 10, 'userVote': 0});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 10);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 10,
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_down_outlined));
@@ -516,37 +633,50 @@ void main() {
       verify(() => mockCallbacks.onVote(-1)).called(1);
     });
 
-    testWidgets('tapping downvote twice retracts vote (score back to initial)',
-        (tester) async {
+    testWidgets(
+      'tapping downvote twice retracts vote (score back to initial)',
+      (tester) async {
+        _stubFirestoreEmptyQuery(mockFirestore);
+        when(
+          () => mockCallbacks.onInitVote(),
+        ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+        await _pumpReportDetailCard(
+          tester,
+          callbacks: mockCallbacks,
+          mockFirestore: mockFirestore,
+          score: 10,
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        await tester.tap(find.byIcon(Icons.thumb_down_outlined));
+        await tester.pump();
+        expect(find.text('9'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.thumb_down));
+        await tester.pump();
+        expect(find.text('10'), findsOneWidget);
+        expect(find.byIcon(Icons.thumb_down_outlined), findsOneWidget);
+
+        verifyInOrder([
+          () => mockCallbacks.onVote(-1),
+          () => mockCallbacks.onVote(0),
+        ]);
+      },
+    );
+
+    testWidgets('switching upvote -> downvote decreases score by 2', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 10, 'userVote': 0});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 10);
-      await tester.pump(const Duration(milliseconds: 200));
-
-      await tester.tap(find.byIcon(Icons.thumb_down_outlined));
-      await tester.pump();
-      expect(find.text('9'), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.thumb_down));
-      await tester.pump();
-      expect(find.text('10'), findsOneWidget);
-      expect(find.byIcon(Icons.thumb_down_outlined), findsOneWidget);
-
-      verifyInOrder([
-        () => mockCallbacks.onVote(-1),
-        () => mockCallbacks.onVote(0),
-      ]);
-    });
-
-    testWidgets('switching upvote -> downvote decreases score by 2',
-        (tester) async {
-      _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 10, 'userVote': 0});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 10);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 10,
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_up_outlined));
@@ -564,13 +694,19 @@ void main() {
       ]);
     });
 
-    testWidgets('switching downvote -> upvote increases score by 2',
-        (tester) async {
+    testWidgets('switching downvote -> upvote increases score by 2', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 10, 'userVote': 0});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 10);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 10,
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_down_outlined));
@@ -588,13 +724,19 @@ void main() {
       ]);
     });
 
-    testWidgets('score shows "0" (not negative) when it goes below zero',
-        (tester) async {
+    testWidgets('score shows "0" (not negative) when it goes below zero', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 0, 'userVote': 0});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 0);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 0, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 0,
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_down_outlined));
@@ -604,16 +746,20 @@ void main() {
       expect(find.text('0'), findsOneWidget);
     });
 
-    testWidgets('onVote is NOT called when onVote param is null',
-        (tester) async {
+    testWidgets('onVote is NOT called when onVote param is null', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 5, 'userVote': 0});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          score: 5,
-          passOnVote: false);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 5, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 5,
+        passOnVote: false,
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_up_outlined));
@@ -623,26 +769,38 @@ void main() {
       verifyNever(() => mockCallbacks.onVote(any()));
     });
 
-    testWidgets('onInitVote userVote=1 shows filled thumb_up icon',
-        (tester) async {
+    testWidgets('onInitVote userVote=1 shows filled thumb_up icon', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 7, 'userVote': 1});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 5);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 7, 'userVote': 1});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 5,
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byIcon(Icons.thumb_up), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
     });
 
-    testWidgets('onInitVote userVote=-1 shows filled thumb_down icon',
-        (tester) async {
+    testWidgets('onInitVote userVote=-1 shows filled thumb_down icon', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      when(() => mockCallbacks.onInitVote())
-          .thenAnswer((_) async => {'score': 3, 'userVote': -1});
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks, mockFirestore: mockFirestore, score: 5);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 3, 'userVote': -1});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 5,
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byIcon(Icons.thumb_down), findsOneWidget);
@@ -654,19 +812,24 @@ void main() {
   // GROUP 6: Loading Skeleton State
   // ═══════════════════════════════════════════════════════════════════════════
   group('Loading Skeleton State', () {
-    testWidgets('shows placeholder icons while _isVoteLoading is true',
-        (tester) async {
+    testWidgets('shows placeholder icons while _isVoteLoading is true', (
+      tester,
+    ) async {
       final completer = Completer<QuerySnapshot<Map<String, dynamic>>>();
       final mockCollection = MockCollectionReference();
       final mockQuery1 = MockQuery();
       final mockQuery2 = MockQuery();
 
-      when(() => mockFirestore.collection('reports')).thenReturn(mockCollection);
-      when(() => mockCollection.where('barcode',
-              isEqualTo: any(named: 'isEqualTo')))
-          .thenReturn(mockQuery1);
-      when(() => mockQuery1.where('status', isEqualTo: any(named: 'isEqualTo')))
-          .thenReturn(mockQuery2);
+      when(
+        () => mockFirestore.collection('reports'),
+      ).thenReturn(mockCollection);
+      when(
+        () =>
+            mockCollection.where('barcode', isEqualTo: any(named: 'isEqualTo')),
+      ).thenReturn(mockQuery1);
+      when(
+        () => mockQuery1.where('status', isEqualTo: any(named: 'isEqualTo')),
+      ).thenReturn(mockQuery2);
       when(() => mockQuery2.limit(any())).thenReturn(mockQuery2);
       when(() => mockQuery2.get()).thenAnswer((_) => completer.future);
 
@@ -711,147 +874,187 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
   group('Delete Report (3-dots menu)', () {
     testWidgets(
-        'PopupMenuButton visible when isOwnReport=true and onDeleteReport is set',
-        (tester) async {
-      _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
+      'PopupMenuButton visible when isOwnReport=true and onDeleteReport is set',
+      (tester) async {
+        _stubFirestoreEmptyQuery(mockFirestore);
+        await _pumpReportDetailCard(
+          tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
-          isOwnReport: true);
-      expect(find.byIcon(Icons.more_vert), findsOneWidget);
-    });
+          isOwnReport: true,
+        );
+        expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      },
+    );
 
-    testWidgets('PopupMenuButton hidden when isOwnReport=false', (tester) async {
+    testWidgets('PopupMenuButton hidden when isOwnReport=false', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          isOwnReport: false);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        isOwnReport: false,
+      );
       expect(find.byIcon(Icons.more_vert), findsNothing);
     });
 
     testWidgets(
-        'PopupMenuButton hidden when onDeleteReport=null even if isOwnReport=true',
-        (tester) async {
-      _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
+      'PopupMenuButton hidden when onDeleteReport=null even if isOwnReport=true',
+      (tester) async {
+        _stubFirestoreEmptyQuery(mockFirestore);
+        await _pumpReportDetailCard(
+          tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
           isOwnReport: true,
-          passOnDeleteReport: false);
-      expect(find.byIcon(Icons.more_vert), findsNothing);
-    });
+          passOnDeleteReport: false,
+        );
+        expect(find.byIcon(Icons.more_vert), findsNothing);
+      },
+    );
 
-    testWidgets('tapping 3-dots opens popup with deleteReport item',
-        (tester) async {
+    testWidgets('tapping 3-dots opens popup with deleteReport item', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          isOwnReport: true);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        isOwnReport: true,
+      );
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await _pumpAndSettleIgnoringOverflow(tester);
 
-      expect(find.text('report.dropdown.deleteReport'), findsOneWidget);
+      expect(
+        find.text('common.actions.deleteReportConfirmTitle'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('selecting delete opens AlertDialog with confirm title/body',
-        (tester) async {
+    testWidgets('selecting delete opens AlertDialog with confirm title/body', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          isOwnReport: true);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        isOwnReport: true,
+      );
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await _pumpAndSettleIgnoringOverflow(tester);
-      await tester.tap(find.text('report.dropdown.deleteReport'));
+      await tester.tap(find.text('common.actions.deleteReportConfirmTitle'));
       await _pumpAndSettleIgnoringOverflow(tester);
 
-      expect(find.text('history.actions.clearAllConfirmTitle'), findsOneWidget);
-      expect(find.text('history.actions.clearAllConfirmBody'), findsOneWidget);
-    });
-
-    testWidgets('cancelling delete dialog does NOT call onDeleteReport or onBack',
-        (tester) async {
-      _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          isOwnReport: true);
-
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await _pumpAndSettleIgnoringOverflow(tester);
-      await tester.tap(find.text('report.dropdown.deleteReport'));
-      await _pumpAndSettleIgnoringOverflow(tester);
-      await tester.tap(find.text('common.actions.cancel'));
-      await _pumpAndSettleIgnoringOverflow(tester);
-
-      verifyNever(() => mockCallbacks.onDeleteReport(any()));
-      verifyNever(() => mockCallbacks.onBack());
+      expect(
+        find.text('common.actions.deleteReportConfirmTitle'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('common.actions.deleteReportConfirmBody'),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
-        'confirming delete calls onDeleteReport with widget.reportId then onBack',
-        (tester) async {
-      _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
+      'cancelling delete dialog does NOT call onDeleteReport or onBack',
+      (tester) async {
+        _stubFirestoreEmptyQuery(mockFirestore);
+        await _pumpReportDetailCard(
+          tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
           isOwnReport: true,
-          reportId: 'test_report_id_999');
+        );
 
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await _pumpAndSettleIgnoringOverflow(tester);
-      await tester.tap(find.text('report.dropdown.deleteReport'));
-      await _pumpAndSettleIgnoringOverflow(tester);
-      await tester.tap(find.text('common.actions.delete'));
-      await _pumpAndSettleIgnoringOverflow(tester);
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await _pumpAndSettleIgnoringOverflow(tester);
+        await tester.tap(find.text('common.actions.deleteReportConfirmTitle'));
+        await _pumpAndSettleIgnoringOverflow(tester);
+        await tester.tap(find.text('common.actions.cancel'));
+        await _pumpAndSettleIgnoringOverflow(tester);
 
-      verify(() => mockCallbacks.onDeleteReport('test_report_id_999')).called(1);
-      verify(() => mockCallbacks.onBack()).called(1);
-    });
+        verifyNever(() => mockCallbacks.onDeleteReport(any()));
+        verifyNever(() => mockCallbacks.onBack());
+      },
+    );
 
     testWidgets(
-        'confirming delete uses _activeReport.id as fallback when reportId is null',
-        (tester) async {
-      _stubFirestoreWithReport(mockFirestore, {
-        'id': 'firestore_report_id',
-        'barcode': _kBarcode,
-        'productName': 'Pasta',
-        'brand': 'Marca',
-        'type': 'label_unclear',
-        'comments': '',
-        'submittedAt': '2026-08-10T10:00:00Z',
-        'status': 'open',
-        'score': 5,
-      });
-
-      await _pumpReportDetailCard(tester,
+      'confirming delete calls onDeleteReport with widget.reportId then onBack',
+      (tester) async {
+        _stubFirestoreEmptyQuery(mockFirestore);
+        await _pumpReportDetailCard(
+          tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
           isOwnReport: true,
-          reportId: null);
-      await tester.pump(const Duration(milliseconds: 200));
+          reportId: 'test_report_id_999',
+        );
 
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await _pumpAndSettleIgnoringOverflow(tester);
-      await tester.tap(find.text('report.dropdown.deleteReport'));
-      await _pumpAndSettleIgnoringOverflow(tester);
-      await tester.tap(find.text('common.actions.delete'));
-      await _pumpAndSettleIgnoringOverflow(tester);
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await _pumpAndSettleIgnoringOverflow(tester);
+        await tester.tap(find.text('common.actions.deleteReportConfirmTitle'));
+        await _pumpAndSettleIgnoringOverflow(tester);
+        await tester.tap(find.text('common.actions.delete'));
+        await _pumpAndSettleIgnoringOverflow(tester);
 
-      verify(() => mockCallbacks.onDeleteReport('firestore_report_id')).called(1);
-    });
+        verify(
+          () => mockCallbacks.onDeleteReport('test_report_id_999'),
+        ).called(1);
+        verify(() => mockCallbacks.onBack()).called(1);
+      },
+    );
+
+    testWidgets(
+      'confirming delete uses _activeReport.id as fallback when reportId is null',
+      (tester) async {
+        _stubFirestoreWithReport(mockFirestore, {
+          'id': 'firestore_report_id',
+          'barcode': _kBarcode,
+          'productName': 'Pasta',
+          'brand': 'Marca',
+          'type': 'label_unclear',
+          'comments': '',
+          'submittedAt': '2026-08-10T10:00:00Z',
+          'status': 'open',
+          'score': 5,
+        });
+
+        await _pumpReportDetailCard(
+          tester,
+          callbacks: mockCallbacks,
+          mockFirestore: mockFirestore,
+          isOwnReport: true,
+          reportId: null,
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await _pumpAndSettleIgnoringOverflow(tester);
+        await tester.tap(find.text('common.actions.deleteReportConfirmTitle'));
+        await _pumpAndSettleIgnoringOverflow(tester);
+        await tester.tap(find.text('common.actions.delete'));
+        await _pumpAndSettleIgnoringOverflow(tester);
+
+        verify(
+          () => mockCallbacks.onDeleteReport('firestore_report_id'),
+        ).called(1);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // GROUP 8: _loadInitialData – Firestore Active Report
   // ═══════════════════════════════════════════════════════════════════════════
   group('_loadInitialData – Firestore active report', () {
-    testWidgets('Firestore comment overrides widget.reportComment',
-        (tester) async {
+    testWidgets('Firestore comment overrides widget.reportComment', (
+      tester,
+    ) async {
       _stubFirestoreWithReport(mockFirestore, {
         'id': 'report_123',
         'barcode': _kBarcode,
@@ -864,18 +1067,21 @@ void main() {
         'score': 5,
       });
 
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportComment: 'Questo commento non deve apparire.');
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportComment: 'Questo commento non deve apparire.',
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('"Commento dal server Firestore."'), findsOneWidget);
       expect(find.textContaining('non deve apparire'), findsNothing);
     });
 
-    testWidgets('Firestore report type overrides widget.reportReasonKey',
-        (tester) async {
+    testWidgets('Firestore report type overrides widget.reportReasonKey', (
+      tester,
+    ) async {
       _stubFirestoreWithReport(mockFirestore, {
         'id': 'report_123',
         'barcode': _kBarcode,
@@ -888,65 +1094,82 @@ void main() {
         'score': 5,
       });
 
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportReasonKey: 'label_unclear');
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportReasonKey: 'label_unclear',
+      );
       await tester.pump(const Duration(milliseconds: 200));
 
       // Il motivo è in un RichText (TextSpan), non in un semplice Text
-      expect(findRichTextContaining('report.ui.incorrectStatus'),
-          findsAtLeastNWidgets(1));
+      expect(
+        findRichTextContaining('common.reportReasons.wrongStatus'),
+        findsAtLeastNWidgets(1),
+      );
     });
 
-    testWidgets('Firestore submittedAt used for date display over widget.reportDate',
-        (tester) async {
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayIso =
-          '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}T09:00:00Z';
+    testWidgets(
+      'Firestore submittedAt used for date display over widget.reportDate',
+      (tester) async {
+        final yesterday = DateTime.now().subtract(const Duration(days: 1));
+        final yesterdayIso =
+            '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}T09:00:00Z';
 
-      _stubFirestoreWithReport(mockFirestore, {
-        'id': 'report_123',
-        'barcode': _kBarcode,
-        'productName': 'Pasta',
-        'brand': 'Marca',
-        'type': 'label_unclear',
-        'comments': '',
-        'submittedAt': yesterdayIso,
-        'status': 'open',
-        'score': 5,
-      });
+        _stubFirestoreWithReport(mockFirestore, {
+          'id': 'report_123',
+          'barcode': _kBarcode,
+          'productName': 'Pasta',
+          'brand': 'Marca',
+          'type': 'label_unclear',
+          'comments': '',
+          'submittedAt': yesterdayIso,
+          'status': 'open',
+          'score': 5,
+        });
 
-      await _pumpReportDetailCard(tester,
+        await _pumpReportDetailCard(
+          tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
-          reportDate: '2024-01-01T00:00:00Z');
-      await tester.pump(const Duration(milliseconds: 200));
+          reportDate: '2024-01-01T00:00:00Z',
+        );
+        await tester.pump(const Duration(milliseconds: 200));
 
-      expect(
-          find.textContaining('report.ui.reportDate.yesterday'), findsOneWidget);
-    });
+        expect(
+          find.textContaining('report.ui.reportDate.yesterday'),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('Firestore exception: widget loads and shows fallback data',
-        (tester) async {
+    testWidgets('Firestore exception: widget loads and shows fallback data', (
+      tester,
+    ) async {
       final mockCollection = MockCollectionReference();
       final mockQuery1 = MockQuery();
       final mockQuery2 = MockQuery();
 
-      when(() => mockFirestore.collection('reports')).thenReturn(mockCollection);
-      when(() => mockCollection.where('barcode',
-              isEqualTo: any(named: 'isEqualTo')))
-          .thenReturn(mockQuery1);
-      when(() => mockQuery1.where('status', isEqualTo: any(named: 'isEqualTo')))
-          .thenReturn(mockQuery2);
+      when(
+        () => mockFirestore.collection('reports'),
+      ).thenReturn(mockCollection);
+      when(
+        () =>
+            mockCollection.where('barcode', isEqualTo: any(named: 'isEqualTo')),
+      ).thenReturn(mockQuery1);
+      when(
+        () => mockQuery1.where('status', isEqualTo: any(named: 'isEqualTo')),
+      ).thenReturn(mockQuery2);
       when(() => mockQuery2.limit(any())).thenReturn(mockQuery2);
       when(() => mockQuery2.get()).thenThrow(Exception('Firestore Error!'));
 
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          reportComment: 'Fallback comment',
-          score: 3);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        reportComment: 'Fallback comment',
+        score: 3,
+      );
       await tester.pump(const Duration(milliseconds: 300));
 
       // No crash; shows the fallback data from widget params
@@ -959,36 +1182,45 @@ void main() {
   // GROUP 9: Product Link Navigation
   // ═══════════════════════════════════════════════════════════════════════════
   group('Product Link Navigation', () {
-    testWidgets('shows showProductCard card when showProductLink=true',
-        (tester) async {
+    testWidgets('shows showProductCard card when showProductLink=true', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          showProductLink: true);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        showProductLink: true,
+      );
 
       expect(find.text('report.ui.showProductCard'), findsOneWidget);
       expect(find.text('report.ui.ingredientsAllergensNotes'), findsOneWidget);
     });
 
-    testWidgets('hides product card link when showProductLink=false',
-        (tester) async {
+    testWidgets('hides product card link when showProductLink=false', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          showProductLink: false);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        showProductLink: false,
+      );
 
       expect(find.text('report.ui.showProductCard'), findsNothing);
     });
 
-    testWidgets('tapping product link navigates to ProductDetailCard',
-        (tester) async {
+    testWidgets('tapping product link navigates to ProductDetailCard', (
+      tester,
+    ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      await _pumpReportDetailCard(tester,
-          callbacks: mockCallbacks,
-          mockFirestore: mockFirestore,
-          showProductLink: true);
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        showProductLink: true,
+      );
 
       await tester.tap(find.text('report.ui.showProductCard'));
       await tester.pump();

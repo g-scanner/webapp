@@ -10,11 +10,7 @@ class HistoryEmptyView extends StatelessWidget {
   final String searchQuery;
   final GlutenSafetyStatus? filter;
 
-  const HistoryEmptyView({
-    super.key,
-    required this.searchQuery,
-    this.filter,
-  });
+  const HistoryEmptyView({super.key, required this.searchQuery, this.filter});
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +24,8 @@ class HistoryEmptyView extends StatelessWidget {
     if (trimmedSearch.isNotEmpty) {
       // 1. La ricerca da textfield prevale sempre
       emptyIcon = Icons.search_off_rounded;
-      emptyTitle = "history.search.noResultsTitle".tr();
-      emptySubtitle = "history.search.noResults".tr(
+      emptyTitle = "common.search.noResultsTitle".tr();
+      emptySubtitle = "common.search.noResults".tr(
         namedArgs: {"query": trimmedSearch},
       );
     } else if (filter != null) {
@@ -45,10 +41,7 @@ class HistoryEmptyView extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 48,
-        horizontal: 24,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
       child: Column(
         children: [
           Container(
@@ -58,11 +51,7 @@ class HistoryEmptyView extends StatelessWidget {
               color: colorScheme.surfaceContainerHighest,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              emptyIcon,
-              size: 40,
-              color: colorScheme.outlineVariant,
-            ),
+            child: Icon(emptyIcon, size: 40, color: colorScheme.outlineVariant),
           ),
           const SizedBox(height: 16),
           Text(
@@ -77,10 +66,7 @@ class HistoryEmptyView extends StatelessWidget {
           Text(
             emptySubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
           ),
         ],
       ),

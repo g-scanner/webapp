@@ -8,3 +8,4 @@ export 'ingredients_analysis_view.dart';
 export 'report_action_button.dart';
 export 'submit_report_sheet.dart';
 export 'section_card.dart';
+export 'stale_data_warning_card.dart';

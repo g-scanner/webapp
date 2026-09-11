@@ -69,7 +69,11 @@ class _ReportsListState extends State<ReportsList> {
     });
   }
 
-  void _navigateToDetail(Product prod, bool isOwnReport, ProductReport? userReport) {
+  void _navigateToDetail(
+    Product prod,
+    bool isOwnReport,
+    ProductReport? userReport,
+  ) {
     final lang = widget.userSettings?.preferredLanguage ?? 'it';
     final origA = AnalyzerService.analyzeGlutenSafety(
       name: prod.getName(lang),
@@ -98,9 +102,7 @@ class _ReportsListState extends State<ReportsList> {
             await DbService.voteOnReportByBarcode(prod.barcode, vote);
           },
           onInitVote: () async {
-            return await DbService.getReportVoteDataByBarcode(
-              prod.barcode,
-            );
+            return await DbService.getReportVoteDataByBarcode(prod.barcode);
           },
           userSettings: widget.userSettings,
           isOwnReport: isOwnReport,
@@ -121,11 +123,11 @@ class _ReportsListState extends State<ReportsList> {
       builder: (ctx) => AlertDialog(
         backgroundColor: cardBg,
         title: Text(
-          "report.ui.deleteConfirmTitle".tr(),
+          "common.actions.deleteReportConfirmTitle".tr(),
           style: TextStyle(color: colorScheme.onSurface),
         ),
         content: Text(
-          "report.ui.deleteConfirmBody".tr(),
+          "common.actions.deleteReportConfirmBody".tr(),
           style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
         actions: [
@@ -143,9 +145,7 @@ class _ReportsListState extends State<ReportsList> {
                 await widget.onDeleteReport!(reportId);
               }
             },
-            style: TextButton.styleFrom(
-              foregroundColor: colorScheme.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
             child: Text("common.actions.delete".tr()),
           ),
         ],
@@ -263,17 +263,20 @@ class _ReportsListState extends State<ReportsList> {
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final prod = filtered[index];
-                  final bool isOwnReport =
-                      widget.reportedBarcodes.contains(prod.barcode);
-                  final userReport =
-                      widget.userReports?.cast<ProductReport?>().firstWhere(
-                            (r) => r?.barcode == prod.barcode,
-                            orElse: () => null,
-                          );
+                  final bool isOwnReport = widget.reportedBarcodes.contains(
+                    prod.barcode,
+                  );
+                  final userReport = widget.userReports
+                      ?.cast<ProductReport?>()
+                      .firstWhere(
+                        (r) => r?.barcode == prod.barcode,
+                        orElse: () => null,
+                      );
 
                   return ReportItemCard(
                     prod: prod,
-                    onTap: () => _navigateToDetail(prod, isOwnReport, userReport),
+                    onTap: () =>
+                        _navigateToDetail(prod, isOwnReport, userReport),
                     onLongPress: (isOwnReport && widget.onDeleteReport != null)
                         ? () => _confirmDeleteReport(userReport?.id)
                         : null,
@@ -281,73 +284,75 @@ class _ReportsListState extends State<ReportsList> {
                 },
               )
             else ...[
-              Builder(builder: (context) {
-                final IconData emptyIcon;
-                final String emptyTitle;
-                final String emptySubtitle;
+              Builder(
+                builder: (context) {
+                  final IconData emptyIcon;
+                  final String emptyTitle;
+                  final String emptySubtitle;
 
-                final trimmedSearch = _searchTerm.trim();
-                if (trimmedSearch.isNotEmpty) {
-                  // 1. La ricerca da textfield prevale sempre
-                  emptyIcon = Icons.search_off_rounded;
-                  emptyTitle = "report.search.noResultsTitle".tr();
-                  emptySubtitle = "database.search.noResults".tr(
-                    namedArgs: {"query": trimmedSearch},
+                  final trimmedSearch = _searchTerm.trim();
+                  if (trimmedSearch.isNotEmpty) {
+                    // 1. La ricerca da textfield prevale sempre
+                    emptyIcon = Icons.search_off_rounded;
+                    emptyTitle = "common.search.noResultsTitle".tr();
+                    emptySubtitle = "common.search.noResults".tr(
+                      namedArgs: {"query": trimmedSearch},
+                    );
+                  } else if (_reportFilter == "Mie") {
+                    // 2. Filtro "Mie" attivo senza segnalazioni dell'utente
+                    emptyIcon = Icons.assignment_outlined;
+                    emptyTitle = "report.empty.mineTitle".tr();
+                    emptySubtitle = "report.empty.mineSubtitle".tr();
+                  } else {
+                    // 3. Nessuna segnalazione nel database di base
+                    emptyIcon = Icons.task_alt;
+                    emptyTitle = "report.empty.title".tr();
+                    emptySubtitle = "report.empty.subtitle".tr();
+                  }
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 48,
+                      horizontal: 24,
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            emptyIcon,
+                            size: 40,
+                            color: colorScheme.outlineVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          emptyTitle,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          emptySubtitle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
                   );
-                } else if (_reportFilter == "Mie") {
-                  // 2. Filtro "Mie" attivo senza segnalazioni dell'utente
-                  emptyIcon = Icons.assignment_outlined;
-                  emptyTitle = "report.empty.mineTitle".tr();
-                  emptySubtitle = "report.empty.mineSubtitle".tr();
-                } else {
-                  // 3. Nessuna segnalazione nel database di base
-                  emptyIcon = Icons.task_alt;
-                  emptyTitle = "report.empty.title".tr();
-                  emptySubtitle = "report.empty.subtitle".tr();
-                }
-
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 48,
-                    horizontal: 24,
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          emptyIcon,
-                          size: 40,
-                          color: colorScheme.outlineVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        emptyTitle,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        emptySubtitle,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
+                },
+              ),
             ],
           ],
         ),

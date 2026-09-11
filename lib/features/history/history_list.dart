@@ -90,11 +90,11 @@ class _HistoryListState extends State<HistoryList> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.cardBackground,
         title: Text(
-          "history.actions.clearAllConfirmTitle".tr(),
+          "common.actions.deleteHistoryConfirmTitle".tr(),
           style: TextStyle(color: colorScheme.onSurface),
         ),
         content: Text(
-          "history.actions.clearAllConfirmBody".tr(),
+          "common.actions.deleteHistoryConfirmBody".tr(),
           style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
         actions: [

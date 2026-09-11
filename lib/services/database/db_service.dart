@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/models.dart';
+import '../../core/core.dart';
 import 'local_cache_service.dart';
 import 'history_db_service.dart';
 import 'reports_db_service.dart';
@@ -44,7 +45,7 @@ class DbService {
 
   // ─── PIPELINE DI SCANSIONE ────────────────────────────────────────────────
 
-  static Future<Product> scanBarcodeClientSide(
+  static Future<ScanResult> scanBarcodeClientSide(
     String barcode,
     UserSettings settings,
   ) =>

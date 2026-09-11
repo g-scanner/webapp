@@ -53,6 +53,9 @@ class OffApiClient {
     return Uri.https('world.openfoodfacts.org', path, query);
   }
 
+  static const Duration defaultTimeout = Duration(seconds: 10);
+  static const int maxRetries = 1;
+
   static Future<http.Response> getProduct(
     String barcode, {
     List<String>? fields,
@@ -61,6 +64,7 @@ class OffApiClient {
     @visibleForTesting bool? isWebOverride,
     @visibleForTesting String? proxyBaseUrlOverride,
   }) async {
+    final effectiveTimeout = timeout ?? defaultTimeout;
     final query = fields == null || fields.isEmpty
         ? null
         : {'fields': fields.join(',')};
@@ -73,14 +77,20 @@ class OffApiClient {
     );
     final headers = _headers(isWebOverride: isWebOverride);
 
-    final request = client != null
-        ? client.get(uri, headers: headers)
-        : http.get(uri, headers: headers);
-
-    if (timeout == null) {
-      return request;
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        final request = client != null
+            ? client.get(uri, headers: headers)
+            : http.get(uri, headers: headers);
+        return await request.timeout(effectiveTimeout);
+      } catch (e) {
+        if (attempt < maxRetries) {
+          await Future.delayed(Duration(seconds: 1 + attempt));
+          continue;
+        }
+        rethrow;
+      }
     }
-
-    return request.timeout(timeout);
+    throw StateError('Unreachable: retry loop terminated without return or throw');
   }
 }

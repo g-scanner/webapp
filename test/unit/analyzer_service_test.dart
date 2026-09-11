@@ -322,7 +322,9 @@ void main() {
 
       expect(res.status, GlutenSafetyStatus.adatto);
       expect(
-        res.ingredientsAnalyzed.any((i) => i.ingredient == 'Tracce (<20ppm)'),
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'product.analysis.safeTraceIngredient',
+        ),
         isTrue,
       );
     });
@@ -516,7 +518,9 @@ void main() {
 
       expect(res.status, GlutenSafetyStatus.incerto);
       expect(
-        res.ingredientsAnalyzed.any((i) => i.ingredient == 'Malto'),
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'product.analysis.maltIngredient',
+        ),
         isTrue,
       );
     });
@@ -639,7 +643,9 @@ void main() {
 
         expect(res.status, GlutenSafetyStatus.adatto, reason: 'Failed for cat: $cat');
         expect(
-          res.ingredientsAnalyzed.any((i) => i.ingredient == 'Naturalmente Sicuro'),
+          res.ingredientsAnalyzed.any(
+            (i) => i.ingredient == 'product.analysis.naturalSafeIngredient',
+          ),
           isTrue,
         );
       }
@@ -675,7 +681,9 @@ void main() {
 
       expect(res.status, GlutenSafetyStatus.sconosciuto);
       expect(
-        res.ingredientsAnalyzed.any((i) => i.ingredient == 'Dati Assenti'),
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'product.analysis.missingDataIngredient',
+        ),
         isTrue,
       );
     });
@@ -716,7 +724,9 @@ void main() {
 
       expect(res.status, GlutenSafetyStatus.incerto);
       expect(
-        res.ingredientsAnalyzed.any((i) => i.ingredient == 'Segnalazione Utenti'),
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'product.analysis.userReportIngredient',
+        ),
         isTrue,
       );
     });

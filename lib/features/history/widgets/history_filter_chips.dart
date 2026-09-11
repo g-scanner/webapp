@@ -88,9 +88,7 @@ class HistoryFilterChips extends StatelessWidget {
       decoration: InputDecoration(
         filled: true,
         fillColor: _getFilterColor(context),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(999),
           borderSide: BorderSide.none,
@@ -130,10 +128,8 @@ class HistoryFilterChips extends StatelessWidget {
         DropdownMenuItem(
           value: GlutenSafetyStatus.sconosciuto,
           child: Text(
-            "product.glutenStatus.uncertain".tr(),
-            style: _dropdownItemTextStyle(
-              colorScheme.onSurfaceVariant,
-            ),
+            "history.filters.unknown".tr(),
+            style: _dropdownItemTextStyle(colorScheme.onSurfaceVariant),
           ),
         ),
       ],

@@ -11,7 +11,10 @@ void showSubmitReportBottomSheet({
   required BuildContext context,
   required Product currentProduct,
   required UserSettings userSettings,
-  required Future<void> Function(String barcode, Map<String, dynamic> reportData)
+  required Future<void> Function(
+    String barcode,
+    Map<String, dynamic> reportData,
+  )
   onReportSubmit,
   required VoidCallback onSubmitted,
 }) {
@@ -138,19 +141,19 @@ void showSubmitReportBottomSheet({
                     items: [
                       DropdownMenuItem(
                         value: "label_unclear",
-                        child: Text("product.report.reasonUnclear".tr()),
+                        child: Text("common.reportReasons.unclear".tr()),
                       ),
                       DropdownMenuItem(
                         value: "outdated",
-                        child: Text("product.report.reasonOutdated".tr()),
+                        child: Text("common.reportReasons.outdated".tr()),
                       ),
                       DropdownMenuItem(
                         value: "incorrect_status",
-                        child: Text("product.report.reasonWrongStatus".tr()),
+                        child: Text("common.reportReasons.wrongStatus".tr()),
                       ),
                       DropdownMenuItem(
                         value: "other",
-                        child: Text("product.report.reasonOther".tr()),
+                        child: Text("common.reportReasons.other".tr()),
                       ),
                     ],
                     onChanged: (val) {
@@ -161,7 +164,7 @@ void showSubmitReportBottomSheet({
 
                   // --- TextField M3 ---
                   Text(
-                    "product.report.detailsHint".tr(),
+                    "product.report.detailsLabel".tr(),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -177,8 +180,7 @@ void showSubmitReportBottomSheet({
                       color: sheetCtx.colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
-                      hintText:
-                          "Es: Sulla confezione dice 'può contenere tracce'...",
+                      hintText: "product.report.detailsHint".tr(),
                       hintStyle: TextStyle(
                         color: sheetCtx.colorScheme.onSurfaceVariant.withValues(
                           alpha: 0.5,

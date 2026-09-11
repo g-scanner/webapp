@@ -265,7 +265,7 @@ void main() {
 
       final result = await DbService.scanBarcodeClientSide('local_1', settings);
 
-      expect(result.barcode, 'local_1');
+      expect(result.product.barcode, 'local_1');
       final history = await DbService.getHistory();
       expect(history.first.barcode, 'local_1');
     });
@@ -284,7 +284,7 @@ void main() {
           settings,
         );
 
-        expect(result.barcode, 'remote_1');
+        expect(result.product.barcode, 'remote_1');
         expect(await DbService.getLocalProductByBarcode('remote_1'), isNotNull);
       },
     );
@@ -310,10 +310,10 @@ void main() {
         },
       );
 
-      expect(result.barcode, 'ghost_1');
-      expect(result.nameMap, isEmpty);
-      expect(result.brandMap, isEmpty);
-      expect(result.ingredientsMap, isEmpty);
+      expect(result.product.barcode, 'ghost_1');
+      expect(result.product.nameMap, isEmpty);
+      expect(result.product.brandMap, isEmpty);
+      expect(result.product.ingredientsMap, isEmpty);
       expect(await DbService.getLocalProductByBarcode('ghost_1'), isNotNull);
     });
 
@@ -358,13 +358,13 @@ void main() {
           },
         );
 
-        expect(result.barcode, 'off_prod_1');
-        expect(result.nameMap['it'], 'Biscotti Rustici');
-        expect(result.brandMap['it'], 'Bio Brand');
-        expect(result.imageUrl, 'https://img.off.org/1.jpg');
+        expect(result.product.barcode, 'off_prod_1');
+        expect(result.product.nameMap['it'], 'Biscotti Rustici');
+        expect(result.product.brandMap['it'], 'Bio Brand');
+        expect(result.product.imageUrl, 'https://img.off.org/1.jpg');
 
         // Verify regex cleaned the ingredients string
-        final cleanedIng = result.ingredientsMap['it']!;
+        final cleanedIng = result.product.ingredientsMap['it']!;
         expect(cleanedIng, contains('Farina di riso 50%'));
         expect(cleanedIng, contains('zucchero di canna'));
         expect(cleanedIng, contains('(olio di semi, aroma naturale)'));
@@ -374,7 +374,7 @@ void main() {
         expect(cleanedIng.contains('\$'), isFalse);
 
         // Verify allergens mapped and translated
-        expect(result.allergensMap['it'], contains('Latte'));
+        expect(result.product.allergensMap['it'], contains('Latte'));
 
         // Saved in Firestore and in local cache
         verify(() => mockDocRef.set(any(), any())).called(1);
@@ -423,9 +423,9 @@ void main() {
           },
         );
 
-        expect(result.nameMap['en'], 'Ciastka'); // Fallback to en map slot
-        expect(result.ingredientsMap['en'], 'Maka ryzowa, cukier');
-        expect(result.allergensMap['it'], containsAll(['Soia', 'Uova']));
+        expect(result.product.nameMap['en'], 'Ciastka'); // Fallback to en map slot
+        expect(result.product.ingredientsMap['en'], 'Maka ryzowa, cukier');
+        expect(result.product.allergensMap['it'], containsAll(['Soia', 'Uova']));
       },
     );
 
@@ -469,19 +469,19 @@ void main() {
         verify(() => mockDocRef.set(any(), any())).called(1);
 
         // Gli allergeni non devono contenere "Senza Glutine", solo "Latte"
-        expect(result.allergensMap['it'], ['Latte']);
-        expect(result.allergensMap['it']!.contains('Senza Glutine'), isFalse);
-        expect(result.allergensMap['it']!.contains('it:senza-glutine'), isFalse);
+        expect(result.product.allergensMap['it'], ['Latte']);
+        expect(result.product.allergensMap['it']!.contains('Senza Glutine'), isFalse);
+        expect(result.product.allergensMap['it']!.contains('it:senza-glutine'), isFalse);
 
         // La claim è stata inclusa negli ingredienti per garantire la valutazione sicura
-        expect(result.ingredientsMap['it'], contains('Senza glutine'));
+        expect(result.product.ingredientsMap['it'], contains('Senza glutine'));
 
         // Valutazione tramite analyzer service risulta Adatto (Verde)
         final analysis = AnalyzerService.analyzeGlutenSafety(
-          name: result.nameMap['it']!,
+          name: result.product.nameMap['it']!,
           brand: '',
-          ingredients: result.ingredientsMap['it']!,
-          allergensList: result.allergensMap['it']!,
+          ingredients: result.product.ingredientsMap['it']!,
+          allergensList: result.product.allergensMap['it']!,
           reportCount: 0,
           categoriesTags: [],
         );
@@ -489,9 +489,9 @@ void main() {
       },
     );
 
-    // ── BUCO 3: Aggiornamento silenzioso Cache Stale (> 30 giorni) ───────────
+    // ── BUCO 3: Aggiornamento Cache Stale (> 30 giorni) per Sicurezza Alimentare ───────────
     test(
-      'triggers silent background OFF refresh when local product fetchedFromOffAt >= 30 days',
+      'triggers synchronous fresh OFF refresh when local product fetchedFromOffAt >= 30 days and online',
       () async {
         final oldDate = DateTime.now()
             .subtract(const Duration(days: 40))
@@ -522,15 +522,13 @@ void main() {
 
         await http.runWithClient(
           () async {
-            // Scansione restituisce immediatamente il prodotto locale
+            // Con connessione attiva, il prodotto stale viene aggiornato per sicurezza alimentare
             final result = await DbService.scanBarcodeClientSide(
               'stale_prod_1',
               settings,
             );
-            expect(result.nameMap['it'], 'Vecchio Nome');
-
-            // Attendiamo brevemente che il microtask background completi
-            await Future.delayed(const Duration(milliseconds: 50));
+            expect(result.isFresh, isTrue);
+            expect(result.product.nameMap['it'], 'Nome Aggiornato');
           },
           () {
             when(
@@ -546,7 +544,7 @@ void main() {
           },
         );
 
-        // Il background refresh ha aggiornato Firestore e la cache locale
+        // Verifica che Firestore e cache locale siano stati aggiornati con il dato fresco
         verify(() => mockDocRef.set(any(), any())).called(1);
         final updatedLocal = await DbService.getLocalProductByBarcode(
           'stale_prod_1',

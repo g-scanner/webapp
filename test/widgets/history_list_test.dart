@@ -51,11 +51,7 @@ ScanHistoryItem _createHistoryItem({
   required String barcode,
   String scannedAt = '2026-08-10T14:30:00Z',
 }) {
-  return ScanHistoryItem(
-    id: id,
-    barcode: barcode,
-    scannedAt: scannedAt,
-  );
+  return ScanHistoryItem(id: id, barcode: barcode, scannedAt: scannedAt);
 }
 
 UserSettings _createSettings({
@@ -132,7 +128,9 @@ void main() {
     mockCallbacks = MockHistoryCallbacks();
     when(() => mockCallbacks.onSelectItem(any())).thenReturn(null);
     when(() => mockCallbacks.onClearHistory()).thenAnswer((_) async {});
-    when(() => mockCallbacks.onDeleteHistoryItem(any())).thenAnswer((_) async {});
+    when(
+      () => mockCallbacks.onDeleteHistoryItem(any()),
+    ).thenAnswer((_) async {});
     when(() => mockCallbacks.onRefresh()).thenAnswer((_) async {});
   });
 
@@ -158,47 +156,50 @@ void main() {
   // GROUP 2: Bento Grid / Statistics Boxes
   // ═══════════════════════════════════════════════════════════════════════════
   group('Bento Grid / Statistics Boxes', () {
-    testWidgets('calculates and displays correct safe, uncertain, unsafe counts',
-        (tester) async {
-      final prodSafe = _createProduct(
-        barcode: '111',
-        nameIt: 'Riso Basmati',
-        ingredientsIt: 'Riso 100%',
-      );
-      final prodUnsafe = _createProduct(
-        barcode: '222',
-        nameIt: 'Biscotti al Frumento',
-        ingredientsIt: 'Farina di grano tenero, zucchero.',
-      );
-      final prodUncertain = _createProduct(
-        barcode: '333',
-        nameIt: 'Prodotto con Report',
-        ingredientsIt: 'Farina di riso',
-        pendingReportsCount: 1,
-      );
+    testWidgets(
+      'calculates and displays correct safe, uncertain, unsafe counts',
+      (tester) async {
+        final prodSafe = _createProduct(
+          barcode: '111',
+          nameIt: 'Riso Basmati',
+          ingredientsIt: 'Riso 100%',
+        );
+        final prodUnsafe = _createProduct(
+          barcode: '222',
+          nameIt: 'Biscotti al Frumento',
+          ingredientsIt: 'Farina di grano tenero, zucchero.',
+        );
+        final prodUncertain = _createProduct(
+          barcode: '333',
+          nameIt: 'Prodotto con Report',
+          ingredientsIt: 'Farina di riso',
+          pendingReportsCount: 1,
+        );
 
-      final history = [
-        _createHistoryItem(id: 'h1', barcode: '111'),
-        _createHistoryItem(id: 'h2', barcode: '222'),
-        _createHistoryItem(id: 'h3', barcode: '333'),
-      ];
+        final history = [
+          _createHistoryItem(id: 'h1', barcode: '111'),
+          _createHistoryItem(id: 'h2', barcode: '222'),
+          _createHistoryItem(id: 'h3', barcode: '333'),
+        ];
 
-      await _pumpHistoryList(
-        tester,
-        callbacks: mockCallbacks,
-        history: history,
-        liveProducts: [prodSafe, prodUnsafe, prodUncertain],
-        isSynced: true,
-      );
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: history,
+          liveProducts: [prodSafe, prodUnsafe, prodUncertain],
+          isSynced: true,
+        );
 
-      expect(find.text('1'), findsNWidgets(3));
-      expect(find.text('history.filters.safe'), findsWidgets);
-      expect(find.text('history.filters.uncertain'), findsWidgets);
-      expect(find.text('history.filters.unsafe'), findsWidgets);
-    });
+        expect(find.text('1'), findsNWidgets(3));
+        expect(find.text('history.filters.safe'), findsWidgets);
+        expect(find.text('history.filters.uncertain'), findsWidgets);
+        expect(find.text('history.filters.unsafe'), findsWidgets);
+      },
+    );
 
-    testWidgets('Bento grid is hidden when history is empty and synced',
-        (tester) async {
+    testWidgets('Bento grid is hidden when history is empty and synced', (
+      tester,
+    ) async {
       await _pumpHistoryList(
         tester,
         callbacks: mockCallbacks,
@@ -210,27 +211,30 @@ void main() {
       expect(find.byIcon(Icons.warning_rounded), findsNothing);
     });
 
-    testWidgets('Bento grid shows skeleton when history is empty and NOT synced',
-        (tester) async {
-      await _pumpHistoryList(
-        tester,
-        callbacks: mockCallbacks,
-        history: [],
-        liveProducts: [],
-        isSynced: false,
-      );
+    testWidgets(
+      'Bento grid shows skeleton when history is empty and NOT synced',
+      (tester) async {
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: [],
+          liveProducts: [],
+          isSynced: false,
+        );
 
-      expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
-      expect(find.text('0'), findsNWidgets(3));
-    });
+        expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
+        expect(find.text('0'), findsNWidgets(3));
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // GROUP 3: Empty State & Skeleton Loading
   // ═══════════════════════════════════════════════════════════════════════════
   group('Empty State & Skeleton Loading', () {
-    testWidgets('shows empty state when history is empty and synced',
-        (tester) async {
+    testWidgets('shows empty state when history is empty and synced', (
+      tester,
+    ) async {
       await _pumpHistoryList(
         tester,
         callbacks: mockCallbacks,
@@ -243,8 +247,9 @@ void main() {
       expect(find.byIcon(Icons.history), findsOneWidget);
     });
 
-    testWidgets('shows skeleton list when history is empty and NOT synced',
-        (tester) async {
+    testWidgets('shows skeleton list when history is empty and NOT synced', (
+      tester,
+    ) async {
       await _pumpHistoryList(
         tester,
         callbacks: mockCallbacks,
@@ -256,8 +261,9 @@ void main() {
       expect(find.text('history.empty.title'), findsNothing);
     });
 
-    testWidgets('shows empty state when search filter returns 0 matches',
-        (tester) async {
+    testWidgets('shows empty state when search filter returns 0 matches', (
+      tester,
+    ) async {
       final prod = _createProduct(barcode: '111', nameIt: 'Pasta');
       final history = [_createHistoryItem(id: 'h1', barcode: '111')];
 
@@ -275,7 +281,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Pasta'), findsNothing);
-      expect(find.text('history.search.noResultsTitle'), findsOneWidget);
+      expect(find.text('common.search.noResultsTitle'), findsOneWidget);
     });
   });
 
@@ -305,8 +311,9 @@ void main() {
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     });
 
-    testWidgets('renders unsafe product with unsafe status tag',
-        (tester) async {
+    testWidgets('renders unsafe product with unsafe status tag', (
+      tester,
+    ) async {
       final prod = _createProduct(
         barcode: '222',
         nameIt: 'Biscotti Frumento',
@@ -327,8 +334,9 @@ void main() {
       expect(find.byIcon(Icons.cancel_outlined), findsOneWidget);
     });
 
-    testWidgets('renders uncertain product with uncertain status tag',
-        (tester) async {
+    testWidgets('renders uncertain product with uncertain status tag', (
+      tester,
+    ) async {
       final prod = _createProduct(
         barcode: '333',
         nameIt: 'Barretta Avena',
@@ -348,8 +356,9 @@ void main() {
       expect(find.byIcon(Icons.help_outline), findsOneWidget);
     });
 
-    testWidgets('renders fallback info when product is not in liveProducts',
-        (tester) async {
+    testWidgets('renders fallback info when product is not in liveProducts', (
+      tester,
+    ) async {
       final history = [_createHistoryItem(id: 'h9', barcode: '999')];
 
       await _pumpHistoryList(
@@ -359,14 +368,17 @@ void main() {
         liveProducts: [],
       );
 
-      expect(find.textContaining('history.loading.productFallbackName'),
-          findsOneWidget);
+      expect(
+        find.textContaining('history.loading.productFallbackName'),
+        findsOneWidget,
+      );
       expect(find.text('history.loading.brandLoading'), findsOneWidget);
       expect(find.text('history.status.unknown'), findsOneWidget);
     });
 
-    testWidgets('renders unknownBrand key when product brand is empty',
-        (tester) async {
+    testWidgets('renders unknownBrand key when product brand is empty', (
+      tester,
+    ) async {
       final prod = _createProduct(
         barcode: '111',
         nameIt: 'Farina Riso',
@@ -384,30 +396,33 @@ void main() {
       expect(find.text('product.status.unknownBrand'), findsOneWidget);
     });
 
-    testWidgets('renders lactose tag when alertLactose is enabled and item has lactose',
-        (tester) async {
-      final prod = _createProduct(
-        barcode: '111',
-        nameIt: 'Yogurt',
-        ingredientsIt: 'Latte intero, fermenti lattici.',
-        allergensIt: ['latte'],
-      );
-      final history = [_createHistoryItem(id: 'h1', barcode: '111')];
+    testWidgets(
+      'renders lactose tag when alertLactose is enabled and item has lactose',
+      (tester) async {
+        final prod = _createProduct(
+          barcode: '111',
+          nameIt: 'Yogurt',
+          ingredientsIt: 'Latte intero, fermenti lattici.',
+          allergensIt: ['latte'],
+        );
+        final history = [_createHistoryItem(id: 'h1', barcode: '111')];
 
-      await _pumpHistoryList(
-        tester,
-        callbacks: mockCallbacks,
-        history: history,
-        liveProducts: [prod],
-        userSettings: _createSettings(alertLactose: true),
-      );
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: history,
+          liveProducts: [prod],
+          userSettings: _createSettings(alertLactose: true),
+        );
 
-      expect(find.text('history.lactose'), findsOneWidget);
-      expect(find.byIcon(Icons.water_drop_outlined), findsOneWidget);
-    });
+        expect(find.text('history.lactose'), findsOneWidget);
+        expect(find.byIcon(Icons.water_drop_outlined), findsOneWidget);
+      },
+    );
 
-    testWidgets('hides lactose tag when alertLactose is disabled',
-        (tester) async {
+    testWidgets('hides lactose tag when alertLactose is disabled', (
+      tester,
+    ) async {
       final prod = _createProduct(
         barcode: '111',
         nameIt: 'Yogurt',
@@ -427,28 +442,31 @@ void main() {
       expect(find.text('history.lactose'), findsNothing);
     });
 
-    testWidgets('forces status to uncertain if product has pending reports count > 0',
-        (tester) async {
-      final prod = _createProduct(
-        barcode: '111',
-        nameIt: 'Pasta Riso',
-        ingredientsIt: 'Farina di riso 100%',
-        pendingReportsCount: 2,
-      );
-      final history = [_createHistoryItem(id: 'h1', barcode: '111')];
+    testWidgets(
+      'forces status to uncertain if product has pending reports count > 0',
+      (tester) async {
+        final prod = _createProduct(
+          barcode: '111',
+          nameIt: 'Pasta Riso',
+          ingredientsIt: 'Farina di riso 100%',
+          pendingReportsCount: 2,
+        );
+        final history = [_createHistoryItem(id: 'h1', barcode: '111')];
 
-      await _pumpHistoryList(
-        tester,
-        callbacks: mockCallbacks,
-        history: history,
-        liveProducts: [prod],
-      );
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: history,
+          liveProducts: [prod],
+        );
 
-      expect(find.text('history.status.uncertain'), findsOneWidget);
-    });
+        expect(find.text('history.status.uncertain'), findsOneWidget);
+      },
+    );
 
-    testWidgets('forces status to uncertain if user has reported the barcode',
-        (tester) async {
+    testWidgets('forces status to uncertain if user has reported the barcode', (
+      tester,
+    ) async {
       final prod = _createProduct(
         barcode: '111',
         nameIt: 'Pasta Riso',
@@ -472,8 +490,9 @@ void main() {
   // GROUP 5: Item Selection & Long-Press Deletion
   // ═══════════════════════════════════════════════════════════════════════════
   group('Item Selection & Long-Press Deletion', () {
-    testWidgets('tapping an item card calls onSelectItem with barcode',
-        (tester) async {
+    testWidgets('tapping an item card calls onSelectItem with barcode', (
+      tester,
+    ) async {
       final prod = _createProduct(barcode: '8001234567890', nameIt: 'Pasta');
       final history = [_createHistoryItem(id: 'h1', barcode: '8001234567890')];
 
@@ -504,14 +523,21 @@ void main() {
       await tester.longPress(find.text('Pasta'));
       await tester.pumpAndSettle();
 
-      expect(find.text('history.actions.clearAllConfirmTitle'), findsOneWidget);
-      expect(find.text('history.actions.clearAllConfirmBody'), findsOneWidget);
+      expect(
+        find.text('common.actions.deleteHistoryConfirmTitle'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('common.actions.deleteHistoryConfirmBody'),
+        findsOneWidget,
+      );
       expect(find.text('common.actions.cancel'), findsOneWidget);
       expect(find.text('common.actions.delete'), findsOneWidget);
     });
 
-    testWidgets('cancelling dialog does NOT call onDeleteHistoryItem',
-        (tester) async {
+    testWidgets('cancelling dialog does NOT call onDeleteHistoryItem', (
+      tester,
+    ) async {
       final prod = _createProduct(barcode: '111', nameIt: 'Pasta');
       final history = [_createHistoryItem(id: 'h1', barcode: '111')];
 
@@ -531,34 +557,41 @@ void main() {
       verifyNever(() => mockCallbacks.onDeleteHistoryItem(any()));
     });
 
-    testWidgets('confirming dialog calls onDeleteHistoryItem with correct item id',
-        (tester) async {
-      final prod = _createProduct(barcode: '111', nameIt: 'Pasta');
-      final history = [_createHistoryItem(id: 'hist_item_abc', barcode: '111')];
+    testWidgets(
+      'confirming dialog calls onDeleteHistoryItem with correct item id',
+      (tester) async {
+        final prod = _createProduct(barcode: '111', nameIt: 'Pasta');
+        final history = [
+          _createHistoryItem(id: 'hist_item_abc', barcode: '111'),
+        ];
 
-      await _pumpHistoryList(
-        tester,
-        callbacks: mockCallbacks,
-        history: history,
-        liveProducts: [prod],
-      );
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: history,
+          liveProducts: [prod],
+        );
 
-      await tester.longPress(find.text('Pasta'));
-      await tester.pumpAndSettle();
+        await tester.longPress(find.text('Pasta'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('common.actions.delete'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('common.actions.delete'));
+        await tester.pumpAndSettle();
 
-      verify(() => mockCallbacks.onDeleteHistoryItem('hist_item_abc')).called(1);
-    });
+        verify(
+          () => mockCallbacks.onDeleteHistoryItem('hist_item_abc'),
+        ).called(1);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // GROUP 6: Search Functionality
   // ═══════════════════════════════════════════════════════════════════════════
   group('Search Functionality', () {
-    testWidgets('filters history items by product name (case-insensitive)',
-        (tester) async {
+    testWidgets('filters history items by product name (case-insensitive)', (
+      tester,
+    ) async {
       final prod1 = _createProduct(barcode: '111', nameIt: 'Pasta Integrale');
       final prod2 = _createProduct(barcode: '222', nameIt: 'Riso Venere');
       final history = [
@@ -583,8 +616,9 @@ void main() {
       expect(find.text('Riso Venere'), findsOneWidget);
     });
 
-    testWidgets('filters history items by brand (case-insensitive)',
-        (tester) async {
+    testWidgets('filters history items by brand (case-insensitive)', (
+      tester,
+    ) async {
       final prod1 = _createProduct(
         barcode: '111',
         nameIt: 'Biscotti',
@@ -614,8 +648,9 @@ void main() {
       expect(find.text('Crackers'), findsOneWidget);
     });
 
-    testWidgets('filters history items by barcode string match',
-        (tester) async {
+    testWidgets('filters history items by barcode string match', (
+      tester,
+    ) async {
       final prod1 = _createProduct(barcode: '800111222', nameIt: 'Pasta');
       final prod2 = _createProduct(barcode: '800333444', nameIt: 'Riso');
       final history = [
@@ -637,40 +672,43 @@ void main() {
       expect(find.text('Riso'), findsOneWidget);
     });
 
-    testWidgets('clear search button appears when focused with text and resets query',
-        (tester) async {
-      final prod = _createProduct(barcode: '111', nameIt: 'Pasta');
-      final history = [_createHistoryItem(id: 'h1', barcode: '111')];
+    testWidgets(
+      'clear search button appears when focused with text and resets query',
+      (tester) async {
+        final prod = _createProduct(barcode: '111', nameIt: 'Pasta');
+        final history = [_createHistoryItem(id: 'h1', barcode: '111')];
 
-      await _pumpHistoryList(
-        tester,
-        callbacks: mockCallbacks,
-        history: history,
-        liveProducts: [prod],
-      );
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: history,
+          liveProducts: [prod],
+        );
 
-      await tester.tap(find.byType(TextField));
-      await tester.pump();
-      await tester.enterText(find.byType(TextField), 'Some query');
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byType(TextField));
+        await tester.pump();
+        await tester.enterText(find.byType(TextField), 'Some query');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(const ValueKey('clearIcon')), findsOneWidget);
+        expect(find.byKey(const ValueKey('clearIcon')), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('clearIcon')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byKey(const ValueKey('clearIcon')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Pasta'), findsOneWidget);
-    });
+        expect(find.text('Pasta'), findsOneWidget);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // GROUP 7: Gluten Safety Status Filter Dropdown
   // ═══════════════════════════════════════════════════════════════════════════
   group('Gluten Safety Status Filter Dropdown', () {
-    testWidgets('filtering by safe status shows only safe products',
-        (tester) async {
+    testWidgets('filtering by safe status shows only safe products', (
+      tester,
+    ) async {
       final prodSafe = _createProduct(
         barcode: '111',
         nameIt: 'Riso Scotti',
@@ -696,8 +734,18 @@ void main() {
       expect(find.text('Riso Scotti'), findsOneWidget);
       expect(find.text('Pane Frumento'), findsOneWidget);
 
-      await tester.tap(find.byType(DropdownButtonFormField<GlutenSafetyStatus?>));
+      await tester.tap(
+        find.byType(DropdownButtonFormField<GlutenSafetyStatus?>),
+      );
       await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(DropdownMenuItem<GlutenSafetyStatus?>),
+          matching: find.text('history.filters.unknown'),
+        ),
+        findsOneWidget,
+      );
 
       final safeMenuItem = find.descendant(
         of: find.byType(DropdownMenuItem<GlutenSafetyStatus?>),
@@ -710,8 +758,9 @@ void main() {
       expect(find.text('Pane Frumento'), findsNothing);
     });
 
-    testWidgets('filtering by unsafe status shows only unsafe products',
-        (tester) async {
+    testWidgets('filtering by unsafe status shows only unsafe products', (
+      tester,
+    ) async {
       final prodSafe = _createProduct(
         barcode: '111',
         nameIt: 'Riso Scotti',
@@ -734,7 +783,9 @@ void main() {
         liveProducts: [prodSafe, prodUnsafe],
       );
 
-      await tester.tap(find.byType(DropdownButtonFormField<GlutenSafetyStatus?>));
+      await tester.tap(
+        find.byType(DropdownButtonFormField<GlutenSafetyStatus?>),
+      );
       await tester.pumpAndSettle();
 
       final unsafeMenuItem = find.descendant(
@@ -748,8 +799,9 @@ void main() {
       expect(find.text('Pane Frumento'), findsOneWidget);
     });
 
-    testWidgets('combining search query and safety filter intersects both',
-        (tester) async {
+    testWidgets('combining search query and safety filter intersects both', (
+      tester,
+    ) async {
       final prod1 = _createProduct(
         barcode: '111',
         nameIt: 'Pasta Senza Glutine',
@@ -786,7 +838,9 @@ void main() {
       expect(find.text('Pasta Normale'), findsOneWidget);
       expect(find.text('Riso Basmati'), findsNothing);
 
-      await tester.tap(find.byType(DropdownButtonFormField<GlutenSafetyStatus?>));
+      await tester.tap(
+        find.byType(DropdownButtonFormField<GlutenSafetyStatus?>),
+      );
       await tester.pumpAndSettle();
 
       final safeMenuItem = find.descendant(
@@ -817,15 +871,20 @@ void main() {
         liveProducts: [prod],
       );
 
-      await tester.fling(find.byType(SingleChildScrollView), const Offset(0, 300), 1000);
+      await tester.fling(
+        find.byType(SingleChildScrollView),
+        const Offset(0, 300),
+        1000,
+      );
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
       verify(() => mockCallbacks.onRefresh()).called(1);
     });
 
-    testWidgets('paginates and limits initially displayed items to 20',
-        (tester) async {
+    testWidgets('paginates and limits initially displayed items to 20', (
+      tester,
+    ) async {
       final history = List.generate(
         25,
         (i) => _createHistoryItem(id: 'h$i', barcode: 'barcode_$i'),
@@ -851,42 +910,46 @@ void main() {
       expect(find.text('Prodotto 20'), findsNothing);
     });
 
-    testWidgets('scrolling to the bottom loads next 20 items (pagination expands to 40)',
-        (tester) async {
-      final history = List.generate(
-        45,
-        (i) => _createHistoryItem(id: 'h$i', barcode: 'barcode_$i'),
-      );
-      final products = List.generate(
-        45,
-        (i) => _createProduct(
-          barcode: 'barcode_$i',
-          nameIt: 'Prodotto $i',
-          ingredientsIt: 'Riso',
-        ),
-      );
+    testWidgets(
+      'scrolling to the bottom loads next 20 items (pagination expands to 40)',
+      (tester) async {
+        final history = List.generate(
+          45,
+          (i) => _createHistoryItem(id: 'h$i', barcode: 'barcode_$i'),
+        );
+        final products = List.generate(
+          45,
+          (i) => _createProduct(
+            barcode: 'barcode_$i',
+            nameIt: 'Prodotto $i',
+            ingredientsIt: 'Riso',
+          ),
+        );
 
-      await _pumpHistoryList(
-        tester,
-        callbacks: mockCallbacks,
-        history: history,
-        liveProducts: products,
-      );
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: history,
+          liveProducts: products,
+        );
 
-      // Initially only first 20 items (0..19)
-      expect(find.text('Prodotto 0'), findsOneWidget);
-      expect(find.text('Prodotto 19'), findsOneWidget);
-      expect(find.text('Prodotto 20'), findsNothing);
+        // Initially only first 20 items (0..19)
+        expect(find.text('Prodotto 0'), findsOneWidget);
+        expect(find.text('Prodotto 19'), findsOneWidget);
+        expect(find.text('Prodotto 20'), findsNothing);
 
-      // Scroll down towards bottom to trigger pagination threshold
-      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -1500));
-      await tester.pump();
+        // Scroll down towards bottom to trigger pagination threshold
+        await tester.drag(
+          find.byType(SingleChildScrollView),
+          const Offset(0, -1500),
+        );
+        await tester.pump();
 
-      // Now items up to 39 are rendered in the tree, but item 40 is still pending next page
-      expect(find.text('Prodotto 20'), findsOneWidget);
-      expect(find.text('Prodotto 39'), findsOneWidget);
-      expect(find.text('Prodotto 40'), findsNothing);
-    });
+        // Now items up to 39 are rendered in the tree, but item 40 is still pending next page
+        expect(find.text('Prodotto 20'), findsOneWidget);
+        expect(find.text('Prodotto 39'), findsOneWidget);
+        expect(find.text('Prodotto 40'), findsNothing);
+      },
+    );
   });
 }
-

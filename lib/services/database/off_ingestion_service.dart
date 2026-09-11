@@ -7,101 +7,194 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/models.dart';
 import '../analyzer/analyzer.dart';
-import '../../core/network/off_api_client.dart';
+import '../../core/core.dart';
 import 'local_cache_service.dart';
 import 'history_db_service.dart';
 
 class OffIngestionService {
-  static Future<Product> scanBarcodeClientSide({
+  static Future<ScanResult> scanBarcodeClientSide({
     required FirebaseFirestore db,
     required dynamic auth,
     required String barcode,
     required UserSettings settings,
   }) async {
-    // 1. CACHE LOCALE: Cerca in locale. Se esiste, restituiscilo immediatamente.
-    final localProduct = await LocalCacheService.getLocalProductByBarcode(barcode);
+    // 1. CACHE LOCALE: Cerca in locale.
+    final localProduct =
+        await LocalCacheService.getLocalProductByBarcode(barcode);
     if (localProduct != null) {
+      // 1a. PRODOTTO FRESCO E COMPLETO: Ha ingredienti e meno di 30 giorni.
+      // Sicuro da servire immediatamente all'utente con zero latenza.
+      if (!localProduct.isStale && localProduct.hasIngredientData) {
+        if (settings.autoSaveHistory) {
+          await HistoryDbService.saveHistoryItem(db, auth, localProduct);
+        }
+        // In background verifica/prepara l'aggiornamento silenzioso senza bloccare
+        checkAndRefreshOffStaleCache(
+          db: db,
+          product: localProduct,
+          settings: settings,
+        );
+        return ScanResult.fresh(localProduct);
+      }
+
+      // 1b. PRODOTTO STALE O INCOMPLETO: Ha più di 30 giorni oppure mancano gli ingredienti.
+      // Per sicurezza alimentare, se c'è connessione tentiamo un refresh SINCRONO da OFF
+      // prima di restituire il dato potenzialmente obsoleto all'utente.
+      final bool isConnected = await ConnectivityHelper.hasInternetConnection();
+      if (isConnected) {
+        final freshResult = await fetchOffProduct(barcode, settings);
+        if (freshResult.status == OffFetchStatus.found &&
+            freshResult.product != null) {
+          return await _persistAndEmitResult(
+            db: db,
+            auth: auth,
+            product: freshResult.product!,
+            settings: settings,
+            saveToFirestore: true,
+          );
+        }
+        // Se OFF ha risposto con networkError (es. server down momentaneo):
+        // fallback sul dato in cache locale piuttosto che bloccare l'utente.
+      }
+
+      // Fallback finale: siamo offline oppure OFF non era raggiungibile.
+      // Restituiamo ScanResult.stale così la UI può mostrare un avviso appropriato.
       if (settings.autoSaveHistory) {
         await HistoryDbService.saveHistoryItem(db, auth, localProduct);
       }
-
-      // Check se i dati OFF hanno più di 30 giorni (Stale Cache) -> innesca aggiornamento in background
-      checkAndRefreshOffStaleCache(db: db, product: localProduct, settings: settings);
-      return localProduct;
+      return ScanResult.stale(localProduct);
     }
 
-    // 2. FIRESTORE (`products/{barcode}`): Cerca su Firestore se manca in locale
+    // 2. CONTROLLO PREVENTIVO CONNETTIVITÀ (Fail-Fast):
+    // Se non c'è rete e non abbiamo il DB offline, blocca subito senza far attendere timeout all'utente.
+    final bool isConnected =
+        await ConnectivityHelper.hasInternetConnection();
+    if (!isConnected) {
+      throw const OfflineWithoutDbException();
+    }
+
+    // 3. FIRESTORE (`products/{barcode}`): Cerca su Firestore se manca in locale
     Product? remoteProduct;
     try {
       remoteProduct = await LocalCacheService.getProductByBarcode(db, barcode);
       if (remoteProduct != null) {
-        await LocalCacheService.upsertLocalProduct(remoteProduct);
-        if (settings.autoSaveHistory) {
-          await HistoryDbService.saveHistoryItem(db, auth, remoteProduct);
+        // Se il prodotto su Firestore è stale (>30gg) o incompleto, applichiamo
+        // la stessa massima sicurezza alimentare con refresh sincrono da OFF:
+        if (remoteProduct.isStale || !remoteProduct.hasIngredientData) {
+          final freshResult = await fetchOffProduct(barcode, settings);
+          if (freshResult.status == OffFetchStatus.found &&
+              freshResult.product != null) {
+            return await _persistAndEmitResult(
+              db: db,
+              auth: auth,
+              product: freshResult.product!,
+              settings: settings,
+              saveToFirestore: true,
+            );
+          }
         }
-        checkAndRefreshOffStaleCache(db: db, product: remoteProduct, settings: settings);
-        return remoteProduct;
+
+        // Prodotto fresco da Firestore: avvia eventuale controllo asincrono e restituisce
+        checkAndRefreshOffStaleCache(
+          db: db,
+          product: remoteProduct,
+          settings: settings,
+        );
+        return await _persistAndEmitResult(
+          db: db,
+          auth: auth,
+          product: remoteProduct,
+          settings: settings,
+          saveToFirestore: false,
+        );
       }
     } catch (e) {
       debugPrint("Firestore product lookup failed: $e");
     }
 
-    // 3. PRODOTTO NUOVO (OFF API): Se manca sia in locale che in Firestore, chiama OFF
-    final offProduct = await fetchAndParseOffProduct(barcode, settings);
-    if (offProduct != null) {
-      // Salva su Firestore per popolare il DB globale
+    // 4. PRODOTTO NUOVO (OFF API): Se manca sia in locale che in Firestore, chiama OFF
+    final offResult = await fetchOffProduct(barcode, settings);
+
+    if (offResult.status == OffFetchStatus.found && offResult.product != null) {
+      return await _persistAndEmitResult(
+        db: db,
+        auth: auth,
+        product: offResult.product!,
+        settings: settings,
+        saveToFirestore: true,
+      );
+    }
+
+    if (offResult.status == OffFetchStatus.notFound) {
+      // GHOST PRODUCT LEGITTIMO: OFF ha risposto confermando che il prodotto NON esiste.
+      final nowIso = DateTime.now().toIso8601String();
+      final ghostProduct = Product(
+        barcode: barcode,
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        pendingReportsCount: 0,
+        lastUpdated: nowIso,
+        fetchedFromOffAt: nowIso,
+      );
+
+      return await _persistAndEmitResult(
+        db: db,
+        auth: auth,
+        product: ghostProduct,
+        settings: settings,
+        saveToFirestore: true,
+      );
+    }
+
+    // ⚠️ ERRORE DI RETE / TIMEOUT / SERVER OFF OVERLOADED:
+    // NON creare alcun Ghost Product per non inquinare il DB con falsi sconosciuti per 30 giorni!
+    // Registra comunque l'evento di scansione in cronologia locale se richiesto.
+    if (settings.autoSaveHistory) {
+      final nowIso = DateTime.now().toIso8601String();
+      final placeholder = Product(
+        barcode: barcode,
+        nameMap: {},
+        brandMap: {},
+        ingredientsMap: {},
+        allergensMap: {},
+        pendingReportsCount: 0,
+        lastUpdated: nowIso,
+      );
+      await HistoryDbService.saveHistoryItem(db, auth, placeholder);
+    }
+
+    throw const OffNetworkException();
+  }
+
+  /// Helper privato di Clean Architecture: salva atomicamente il prodotto in cache locale,
+  /// su Firestore (se richiesto), in cronologia scansioni, e ritorna ScanResult.fresh.
+  static Future<ScanResult> _persistAndEmitResult({
+    required FirebaseFirestore db,
+    required dynamic auth,
+    required Product product,
+    required UserSettings settings,
+    required bool saveToFirestore,
+  }) async {
+    if (saveToFirestore) {
       try {
         await db
             .collection(productsCollection)
-            .doc(barcode)
-            .set(offProduct.toJson(), SetOptions(merge: true));
+            .doc(product.barcode)
+            .set(product.toJson(), SetOptions(merge: true));
       } catch (e) {
-        debugPrint("Error saving new OFF product to Firestore: $e");
+        debugPrint("Error saving product to Firestore: $e");
       }
-
-      // Salva in locale
-      await LocalCacheService.upsertLocalProduct(offProduct);
-
-      if (settings.autoSaveHistory) {
-        await HistoryDbService.saveHistoryItem(db, auth, offProduct);
-      }
-      return offProduct;
     }
 
-    // GHOST PRODUCT: Prodotto non trovato né in cache, né su Firestore, né su OFF.
-    // Creiamo un oggetto "Fantasma" con mappe VUOTE per nome, brand, ingredienti e allergeni.
-    // Nessun testo hardcoded sul DB: l'app userà la localizzazione dinamica json i18n ("product.status.unknownProductName".tr()).
-    final nowIso = DateTime.now().toIso8601String();
-    final ghostProduct = Product(
-      barcode: barcode,
-      nameMap: {},        // Mappa VUOTA: nessun dato su DB (UI usa "product.status.unknownProductName".tr())
-      brandMap: {},       // Mappa VUOTA: nessun dato su DB (UI usa "product.status.unknownBrand".tr())
-      ingredientsMap: {}, // Mappa VUOTA: ingredienti non disponibili
-      allergensMap: {},   // Mappa VUOTA: allergeni non disponibili (hasAllergenData = false)
-      pendingReportsCount: 0,
-      lastUpdated: nowIso,
-      fetchedFromOffAt: nowIso, // permette ricalcolo automatico tra 30 giorni
-    );
+    await LocalCacheService.upsertLocalProduct(product);
 
-    // Salva su Firestore per popolare il DB globale (rispetta l'architettura)
-    try {
-      await db
-          .collection(productsCollection)
-          .doc(barcode)
-          .set(ghostProduct.toJson(), SetOptions(merge: true));
-    } catch (e) {
-      debugPrint("Error saving ghost product to Firestore: $e");
-    }
-
-    // Salva in cache locale
-    await LocalCacheService.upsertLocalProduct(ghostProduct);
-
-    // Registra nella cronologia (fondamentale per BUG 1)
     if (settings.autoSaveHistory) {
-      await HistoryDbService.saveHistoryItem(db, auth, ghostProduct);
+      await HistoryDbService.saveHistoryItem(db, auth, product);
     }
 
-    return ghostProduct;
+    return ScanResult.fresh(product);
   }
 
   static void checkAndRefreshOffStaleCache({
@@ -109,32 +202,39 @@ class OffIngestionService {
     required Product product,
     required UserSettings settings,
   }) async {
-    if (product.fetchedFromOffAt == null) return;
-    try {
-      final fetchedDate = DateTime.tryParse(product.fetchedFromOffAt!);
-      if (fetchedDate == null) return;
+    // Se il prodotto non è obsoleto (stale), nessun refresh in background è necessario
+    if (!product.isStale) return;
 
-      final diffDays = DateTime.now().difference(fetchedDate).inDays;
-      if (diffDays >= 30) {
-        // Innesca ricalcolo asincrono silenzioso in background
-        fetchAndParseOffProduct(product.barcode, settings).then((newOffProduct) async {
-          if (newOffProduct != null) {
+    try {
+      // Innesca ricalcolo asincrono silenzioso in background solo se online
+      fetchOffProduct(product.barcode, settings).then((offResult) async {
+        if (offResult.status == OffFetchStatus.found &&
+            offResult.product != null) {
+          final newOffProduct = offResult.product!;
+
+          // OTTIMIZZAZIONE ANTI-EMORRAGIA SCRITTURE (HASHING):
+          // Scrive su Firestore SOLO SE il contenuto del prodotto (ingredienti, allergeni, nomi)
+          // è effettivamente cambiato rispetto alla versione già memorizzata.
+          if (ProductContentHasher.hasContentChanged(product, newOffProduct)) {
             await db
                 .collection(productsCollection)
                 .doc(product.barcode)
                 .set(newOffProduct.toJson(), SetOptions(merge: true));
             await LocalCacheService.upsertLocalProduct(newOffProduct);
+          } else {
+            // Contenuto invariato: aggiorna solo la data locale per prolungare la validità senza scritture Firestore
+            await LocalCacheService.upsertLocalProduct(newOffProduct);
           }
-        }).catchError((e) {
-          debugPrint("Background OFF stale refresh error: $e");
-        });
-      }
+        }
+      }).catchError((e) {
+        debugPrint("Background OFF stale refresh error: $e");
+      });
     } catch (e) {
       debugPrint("Stale check error: $e");
     }
   }
 
-  static Future<Product?> fetchAndParseOffProduct(
+  static Future<OffFetchResult> fetchOffProduct(
     String barcode,
     UserSettings settings,
   ) async {
@@ -220,12 +320,15 @@ class OffIngestionService {
           }
 
           // Estrazione Allergeni con rilevamento accurato dei dati mancanti:
-          // Distinguiamo se OFF ha effettivamente campi allergeni / ingredienti oppure se i dati non esistono proprio.
           List<String>? rawAllergens;
-          if (pData['allergens_tags'] != null && (pData['allergens_tags'] as List).isNotEmpty) {
+          if (pData['allergens_tags'] != null &&
+              (pData['allergens_tags'] as List).isNotEmpty) {
             rawAllergens = List<String>.from(pData['allergens_tags']);
           } else if (pData['allergens_from_ingredients'] != null &&
-              pData['allergens_from_ingredients'].toString().trim().isNotEmpty) {
+              pData['allergens_from_ingredients']
+                  .toString()
+                  .trim()
+                  .isNotEmpty) {
             rawAllergens = pData['allergens_from_ingredients']
                 .toString()
                 .split(',')
@@ -241,25 +344,21 @@ class OffIngestionService {
                 .where((e) => e.isNotEmpty)
                 .toList();
           } else if (ingredientsMap.isNotEmpty) {
-            // Gli ingredienti sono stati forniti su OFF ma non sono stati segnalati allergeni
-            // -> Il produttore/OFF dichiara 0 allergeni
             rawAllergens = [];
-          } else if (pData['allergens_tags'] is List && (pData['allergens_tags'] as List).isEmpty) {
-            // OFF ha confermato esplicitamente un array vuoto di allergeni
+          } else if (pData['allergens_tags'] is List &&
+              (pData['allergens_tags'] as List).isEmpty) {
             rawAllergens = [];
           }
 
-          // Se rawAllergens è non-null, abbiamo dati certi (popoliamo la mappa per tutte le lingue).
-          // Se rawAllergens è null (es. solo nome su OFF, niente ingredienti né allergeni),
-          // allergensMap rimane vuota {} (hasAllergenData = false -> "Informazioni Insufficienti").
           if (rawAllergens != null) {
             for (final lang in supportedLangs) {
-              allergensMap[lang] = AllergenCanonicalizer.translateAllergens(rawAllergens, lang);
+              allergensMap[lang] =
+                  AllergenCanonicalizer.translateAllergens(rawAllergens, lang);
             }
 
-            // Se OFF conteneva una dicitura safe negli allergeni (es. "it:senza-glutine"),
-            // la preserviamo negli ingredienti per informare l'analisi di sicurezza
-            final safeClaims = rawAllergens.where(AllergenCanonicalizer.isSafeGlutenClaim).toList();
+            final safeClaims = rawAllergens
+                .where(AllergenCanonicalizer.isSafeGlutenClaim)
+                .toList();
             if (safeClaims.isNotEmpty) {
               for (final lang in supportedLangs) {
                 final currentIng = ingredientsMap[lang] ?? '';
@@ -279,7 +378,7 @@ class OffIngestionService {
 
           final nowIso = DateTime.now().toIso8601String();
 
-          return Product(
+          final product = Product(
             barcode: barcode,
             nameMap: nameMap,
             brandMap: brandMap,
@@ -290,12 +389,39 @@ class OffIngestionService {
             lastUpdated: nowIso,
             fetchedFromOffAt: nowIso,
           );
+
+          return OffFetchResult.found(product);
         }
+
+        // status != 1: Prodotto esplicitamente assente su OFF
+        return const OffFetchResult.notFound();
+      }
+
+      if (response.statusCode == 404) {
+        return const OffFetchResult.notFound();
+      }
+
+      if (response.statusCode >= 500) {
+        debugPrint(
+          "OFF server error status: ${response.statusCode} for barcode $barcode",
+        );
+        return const OffFetchResult.networkError();
       }
     } catch (e) {
       debugPrint("OFF fetch and parse error: $e");
+      return const OffFetchResult.networkError();
     }
-    return null;
+
+    return const OffFetchResult.networkError();
+  }
+
+  /// Metodo legacy mantenuto per piena retrocompatibilità.
+  static Future<Product?> fetchAndParseOffProduct(
+    String barcode,
+    UserSettings settings,
+  ) async {
+    final result = await fetchOffProduct(barcode, settings);
+    return result.product;
   }
 
   static String cleanIngredientsText(String text) {

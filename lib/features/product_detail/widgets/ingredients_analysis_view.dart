@@ -54,16 +54,12 @@ class IngredientsAnalysisView extends StatelessWidget {
 
               switch (item.dangerLevel) {
                 case "danger":
-                  pillBg = colorScheme.errorContainer.withValues(
-                    alpha: 0.2,
-                  );
+                  pillBg = colorScheme.errorContainer.withValues(alpha: 0.2);
                   pillText = colorScheme.error;
                   pillLabel = "product.ingredients.dangerBadge".tr();
                   break;
                 case "warning":
-                  pillBg = colorScheme.tertiaryContainer.withValues(
-                    alpha: 0.2,
-                  );
+                  pillBg = colorScheme.tertiaryContainer.withValues(alpha: 0.2);
                   pillText = colorScheme.tertiary;
                   pillLabel = "product.ingredients.warningBadge".tr();
                   break;
@@ -76,9 +72,7 @@ class IngredientsAnalysisView extends StatelessWidget {
                   break;
                 case "safe":
                 default:
-                  pillBg = colorScheme.primaryContainer.withValues(
-                    alpha: 0.2,
-                  );
+                  pillBg = colorScheme.primaryContainer.withValues(alpha: 0.2);
                   pillText = colorScheme.primary;
                   pillLabel = "product.ingredients.safeBadge".tr();
                   break;
@@ -159,9 +153,7 @@ class IngredientsAnalysisView extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontStyle: FontStyle.italic,
-                color: colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.8,
-                ),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -203,7 +195,7 @@ class ProductWarningCard extends StatelessWidget {
     final colorScheme = context.colorScheme;
 
     return SectionCard(
-      title: "product.warnings.infoTitle".tr(),
+      title: "product.titles.infoAndWarnings".tr(),
       icon: Icons.info_outline,
       isCaution: true,
       child: RichText(

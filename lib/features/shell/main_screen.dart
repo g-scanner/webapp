@@ -11,8 +11,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/analyzer_service.dart';
 import 'package:gscanner/services/db_service.dart';
-import 'package:gscanner/core/theme/theme.dart';
-import 'package:gscanner/core/utils/responsive_wrapper.dart';
+import 'package:gscanner/core/core.dart';
 
 import 'package:gscanner/features/scanner/camera_module.dart';
 import 'package:gscanner/features/history/history_list.dart';
@@ -354,6 +353,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       history.any((h) => h.barcode == barcode),
     );
 
+    final isStaleDataNotifier = ValueNotifier<bool>(false);
+
     if (mounted) {
       final userReport = reports.cast<ProductReport?>().firstWhere(
         (r) => r?.barcode == barcode && r?.userId == userId,
@@ -372,6 +373,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           productNotifier: productNotifier,
           reportIdNotifier: reportIdNotifier,
           isInHistoryNotifier: isInHistoryNotifier,
+          isStaleDataNotifier: isStaleDataNotifier,
           isLoading: true,
           scannedAt: DateTime.now().toIso8601String(),
           onBack: () => Navigator.pop(context),
@@ -463,6 +465,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         _openProductNotifiers.remove(barcode);
         _openReportIdNotifiers.remove(barcode);
         isInHistoryNotifier.dispose();
+        isStaleDataNotifier.dispose();
         if (mounted) {
           setState(() => _navController.setCameraActive(true));
         }
@@ -470,29 +473,41 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
 
     try {
-      final product = await DbService.scanBarcodeClientSide(
+      final scanResult = await DbService.scanBarcodeClientSide(
         barcode,
         userSettings,
       );
-      productNotifier.value = product;
+
+      isStaleDataNotifier.value = scanResult.isStaleResult;
+      productNotifier.value = scanResult.product;
       await _loadLocalHistory();
       isInHistoryNotifier.value = true;
       _fetchProducts();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Errore di analisi o connessione con il database."),
-          ),
-        );
-      }
+    } on OfflineWithoutDbException catch (e) {
+      _handleScanError(e.localizationKey);
+    } on OffNetworkException catch (e) {
+      _handleScanError(e.localizationKey);
+    } catch (_) {
+      _handleScanError('scanner.result.analysisError');
     } finally {
       if (mounted) {
-        setState(() {
-          scanningProgress = false;
-        });
+        setState(() => scanningProgress = false);
       }
     }
+  }
+
+  /// Chiude la route aperta dalla scansione e mostra una SnackBar di errore localizzata.
+  void _handleScanError(String localizationKey) {
+    if (!mounted) return;
+    final isWideScreen = MediaQuery.of(context).size.width > 960;
+    if (isWideScreen) {
+      _contentNavigatorKey.currentState?.maybePop();
+    } else {
+      Navigator.of(context).maybePop();
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(localizationKey.tr())),
+    );
   }
 
   Future<void> handleReportSubmit(
@@ -612,7 +627,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('product.deleteReport.errorMessage'.tr()),
+            content: Text('common.actions.deleteReportError'.tr()),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

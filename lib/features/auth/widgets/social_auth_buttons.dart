@@ -64,17 +64,21 @@ class SocialAuthButtons extends StatelessWidget {
           children: [
             Expanded(
               child: Divider(
-                color: context.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                color: context.colorScheme.outlineVariant.withValues(
+                  alpha: 0.4,
+                ),
                 thickness: 1.5,
               ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                "auth.social.or".tr(),
+                "common.actions.or".tr(),
                 style: TextStyle(
                   fontSize: 14,
-                  color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.6,
+                  ),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
@@ -82,7 +86,9 @@ class SocialAuthButtons extends StatelessWidget {
             ),
             Expanded(
               child: Divider(
-                color: context.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                color: context.colorScheme.outlineVariant.withValues(
+                  alpha: 0.4,
+                ),
                 thickness: 1.5,
               ),
             ),
@@ -94,17 +100,11 @@ class SocialAuthButtons extends StatelessWidget {
           icon: const Icon(Icons.person_off, size: 18),
           label: Text(
             "auth.social.enterAnonymously".tr(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           style: TextButton.styleFrom(
             foregroundColor: context.colorScheme.primary,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
         ),
         const SizedBox(height: 4),
