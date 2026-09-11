@@ -505,9 +505,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     } else {
       Navigator.of(context).maybePop();
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(localizationKey.tr())),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(localizationKey.tr())));
   }
 
   Future<void> handleReportSubmit(
@@ -661,9 +661,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           }
         }
 
-        final updatedBarcodes = List<String>.from(
-          userSettings.reportedBarcodes,
-        )..remove(barcode);
+        final updatedBarcodes = List<String>.from(userSettings.reportedBarcodes)
+          ..remove(barcode);
         userSettings = UserSettings(
           userId: userSettings.userId,
           strictMode: userSettings.strictMode,

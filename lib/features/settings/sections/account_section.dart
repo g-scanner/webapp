@@ -36,7 +36,9 @@ class AccountSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardBackground,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         children: [
@@ -99,14 +101,17 @@ class AccountSection extends StatelessWidget {
                       auth: auth,
                       optimisticDisplayName: optimisticDisplayName,
                       onTriggerToast: onTriggerToast,
-                      onUpdateOptimisticDisplayName: onUpdateOptimisticDisplayName,
+                      onUpdateOptimisticDisplayName:
+                          onUpdateOptimisticDisplayName,
                       onLogout: _handleLogout,
                       buildAvatar: buildUserAvatar,
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colorScheme.onSurface,
                       side: BorderSide(
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -122,7 +127,11 @@ class AccountSection extends StatelessWidget {
     );
   }
 
-  static Widget buildUserAvatar(BuildContext context, bool isAnonymous, {double size = 56}) {
+  static Widget buildUserAvatar(
+    BuildContext context,
+    bool isAnonymous, {
+    double size = 56,
+  }) {
     final colorScheme = context.colorScheme;
     if (isAnonymous) {
       return Container(
@@ -169,12 +178,16 @@ class AccountSection extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.onSurfaceVariant),
+            style: TextButton.styleFrom(
+              foregroundColor: ctx.colorScheme.onSurfaceVariant,
+            ),
             child: Text("common.actions.cancel".tr()),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.primary),
+            style: TextButton.styleFrom(
+              foregroundColor: ctx.colorScheme.primary,
+            ),
             child: Text("auth.social.proceed".tr()),
           ),
         ],
@@ -200,7 +213,10 @@ class AccountSection extends StatelessWidget {
         backgroundColor: ctx.cardBackground,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text("settings.account.signOutConfirmTitle".tr(), style: TextStyle(color: ctx.colorScheme.onSurface)),
+        title: Text(
+          "settings.account.signOutConfirmTitle".tr(),
+          style: TextStyle(color: ctx.colorScheme.onSurface),
+        ),
         content: Text(
           "settings.account.signOutConfirmBody".tr(),
           style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
@@ -208,13 +224,15 @@ class AccountSection extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.onSurfaceVariant),
+            style: TextButton.styleFrom(
+              foregroundColor: ctx.colorScheme.onSurfaceVariant,
+            ),
             child: Text("common.actions.cancel".tr()),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.error),
-            child: Text("settings.account.signOutShort".tr()),
+            child: Text("common.actions.signOut".tr()),
           ),
         ],
       ),

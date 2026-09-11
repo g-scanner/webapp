@@ -497,7 +497,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.text('settings.data.clearHistoryConfirm'), findsOneWidget);
+      expect(
+        find.text('settings.destructive.clearHistoryConfirm'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('cancelling dialog does NOT call onClearHistory', (
@@ -526,7 +529,7 @@ void main() {
 
       final allMatches = find.descendant(
         of: find.byType(AlertDialog),
-        matching: find.text('settings.destructive.clearHistoryTitle'),
+        matching: find.text('settings.destructive.clearHistoryAction'),
       );
       await tester.tap(allMatches.last);
       await tester.pumpAndSettle();
@@ -901,7 +904,7 @@ void main() {
       expect(find.text('settings.account.signOutConfirmTitle'), findsOneWidget);
       expect(find.text('settings.account.signOutConfirmBody'), findsOneWidget);
       expect(find.text('common.actions.cancel'), findsOneWidget);
-      expect(find.text('settings.account.signOutShort'), findsOneWidget);
+      expect(find.text('common.actions.signOut'), findsOneWidget);
     });
 
     testWidgets('cancelling logout dialog does NOT call auth.signOut', (
@@ -938,7 +941,7 @@ void main() {
       await tester.tap(find.text('settings.account.signOut'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('settings.account.signOutShort'));
+      await tester.tap(find.text('common.actions.signOut'));
       await tester.pumpAndSettle();
 
       verify(() => auth.signOut()).called(1);
