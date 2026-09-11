@@ -22,7 +22,7 @@
       "unknown": "Sconosciuto - informazioni insufficienti"
     },
     "loading": {
-      "productFallbackName": "Prodotto #{barcode}",
+      "productFallbackName": "Prodotto {barcode}",
       "brandLoading": "Caricamento in corso..."
     },
     "lactose": "Lattosio"

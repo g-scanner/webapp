@@ -110672,10 +110672,10 @@ aqj(){if(this.c!=null)this.P(new A.aPy())},
 aq6(){if(this.c!=null)this.P(new A.aPw())},
 aqs(){if(this.c!=null)this.P(new A.aPz())},
 avm(a){var s=null
-switch(a.a){case 0:return A.x("product.glutenStatus.safe",s)
-case 1:return A.x("product.glutenStatus.unsafe",s)
-case 2:return A.x("product.glutenStatus.uncertain",s)
-case 3:return A.x("product.glutenStatus.noData",s)}},
+switch(a.a){case 0:return A.x("product.status.safe",s)
+case 1:return A.x("product.status.unsafe",s)
+case 2:return A.x("product.status.uncertain",s)
+case 3:return A.x("product.status.unknown",s)}},
 au6(a){var s,r,q=this,p=q.a.d
 p=p==null?null:p.gt()
 if(p==null)p=q.a.c
@@ -110955,13 +110955,13 @@ H(a){var s,r,q,p,o,n,m=this,l=null,k=A.l(a).ax
 switch(m.c.a){case 0:s=k.d
 r=(s==null?k.b:s).ae(0.15)
 q=k.b
-p=A.x("product.bigStatus.safe",l)
+p=A.x("product.status.safe",l).toUpperCase()
 o=B.k4
 break
 case 1:s=k.id
 r=(s==null?k.fy:s).ae(0.15)
 q=k.fy
-p=A.x("product.bigStatus.unsafe",l)
+p=A.x("product.status.unsafe",l).toUpperCase()
 o=B.oe
 break
 case 2:s=k.cy
@@ -110969,14 +110969,14 @@ if(s==null){s=k.CW
 if(s==null)s=k.y}r=s.ae(0.15)
 q=k.CW
 if(q==null)q=k.y
-p=A.x("product.bigStatus.uncertain",l)
+p=A.x("product.status.uncertain",l).toUpperCase()
 o=B.k6
 break
 case 3:r=k.RG
 if(r==null)r=k.k2
 q=k.rx
 if(q==null)q=k.k3
-p=A.x("product.bigStatus.unknown",l)
+p=A.x("product.status.unknown",l).toUpperCase()
 o=B.up
 break
 default:o=l
@@ -111194,15 +111194,16 @@ case"incorrect_status":return A.x("common.reportReasons.wrongStatus",s)
 case"other":return A.x("common.reportReasons.other",s)
 default:return A.x("report.ui.generic",s)}},
 ajI(a,b){var s,r,q=null
-switch(a.a){case 0:return A.a6(["text",A.x("product.bigStatus.safe",q),"color",b.b,"icon",B.k4],t.N,t.z)
-case 1:return A.a6(["text",A.x("product.bigStatus.unsafe",q),"color",b.fy,"icon",B.oe],t.N,t.z)
-case 2:s=A.x("product.bigStatus.uncertain",q)
+switch(a.a){case 0:return A.a6(["text",A.x("product.status.safe",q).toUpperCase(),"color",b.b,"icon",B.k4],t.N,t.z)
+case 1:return A.a6(["text",A.x("product.status.unsafe",q).toUpperCase(),"color",b.fy,"icon",B.oe],t.N,t.z)
+case 2:s=A.x("product.status.uncertain",q)
 r=b.CW
-return A.a6(["text",s,"color",r==null?b.y:r,"icon",B.k6],t.N,t.z)
-default:s=A.x("product.bigStatus.unknown",q)
+if(r==null)r=b.y
+return A.a6(["text",s.toUpperCase(),"color",r,"icon",B.k6],t.N,t.z)
+default:s=A.x("product.status.unknown",q)
 r=b.to
 if(r==null){r=b.q
-if(r==null)r=b.k3}return A.a6(["text",s,"color",r,"icon",B.up],t.N,t.z)}},
+if(r==null)r=b.k3}return A.a6(["text",s.toUpperCase(),"color",r,"icon",B.up],t.N,t.z)}},
 H(a){var s=this,r=A.l(a),q=s.ajI(s.a.e,r.ax)
 return s.a.ch?A.aZR(s.Tu(a,q),500):s.Tu(a,q)},
 Tu(a2,a3){var s,r,q,p,o,n,m,l,k,j,i=this,h=null,g=A.l(a2).ax,f=A.l(a2).ax.a===B.E?B.a5:B.k,e=g.k2,d=g.k3,c=A.lL(h,h,h,A.bk(B.od,d,h,h,h),h,h,i.a.d,h,h,h,h),b=A.T(A.x("report.title",h),h,h,h,A.Z(h,h,d,h,h,h,h,h,h,h,h,20,h,h,B.H,h,h,!0,h,h,h,h,h,h,h,h),h,h),a=t.p,a0=A.b([],a),a1=i.a.at
