@@ -40,25 +40,25 @@ class SafetyStatusCard extends StatelessWidget {
       case GlutenSafetyStatus.adatto:
         heroBgColor = colorScheme.primaryContainer.withValues(alpha: 0.15);
         heroTextColor = colorScheme.primary;
-        statusBigText = "product.bigStatus.safe".tr();
+        statusBigText = "product.status.safe".tr().toUpperCase();
         statusIcon = Icons.check_circle;
         break;
       case GlutenSafetyStatus.nonAdatto:
         heroBgColor = colorScheme.errorContainer.withValues(alpha: 0.15);
         heroTextColor = colorScheme.error;
-        statusBigText = "product.bigStatus.unsafe".tr();
+        statusBigText = "product.status.unsafe".tr().toUpperCase();
         statusIcon = Icons.cancel;
         break;
       case GlutenSafetyStatus.incerto:
         heroBgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
         heroTextColor = colorScheme.tertiary;
-        statusBigText = "product.bigStatus.uncertain".tr();
+        statusBigText = "product.status.uncertain".tr().toUpperCase();
         statusIcon = Icons.warning;
         break;
       case GlutenSafetyStatus.sconosciuto:
         heroBgColor = colorScheme.surfaceContainerHighest;
         heroTextColor = colorScheme.onSurfaceVariant;
-        statusBigText = "product.bigStatus.unknown".tr();
+        statusBigText = "product.status.unknown".tr().toUpperCase();
         statusIcon = Icons.help;
         break;
     }
@@ -128,11 +128,7 @@ class GlutenEvaluationCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(
-            top: 24,
-            left: 24,
-            right: 24,
-          ),
+          padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
           child: Row(
             children: [
               Icon(
@@ -164,25 +160,17 @@ class GlutenEvaluationCard extends StatelessWidget {
           ),
           child: Text(
             displayedReason,
-            style: TextStyle(
-              fontSize: 16,
-              color: colorScheme.onSurface,
-            ),
+            style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
           ),
         ),
         if (hasActiveReport) ...[
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 14,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             decoration: BoxDecoration(
               color: colorScheme.tertiary.withValues(alpha: 0.04),
               border: Border(
                 top: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(
-                    alpha: 0.2,
-                  ),
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.2),
                 ),
               ),
             ),
@@ -217,9 +205,7 @@ class GlutenEvaluationCard extends StatelessWidget {
         color: cardBg,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(
-            alpha: 0.5,
-          ),
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
         boxShadow: [
           BoxShadow(
@@ -231,10 +217,7 @@ class GlutenEvaluationCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: hasActiveReport && onViewReport != null
-          ? InkWell(
-              onTap: onViewReport,
-              child: cardContent,
-            )
+          ? InkWell(onTap: onViewReport, child: cardContent)
           : cardContent,
     );
   }

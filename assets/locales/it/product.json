@@ -19,7 +19,11 @@
     },
     "status": {
       "unknownProductName": "Prodotto Sconosciuto",
-      "unknownBrand": "Marca sconosciuta"
+      "unknownBrand": "Marca sconosciuta",
+      "safe": "Sicuro",
+      "unsafe": "Vietato",
+      "uncertain": "Incerto",
+      "unknown": "Sconosciuto"
     },
     "analysis": {
       "notSuitable": "Rilevati ingredienti contententi glutine.",
@@ -56,18 +60,6 @@
     "actions": {
       "reportError": "Segnala errore o inesattezza",
       "alreadyReported": "Prodotto già segnalato"
-    },
-    "glutenStatus": {
-      "safe": "Senza Glutine",
-      "unsafe": "Contiene Glutine",
-      "uncertain": "Stato incerto",
-      "noData": "Dati insufficienti"
-    },
-    "bigStatus": {
-      "safe": "SICURO",
-      "unsafe": "VIETATO",
-      "uncertain": "INCERTO",
-      "unknown": "SCONOSCIUTO"
     },
     "report": {
       "communityCallout": "Aiuta la community segnalando eventuali informazioni errate o inesatte riportate per questo prodotto.",

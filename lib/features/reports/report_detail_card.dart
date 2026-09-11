@@ -171,25 +171,25 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     switch (status) {
       case GlutenSafetyStatus.adatto:
         return {
-          "text": "product.bigStatus.safe".tr(),
+          "text": "product.status.safe".tr().toUpperCase(),
           "color": colorScheme.primary,
           "icon": Icons.check_circle,
         };
       case GlutenSafetyStatus.nonAdatto:
         return {
-          "text": "product.bigStatus.unsafe".tr(),
+          "text": "product.status.unsafe".tr().toUpperCase(),
           "color": colorScheme.error,
           "icon": Icons.cancel,
         };
       case GlutenSafetyStatus.incerto:
         return {
-          "text": "product.bigStatus.uncertain".tr(),
+          "text": "product.status.uncertain".tr().toUpperCase(),
           "color": colorScheme.tertiary,
           "icon": Icons.warning,
         };
       default:
         return {
-          "text": "product.bigStatus.unknown".tr(),
+          "text": "product.status.unknown".tr().toUpperCase(),
           "color": colorScheme.outlineVariant,
           "icon": Icons.help,
         };

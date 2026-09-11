@@ -247,7 +247,7 @@ void main() {
   // GROUP 2: Previous Status Card
   // ═══════════════════════════════════════════════════════════════════════════
   group('Previous Status Card', () {
-    testWidgets('shows "product.bigStatus.safe" for adatto', (tester) async {
+    testWidgets('shows uppercase safe status for adatto', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       await _pumpReportDetailCard(
         tester,
@@ -255,12 +255,10 @@ void main() {
         mockFirestore: mockFirestore,
         originalStatus: GlutenSafetyStatus.adatto,
       );
-      expect(find.text('product.bigStatus.safe'), findsOneWidget);
+      expect(find.text('PRODUCT.STATUS.SAFE'), findsOneWidget);
     });
 
-    testWidgets('shows "product.bigStatus.unsafe" for nonAdatto', (
-      tester,
-    ) async {
+    testWidgets('shows uppercase unsafe status for nonAdatto', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       await _pumpReportDetailCard(
         tester,
@@ -268,12 +266,10 @@ void main() {
         mockFirestore: mockFirestore,
         originalStatus: GlutenSafetyStatus.nonAdatto,
       );
-      expect(find.text('product.bigStatus.unsafe'), findsOneWidget);
+      expect(find.text('PRODUCT.STATUS.UNSAFE'), findsOneWidget);
     });
 
-    testWidgets('shows "product.bigStatus.uncertain" for incerto', (
-      tester,
-    ) async {
+    testWidgets('shows uppercase uncertain status for incerto', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       await _pumpReportDetailCard(
         tester,
@@ -281,10 +277,10 @@ void main() {
         mockFirestore: mockFirestore,
         originalStatus: GlutenSafetyStatus.incerto,
       );
-      expect(find.text('product.bigStatus.uncertain'), findsOneWidget);
+      expect(find.text('PRODUCT.STATUS.UNCERTAIN'), findsOneWidget);
     });
 
-    testWidgets('shows "product.bigStatus.unknown" for sconosciuto', (
+    testWidgets('shows uppercase unknown status for sconosciuto', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
@@ -294,7 +290,7 @@ void main() {
         mockFirestore: mockFirestore,
         originalStatus: GlutenSafetyStatus.sconosciuto,
       );
-      expect(find.text('product.bigStatus.unknown'), findsOneWidget);
+      expect(find.text('PRODUCT.STATUS.UNKNOWN'), findsOneWidget);
     });
   });
 

@@ -128,13 +128,13 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   String _translateGlutenStatus(GlutenSafetyStatus status) {
     switch (status) {
       case GlutenSafetyStatus.adatto:
-        return "product.glutenStatus.safe".tr();
+        return "product.status.safe".tr();
       case GlutenSafetyStatus.nonAdatto:
-        return "product.glutenStatus.unsafe".tr();
+        return "product.status.unsafe".tr();
       case GlutenSafetyStatus.incerto:
-        return "product.glutenStatus.uncertain".tr();
+        return "product.status.uncertain".tr();
       case GlutenSafetyStatus.sconosciuto:
-        return "product.glutenStatus.noData".tr();
+        return "product.status.unknown".tr();
     }
   }
 

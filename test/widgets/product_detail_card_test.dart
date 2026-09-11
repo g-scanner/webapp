@@ -305,7 +305,7 @@ void main() {
 
         await pumpProductDetailCard(tester, product: safeProduct);
 
-        expect(find.text('product.bigStatus.safe'), findsOneWidget);
+        expect(find.text('PRODUCT.STATUS.SAFE'), findsOneWidget);
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
       },
     );
@@ -323,7 +323,7 @@ void main() {
 
         await pumpProductDetailCard(tester, product: unsafeProduct);
 
-        expect(find.text('product.bigStatus.unsafe'), findsOneWidget);
+        expect(find.text('PRODUCT.STATUS.UNSAFE'), findsOneWidget);
         expect(find.byIcon(Icons.cancel), findsOneWidget);
       },
     );
@@ -335,7 +335,7 @@ void main() {
 
         await pumpProductDetailCard(tester, product: reportedProduct);
 
-        expect(find.text('product.bigStatus.uncertain'), findsOneWidget);
+        expect(find.text('PRODUCT.STATUS.UNCERTAIN'), findsOneWidget);
         expect(find.byIcon(Icons.warning), findsOneWidget);
         expect(find.text('product.report.goToReport'), findsOneWidget);
       },
@@ -353,7 +353,7 @@ void main() {
           productNotifier: ValueNotifier<Product?>(null),
         );
 
-        expect(find.text('product.bigStatus.unknown'), findsOneWidget);
+        expect(find.text('PRODUCT.STATUS.UNKNOWN'), findsOneWidget);
         expect(find.byIcon(Icons.help), findsOneWidget);
       },
     );
