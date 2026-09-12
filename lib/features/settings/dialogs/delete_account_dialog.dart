@@ -158,10 +158,9 @@ Future<void> showDeleteAccountFlow({
                               5;
                       if (!sessionStillFresh) {
                         if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                        onTriggerToast(
-                          "common.status.securityForcedLogout".tr(),
-                        );
-                        await auth.signOut();
+                        if (context.mounted) {
+                          await _showReauthDialog(context, auth);
+                        }
                         return;
                       }
 
@@ -189,10 +188,9 @@ Future<void> showDeleteAccountFlow({
                       if (dialogCtx.mounted) Navigator.pop(dialogCtx);
                       if (e.code == 'requires-recent-login') {
                         // user.delete() ha fallito → nessun dato è stato eliminato
-                        onTriggerToast(
-                          "common.status.securityForcedLogout".tr(),
-                        );
-                        await auth.signOut();
+                        if (context.mounted) {
+                          await _showReauthDialog(context, auth);
+                        }
                       } else {
                         onTriggerToast("Errore: ${e.message}");
                       }

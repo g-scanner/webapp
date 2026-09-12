@@ -5,10 +5,11 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 /// Coordinatore centrale del database SQLite locale (sqflite).
 /// Gestisce ciclo di vita, versioning dello schema, indici per query ad alte prestazioni
-/// e compatibilità cross-platform (mobile nativo e FFI per desktop/test).
+/// e compatibilità cross-platform (mobile nativo, web via indexeddb/worker e FFI per desktop/test).
 class AppDatabase {
   AppDatabase._internal();
 
@@ -47,7 +48,7 @@ class AppDatabase {
       return _db!;
     }
 
-    final dbFactory = databaseFactoryFfi;
+    final dbFactory = kIsWeb ? databaseFactoryFfiWeb : databaseFactoryFfi;
     final path = inMemory ? inMemoryDatabasePath : 'test_gscanner.db';
     if (!inMemory) {
       await dbFactory.deleteDatabase(path);
@@ -71,12 +72,14 @@ class AppDatabase {
     }
   }
 
-  /// Inizializzazione della connessione effettiva su disco o in-memory per i test.
+  /// Inizializzazione della connessione effettiva su disco, indexeddb (web) o in-memory per i test.
   Future<Database> _initDatabase() async {
     _ensureFfiInitialized();
 
     final String path;
-    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb) {
+      path = databaseName;
+    } else if (Platform.environment.containsKey('FLUTTER_TEST')) {
       path = inMemoryDatabasePath;
     } else {
       final dbPath = await getDatabasesPath();
@@ -93,9 +96,13 @@ class AppDatabase {
     );
   }
 
-  /// Inizializza FFI su ambienti desktop (Windows, Linux, macOS) o test headless.
+  /// Inizializza FFI su ambienti desktop (Windows, Linux, macOS), Web o test headless.
   static void _ensureFfiInitialized() {
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+      return;
+    }
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       sqfliteFfiInit();
       // Nei test con testWidgets l'uso di background isolates può bloccare
       // l'event loop di Flutter test. databaseFactoryFfiNoIsolate evita il deadlock.
