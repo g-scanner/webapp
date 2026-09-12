@@ -1,4 +1,7 @@
-<!-- Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms. --><!DOCTYPE html><!-- Il default è l'inglese per assecondare Googlebot --><html lang="en"><head>
+<!-- Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms. -->
+<!DOCTYPE html>
+<!-- Il default è l'inglese per assecondare Googlebot -->
+<html lang="en"><head>
   <!-- BASE HREF gestito dinamicamente dal comando di build di Flutter -->
   <base href="/webapp/">
   <meta charset="UTF-8">
@@ -117,6 +120,89 @@
     }
   </script>
 
+  <!-- Costringe il video inline ed elimina il player nativo a schermo intero -->
+  <style>
+    /* Forza il video a rispettare i vincoli grafici anche se Safari tenta di espanderlo */
+    video {
+      object-fit: cover !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      position: relative !important;
+      -webkit-transform: translateZ(0) !important;
+      transform: translateZ(0) !important;
+    }
+  </style>
+
+  <!-- Costringe il video inline ed elimina il player nativo a schermo intero -->
+  <script>
+    (function() {
+      function prepareVideo(video) {
+        if (!video) return;
+
+        // Attributi HTML standard e legacy di WebKit
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('muted', 'true');
+        video.setAttribute('autoplay', 'true');
+        video.setAttribute('disablePictureInPicture', 'true');
+        video.setAttribute('disableremoteplayback', 'true');
+
+        // Proprietà JavaScript dirette
+        video.playsInline = true;
+        video.muted = true;
+        video.defaultMuted = true;
+        video.controls = false;
+        video.removeAttribute('controls');
+
+        // Stili inline forzati (penetrano lo Shadow DOM di Flutter)
+        video.style.setProperty('object-fit', 'cover', 'important');
+        video.style.setProperty('width', '100%', 'important');
+        video.style.setProperty('height', '100%', 'important');
+        video.style.setProperty('max-width', '100%', 'important');
+        video.style.setProperty('max-height', '100%', 'important');
+        video.style.setProperty('-webkit-transform', 'translateZ(0)', 'important');
+        video.style.setProperty('transform', 'translateZ(0)', 'important');
+      }
+
+      // 1. Intercetta document.createElement('video')
+      const origCreateElement = Document.prototype.createElement;
+      Document.prototype.createElement = function(tagName, options) {
+        const el = origCreateElement.call(this, tagName, options);
+        if (typeof tagName === 'string' && tagName.toLowerCase() === 'video') {
+          prepareVideo(el);
+        }
+        return el;
+      };
+
+      // 2. Intercetta document.createElementNS(..., 'video')
+      const origCreateElementNS = Document.prototype.createElementNS;
+      Document.prototype.createElementNS = function(namespaceURI, qualifiedName) {
+        const el = origCreateElementNS.call(this, namespaceURI, qualifiedName);
+        if (typeof qualifiedName === 'string' && qualifiedName.toLowerCase() === 'video') {
+          prepareVideo(el);
+        }
+        return el;
+      };
+
+      // 3. Intercetta HTMLVideoElement.prototype.play()
+      const origPlay = HTMLVideoElement.prototype.play;
+      HTMLVideoElement.prototype.play = function() {
+        prepareVideo(this);
+        return origPlay.apply(this, arguments);
+      };
+
+      // 4. Neutralizza la chiamata interna di Safari che avvia il player a schermo intero
+      HTMLVideoElement.prototype.webkitEnterFullscreen = function() {
+        return false;
+      };
+      HTMLVideoElement.prototype.webkitEnterFullScreen = function() {
+        return false;
+      };
+    })();
+  </script>
+
   <!-- DATI STRUTTURATI (SCHEMA.ORG) -->
   <script type="application/ld+json">
   {
@@ -164,8 +250,6 @@
   }
   </script>
 
-  
-  
   <style id="splash-screen-style">
     html {
       height: 100%
@@ -236,60 +320,7 @@
       transform: translateZ(0);
     }
   </style>
-  <!-- Fix iOS Safari: impedisce l'apertura del player nativo a schermo intero e garantisce il rendering inline -->
-  <script>
-    (function() {
-      function enforceInlineVideo(video) {
-        if (!video || !(video instanceof HTMLVideoElement)) return;
-        video.setAttribute('playsinline', 'true');
-        video.setAttribute('webkit-playsinline', 'true');
-        video.setAttribute('muted', 'true');
-        video.setAttribute('autoplay', 'true');
-        video.muted = true;
-        video.playsInline = true;
-        video.controls = false;
-        video.removeAttribute('controls');
-      }
 
-      function scanAndEnforce() {
-        try {
-          const videos = document.querySelectorAll('video');
-          videos.forEach(enforceInlineVideo);
-        } catch (_) {}
-      }
-
-      const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-          mutation.addedNodes.forEach(function(node) {
-            if (node.nodeType === 1) {
-              if (node.tagName === 'VIDEO') {
-                enforceInlineVideo(node);
-              } else if (node.querySelectorAll) {
-                const videos = node.querySelectorAll('video');
-                videos.forEach(enforceInlineVideo);
-              }
-            }
-          });
-        });
-      });
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-          scanAndEnforce();
-          observer.observe(document.documentElement, {
-            childList: true,
-            subtree: true
-          });
-        });
-      } else {
-        scanAndEnforce();
-        observer.observe(document.documentElement, {
-          childList: true,
-          subtree: true
-        });
-      }
-    })();
-  </script>
   <script id="splash-screen-script">
     function removeSplashFromWeb() {
       document.getElementById("splash")?.remove();
