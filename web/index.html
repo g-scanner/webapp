@@ -1,4 +1,5 @@
-<!-- Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms. -->
+<!-- Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+ PROJECT: G-Scanner — See LICENSE file in root for terms. -->
 <!DOCTYPE html>
 <!-- Il default è l'inglese per assecondare Googlebot -->
 <html lang="en"><head>
@@ -122,7 +123,6 @@
 
   <!-- Costringe il video inline ed elimina il player nativo a schermo intero -->
   <style>
-    /* Forza il video a rispettare i vincoli grafici anche se Safari tenta di espanderlo */
     video {
       object-fit: cover !important;
       width: 100% !important;
@@ -138,68 +138,64 @@
   <!-- Costringe il video inline ed elimina il player nativo a schermo intero -->
   <script>
     (function() {
-      function prepareVideo(video) {
-        if (!video) return;
-
-        // Attributi HTML standard e legacy di WebKit
+      function patchVideo(video) {
+        if (!video || video.hasAttribute('data-ios-patched')) return;
         video.setAttribute('playsinline', 'true');
         video.setAttribute('webkit-playsinline', 'true');
         video.setAttribute('muted', 'true');
         video.setAttribute('autoplay', 'true');
         video.setAttribute('disablePictureInPicture', 'true');
-        video.setAttribute('disableremoteplayback', 'true');
-
-        // Proprietà JavaScript dirette
         video.playsInline = true;
         video.muted = true;
         video.defaultMuted = true;
         video.controls = false;
         video.removeAttribute('controls');
-
-        // Stili inline forzati (penetrano lo Shadow DOM di Flutter)
         video.style.setProperty('object-fit', 'cover', 'important');
         video.style.setProperty('width', '100%', 'important');
         video.style.setProperty('height', '100%', 'important');
-        video.style.setProperty('max-width', '100%', 'important');
-        video.style.setProperty('max-height', '100%', 'important');
-        video.style.setProperty('-webkit-transform', 'translateZ(0)', 'important');
-        video.style.setProperty('transform', 'translateZ(0)', 'important');
+        video.setAttribute('data-ios-patched', 'true');
       }
 
-      // 1. Intercetta document.createElement('video')
-      const origCreateElement = Document.prototype.createElement;
-      Document.prototype.createElement = function(tagName, options) {
-        const el = origCreateElement.call(this, tagName, options);
-        if (typeof tagName === 'string' && tagName.toLowerCase() === 'video') {
-          prepareVideo(el);
+      function scanElements(root) {
+        if (!root) return;
+        if (root.querySelectorAll) {
+          const videos = root.querySelectorAll('video');
+          for (let i = 0; i < videos.length; i++) patchVideo(videos[i]);
+          
+          // Entra nei PlatformView (Shadow DOM) di Flutter
+          const shadowHosts = root.querySelectorAll('flt-platform-view, [slot]');
+          for (let j = 0; j < shadowHosts.length; j++) {
+            if (shadowHosts[j].shadowRoot) {
+              scanElements(shadowHosts[j].shadowRoot);
+            }
+          }
         }
-        return el;
+      }
+
+      // Funzione globale accessibile da Flutter e dall'observer
+      window.forceIOSVideoInline = function() {
+        scanElements(document.body);
       };
 
-      // 2. Intercetta document.createElementNS(..., 'video')
-      const origCreateElementNS = Document.prototype.createElementNS;
-      Document.prototype.createElementNS = function(namespaceURI, qualifiedName) {
-        const el = origCreateElementNS.call(this, namespaceURI, qualifiedName);
-        if (typeof qualifiedName === 'string' && qualifiedName.toLowerCase() === 'video') {
-          prepareVideo(el);
+      const observer = new MutationObserver(function(mutations) {
+        for (let i = 0; i < mutations.length; i++) {
+          const added = mutations[i].addedNodes;
+          for (let j = 0; j < added.length; j++) {
+            const node = added[j];
+            if (node.nodeType === 1) {
+              if (node.tagName === 'VIDEO') patchVideo(node);
+              else scanElements(node);
+            }
+          }
         }
-        return el;
-      };
+      });
 
-      // 3. Intercetta HTMLVideoElement.prototype.play()
-      const origPlay = HTMLVideoElement.prototype.play;
-      HTMLVideoElement.prototype.play = function() {
-        prepareVideo(this);
-        return origPlay.apply(this, arguments);
-      };
-
-      // 4. Neutralizza la chiamata interna di Safari che avvia il player a schermo intero
-      HTMLVideoElement.prototype.webkitEnterFullscreen = function() {
-        return false;
-      };
-      HTMLVideoElement.prototype.webkitEnterFullScreen = function() {
-        return false;
-      };
+      document.addEventListener('DOMContentLoaded', function() {
+        observer.observe(document.documentElement, {
+          childList: true,
+          subtree: true
+        });
+      });
     })();
   </script>
 
