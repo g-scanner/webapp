@@ -7,6 +7,68 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
 import '../../../services/db_service.dart';
 
+/// Mostra il dialog "serve riautenticazione" e, se confermato, effettua il signOut
+/// e chiude il Bottom Sheet settings. Restituisce true se l'utente ha confermato.
+Future<bool> _showReauthDialog(BuildContext context, FirebaseAuth auth) async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: ctx.cardBackground,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: ctx.colorScheme.outlineVariant, width: 1.5),
+      ),
+      icon: Icon(
+        Icons.security_rounded,
+        color: ctx.colorScheme.primary,
+        size: 36,
+      ),
+      title: Text(
+        "settings.account.deleteReauthTitle".tr(),
+        style: TextStyle(
+          color: ctx.colorScheme.onSurface,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        textAlign: TextAlign.center,
+      ),
+      content: Text(
+        "settings.account.deleteReauthBody".tr(),
+        style: TextStyle(color: ctx.colorScheme.onSurfaceVariant, fontSize: 14),
+        textAlign: TextAlign.center,
+      ),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          style: TextButton.styleFrom(
+            foregroundColor: ctx.colorScheme.onSurfaceVariant,
+          ),
+          child: Text("common.actions.cancel".tr()),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: FilledButton.styleFrom(
+            backgroundColor: ctx.colorScheme.primary,
+            foregroundColor: ctx.colorScheme.onPrimary,
+          ),
+          child: Text("auth.social.proceed".tr()),
+        ),
+      ],
+    ),
+  );
+
+  if (confirm == true) {
+    await auth.signOut();
+    if (context.mounted) {
+      Navigator.pop(context); // Chiude il Bottom Sheet settings
+    }
+    return true;
+  }
+  return false;
+}
+
 /// Flusso di cancellazione account utente (verifica reautenticazione ed eliminazione dati).
 Future<void> showDeleteAccountFlow({
   required BuildContext context,
@@ -18,60 +80,11 @@ Future<void> showDeleteAccountFlow({
 
   final lastSignIn = user.metadata.lastSignInTime;
   final bool needsReauth =
-      lastSignIn == null ||
-      DateTime.now().difference(lastSignIn).inMinutes > 5;
+      lastSignIn == null || DateTime.now().difference(lastSignIn).inMinutes > 5;
 
   if (needsReauth) {
-    // CASO 2: Serve riautenticazione/re-login per motivi di sicurezza
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: ctx.cardBackground,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: ctx.colorScheme.outlineVariant, width: 1.5),
-        ),
-        icon: Icon(Icons.security_rounded, color: ctx.colorScheme.primary, size: 36),
-        title: Text(
-          "settings.account.deleteReauthTitle".tr(),
-          style: TextStyle(
-            color: ctx.colorScheme.onSurface,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        content: Text(
-          "settings.account.deleteReauthBody".tr(),
-          style: TextStyle(color: ctx.colorScheme.onSurfaceVariant, fontSize: 14),
-          textAlign: TextAlign.center,
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.onSurfaceVariant),
-            child: Text("common.actions.cancel".tr()),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: ctx.colorScheme.primary,
-              foregroundColor: ctx.colorScheme.onPrimary,
-            ),
-            child: Text("auth.social.proceed".tr()),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await auth.signOut();
-      if (context.mounted) {
-        Navigator.pop(context); // Chiude il Bottom Sheet settings
-      }
-    }
+    // CASO 2: Sessione vecchia — serve riautenticazione
+    await _showReauthDialog(context, auth);
     return;
   }
 
@@ -87,9 +100,16 @@ Future<void> showDeleteAccountFlow({
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: dialogCtx.colorScheme.errorContainer, width: 2),
+          side: BorderSide(
+            color: dialogCtx.colorScheme.errorContainer,
+            width: 2,
+          ),
         ),
-        icon: Icon(Icons.warning_amber_rounded, color: dialogCtx.colorScheme.error, size: 36),
+        icon: Icon(
+          Icons.warning_amber_rounded,
+          color: dialogCtx.colorScheme.error,
+          size: 36,
+        ),
         title: Text(
           "settings.account.deleteConfirmTitle".tr(),
           style: TextStyle(
@@ -101,7 +121,10 @@ Future<void> showDeleteAccountFlow({
         ),
         content: Text(
           "settings.account.deleteConfirmBody".tr(),
-          style: TextStyle(color: dialogCtx.colorScheme.onSurface, fontSize: 14),
+          style: TextStyle(
+            color: dialogCtx.colorScheme.onSurface,
+            fontSize: 14,
+          ),
           textAlign: TextAlign.center,
         ),
         actionsAlignment: MainAxisAlignment.center,
@@ -110,7 +133,9 @@ Future<void> showDeleteAccountFlow({
             onPressed: isDeletingAccount
                 ? null
                 : () => Navigator.pop(dialogCtx),
-            style: TextButton.styleFrom(foregroundColor: dialogCtx.colorScheme.onSurfaceVariant),
+            style: TextButton.styleFrom(
+              foregroundColor: dialogCtx.colorScheme.onSurfaceVariant,
+            ),
             child: Text("common.actions.cancel".tr()),
           ),
           FilledButton(
@@ -122,6 +147,29 @@ Future<void> showDeleteAccountFlow({
                     });
                     try {
                       final String uid = user.uid;
+
+                      // Ri-verifica che la sessione sia ancora fresca prima di procedere
+                      // (guard contro race condition: dialogo aperto → sessione scade → conferma)
+                      final lastSignInNow =
+                          auth.currentUser?.metadata.lastSignInTime;
+                      final bool sessionStillFresh =
+                          lastSignInNow != null &&
+                          DateTime.now().difference(lastSignInNow).inMinutes <=
+                              5;
+                      if (!sessionStillFresh) {
+                        if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                        onTriggerToast(
+                          "common.status.securityForcedLogout".tr(),
+                        );
+                        await auth.signOut();
+                        return;
+                      }
+
+                      // STEP 1: Elimina l'account Firebase PRIMA di toccare qualsiasi dato.
+                      // Se fallisce (es. requires-recent-login), nessun dato viene cancellato.
+                      await user.delete();
+
+                      // STEP 2: Firebase ha confermato l'eliminazione — ora elimina i dati locali e cloud.
                       await Future.wait([
                         DbService.deleteUserSettings(uid),
                         DbService.deleteUserHistory(uid),
@@ -136,12 +184,14 @@ Future<void> showDeleteAccountFlow({
                         ).popUntil((route) => route.isFirst);
                       }
 
-                      await user.delete();
                       await auth.signOut();
                     } on FirebaseAuthException catch (e) {
                       if (dialogCtx.mounted) Navigator.pop(dialogCtx);
                       if (e.code == 'requires-recent-login') {
-                        onTriggerToast("common.status.securityForcedLogout".tr());
+                        // user.delete() ha fallito → nessun dato è stato eliminato
+                        onTriggerToast(
+                          "common.status.securityForcedLogout".tr(),
+                        );
                         await auth.signOut();
                       } else {
                         onTriggerToast("Errore: ${e.message}");
@@ -175,7 +225,9 @@ Future<void> showDeleteAccountFlow({
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                      color: dialogCtx.colorScheme.onError.withValues(alpha: 0.7),
+                      color: dialogCtx.colorScheme.onError.withValues(
+                        alpha: 0.7,
+                      ),
                       strokeWidth: 2,
                     ),
                   ),

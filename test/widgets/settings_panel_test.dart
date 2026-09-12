@@ -1120,7 +1120,7 @@ void main() {
     );
 
     testWidgets(
-      'Scenario C: FirebaseAuthException requires-recent-login forces sign out',
+      'Scenario C: FirebaseAuthException requires-recent-login shows re-auth dialog WITHOUT deleting data',
       (tester) async {
         when(
           () => metadata.lastSignInTime,
@@ -1149,7 +1149,81 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
 
-        // Forces signOut on requires-recent-login exception
+        // Viene mostrato il dialog di spiegazione riautenticazione
+        expect(find.text('settings.account.deleteReauthTitle'), findsOneWidget);
+        expect(find.text('settings.account.deleteReauthBody'), findsOneWidget);
+        // user.delete() ha fallito → nessun dato Firestore/locale deve essere stato toccato
+        verifyNever(() => mockDb.collection(any()));
+
+        // Tappando proceed nel dialog re-auth, viene eseguito il signOut
+        await tester.tap(find.text('auth.social.proceed'));
+        await tester.pumpAndSettle();
+        verify(() => auth.signOut()).called(1);
+      },
+    );
+
+    testWidgets(
+      'Scenario D: Session becomes stale between dialog open and confirm — shows re-auth dialog, no data deleted',
+      (tester) async {
+        // La sessione sembra fresca all'apertura del dialogo (1 minuto fa)...
+        when(
+          () => metadata.lastSignInTime,
+        ).thenReturn(DateTime.now().subtract(const Duration(minutes: 1)));
+        when(() => user.isAnonymous).thenReturn(false);
+        when(() => user.displayName).thenReturn('Mario Rossi');
+
+        // ...ma quando il codice ri-verifica auth.currentUser?.metadata.lastSignInTime
+        // al momento della conferma, la sessione risulta scaduta (> 5 minuti fa).
+        final staleMetadata = MockUserMetadata();
+        when(() => staleMetadata.lastSignInTime).thenReturn(
+          DateTime.now().subtract(const Duration(minutes: 6)),
+        );
+        final userWithStaleSession = MockUser();
+        when(() => userWithStaleSession.uid).thenReturn('test_uid_123');
+        when(() => userWithStaleSession.isAnonymous).thenReturn(false);
+        when(() => userWithStaleSession.displayName).thenReturn('Mario Rossi');
+        when(() => userWithStaleSession.metadata).thenReturn(staleMetadata);
+        when(() => userWithStaleSession.delete()).thenAnswer((_) async {});
+
+        // auth.currentUser restituisce user con sessione fresca all'apertura,
+        // poi user con sessione scaduta quando viene ri-verificata nella conferma.
+        var callCount = 0;
+        when(() => auth.currentUser).thenAnswer((_) {
+          callCount++;
+          // Prima chiamata: SettingsPanel legge il currentUser per decidere di mostrare il flow.
+          // Dalla seconda in poi: ri-verifica interna al dialog (sessione scaduta).
+          return callCount <= 3 ? user : userWithStaleSession;
+        });
+
+        await _pump(tester, cb: cb, auth: auth);
+
+        await tester.tap(find.text('settings.account.manageAccount'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('settings.account.deleteAccount'));
+        await tester.pumpAndSettle();
+
+        final confirmBtn = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(FilledButton),
+        );
+        await tester.tap(confirmBtn);
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        // Sessione scaduta rilevata → viene mostrato il dialog re-auth
+        expect(find.text('settings.account.deleteReauthTitle'), findsOneWidget);
+        expect(find.text('settings.account.deleteReauthBody'), findsOneWidget);
+        // Nessuna chiamata Firestore effettuata
+        verifyNever(() => mockDb.collection(any()));
+        // user.delete() non deve essere stato chiamato
+        verifyNever(() => user.delete());
+        verifyNever(() => userWithStaleSession.delete());
+
+        // Tappando proceed nel dialog re-auth, viene eseguito il signOut
+        await tester.tap(find.text('auth.social.proceed'));
+        await tester.pumpAndSettle();
         verify(() => auth.signOut()).called(1);
       },
     );
