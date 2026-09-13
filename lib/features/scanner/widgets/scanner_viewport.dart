@@ -7,6 +7,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/utils/utils.dart';
 import 'scanner_view_painters.dart';
 
 export 'scanner_view_painters.dart';
@@ -45,7 +46,7 @@ CameraErrorCategory categorizeCameraError(Object error) {
   return CameraErrorCategory.hardwareOrMemory;
 }
 
-class ScannerViewport extends StatelessWidget {
+class ScannerViewport extends StatefulWidget {
   final MobileScannerController controller;
   final Object? cameraError;
   final bool scanningProgress;
@@ -61,23 +62,111 @@ class ScannerViewport extends StatelessWidget {
     required this.onStartCamera,
   });
 
+  @override
+  State<ScannerViewport> createState() => _ScannerViewportState();
+}
+
+class _ScannerViewportState extends State<ScannerViewport> {
+  bool _webTorchOn = false;
+
+  /// null = non ancora verificato, false = non disponibile, true = disponibile.
+  /// Inizia a true per evitare il pop-in visivo: viene nascosto solo se il
+  /// check conferma l'assenza di torcia (caso minoritario).
+  bool? _webTorchAvailable = true;
+
   bool get _isMobile =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
 
+  Future<void> _handleToggleTorch() async {
+    if (kIsWeb) {
+      final target = !_webTorchOn;
+      final success = await jsToggleWebTorch(target);
+      if (success && mounted) {
+        setState(() {
+          _webTorchOn = target;
+        });
+      }
+    } else {
+      await widget.controller.toggleTorch();
+    }
+  }
+
+  /// Controlla se la torcia è disponibile sul browser e aggiorna lo stato.
+  Future<void> _checkWebTorchAvailability() async {
+    final available = await jsHasWebTorch();
+    if (mounted && _webTorchAvailable != available) {
+      setState(() {
+        _webTorchAvailable = available;
+      });
+    }
+  }
+
+  /// Listener sul controller: appena la camera è in esecuzione, verifica la torcia.
+  void _onControllerChanged() {
+    if (!mounted) return;
+    final state = widget.controller.value;
+    if (state.isRunning && _webTorchAvailable == null) {
+      _checkWebTorchAvailability();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      widget.controller.addListener(_onControllerChanged);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ScannerViewport oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (kIsWeb && oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onControllerChanged);
+      widget.controller.addListener(_onControllerChanged);
+    }
+    if (widget.cameraError != null && oldWidget.cameraError == null) {
+      // Errore camera: torcia spenta e disponibilità da ri-verificare.
+      setState(() {
+        _webTorchOn = false;
+        _webTorchAvailable = null;
+      });
+    }
+    // Camera riavviata: ri-verifica disponibilità al prossimo _onControllerChanged.
+    if (widget.cameraError == null && oldWidget.cameraError != null && kIsWeb) {
+      _webTorchAvailable = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (kIsWeb) {
+      widget.controller.removeListener(_onControllerChanged);
+      if (_webTorchOn) jsToggleWebTorch(false);
+    }
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
-    final bool hasTorch = _isMobile;
-    final double buttonOverflow = hasTorch ? 28.0 : 0.0;
 
     return ValueListenableBuilder<MobileScannerState>(
-      valueListenable: controller,
+      valueListenable: widget.controller,
       builder: (context, state, child) {
-        final hasError = state.error != null || cameraError != null;
-        final currentError = state.error ?? cameraError;
+        final hasError = state.error != null || widget.cameraError != null;
+        final currentError = state.error ?? widget.cameraError;
+
+        // Su mobile: hasTorch dipende da torchState (aggiornato live dal controller).
+        // Su web: hasTorch dipende da _webTorchAvailable (aggiornato via jsHasWebTorch()).
+        // In entrambi i casi il pulsante appare solo se la torcia è realmente disponibile.
+        final bool hasTorch = kIsWeb
+            ? (_webTorchAvailable == true)
+            : state.torchState != TorchState.unavailable;
+        final double buttonOverflow = hasTorch ? 28.0 : 0.0;
 
         return Stack(
           children: [
@@ -105,8 +194,8 @@ class ScannerViewport extends StatelessWidget {
                               children: [
                                 // 1. Livello inferiore (Camera) con placeholder nero
                                 MobileScanner(
-                                  controller: controller,
-                                  onDetect: onDetect,
+                                  controller: widget.controller,
+                                  onDetect: widget.onDetect,
                                   placeholderBuilder: (context) =>
                                       Container(color: Colors.black),
                                 ),
@@ -147,7 +236,7 @@ class ScannerViewport extends StatelessWidget {
                                     child: _buildCorners(colorScheme),
                                   ),
                                 ),
-                                if (scanningProgress)
+                                if (widget.scanningProgress)
                                   Container(
                                     color: Colors.black.withValues(alpha: 0.6),
                                     child: Center(
@@ -178,12 +267,14 @@ class ScannerViewport extends StatelessWidget {
               ),
             ),
 
-            // Pulsante Flashlight per dispositivi Mobile (attivo solo se non ci sono errori)
+            // Pulsante Flashlight per dispositivi Mobile e Web (attivo solo se non ci sono errori)
             if (hasTorch && !hasError)
               ValueListenableBuilder<MobileScannerState>(
-                valueListenable: controller,
+                valueListenable: widget.controller,
                 builder: (context, controllerState, _) {
-                  final isTorchOn = controllerState.torchState == TorchState.on;
+                  final isTorchOn = kIsWeb
+                      ? _webTorchOn
+                      : controllerState.torchState == TorchState.on;
                   return Positioned(
                     bottom: 0,
                     left: 0,
@@ -198,7 +289,7 @@ class ScannerViewport extends StatelessWidget {
                         shape: const CircleBorder(),
                         clipBehavior: Clip.antiAlias,
                         child: InkWell(
-                          onTap: () => controller.toggleTorch(),
+                          onTap: _handleToggleTorch,
                           child: SizedBox(
                             width: 56,
                             height: 56,
@@ -275,7 +366,7 @@ class ScannerViewport extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () async {
                   if (_isMobile) await openAppSettings();
-                  await onStartCamera();
+                  await widget.onStartCamera();
                 },
                 icon: const Icon(Icons.refresh, size: 18),
                 label: Text('scanner.camera.openSettings'.tr()),
@@ -288,7 +379,7 @@ class ScannerViewport extends StatelessWidget {
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: () async {
-                  await onStartCamera();
+                  await widget.onStartCamera();
                 },
                 icon: const Icon(Icons.refresh, size: 18),
                 label: Text('scanner.camera.retry'.tr()),

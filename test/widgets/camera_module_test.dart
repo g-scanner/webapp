@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget Tests: CameraModule
 
 // ignore_for_file: subtype_of_sealed_class
@@ -79,7 +79,11 @@ class TestMobileScannerController extends MobileScannerController {
       // startCallCount >= 2: cade nel blocco successivo e ha successo
     }
 
-    value = value.copyWith(isRunning: true, error: null);
+    value = value.copyWith(
+      isRunning: true,
+      error: null,
+      torchState: TorchState.off, // Torcia disponibile e spenta (come su un device reale)
+    );
   }
 
   @override

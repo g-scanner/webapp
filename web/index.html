@@ -373,6 +373,53 @@
       return _activePopup ? _activePopup.closed : false;
     };
   </script>
+
+  <!-- Supporto Flashlight / Torch per Web (Android Chrome / WebRTC Image Capture API) -->
+  <script>
+    window.hasWebTorch = function () {
+      const videos = document.querySelectorAll('video');
+      for (const video of videos) {
+        if (video.srcObject && typeof video.srcObject.getVideoTracks === 'function') {
+          const tracks = video.srcObject.getVideoTracks();
+          for (const track of tracks) {
+            if (typeof track.getCapabilities === 'function') {
+              const caps = track.getCapabilities();
+              if (caps && caps.torch) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      return false;
+    };
+
+    window.toggleWebTorch = async function (on) {
+      const videos = document.querySelectorAll('video');
+      for (const video of videos) {
+        if (video.srcObject && typeof video.srcObject.getVideoTracks === 'function') {
+          const tracks = video.srcObject.getVideoTracks();
+          for (const track of tracks) {
+            if (typeof track.getCapabilities === 'function') {
+              const caps = track.getCapabilities();
+              if (caps && caps.torch) {
+                try {
+                  await track.applyConstraints({
+                    advanced: [{ torch: on }]
+                  });
+                  return true;
+                } catch (e) {
+                  console.error('Error toggling web torch:', e);
+                  return false;
+                }
+              }
+            }
+          }
+        }
+      }
+      return false;
+    };
+  </script>
   <script src="flutter_bootstrap.js" async=""></script>
 
 
