@@ -450,53 +450,94 @@
       return tracks;
     }
 
-    // Restituisce il MediaStreamTrack video che supporta e possiede la torcia
-    function _getTorchVideoTrack() {
+    // Verifica se il dispositivo/browser supporta la torcia
+    window.hasWebTorch = function () {
+      // iOS WebKit non supporta l'accensione del flash da browser
+      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        return false;
+      }
+
+      // PC desktop o portatile (non mobile/touch)
+      const isDesktop = !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) &&
+                        (!navigator.maxTouchPoints || navigator.maxTouchPoints <= 1);
+
       const tracks = _getAllLiveVideoTracks();
+      if (tracks.length === 0) {
+        if (isDesktop) return false;
+        return true;
+      }
+
       for (let i = 0; i < tracks.length; i++) {
         const t = tracks[i];
         if (typeof t.getCapabilities === 'function') {
           const caps = t.getCapabilities();
-          if (caps && caps.torch === true) {
-            return t;
+          if (caps && (caps.torch === true || ('torch' in caps))) {
+            return true;
           }
         }
-      }
-      return null;
-    }
 
-    // Verifica se la fotocamera attiva ha fisicamente il supporto per la torcia
-    window.hasWebTorch = function () {
-      return _getTorchVideoTrack() !== null;
+        // Su Android fotocamera posteriore (environment / non-user)
+        const settings = typeof t.getSettings === 'function' ? t.getSettings() : {};
+        const facing = (settings.facingMode || '').toLowerCase();
+        const label = (t.label || '').toLowerCase();
+        const isUserFacing = facing === 'user' || label.includes('front');
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        if (isAndroid && !isUserFacing) {
+          return true;
+        }
+      }
+
+      return false;
     };
 
     // Accende o spegne la torcia
     window.toggleWebTorch = async function (on) {
-      // Converte qualsiasi valore (booleano primitivo o wrapper) in booleano puro
       const targetOn = (on === true || on === 1 || String(on) === 'true');
+      console.log('[G-Scanner Torch] toggleWebTorch:', targetOn);
 
-      const track = _getTorchVideoTrack();
-      if (!track) {
-        console.warn('[G-Scanner Torch] Nessun track con supporto torcia trovato.');
+      const tracks = _getAllLiveVideoTracks();
+      if (tracks.length === 0) {
+        console.warn('[G-Scanner Torch] Nessun track video live trovato.');
         return false;
       }
 
-      try {
-        await track.applyConstraints({
-          advanced: [{ torch: targetOn }]
-        });
-        console.log('[G-Scanner Torch] Torcia impostata a:', targetOn);
-        return true;
-      } catch (err) {
-        console.warn('[G-Scanner Torch] advanced: [{ torch }] fallito, tentativo constraint diretta:', err);
+      let success = false;
+      for (let i = 0; i < tracks.length; i++) {
+        const track = tracks[i];
+
+        // Sblocca ImageCapture su Chromium se disponibile
+        if (typeof window.ImageCapture === 'function') {
+          try {
+            new ImageCapture(track);
+          } catch (e) {}
+        }
+
+        // Metodo 1: advanced constraint [{ torch: targetOn }]
         try {
-          await track.applyConstraints({ torch: targetOn });
-          return true;
-        } catch (err2) {
-          console.error('[G-Scanner Torch] Impossibile applicare constraint torch:', err2);
-          return false;
+          await track.applyConstraints({
+            advanced: [{ torch: targetOn }]
+          });
+          console.log('[G-Scanner Torch] Torcia applicata con successo (advanced) su:', track.label);
+          success = true;
+          continue;
+        } catch (e1) {
+          console.warn('[G-Scanner Torch] advanced torch fallito su:', track.label, e1);
+        }
+
+        // Metodo 2: direct constraint { torch: targetOn }
+        try {
+          await track.applyConstraints({
+            torch: targetOn
+          });
+          console.log('[G-Scanner Torch] Torcia applicata con successo (direct) su:', track.label);
+          success = true;
+          continue;
+        } catch (e2) {
+          console.warn('[G-Scanner Torch] direct torch fallito su:', track.label, e2);
         }
       }
+
+      return success;
     };
   </script>
   <script src="flutter_bootstrap.js" async=""></script>
