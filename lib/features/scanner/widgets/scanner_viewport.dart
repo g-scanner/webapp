@@ -110,11 +110,11 @@ class _ScannerViewportState extends State<ScannerViewport> {
     }
   }
 
-  /// Listener sul controller: appena la camera è in esecuzione, verifica la torcia una sola volta.
+  /// Listener sul controller: appena la camera è in esecuzione e priva di errori, verifica la torcia una sola volta.
   void _onControllerChanged() {
     if (!mounted) return;
     final state = widget.controller.value;
-    if (state.isRunning && !_hasCheckedWebTorch) {
+    if (state.isRunning && !_hasCheckedWebTorch && state.error == null && widget.cameraError == null) {
       _hasCheckedWebTorch = true;
       _checkWebTorchAvailability();
     }
@@ -175,7 +175,10 @@ class _ScannerViewportState extends State<ScannerViewport> {
         final bool hasTorch = kIsWeb
             ? (_webTorchAvailable != false)
             : (!state.isRunning || state.torchState != TorchState.unavailable);
-        final double buttonOverflow = hasTorch ? 28.0 : 0.0;
+
+        // Il pulsante torcia è visibile solo se supportato e la fotocamera NON ha errori.
+        final bool showTorchButton = hasTorch && !hasError;
+        final double buttonOverflow = showTorchButton ? 28.0 : 0.0;
 
         return Stack(
           children: [
@@ -277,7 +280,7 @@ class _ScannerViewportState extends State<ScannerViewport> {
             ),
 
             // Pulsante Flashlight per dispositivi Mobile e Web (attivo solo se non ci sono errori)
-            if (hasTorch && !hasError)
+            if (showTorchButton)
               ValueListenableBuilder<MobileScannerState>(
                 valueListenable: widget.controller,
                 builder: (context, controllerState, _) {
