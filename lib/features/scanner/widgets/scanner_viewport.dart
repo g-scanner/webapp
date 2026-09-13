@@ -69,9 +69,8 @@ class ScannerViewport extends StatefulWidget {
 class _ScannerViewportState extends State<ScannerViewport> {
   bool _webTorchOn = false;
 
-  /// null = non ancora verificato, false = non disponibile, true = disponibile.
-  /// Di default inizia a true per mostrare il pulsante subito sia su web che su mobile.
-  bool? _webTorchAvailable = true;
+  /// Su web inizia a false: viene mostrato SOLO se il browser e l'hardware certificano caps.torch == true.
+  bool _webTorchAvailable = false;
   bool _hasCheckedWebTorch = false;
 
   bool get _isMobile =>
@@ -102,7 +101,13 @@ class _ScannerViewportState extends State<ScannerViewport> {
 
   /// Controlla se la torcia è disponibile sul browser e aggiorna lo stato.
   Future<void> _checkWebTorchAvailability() async {
-    final available = await jsHasWebTorch();
+    var available = await jsHasWebTorch();
+    if (!available) {
+      // Breve attesa per permettere al browser di completare la negoziazione delle capabilities
+      await Future.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return;
+      available = await jsHasWebTorch();
+    }
     if (mounted && _webTorchAvailable != available) {
       setState(() {
         _webTorchAvailable = available;
@@ -168,12 +173,10 @@ class _ScannerViewportState extends State<ScannerViewport> {
         final hasError = state.error != null || widget.cameraError != null;
         final currentError = state.error ?? widget.cameraError;
 
-        // Di default il pulsante torcia è presente (sia su mobile che su web) per evitare
-        // scatti visivi o reflow dell'interfaccia all'avvio.
-        // Su mobile: viene rimosso solo se la fotocamera è avviata ed è accertato che torchState == unavailable.
-        // Su web: viene rimosso solo se il check rileva che la torcia non è disponibile.
+        // Su mobile: di default presente all'avvio, rimosso solo se running con torchState == unavailable (lasciato così).
+        // Su web: mostrato SOLO ed ESCLUSIVAMENTE se il browser/hardware certifica che la torcia esiste ed è supportata.
         final bool hasTorch = kIsWeb
-            ? (_webTorchAvailable != false)
+            ? _webTorchAvailable
             : (!state.isRunning || state.torchState != TorchState.unavailable);
 
         // Il pulsante torcia è visibile solo se supportato e la fotocamera NON ha errori.

@@ -415,117 +415,88 @@
       return results;
     }
 
-    // Restituisce il MediaStreamTrack video attivo della fotocamera
-    function _getActiveVideoTrack() {
+    // Restituisce tutti i MediaStreamTrack video attualmente attivi ('live')
+    function _getAllLiveVideoTracks() {
+      const tracks = [];
+      const seenIds = {};
+
+      function addTrack(t) {
+        if (t && t.kind === 'video' && t.readyState === 'live' && !seenIds[t.id]) {
+          seenIds[t.id] = true;
+          tracks.push(t);
+        }
+      }
+
+      // 1. Dallo stream catturato tramite getUserMedia
       if (window._gscannerCameraStream && typeof window._gscannerCameraStream.getVideoTracks === 'function') {
-        const tracks = window._gscannerCameraStream.getVideoTracks();
-        for (let i = 0; i < tracks.length; i++) {
-          if (tracks[i].readyState === 'live') {
-            return tracks[i];
+        const streamTracks = window._gscannerCameraStream.getVideoTracks();
+        for (let i = 0; i < streamTracks.length; i++) {
+          addTrack(streamTracks[i]);
+        }
+      }
+
+      // 2. Dagli elementi <video> nel DOM e nello Shadow DOM
+      const videos = _findAllVideos(document);
+      for (let i = 0; i < videos.length; i++) {
+        const v = videos[i];
+        if (v && v.srcObject && typeof v.srcObject.getVideoTracks === 'function') {
+          const vTracks = v.srcObject.getVideoTracks();
+          for (let j = 0; j < vTracks.length; j++) {
+            addTrack(vTracks[j]);
           }
         }
       }
 
-      // Fallback: cerca in tutti i video del documento (compreso Shadow DOM)
-      const videos = _findAllVideos(document);
-      for (let i = 0; i < videos.length; i++) {
-        const v = videos[i];
-        if (v.srcObject && typeof v.srcObject.getVideoTracks === 'function') {
-          const tracks = v.srcObject.getVideoTracks();
-          for (let j = 0; j < tracks.length; j++) {
-            if (tracks[j].readyState === 'live') {
-              return tracks[j];
-            }
+      return tracks;
+    }
+
+    // Restituisce il MediaStreamTrack video che supporta e possiede la torcia
+    function _getTorchVideoTrack() {
+      const tracks = _getAllLiveVideoTracks();
+      for (let i = 0; i < tracks.length; i++) {
+        const t = tracks[i];
+        if (typeof t.getCapabilities === 'function') {
+          const caps = t.getCapabilities();
+          if (caps && caps.torch === true) {
+            return t;
           }
         }
       }
       return null;
     }
 
+    // Verifica se la fotocamera attiva ha fisicamente il supporto per la torcia
     window.hasWebTorch = function () {
-      const track = _getActiveVideoTrack();
-      if (!track) {
-        // Se non c'è ancora un track video attivo, non confermiamo disponibilità torcia
-        return false;
-      }
-
-      // 1. Controllo esplicito capabilities W3C (se riportato dal browser)
-      if (typeof track.getCapabilities === 'function') {
-        const caps = track.getCapabilities();
-        if (caps) {
-          if ('torch' in caps && Boolean(caps.torch)) {
-            return true;
-          }
-          if (caps.fillLightMode && Array.isArray(caps.fillLightMode) && caps.fillLightMode.includes('torch')) {
-            return true;
-          }
-        }
-      }
-
-      // 2. Controllo fotocamera posteriore su dispositivi mobili/touch
-      const settings = typeof track.getSettings === 'function' ? track.getSettings() : {};
-      const facing = (settings.facingMode || '').toLowerCase();
-      const label = (track.label || '').toLowerCase();
-      const isBackCamera = facing === 'environment' || label.includes('back') || label.includes('rear') || label.includes('environment');
-      const isUserFacing = facing === 'user' || label.includes('front') || label.includes('user');
-
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-                       (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-
-      if (isMobile && (isBackCamera || !isUserFacing)) {
-        return true;
-      }
-
-      return false;
+      return _getTorchVideoTrack() !== null;
     };
 
+    // Accende o spegne la torcia
     window.toggleWebTorch = async function (on) {
-      const track = _getActiveVideoTrack();
+      // Converte qualsiasi valore (booleano primitivo o wrapper) in booleano puro
+      const targetOn = (on === true || on === 1 || String(on) === 'true');
+
+      const track = _getTorchVideoTrack();
       if (!track) {
-        console.warn('[G-Scanner Torch] Nessun track video attivo trovato.');
+        console.warn('[G-Scanner Torch] Nessun track con supporto torcia trovato.');
         return false;
       }
 
-      const targetOn = Boolean(on);
-      console.log('[G-Scanner Torch] Tentativo accensione torcia:', targetOn, 'sul track:', track.label);
-
-      // Metodo 1: Standard W3C advanced constraints
       try {
         await track.applyConstraints({
           advanced: [{ torch: targetOn }]
         });
-        console.log('[G-Scanner Torch] Torcia applicata con successo (advanced [{ torch }])');
+        console.log('[G-Scanner Torch] Torcia impostata a:', targetOn);
         return true;
-      } catch (e1) {
-        console.warn('[G-Scanner Torch] advanced [{ torch }] fallito:', e1);
-      }
-
-      // Metodo 2: Standard constraints dirette
-      try {
-        await track.applyConstraints({
-          torch: targetOn
-        });
-        console.log('[G-Scanner Torch] Torcia applicata con successo (direct { torch })');
-        return true;
-      } catch (e2) {
-        console.warn('[G-Scanner Torch] direct { torch } fallito:', e2);
-      }
-
-      // Metodo 3: ImageCapture API fallback
-      if (window.ImageCapture) {
+      } catch (err) {
+        console.warn('[G-Scanner Torch] advanced: [{ torch }] fallito, tentativo constraint diretta:', err);
         try {
-          const ic = new ImageCapture(track);
-          if (typeof ic.setOptions === 'function') {
-            await ic.setOptions({ fillLightMode: targetOn ? 'torch' : 'off' });
-            console.log('[G-Scanner Torch] Torcia applicata con successo via ImageCapture');
-            return true;
-          }
-        } catch (e3) {
-          console.warn('[G-Scanner Torch] ImageCapture fallback fallito:', e3);
+          await track.applyConstraints({ torch: targetOn });
+          return true;
+        } catch (err2) {
+          console.error('[G-Scanner Torch] Impossibile applicare constraint torch:', err2);
+          return false;
         }
       }
-
-      return false;
     };
   </script>
   <script src="flutter_bootstrap.js" async=""></script>
