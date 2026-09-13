@@ -69,8 +69,9 @@ class ScannerViewport extends StatefulWidget {
 class _ScannerViewportState extends State<ScannerViewport> {
   bool _webTorchOn = false;
 
-  /// Su web inizia a false: viene mostrato SOLO se il browser e l'hardware certificano caps.torch == true.
-  bool _webTorchAvailable = false;
+  /// Su web inizia a true di default: viene mostrato subito e rimosso solo se
+  /// i controlli post-avvio confermano l'assenza o incompatibilità della torcia.
+  bool _webTorchAvailable = true;
   bool _hasCheckedWebTorch = false;
 
   bool get _isMobile =>
@@ -87,9 +88,11 @@ class _ScannerViewportState extends State<ScannerViewport> {
       });
       final success = await jsToggleWebTorch(target);
       if (!success && mounted) {
-        // Se non è stato possibile impostare l'hardware, ripristina lo stato visivo
+        // Se non è stato possibile accendere la torcia (hardware non supportato),
+        // rimuoviamo il pulsante dalla UI.
         setState(() {
-          _webTorchOn = !target;
+          _webTorchOn = false;
+          _webTorchAvailable = false;
         });
       }
     } else {
@@ -101,13 +104,10 @@ class _ScannerViewportState extends State<ScannerViewport> {
 
   /// Controlla se la torcia è disponibile sul browser e aggiorna lo stato.
   Future<void> _checkWebTorchAvailability() async {
-    var available = await jsHasWebTorch();
-    if (!available) {
-      // Breve attesa per permettere al browser di completare la negoziazione delle capabilities
-      await Future.delayed(const Duration(milliseconds: 350));
-      if (!mounted) return;
-      available = await jsHasWebTorch();
-    }
+    // Breve attesa per dare tempo al browser di agganciare lo stream e le capabilities
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    final available = await jsHasWebTorch();
     if (mounted && _webTorchAvailable != available) {
       setState(() {
         _webTorchAvailable = available;
@@ -130,6 +130,12 @@ class _ScannerViewportState extends State<ScannerViewport> {
     super.initState();
     if (kIsWeb) {
       widget.controller.addListener(_onControllerChanged);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.controller.value.isRunning && !_hasCheckedWebTorch) {
+          _hasCheckedWebTorch = true;
+          _checkWebTorchAvailability();
+        }
+      });
     }
   }
 
