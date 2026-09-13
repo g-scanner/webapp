@@ -445,20 +445,37 @@
     window.hasWebTorch = function () {
       const track = _getActiveVideoTrack();
       if (!track) {
-        // Se non abbiamo ancora il track attivo (camera in avvio), default a true come richiesto
-        return true;
+        // Se non c'è ancora un track video attivo, non confermiamo disponibilità torcia
+        return false;
       }
+
+      // 1. Controllo esplicito capabilities W3C (se riportato dal browser)
       if (typeof track.getCapabilities === 'function') {
         const caps = track.getCapabilities();
         if (caps) {
-          if ('torch' in caps) {
-            return Boolean(caps.torch);
+          if ('torch' in caps && Boolean(caps.torch)) {
+            return true;
           }
-          if (caps.fillLightMode && Array.isArray(caps.fillLightMode)) {
-            return caps.fillLightMode.includes('torch');
+          if (caps.fillLightMode && Array.isArray(caps.fillLightMode) && caps.fillLightMode.includes('torch')) {
+            return true;
           }
         }
       }
+
+      // 2. Controllo fotocamera posteriore su dispositivi mobili/touch
+      const settings = typeof track.getSettings === 'function' ? track.getSettings() : {};
+      const facing = (settings.facingMode || '').toLowerCase();
+      const label = (track.label || '').toLowerCase();
+      const isBackCamera = facing === 'environment' || label.includes('back') || label.includes('rear') || label.includes('environment');
+      const isUserFacing = facing === 'user' || label.includes('front') || label.includes('user');
+
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                       (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+
+      if (isMobile && (isBackCamera || !isUserFacing)) {
+        return true;
+      }
+
       return false;
     };
 

@@ -113176,10 +113176,12 @@ case 2:p=b
 if(q.c!=null&&q.e!==p)q.P(new A.aTY(q,p))
 return A.l(null,r)}})
 return A.m($async$Ca,r)},
-avB(){var s=this
-if(s.c==null)return
-if(s.a.c.a.r&&!s.f){s.f=!0
-s.Ca()}},
+avB(){var s,r,q=this
+if(q.c==null)return
+s=q.a
+r=s.c.a
+if(r.r&&!q.f&&r.d==null&&s.d==null){q.f=!0
+q.Ca()}},
 aD(){this.aW()
 this.a.c.Z(this.gMF())},
 aZ(a){var s,r,q=this
@@ -113231,11 +113233,11 @@ A.aU3.prototype={
 $3(a,b,c){var s,r,q,p=this,o=null,n=b.d,m=n==null,l=!m||p.a.a.d!=null
 if(m)n=p.a.a.d
 m=p.a
-s=m.e
+s=m.e&&!l
 r=s?28:0
 q=A.b_(28)
 q=A.b([new A.aS(new A.ae(0,0,0,r),A.aM(o,new A.Rd(1.6,l?m.ahW(a,n):A.arg(new A.aU1(m,p.b)),o),B.ay,o,o,new A.b1(B.q,o,o,q,o,o,B.G),o,o,o,o,o,o,o),o)],t.p)
-if(s&&!l)q.push(new A.hc(m.a.c,new A.aU2(m,p.b,p.c),o,o,t.i6))
+if(s)q.push(new A.hc(m.a.c,new A.aU2(m,p.b,p.c),o,o,t.i6))
 return A.fz(B.bP,q,B.R,B.bC,o)},
 $S:662}
 A.aU1.prototype={
