@@ -70,9 +70,9 @@ class _ScannerViewportState extends State<ScannerViewport> {
   bool _webTorchOn = false;
 
   /// null = non ancora verificato, false = non disponibile, true = disponibile.
-  /// Inizia a true per evitare il pop-in visivo: viene nascosto solo se il
-  /// check conferma l'assenza di torcia (caso minoritario).
+  /// Di default inizia a true per mostrare il pulsante subito sia su web che su mobile.
   bool? _webTorchAvailable = true;
+  bool _hasCheckedWebTorch = false;
 
   bool get _isMobile =>
       !kIsWeb &&
@@ -82,14 +82,21 @@ class _ScannerViewportState extends State<ScannerViewport> {
   Future<void> _handleToggleTorch() async {
     if (kIsWeb) {
       final target = !_webTorchOn;
+      // Reattività immediata al tocco come su mobile
+      setState(() {
+        _webTorchOn = target;
+      });
       final success = await jsToggleWebTorch(target);
-      if (success && mounted) {
+      if (!success && mounted) {
+        // Se non è stato possibile impostare l'hardware, ripristina lo stato visivo
         setState(() {
-          _webTorchOn = target;
+          _webTorchOn = !target;
         });
       }
     } else {
-      await widget.controller.toggleTorch();
+      if (widget.controller.value.isRunning) {
+        await widget.controller.toggleTorch();
+      }
     }
   }
 
@@ -103,11 +110,12 @@ class _ScannerViewportState extends State<ScannerViewport> {
     }
   }
 
-  /// Listener sul controller: appena la camera è in esecuzione, verifica la torcia.
+  /// Listener sul controller: appena la camera è in esecuzione, verifica la torcia una sola volta.
   void _onControllerChanged() {
     if (!mounted) return;
     final state = widget.controller.value;
-    if (state.isRunning && _webTorchAvailable == null) {
+    if (state.isRunning && !_hasCheckedWebTorch) {
+      _hasCheckedWebTorch = true;
       _checkWebTorchAvailability();
     }
   }
@@ -128,15 +136,15 @@ class _ScannerViewportState extends State<ScannerViewport> {
       widget.controller.addListener(_onControllerChanged);
     }
     if (widget.cameraError != null && oldWidget.cameraError == null) {
-      // Errore camera: torcia spenta e disponibilità da ri-verificare.
+      // Errore camera: torcia spenta e controllo da ripetere al riavvio.
       setState(() {
         _webTorchOn = false;
-        _webTorchAvailable = null;
+        _hasCheckedWebTorch = false;
       });
     }
     // Camera riavviata: ri-verifica disponibilità al prossimo _onControllerChanged.
     if (widget.cameraError == null && oldWidget.cameraError != null && kIsWeb) {
-      _webTorchAvailable = null;
+      _hasCheckedWebTorch = false;
     }
   }
 
@@ -160,12 +168,13 @@ class _ScannerViewportState extends State<ScannerViewport> {
         final hasError = state.error != null || widget.cameraError != null;
         final currentError = state.error ?? widget.cameraError;
 
-        // Su mobile: hasTorch dipende da torchState (aggiornato live dal controller).
-        // Su web: hasTorch dipende da _webTorchAvailable (aggiornato via jsHasWebTorch()).
-        // In entrambi i casi il pulsante appare solo se la torcia è realmente disponibile.
+        // Di default il pulsante torcia è presente (sia su mobile che su web) per evitare
+        // scatti visivi o reflow dell'interfaccia all'avvio.
+        // Su mobile: viene rimosso solo se la fotocamera è avviata ed è accertato che torchState == unavailable.
+        // Su web: viene rimosso solo se il check rileva che la torcia non è disponibile.
         final bool hasTorch = kIsWeb
-            ? (_webTorchAvailable == true)
-            : state.torchState != TorchState.unavailable;
+            ? (_webTorchAvailable != false)
+            : (!state.isRunning || state.torchState != TorchState.unavailable);
         final double buttonOverflow = hasTorch ? 28.0 : 0.0;
 
         return Stack(
@@ -289,6 +298,8 @@ class _ScannerViewportState extends State<ScannerViewport> {
                         shape: const CircleBorder(),
                         clipBehavior: Clip.antiAlias,
                         child: InkWell(
+                          customBorder: const CircleBorder(),
+                          canRequestFocus: false,
                           onTap: _handleToggleTorch,
                           child: SizedBox(
                             width: 56,

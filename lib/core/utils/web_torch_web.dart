@@ -1,18 +1,18 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'dart:js_interop';
 
 @JS('hasWebTorch')
-external bool _jsHasWebTorch();
+external JSBoolean _jsHasWebTorch();
 
 @JS('toggleWebTorch')
 external JSPromise<JSBoolean> _jsToggleWebTorch(JSBoolean on);
 
 /// Controlla se la fotocamera attualmente attiva sul browser supporta la torcia/flash.
-bool jsHasWebTorch() {
+Future<bool> jsHasWebTorch() async {
   try {
-    return _jsHasWebTorch();
+    return _jsHasWebTorch().toDart;
   } catch (_) {
     return false;
   }
