@@ -362,14 +362,27 @@
   -->
   <!-- Popup tracker per rilevamento rapido chiusura popup auth -->
   <script>
-    let _activePopup = null;
-    const _originalOpen = window.open;
-    window.open = function (...args) {
-      const popup = _originalOpen.apply(window, args);
+    // Rileva se l'app è in esecuzione come PWA standalone su iOS
+    // (Add to Home Screen su Safari/Chrome iOS)
+    window.isIosPwaStandalone = function () {
+      var isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      var isStandaloneProp = (window.navigator.standalone === true);
+      var isStandaloneMedia = window.matchMedia &&
+                              window.matchMedia('(display-mode: standalone)').matches;
+      return isIos && (isStandaloneProp || isStandaloneMedia);
+    };
+
+    var _activePopup = null;
+    var _originalOpen = window.open;
+    window.open = function () {
+      var popup = _originalOpen.apply(window, arguments);
       _activePopup = popup;
       return popup;
     };
+    // In iOS PWA standalone mode, WebKit immediately sets popup.closed = true
+    // even though auth is still in progress → never report closed in that context.
     window.isLastPopupClosed = function () {
+      if (window.isIosPwaStandalone()) return false;
       return _activePopup ? _activePopup.closed : false;
     };
   </script>

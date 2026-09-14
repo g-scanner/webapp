@@ -14,3 +14,17 @@ bool jsIsLastPopupClosed() {
     return false;
   }
 }
+
+/// Binding JS alla funzione isIosPwaStandalone() definita in web/index.html.
+/// Ritorna true se l'app sta girando come PWA standalone su iOS
+/// (aggiunta alla schermata Home via Safari o Chrome iOS).
+@JS('isIosPwaStandalone')
+external bool _jsIsIosPwaStandalone();
+
+bool jsIsIosPwaStandalone() {
+  try {
+    return _jsIsIosPwaStandalone();
+  } catch (_) {
+    return false;
+  }
+}
