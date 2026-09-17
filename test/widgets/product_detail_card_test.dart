@@ -83,7 +83,7 @@ void main() {
       allergensMap: allergensMap ?? {'it': [], 'en': []},
       pendingReportsCount: pendingReportsCount,
       imageUrl: imageUrl,
-      lastUpdated: lastUpdated ?? '2026-08-17T12:00:00Z',
+      lastUpdated: lastUpdated ?? DateTime.now().subtract(const Duration(days: 5)).toIso8601String(),
     );
   }
 
@@ -634,6 +634,11 @@ void main() {
         final goToReportBtn = find.text('product.report.goToReport');
         expect(goToReportBtn, findsOneWidget);
 
+        await tester.scrollUntilVisible(
+          goToReportBtn,
+          50,
+          scrollable: find.byType(Scrollable).first,
+        );
         await tester.tap(goToReportBtn);
         await tester.pumpAndSettle();
 

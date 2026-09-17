@@ -40,37 +40,6 @@ class _AuthScreenState extends State<AuthScreen> {
   GoogleSignIn get _googleSignIn => widget.googleSignIn ?? GoogleSignIn.instance;
   FacebookAuth get _facebookAuth => widget.facebookAuth ?? FacebookAuth.instance;
 
-  // ==========================================
-  // INIT: Gestisce il ritorno da signInWithRedirect (iOS PWA standalone)
-  // ==========================================
-  @override
-  void initState() {
-    super.initState();
-    if (kIsWeb) {
-      _handlePossibleRedirectResult();
-    }
-  }
-
-  /// Controlla se Firebase ha un risultato di redirect pendente.
-  /// Necessario quando si usa signInWithRedirect su iOS PWA standalone:
-  /// l'utente viene rediretto su Google e poi ritorna all'app.
-  Future<void> _handlePossibleRedirectResult() async {
-    try {
-      final result = await _auth.getRedirectResult();
-      if (result.user != null) {
-        // Login da redirect completato con successo.
-        // Il StreamBuilder in main.dart rileva il cambio e naviga automaticamente.
-        debugPrint('[Auth] getRedirectResult: utente loggato via redirect.');
-      }
-    } on FirebaseAuthException catch (e) {
-      // Errore durante il redirect (es. utente ha annullato) — non critico.
-      debugPrint('[Auth] getRedirectResult errore: ${e.code} ${e.message}');
-    } catch (e) {
-      // Può capitare se non c'è nessun redirect pendente — ignoriamo.
-      debugPrint('[Auth] getRedirectResult: nessun redirect pendente ($e)');
-    }
-  }
-
   Future<void> _checkAndShowLegalPopup(Future<void> Function() onAccepted) async {
     final hasAccepted = await DbService.hasAcceptedTerms();
     if (hasAccepted) {
@@ -120,17 +89,6 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
     try {
       if (kIsWeb) {
-        // Su iOS PWA standalone (Add to Home Screen), window.open() restituisce
-        // immediatamente un popup "chiuso" a causa del sandboxing WebKit.
-        // In quel caso usiamo signInWithRedirect e gestiamo il risultato in initState.
-        if (jsIsIosPwaStandalone()) {
-          await _auth.signInWithRedirect(GoogleAuthProvider());
-          // Dopo il redirect la pagina viene ricaricata: _handlePossibleRedirectResult
-          // in initState cattura il risultato al ritorno. Non dobbiamo fare altro qui.
-          return;
-        }
-
-        // Browser normale / Android WebApp / desktop: usa popup con tracker.
         final cred = await _signInWithPopupTracked(
           GoogleAuthProvider(),
           "Google",
@@ -141,7 +99,7 @@ class _AuthScreenState extends State<AuthScreen> {
         return;
       }
 
-      // Mobile nativo (Android / iOS): usa il Credential Manager / bottom sheet nativo.
+      // Mobile nativo (Android / iOS)
       final googleSignIn = _googleSignIn;
       if (!_isGoogleSignInInitialized) {
         await googleSignIn.initialize(
@@ -150,9 +108,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
         _isGoogleSignInInitialized = true;
       }
-
       final GoogleSignInAccount googleUser = await googleSignIn.authenticate();
-
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
@@ -193,8 +149,6 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
     try {
       if (kIsWeb) {
-        // Facebook non supporta signInWithRedirect nello stesso modo, ma blocchiamo
-        // comunque il comportamento standalone anomalo di iOS con il flag nel JS.
         final cred = await _signInWithPopupTracked(
           FacebookAuthProvider(),
           "Facebook",
@@ -225,16 +179,12 @@ class _AuthScreenState extends State<AuthScreen> {
         accessToken.tokenString,
       );
 
-      final UserCredential userCredential = await _auth
-          .signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user;
 
-      if (user != null &&
-          (user.displayName == null || user.displayName!.isEmpty)) {
+      if (user != null && (user.displayName == null || user.displayName!.isEmpty)) {
         try {
-          final userData = await _facebookAuth.getUserData(
-            fields: "name,email",
-          );
+          final userData = await _facebookAuth.getUserData(fields: "name,email");
           final name = userData['name'] as String?;
           if (name != null && name.isNotEmpty) {
             await user.updateDisplayName(name);
@@ -264,9 +214,9 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+
   // ==========================================
   // WEB: Login con popup e rilevamento rapido chiusura
-  // (Solo per browser normali — non iOS PWA standalone)
   // ==========================================
   Future<UserCredential?> _signInWithPopupTracked(
     AuthProvider provider,
@@ -275,17 +225,20 @@ class _AuthScreenState extends State<AuthScreen> {
     bool completed = false;
     bool timerHandled = false;
 
-    final checkTimer = Timer.periodic(const Duration(milliseconds: 150), (
-      timer,
-    ) {
-      if (_isPopupClosed() && !completed) {
-        timer.cancel();
-        timerHandled = true;
-        if (mounted && _isLoading) {
-          setState(() => _isLoading = false);
-          _showInfo("auth.errors.popupCancelled".tr(namedArgs: {"provider": providerName}));
+    // Periodo di grazia iniziale di 800ms per dare tempo al popup di inizializzarsi
+    Timer? checkTimer;
+    final startTimer = Timer(const Duration(milliseconds: 800), () {
+      if (completed) return;
+      checkTimer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
+        if (_isPopupClosed() && !completed) {
+          timer.cancel();
+          timerHandled = true;
+          if (mounted && _isLoading) {
+            setState(() => _isLoading = false);
+            _showInfo("auth.errors.popupCancelled".tr(namedArgs: {"provider": providerName}));
+          }
         }
-      }
+      });
     });
 
     try {
@@ -294,12 +247,11 @@ class _AuthScreenState extends State<AuthScreen> {
       return cred;
     } catch (e) {
       completed = true;
-      if (timerHandled) {
-        return null;
-      }
+      if (timerHandled) return null;
       rethrow;
     } finally {
-      checkTimer.cancel();
+      startTimer.cancel();
+      checkTimer?.cancel();
     }
   }
 
@@ -381,14 +333,13 @@ class _AuthScreenState extends State<AuthScreen> {
               child: Container(
                 width: double.infinity,
                 constraints: const BoxConstraints(maxWidth: 400),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 32,
-                  horizontal: 24,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
                 decoration: BoxDecoration(
                   color: context.cardBackground,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: context.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: context.colorScheme.shadow.withValues(alpha: 0.02),
