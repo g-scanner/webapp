@@ -370,6 +370,11 @@
       return popup;
     };
     window.isLastPopupClosed = function () {
+      // Su iOS Safari / WebKit standalone, window.closed genera falsi positivi immediati
+      // su domini cross-origin (Google/Facebook), provocando l'annullamento fittizio del login.
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(navigator.userAgent));
+      if (isIOS) return false;
       return _activePopup ? _activePopup.closed : false;
     };
   </script>
