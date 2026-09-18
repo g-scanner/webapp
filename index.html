@@ -377,6 +377,53 @@
       if (isIOS) return false;
       return _activePopup ? _activePopup.closed : false;
     };
+
+    // Rilevamento piattaforma iOS e Standalone (PWA) per autenticazione adattiva
+    window.isGScannerIOS = function () {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+             (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(navigator.userAgent));
+    };
+
+    window.isGScannerStandalone = function () {
+      return (window.navigator.standalone === true) || 
+             (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    };
+
+    // Feature Detection deterministica per iOS 16.4+ (immune al congelamento/mascheramento di User-Agent):
+    // In Safari/WebKit, iOS 16.4 ha introdotto CompressionStream e screen.orientation.
+    // Se mancano su un dispositivo iOS, è categoricamente una versione legacy (< 16.4).
+    window.isGScannerLegacyIOS = function () {
+      if (!window.isGScannerIOS()) return false;
+      const hasCompressionStream = typeof window.CompressionStream !== 'undefined';
+      const hasScreenOrientation = typeof screen !== 'undefined' && ('orientation' in screen);
+      if (!hasCompressionStream || !hasScreenOrientation) {
+        return true;
+      }
+      return false;
+    };
+
+    window.getGScannerIOSVersion = function () {
+      const ua = navigator.userAgent;
+      const match = ua.match(/OS (\d+)[._](\d+)/);
+      if (match) {
+        const major = parseInt(match[1], 10);
+        const minor = parseInt(match[2], 10);
+        return major + (minor / 10.0);
+      }
+      return null;
+    };
+
+    window.shouldUseRedirectAuth = function () {
+      // Se iOS Standalone PWA ed è una versione legacy (< 16.4, determinata via Feature Detection),
+      // usiamo signInWithRedirect per evitare che Jetsam termini il processo della PWA in background
+      // durante l'apertura del popup OAuth.
+      if (window.isGScannerIOS() && window.isGScannerStandalone()) {
+        if (window.isGScannerLegacyIOS()) {
+          return true;
+        }
+      }
+      return false;
+    };
   </script>
 
   <!-- Supporto Flashlight / Torch per Web (Android Chrome / WebRTC Image Capture API) -->
