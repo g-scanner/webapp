@@ -16,29 +16,11 @@
   <link rel="icon" href="icons/favicon.ico" sizes="16x16 32x32 48x48">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="manifest" id="app-manifest" href="manifest.json">
-  <script>
-    (function () {
-      var isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isIos) {
-        var m = document.getElementById('app-manifest');
-        if (m) m.setAttribute('href', 'manifest-ios.json');
-      }
-    })();
-  </script>
+  <link rel="manifest" href="manifest.json">
   
   <!-- ICONE (iOS e PWA) -->
-  <script>
-    (function () {
-      var isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (!isIos) {
-        var meta = document.createElement('meta');
-        meta.name = 'mobile-web-app-capable';
-        meta.content = 'yes';
-        document.head.appendChild(meta);
-      }
-    })();
-  </script>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="G-Scanner">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
@@ -380,11 +362,10 @@
   -->
   <!-- Popup tracker per rilevamento rapido chiusura popup auth -->
   <script>
-    // ── Popup tracker ───────────────────────────────────────────────────────
-    var _activePopup = null;
-    var _originalOpen = window.open;
-    window.open = function () {
-      var popup = _originalOpen.apply(window, arguments);
+    let _activePopup = null;
+    const _originalOpen = window.open;
+    window.open = function (...args) {
+      const popup = _originalOpen.apply(window, args);
       _activePopup = popup;
       return popup;
     };

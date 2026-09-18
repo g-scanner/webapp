@@ -7,7 +7,6 @@
     "lang": "en",
     "dir": "ltr",
     "start_url": "/webapp/",
-    "scope": "/webapp/",
     "display": "standalone",
     "orientation": "portrait-primary",
     "theme_color": "#BFDEB4",
