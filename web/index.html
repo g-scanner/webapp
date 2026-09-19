@@ -17,14 +17,19 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   
-  <!-- ICONE & PWA: Rilevamento Dinamico Manifest e Standalone:
-       - Android / Desktop: usano manifest.json (standalone) e mobile-web-app-capable.
-       - iOS >= 26.2 (incluse 16.4+, 17, 18): iniettano manifest.json (standalone) e mobile-web-app-capable.
-       - iOS < 26.2: iniettano manifest-browser.json (display: browser) e NESSUN meta-tag capable,
-         aprendosi direttamente in Safari dove l'accesso con popup funziona sempre e la sessione è persistente. -->
+  <!-- MANIFEST STATICO DEFAULT:
+       Impostato su 'manifest-browser.json' (display: browser) direttamente nell'HTML di partenza.
+       In questo modo WebKit/Safari durante il pre-parsing e la creazione del WebClip per "Aggiungi a schermata Home"
+       rileva immediatamente ed esclusivamente la modalità 'browser' e NESSUN meta-tag capable.
+       Su iOS < 26.2 l'icona creata sulla Home sarà quindi un segnalibro Safari standard (aperto come normale scheda),
+       aggirando il crash del processo isolato e garantendo popup di autenticazione e persistenza sessione. -->
+  <link id="app-manifest" rel="manifest" href="manifest-browser.json">
+
   <script>
     (function() {
+      // Rilevamento accurato di iOS (iPhone, iPad, iPod, o iPadOS con userAgent macOS)
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(navigator.userAgent));
       
       let isModernIOS = false;
@@ -37,31 +42,39 @@
           if (ver >= 26.2) {
             isModernIOS = true;
           }
-        } else if (typeof window.CompressionStream !== 'undefined' || ('orientation' in screen)) {
-          isModernIOS = true;
+        }
+        // 2. Feature-detection specifica per Safari/WebKit 26.2+ (copre anche Navigazione Anonima
+        // in cui Apple maschera la versione dell'OS, e iPadOS in modalità desktop):
+        // Math.sumPrecise e CSS.supports('field-sizing', 'content') sono stati introdotti in WebKit
+        // esattamente con Safari 26.2 (Dicembre 2025). Su iOS 18 (e inferiori) non esistono e valutano false.
+        if (!isModernIOS) {
+          const hasSafari262 = (typeof Math !== 'undefined' && typeof Math.sumPrecise === 'function') ||
+                               (window.CSS && CSS.supports && CSS.supports('field-sizing', 'content'));
+          if (hasSafari262) {
+            isModernIOS = true;
+          }
         }
       }
 
-      const manifestLink = document.createElement('link');
-      manifestLink.rel = 'manifest';
-
       if (!isIOS || isModernIOS) {
-        // Android, Desktop o iOS >= 26.2: vera PWA standalone a schermo intero
-        manifestLink.href = 'manifest.json';
-        document.head.appendChild(manifestLink);
+        // Dispositivi Android, Desktop o iOS >= 26.2 (inclusa iOS 27.x): vera PWA standalone a schermo intero
+        const manifestEl = document.getElementById('app-manifest');
+        if (manifestEl) {
+          manifestEl.href = 'manifest.json';
+        }
 
         const metaMobile = document.createElement('meta');
         metaMobile.name = 'mobile-web-app-capable';
         metaMobile.content = 'yes';
         document.head.appendChild(metaMobile);
-      } else {
-        // iOS < 26.2: manifest con display 'browser', niente meta capable -> apre in Safari
-        manifestLink.href = 'manifest-browser.json';
-        document.head.appendChild(manifestLink);
+
+        const metaStatusBar = document.createElement('meta');
+        metaStatusBar.name = 'apple-mobile-web-app-status-bar-style';
+        metaStatusBar.content = 'black';
+        document.head.appendChild(metaStatusBar);
       }
     })();
   </script>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="G-Scanner">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
