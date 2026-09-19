@@ -61,9 +61,10 @@ Future<bool> _showReauthDialog(BuildContext context, FirebaseAuth auth) async {
 
   if (confirm == true) {
     await auth.signOut();
-    if (context.mounted) {
-      Navigator.pop(context); // Chiude il Bottom Sheet settings
-    }
+    // Lo StreamBuilder in main.dart reagisce automaticamente all'evento null di
+    // authStateChanges() e sostituisce MainScreen con AuthScreen.
+    // Non è necessario (e sarebbe dannoso) fare Navigator.pop qui:
+    // a quel punto il context di MainScreen/BottomSheet è già smontato.
     return true;
   }
   return false;
