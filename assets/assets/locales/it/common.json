@@ -36,7 +36,7 @@
       "deleteReportConfirmBody": "Sei sicuro di voler eliminare questa segnalazione? Questa azione è irreversibile.",
       "deleteReportError": "Errore durante l'eliminazione. Riprova.",
       "edit": "Modifica",
-      "search": "Cerca",
+      "search": "Cerca per nome o codice a barre...",
       "loading": "Caricamento...",
       "error": "Errore",
       "yes": "Sì",

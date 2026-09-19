@@ -24,7 +24,8 @@
       "deleteConfirmTitle": "Eliminazione Account",
       "deleteConfirmBody": "Sei sicuro di voler eliminare il tuo account? Questa azione è irreversibile.\n\nPerderai:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nLe tue segnalazioni rimarranno attive ma verranno anonimizzate.",
       "deleteReauthTitle": "Accesso richiesto per sicurezza",
-      "deleteReauthBody": "Per motivi di sicurezza, prima di procedere con l'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo \"Procedi\" verrai disconnesso automaticamente."
+      "deleteReauthBody": "Per motivi di sicurezza, prima di procedere con l'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo \"Procedi\" verrai disconnesso automaticamente.",
+      "updateNameError": "Errore durante l’aggiornamento del nome. Riprova più tardi."
     },
     "toggles": {
       "warnAdditivesTitle": "Avvertimento Additivi",
