@@ -80,7 +80,8 @@ Future<void> showDeleteAccountFlow({
 
   final lastSignIn = user.metadata.lastSignInTime;
   final bool needsReauth =
-      lastSignIn == null || DateTime.now().difference(lastSignIn).inMinutes > 5;
+      lastSignIn == null ||
+      DateTime.now().difference(lastSignIn) > const Duration(minutes: 5);
 
   if (needsReauth) {
     // CASO 2: Sessione vecchia — serve riautenticazione
@@ -154,8 +155,8 @@ Future<void> showDeleteAccountFlow({
                           auth.currentUser?.metadata.lastSignInTime;
                       final bool sessionStillFresh =
                           lastSignInNow != null &&
-                          DateTime.now().difference(lastSignInNow).inMinutes <=
-                              5;
+                          DateTime.now().difference(lastSignInNow) <=
+                              const Duration(minutes: 5);
                       if (!sessionStillFresh) {
                         if (dialogCtx.mounted) Navigator.pop(dialogCtx);
                         if (context.mounted) {
