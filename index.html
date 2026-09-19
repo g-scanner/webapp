@@ -19,8 +19,8 @@
   
   <!-- ICONE & PWA: Rilevamento Dinamico Manifest e Standalone:
        - Android / Desktop: usano manifest.json (standalone) e mobile-web-app-capable.
-       - iOS >= 16.2 (incluse 16.4+, 17, 18): iniettano manifest.json (standalone) e mobile-web-app-capable.
-       - iOS < 16.2: iniettano manifest-browser.json (display: browser) e NESSUN meta-tag capable,
+       - iOS >= 26.2 (incluse 16.4+, 17, 18): iniettano manifest.json (standalone) e mobile-web-app-capable.
+       - iOS < 26.2: iniettano manifest-browser.json (display: browser) e NESSUN meta-tag capable,
          aprendosi direttamente in Safari dove l'accesso con popup funziona sempre e la sessione è persistente. -->
   <script>
     (function() {
@@ -34,7 +34,7 @@
           const major = parseInt(match[1], 10);
           const minor = parseInt(match[2], 10);
           const ver = major + (minor / 10.0);
-          if (ver >= 16.2) {
+          if (ver >= 26.2) {
             isModernIOS = true;
           }
         } else if (typeof window.CompressionStream !== 'undefined' || ('orientation' in screen)) {
@@ -46,7 +46,7 @@
       manifestLink.rel = 'manifest';
 
       if (!isIOS || isModernIOS) {
-        // Android, Desktop o iOS >= 16.2: vera PWA standalone a schermo intero
+        // Android, Desktop o iOS >= 26.2: vera PWA standalone a schermo intero
         manifestLink.href = 'manifest.json';
         document.head.appendChild(manifestLink);
 
@@ -55,7 +55,7 @@
         metaMobile.content = 'yes';
         document.head.appendChild(metaMobile);
       } else {
-        // iOS < 16.2: manifest con display 'browser', niente meta capable -> apre in Safari
+        // iOS < 26.2: manifest con display 'browser', niente meta capable -> apre in Safari
         manifestLink.href = 'manifest-browser.json';
         document.head.appendChild(manifestLink);
       }
