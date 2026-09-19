@@ -6,12 +6,10 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../core/theme/theme.dart';
 
 class SyncDataScreen extends StatelessWidget {
-  final int historyCount;
   final Function(bool) onDecision;
 
   const SyncDataScreen({
     super.key,
-    required this.historyCount,
     required this.onDecision,
   });
 
@@ -56,7 +54,7 @@ class SyncDataScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              "sync.localDataFound.body".tr(namedArgs: {"count": historyCount.toString()}),
+              "sync.localDataFound.body".tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,

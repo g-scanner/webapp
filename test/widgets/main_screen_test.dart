@@ -488,11 +488,6 @@ void main() {
         // SyncDataScreen should be rendered
         expect(find.byType(SyncDataScreen), findsOneWidget);
         expect(find.byType(CameraModule), findsNothing);
-
-        final syncDataScreen = tester.widget<SyncDataScreen>(
-          find.byType(SyncDataScreen),
-        );
-        expect(syncDataScreen.historyCount, 2); // 1 history + 1 report = 2
       },
     );
 

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget Tests: SyncDataScreen
 
 import 'package:flutter/material.dart';
@@ -27,7 +27,6 @@ class MockSyncCallbacks extends Mock implements _SyncCallbacks {}
 Future<void> _pumpSyncDataScreen(
   WidgetTester tester, {
   required MockSyncCallbacks cb,
-  int historyCount = 5,
   Size surfaceSize = const Size(1080, 2400),
 }) async {
   tester.view.physicalSize = surfaceSize;
@@ -39,7 +38,6 @@ Future<void> _pumpSyncDataScreen(
     createTestApp(
       child: Scaffold(
         body: SyncDataScreen(
-          historyCount: historyCount,
           onDecision: (keep) => cb.onDecision(keep),
         ),
       ),
@@ -74,13 +72,13 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
   group('GROUP 1 – UI Presentation & Structure', () {
     testWidgets('renders decorative cloud sync icon', (tester) async {
-      await _pumpSyncDataScreen(tester, cb: cb, historyCount: 3);
+      await _pumpSyncDataScreen(tester, cb: cb);
 
       expect(find.byIcon(Icons.cloud_sync_outlined), findsOneWidget);
     });
 
     testWidgets('renders title and body text keys', (tester) async {
-      await _pumpSyncDataScreen(tester, cb: cb, historyCount: 3);
+      await _pumpSyncDataScreen(tester, cb: cb);
 
       expect(find.text('sync.localDataFound.title'), findsOneWidget);
       expect(find.text('sync.localDataFound.body'), findsOneWidget);
@@ -88,7 +86,7 @@ void main() {
 
     testWidgets('renders both action buttons with proper icons and labels',
         (tester) async {
-      await _pumpSyncDataScreen(tester, cb: cb, historyCount: 3);
+      await _pumpSyncDataScreen(tester, cb: cb);
 
       // Merge / Keep button
       expect(find.byType(ElevatedButton), findsOneWidget);
@@ -107,7 +105,7 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
   group('GROUP 2 – Decision Callbacks & Interactions', () {
     testWidgets('tapping merge button invokes onDecision(true)', (tester) async {
-      await _pumpSyncDataScreen(tester, cb: cb, historyCount: 7);
+      await _pumpSyncDataScreen(tester, cb: cb);
 
       await tester.tap(find.text('sync.localDataFound.merge'));
       await tester.pump();
@@ -118,40 +116,13 @@ void main() {
 
     testWidgets('tapping discard button invokes onDecision(false)',
         (tester) async {
-      await _pumpSyncDataScreen(tester, cb: cb, historyCount: 7);
+      await _pumpSyncDataScreen(tester, cb: cb);
 
       await tester.tap(find.text('sync.localDataFound.discard'));
       await tester.pump();
 
       verify(() => cb.onDecision(false)).called(1);
       verifyNever(() => cb.onDecision(true));
-    });
-  });
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // GROUP 3 – Varying History Counts
-  // ═══════════════════════════════════════════════════════════════════════════
-  group('GROUP 3 – Varying History Counts', () {
-    testWidgets('renders without error when historyCount is 0', (tester) async {
-      await _pumpSyncDataScreen(tester, cb: cb, historyCount: 0);
-
-      expect(find.text('sync.localDataFound.title'), findsOneWidget);
-      expect(find.text('sync.localDataFound.body'), findsOneWidget);
-    });
-
-    testWidgets('renders without error when historyCount is 1', (tester) async {
-      await _pumpSyncDataScreen(tester, cb: cb, historyCount: 1);
-
-      expect(find.text('sync.localDataFound.title'), findsOneWidget);
-      expect(find.text('sync.localDataFound.body'), findsOneWidget);
-    });
-
-    testWidgets('renders without error when historyCount is large (e.g. 500)',
-        (tester) async {
-      await _pumpSyncDataScreen(tester, cb: cb, historyCount: 500);
-
-      expect(find.text('sync.localDataFound.title'), findsOneWidget);
-      expect(find.text('sync.localDataFound.body'), findsOneWidget);
     });
   });
 }

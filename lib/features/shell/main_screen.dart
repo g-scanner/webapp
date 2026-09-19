@@ -73,7 +73,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _navController.openStaleNotifiers;
 
   bool _requiresSyncDecision = false;
-  int _anonymousHistoryCount = 0;
 
   @override
   void initState() {
@@ -155,8 +154,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             settings.userId != user.uid) {
           if (mounted) {
             setState(() {
-              _anonymousHistoryCount =
-                  localHistory.length + localReports.length;
               _requiresSyncDecision = true;
             });
           }
@@ -914,7 +911,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       return Scaffold(
         backgroundColor: context.colorScheme.surface,
         body: SyncDataScreen(
-          historyCount: _anonymousHistoryCount,
           onDecision: (bool wantToSync) async {
             setState(() {
               _requiresSyncDecision = false;
