@@ -370,30 +370,7 @@
       return popup;
     };
     window.isLastPopupClosed = function () {
-      // Su iOS Safari / WebKit standalone, window.closed genera falsi positivi immediati
-      // su domini cross-origin (Google/Facebook), provocando l'annullamento fittizio del login.
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(navigator.userAgent));
-      if (isIOS) return false;
       return _activePopup ? _activePopup.closed : false;
-    };
-
-    // Rilevamento piattaforma iOS e Standalone (PWA) per autenticazione adattiva
-    window.isGScannerIOS = function () {
-      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-             (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(navigator.userAgent));
-    };
-
-    window.isGScannerStandalone = function () {
-      return (window.navigator.standalone === true) || 
-             (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-    };
-
-    window.shouldUseRedirectAuth = function () {
-      // signInWithRedirect è incompatibile con Safari/iOS a causa del blocco ITP
-      // (Intelligent Tracking Prevention) tra domini cross-origin (github.io vs firebaseapp.com).
-      // Usiamo popup ovunque su Web.
-      return false;
     };
   </script>
 

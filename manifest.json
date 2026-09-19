@@ -6,7 +6,6 @@
     "description": "Scan food barcodes with G-Scanner. Instantly discover gluten, suspicious additives, or lactose. Free and ad-free!",
     "lang": "en",
     "dir": "ltr",
-    "scope": "/webapp/",
     "start_url": "/webapp/",
     "display": "standalone",
     "orientation": "portrait-primary",
