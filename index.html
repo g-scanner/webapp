@@ -390,9 +390,10 @@
     };
 
     window.shouldUseRedirectAuth = function () {
-      // Per qualsiasi versione di webapp iOS Standalone (Home Screen), usa sempre il redirect.
-      // Su browser web (Safari iOS, Chrome, Firefox desktop/mobile) e su Android, usa sempre popup.
-      return window.isGScannerIOS() && window.isGScannerStandalone();
+      // signInWithRedirect è incompatibile con Safari/iOS a causa del blocco ITP
+      // (Intelligent Tracking Prevention) tra domini cross-origin (github.io vs firebaseapp.com).
+      // Usiamo popup ovunque su Web.
+      return false;
     };
   </script>
 
