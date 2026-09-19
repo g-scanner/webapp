@@ -1228,4 +1228,47 @@ void main() {
       },
     );
   });
+
+  group('GROUP 13 – Account Management Edit Name Flow', () {
+    testWidgets(
+      'Editing name immediately updates display name in MenuView inside bottom sheet',
+      (tester) async {
+        when(() => user.isAnonymous).thenReturn(false);
+        when(() => user.displayName).thenReturn('Mario Rossi');
+        when(() => auth.currentUser).thenReturn(user);
+        when(() => user.updateDisplayName(any())).thenAnswer((_) async {});
+
+        await _pump(tester, cb: cb, auth: auth);
+
+        // Open account management sheet
+        await tester.tap(find.text('settings.account.manageAccount'));
+        await tester.pumpAndSettle();
+
+        // Verify initial display name is present in MenuView inside bottom sheet
+        final menuView = find.byKey(const ValueKey("MenuView"));
+        expect(find.descendant(of: menuView, matching: find.text('Mario Rossi')), findsOneWidget);
+
+        // Tap Edit Name button
+        await tester.tap(find.text('settings.account.editName'));
+        await tester.pumpAndSettle();
+
+        // Enter new name in TextField
+        final textField = find.byType(TextField);
+        expect(textField, findsOneWidget);
+        await tester.enterText(textField, 'Luigi Verdi');
+        await tester.pumpAndSettle();
+
+        // Tap Salva
+        await tester.tap(find.text('common.actions.save'));
+        await tester.pumpAndSettle();
+
+        // The MenuView should immediately reflect the new name before closing the sheet
+        expect(find.descendant(of: menuView, matching: find.text('Luigi Verdi')), findsOneWidget);
+        expect(find.descendant(of: menuView, matching: find.text('Mario Rossi')), findsNothing);
+
+        verify(() => user.updateDisplayName('Luigi Verdi')).called(1);
+      },
+    );
+  });
 }
+

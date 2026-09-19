@@ -20,9 +20,12 @@ void showAccountManagementSheet({
   final currentUser = auth.currentUser;
   if (currentUser == null) return;
 
+  String currentDisplayName =
+      optimisticDisplayName ?? currentUser.displayName ?? "";
+
   bool isEditingName = false;
   final TextEditingController nameController = TextEditingController(
-    text: optimisticDisplayName ?? currentUser.displayName ?? "",
+    text: currentDisplayName,
   );
   final FocusNode nameFocusNode = FocusNode();
 
@@ -46,11 +49,11 @@ void showAccountManagementSheet({
   }
   final String identifier =
       (currentUser.email != null && currentUser.email!.isNotEmpty)
-          ? currentUser.email!
-          : ((currentUser.phoneNumber != null &&
-                    currentUser.phoneNumber!.isNotEmpty)
-                ? currentUser.phoneNumber!
-                : "Dati cloud");
+      ? currentUser.email!
+      : ((currentUser.phoneNumber != null &&
+                currentUser.phoneNumber!.isNotEmpty)
+            ? currentUser.phoneNumber!
+            : "Dati cloud");
 
   showModalBottomSheet(
     context: context,
@@ -66,9 +69,6 @@ void showAccountManagementSheet({
       final cardBg = ctx.cardBackground;
       return StatefulBuilder(
         builder: (BuildContext ctx, StateSetter setModalState) {
-          final String currentDisplayName =
-              optimisticDisplayName ?? currentUser.displayName ?? "";
-
           void goBackToMenu() {
             nameFocusNode.unfocus();
             Future.delayed(const Duration(milliseconds: 200), () {
@@ -148,7 +148,9 @@ void showAccountManagementSheet({
                       color: cardBg,
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.3,
+                        ),
                       ),
                     ),
                     child: Column(
@@ -160,7 +162,8 @@ void showAccountManagementSheet({
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: (providerName == "Google" ||
+                                color:
+                                    (providerName == "Google" ||
                                         providerName == "Facebook")
                                     ? Colors.transparent
                                     : colorScheme.surfaceContainerHigh,
@@ -211,7 +214,11 @@ void showAccountManagementSheet({
                                       const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
-                                          "auth.social.connectedWith".tr(namedArgs: {"provider": providerName}),
+                                          "auth.social.connectedWith".tr(
+                                            namedArgs: {
+                                              "provider": providerName,
+                                            },
+                                          ),
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: colorScheme.onSurfaceVariant,
@@ -230,7 +237,9 @@ void showAccountManagementSheet({
                         const SizedBox(height: 20),
                         Divider(
                           height: 1,
-                          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.3,
+                          ),
                         ),
                         const SizedBox(height: 20),
                         SizedBox(
@@ -241,16 +250,17 @@ void showAccountManagementSheet({
                               onLogout(context);
                             },
                             style: FilledButton.styleFrom(
-                              backgroundColor: colorScheme.surfaceContainerHighest,
+                              backgroundColor:
+                                  colorScheme.surfaceContainerHighest,
                               foregroundColor: colorScheme.onSurface,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             icon: const Icon(Icons.logout, size: 20),
                             label: Text(
                               "settings.account.signOut".tr(),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -268,13 +278,12 @@ void showAccountManagementSheet({
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: colorScheme.error,
-                              backgroundColor: colorScheme.errorContainer.withValues(
-                                alpha: 0.3,
+                              backgroundColor: colorScheme.errorContainer
+                                  .withValues(alpha: 0.3),
+                              side: BorderSide(
+                                color: colorScheme.errorContainer,
                               ),
-                              side: BorderSide(color: colorScheme.errorContainer),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             icon: const Icon(
                               Icons.person_remove_outlined,
@@ -282,7 +291,9 @@ void showAccountManagementSheet({
                             ),
                             label: Text(
                               "settings.account.deleteAccount".tr(),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -317,11 +328,25 @@ void showAccountManagementSheet({
                         onGoBack: goBackToMenu,
                         onSaveName: (newName) async {
                           if (newName != currentDisplayName) {
+                            final previousName = currentDisplayName;
                             onUpdateOptimisticDisplayName(newName);
+                            setModalState(() {
+                              currentDisplayName = newName;
+                            });
                             goBackToMenu();
                             try {
                               await currentUser.updateDisplayName(newName);
-                            } catch (_) {}
+                            } catch (e) {
+                              if (ctx.mounted) {
+                                setModalState(() {
+                                  currentDisplayName = previousName;
+                                });
+                              }
+                              onUpdateOptimisticDisplayName(previousName);
+                              onTriggerToast(
+                                "settings.account.updateNameError".tr(),
+                              );
+                            }
                           } else {
                             goBackToMenu();
                           }
@@ -336,5 +361,6 @@ void showAccountManagementSheet({
     },
   ).whenComplete(() {
     nameFocusNode.dispose();
+    nameController.dispose();
   });
 }

@@ -86,10 +86,7 @@ class ReportsFilterHeader extends StatelessWidget {
           Skeletonizer(
             enabled: showSkeleton,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: cardBg,
                 borderRadius: BorderRadius.circular(16),
@@ -166,16 +163,11 @@ class ReportsFilterHeader extends StatelessWidget {
                 controller: searchController,
                 focusNode: searchFocusNode,
                 onChanged: onSearchChanged,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colorScheme.onSurface,
-                ),
+                style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
                 decoration: InputDecoration(
-                  hintText: "database.search.hint".tr(),
+                  hintText: "common.actions.search".tr(),
                   hintStyle: TextStyle(
-                    color: colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.6,
-                    ),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                     fontSize: 14,
                   ),
                   prefixIconConstraints: const BoxConstraints(
@@ -233,11 +225,7 @@ class ReportsFilterHeader extends StatelessWidget {
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
                 initialValue: reportFilter,
-                icon: Icon(
-                  Icons.filter_list,
-                  color: filterIconColor,
-                  size: 20,
-                ),
+                icon: Icon(Icons.filter_list, color: filterIconColor, size: 20),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -246,9 +234,7 @@ class ReportsFilterHeader extends StatelessWidget {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: filterBgColor,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(999),
                     borderSide: BorderSide.none,

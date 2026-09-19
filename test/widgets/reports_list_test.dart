@@ -336,6 +336,7 @@ void main() {
         isSynced: true,
       );
 
+      expect(find.text('common.actions.search'), findsOneWidget);
       expect(find.text('Pasta Riso'), findsOneWidget);
       expect(find.text('Biscotti Mais'), findsOneWidget);
 
