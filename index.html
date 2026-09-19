@@ -186,6 +186,12 @@
       -webkit-transform: translateZ(0) !important;
       transform: translateZ(0) !important;
     }
+
+    /* Previene lo zoom automatico irreversibile e il decentramento su iOS WebKit (Safari e Chrome)
+       imponendo dimensione minima 16px per gli input della webapp e dell'host di editing Flutter */
+    input, textarea, select, .flt-text-editing, [contenteditable] {
+      font-size: 16px !important;
+    }
   </style>
 
   <!-- Costringe il video inline ed elimina il player nativo a schermo intero -->
@@ -219,34 +225,71 @@
         video.style.setProperty('transform', 'translateZ(0)', 'important');
       }
 
-      // 1. Intercetta document.createElement('video')
+      function prepareInput(el) {
+        if (!el) return;
+        el.style.setProperty('font-size', '16px', 'important');
+      }
+
+      // 1. Intercetta document.createElement per video e input
       const origCreateElement = Document.prototype.createElement;
       Document.prototype.createElement = function(tagName, options) {
         const el = origCreateElement.call(this, tagName, options);
-        if (typeof tagName === 'string' && tagName.toLowerCase() === 'video') {
-          prepareVideo(el);
+        if (typeof tagName === 'string') {
+          const lower = tagName.toLowerCase();
+          if (lower === 'video') {
+            prepareVideo(el);
+          } else if (lower === 'input' || lower === 'textarea' || lower === 'select') {
+            prepareInput(el);
+          }
         }
         return el;
       };
 
-      // 2. Intercetta document.createElementNS(..., 'video')
+      // 2. Intercetta document.createElementNS
       const origCreateElementNS = Document.prototype.createElementNS;
       Document.prototype.createElementNS = function(namespaceURI, qualifiedName) {
         const el = origCreateElementNS.call(this, namespaceURI, qualifiedName);
-        if (typeof qualifiedName === 'string' && qualifiedName.toLowerCase() === 'video') {
-          prepareVideo(el);
+        if (typeof qualifiedName === 'string') {
+          const lower = qualifiedName.toLowerCase();
+          if (lower === 'video') {
+            prepareVideo(el);
+          } else if (lower === 'input' || lower === 'textarea' || lower === 'select') {
+            prepareInput(el);
+          }
         }
         return el;
       };
 
-      // 3. Intercetta HTMLVideoElement.prototype.play()
+      // 3. Inietta la regola 16px anche nello ShadowRoot generato da Flutter Web per l'editing
+      const origAttachShadow = Element.prototype.attachShadow;
+      Element.prototype.attachShadow = function(init) {
+        const shadow = origAttachShadow.call(this, init);
+        try {
+          const style = document.createElement('style');
+          style.textContent = 'input, textarea, select, .flt-text-editing { font-size: 16px !important; }';
+          shadow.appendChild(style);
+        } catch (_) {}
+        return shadow;
+      };
+
+      // 4. Listener globale focusin per blindare qualsiasi input attivo su iOS WebKit
+      document.addEventListener('focusin', function(e) {
+        if (e.target && e.target.style) {
+          const tag = (e.target.tagName || '').toLowerCase();
+          if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target.classList && e.target.classList.contains('flt-text-editing'))) {
+            e.target.style.setProperty('font-size', '16px', 'important');
+          }
+        }
+      }, true);
+
+      // 5. Intercetta HTMLVideoElement.prototype.play()
       const origPlay = HTMLVideoElement.prototype.play;
       HTMLVideoElement.prototype.play = function() {
         prepareVideo(this);
         return origPlay.apply(this, arguments);
       };
 
-      // 4. Neutralizza la chiamata interna di Safari che avvia il player a schermo intero
+      // 6. Neutralizza la chiamata interna di Safari che avvia il player a schermo intero
       HTMLVideoElement.prototype.webkitEnterFullscreen = function() {
         return false;
       };
