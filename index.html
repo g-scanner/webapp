@@ -85,7 +85,7 @@
   <!-- DIRETTIVE ROBOTS E IA -->
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <meta name="Google-Extended" content="noindex">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script>window.flutterfire_web_sdk_version = '12.17.0';</script>
 
   <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
@@ -176,22 +176,6 @@
 
   <!-- Forza il video a rispettare i vincoli grafici anche se Safari tenta di espanderlo -->
   <style>
-    /* Blocca lo scroll nativo del viewport del browser (conflitto doppio scroll Safari/WebKit vs Flutter) */
-    html, body {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      overscroll-behavior: none;
-      -webkit-overflow-scrolling: auto;
-    }
-
     video {
       object-fit: cover !important;
       width: 100% !important;
