@@ -107,7 +107,7 @@ class TestMobileScannerController extends MobileScannerController {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CameraCallbacks {
-  Future<void> onScanSuccess(String barcode) async {}
+  Future<bool> onScanSuccess(String barcode) async => true;
 }
 
 class MockCameraCallbacks extends Mock implements _CameraCallbacks {}
@@ -167,7 +167,7 @@ void main() {
   setUp(() {
     cb = MockCameraCallbacks();
     controller = TestMobileScannerController();
-    when(() => cb.onScanSuccess(any())).thenAnswer((_) async {});
+    when(() => cb.onScanSuccess(any())).thenAnswer((_) async => true);
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -712,6 +712,38 @@ void main() {
       await tester.pump();
 
       verifyNever(() => cb.onScanSuccess(any()));
+    });
+
+    testWidgets(
+        'manual field is cleared after successful scan', (tester) async {
+      when(() => cb.onScanSuccess(any())).thenAnswer((_) async => true);
+      await _pumpCameraModule(tester, cb: cb, controller: controller);
+
+      await tester.enterText(find.byType(TextField), '8001234567890');
+      await tester.pump();
+
+      final submitBtn = find.byIcon(Icons.chevron_right_rounded);
+      await tester.tap(submitBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('8001234567890'), findsNothing);
+    });
+
+    testWidgets(
+        'manual field is preserved when scan returns failure (network error)',
+        (tester) async {
+      when(() => cb.onScanSuccess(any())).thenAnswer((_) async => false);
+      await _pumpCameraModule(tester, cb: cb, controller: controller);
+
+      await tester.enterText(find.byType(TextField), '8001234567890');
+      await tester.pump();
+
+      final submitBtn = find.byIcon(Icons.chevron_right_rounded);
+      await tester.tap(submitBtn);
+      await tester.pumpAndSettle();
+
+      // Il campo non deve essere stato svuotato — il codice deve restare.
+      expect(find.text('8001234567890'), findsOneWidget);
     });
   });
 

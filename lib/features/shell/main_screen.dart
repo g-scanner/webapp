@@ -332,7 +332,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _syncEverythingWithFirestore();
   }
 
-  Future<void> handleScanSuccess(String barcode) async {
+  Future<bool> handleScanSuccess(String barcode) async {
     setState(() {
       scanningProgress = true;
       scanError = null;
@@ -440,12 +440,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           },
         );
       }
+      return true;
     } on OfflineWithoutDbException catch (e) {
       _handleScanError(e.localizationKey);
+      return false;
     } on OffNetworkException catch (e) {
       _handleScanError(e.localizationKey);
+      return false;
     } catch (_) {
       _handleScanError('scanner.result.analysisError');
+      return false;
     } finally {
       if (mounted) {
         setState(() => scanningProgress = false);

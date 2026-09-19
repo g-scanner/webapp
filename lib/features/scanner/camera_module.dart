@@ -15,7 +15,7 @@ export 'widgets/widgets.dart';
 
 class CameraModule extends StatefulWidget {
   final MobileScannerController? controller;
-  final Future<void> Function(String barcode) onScanSuccess;
+  final Future<bool> Function(String barcode) onScanSuccess;
   final bool scanningProgress;
   final String? scanError;
   final bool isActive;
@@ -231,12 +231,16 @@ class _CameraModuleState extends State<CameraModule>
     });
   }
 
-  void _handleManualSearch() {
+  Future<void> _handleManualSearch() async {
     if (_manualCodeController.text.trim().isEmpty) return;
     final code = _manualCodeController.text.trim();
-    _manualCodeController.clear();
     _manualFocusNode.unfocus();
-    widget.onScanSuccess(code);
+    // Il campo viene svuotato solo se la scan ha avuto successo.
+    // In caso di errore di rete o offline, il testo rimane così l'utente può riprovare.
+    final success = await widget.onScanSuccess(code);
+    if (success && mounted) {
+      _manualCodeController.clear();
+    }
   }
 
   void _onDetect(BarcodeCapture capture) async {
