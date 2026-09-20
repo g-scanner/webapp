@@ -17,11 +17,10 @@ void main() {
         final result = await loader.load('assets/locales', const Locale('it'));
 
         expect(result, isNotEmpty);
-        // Verify all 9 modular namespaces are present in the merged dictionary
+        // Verify all 8 modular namespaces are present in the merged dictionary
         final expectedModules = [
           'auth',
           'common',
-          'database',
           'history',
           'product',
           'report',

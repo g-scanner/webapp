@@ -718,12 +718,6 @@ void main() {
       );
 
       expect(res.status, GlutenSafetyStatus.incerto);
-      expect(
-        res.ingredientsAnalyzed.any(
-          (i) => i.ingredient == 'product.analysis.userReportIngredient',
-        ),
-        isTrue,
-      );
     });
 
     test('calculates intrinsic status when ignoreReports = true despite reportCount > 0', () {
@@ -964,6 +958,104 @@ void main() {
         result.any((a) => a.toLowerCase().contains('gluten') || a.toLowerCase().contains('glutin')),
         isFalse,
       );
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 14 – Trace & Cross-Contamination Detection (traceKeywords & strictMode)
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 14 – Trace & Cross-Contamination Detection', () {
+    test('detects Italian trace ("può contenere tracce di glutine") as incerto when strictMode = false', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Cioccolato Fondente',
+        brand: 'Brand',
+        ingredients: 'Pasta di cacao, zucchero. Può contenere tracce di glutine.',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+        strictMode: false,
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'Tracce' && i.dangerLevel == 'warning',
+        ),
+        isTrue,
+      );
+    });
+
+    test('blocks product as nonAdatto with contaminationBlocked when strictMode = true on trace', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Patatine Salate',
+        brand: 'Brand',
+        ingredients: 'Patate, olio di girasole, sale. Può contenere tracce di frumento.',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+        strictMode: true,
+      );
+
+      expect(res.status, GlutenSafetyStatus.nonAdatto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'Tracce' && i.dangerLevel == 'danger',
+        ),
+        isTrue,
+      );
+    });
+
+    test('marks product as adatto with safeTraceReason when certified gluten-free but has traces', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Biscotti Senza Glutine',
+        brand: 'Brand',
+        ingredients: 'Farina di riso, zucchero, senza glutine. May contain traces of gluten.',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+        strictMode: false,
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.dangerLevel == 'warning',
+        ),
+        isTrue,
+      );
+    });
+
+    test('identifies international trace phrases (EN, FR, DE, ES) without false danger ingredient', () {
+      final internationalPhrases = [
+        'Rice flour, sugar. May contain traces of wheat.',
+        'Farine de riz, sucre. Peut contenir des traces de gluten.',
+        'Reismehl, Zucker. Kann Spuren von Gluten enthalten.',
+        'Harina de arroz, azúcar. Puede contener trazas de trigo.',
+      ];
+
+      for (final text in internationalPhrases) {
+        final res = AnalyzerService.analyzeGlutenSafety(
+          name: 'Snack',
+          brand: 'Brand',
+          ingredients: text,
+          allergensList: [],
+          reportCount: 0,
+          categoriesTags: [],
+          strictMode: false,
+        );
+
+        expect(
+          res.status,
+          GlutenSafetyStatus.incerto,
+          reason: 'Dovrebbe essere incerto per tracce: $text',
+        );
+        // Non deve contenere ingredienti a pericolo diretto
+        expect(
+          res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+          isFalse,
+          reason: 'Non deve contenere pericolo diretto: $text',
+        );
+      }
     });
   });
 }

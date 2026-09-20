@@ -212,16 +212,7 @@ class AnalyzerService {
     // CASO 1: SEGNALAZIONI (Vince su tutto se non si richiede ignoreReports)
     if (!ignoreReports && reportCount > 0) {
       status = GlutenSafetyStatus.incerto;
-      reason = "product.analysis.userReported".tr(
-        namedArgs: {"count": reportCount.toString()},
-      );
-      ingredientsAnalyzed.add(
-        IngredientAnalyzed(
-          ingredient: "product.analysis.userReportIngredient".tr(),
-          dangerLevel: "warning",
-          reason: "product.analysis.userReportReason".tr(),
-        ),
-      );
+      reason = "";
     }
     // CASO 2: BOLLINO UFFICIALE (Se c'è bollino, è <20ppm per legge)
     else if (hasGlutenFreeBollino || hasGlutenFreeTextClaim) {
@@ -235,15 +226,7 @@ class AnalyzerService {
         ),
       );
 
-      if (foundDanger.isNotEmpty) {
-        ingredientsAnalyzed.add(
-          IngredientAnalyzed(
-            ingredient: foundDanger.join(', '),
-            dangerLevel: "safe",
-            reason: "product.analysis.debloatedIngredientReason".tr(),
-          ),
-        );
-      }
+
       if (hasAnyTrace) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
@@ -274,15 +257,7 @@ class AnalyzerService {
           ),
         );
       }
-      if (hasOffGlutenAllergen) {
-        ingredientsAnalyzed.add(
-          IngredientAnalyzed(
-            ingredient: "product.analysis.offAllergensIngredient".tr(),
-            dangerLevel: "danger",
-            reason: "product.analysis.offAllergensReason".tr(),
-          ),
-        );
-      }
+
       if (hasAnyTrace && strictMode) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
