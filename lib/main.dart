@@ -43,13 +43,29 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final FirebaseAuth? auth;
   const MyApp({super.key, this.auth});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final FirebaseAuth _firebaseAuth;
+  late final Stream<User?> _authStateStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _firebaseAuth = widget.auth ?? FirebaseAuth.instance;
+    // Lo stream viene creato una sola volta: così StreamBuilder non si
+    // ri-sottoscrive (e non flashia il loading spinner) quando il tema cambia.
+    _authStateStream = _firebaseAuth.authStateChanges();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final firebaseAuth = auth ?? FirebaseAuth.instance;
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentThemeMode, _) {
@@ -62,7 +78,7 @@ class MyApp extends StatelessWidget {
           supportedLocales: context.supportedLocales,
           locale: context.locale,
           home: StreamBuilder<User?>(
-            stream: firebaseAuth.authStateChanges(),
+            stream: _authStateStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Scaffold(
@@ -75,10 +91,10 @@ class MyApp extends StatelessWidget {
               }
 
               if (snapshot.hasData && snapshot.data != null) {
-                return MainScreen(auth: firebaseAuth);
+                return MainScreen(auth: _firebaseAuth);
               }
 
-              return AuthScreen(firebaseAuth: firebaseAuth);
+              return AuthScreen(firebaseAuth: _firebaseAuth);
             },
           ),
         );
