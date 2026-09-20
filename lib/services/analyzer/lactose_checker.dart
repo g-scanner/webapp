@@ -30,7 +30,10 @@ class LactoseChecker {
     "laktose",
   ];
 
-  static bool checkLactose(String ingredients, List<String> allergens) {
+  static List<String> findLactoseIngredients(
+    String ingredients,
+    List<String> allergens,
+  ) {
     String safeIngredients = ingredients.trim();
     if (safeIngredients.toLowerCase() == "non disponibile") {
       safeIngredients = "";
@@ -38,13 +41,23 @@ class LactoseChecker {
 
     final String lowerIng = safeIngredients.toLowerCase();
     final String safeLactoseIng = GlutenRules.sanitizeForLactose(lowerIng);
-    for (String l in lactoseKeywords) {
+    final List<String> found = [];
+
+    final sortedKeywords = List<String>.from(lactoseKeywords)
+      ..sort((a, b) => b.length.compareTo(a.length));
+
+    for (String l in sortedKeywords) {
       final isAgglutinative = GlutenRules.agglutinativeRoots.contains(l);
       final regex = isAgglutinative
           ? RegExp(RegExp.escape(l), caseSensitive: false)
           : RegExp(r'\b' + RegExp.escape(l) + r'\b', caseSensitive: false);
-      if (regex.hasMatch(safeLactoseIng)) return true;
+      if (regex.hasMatch(safeLactoseIng)) {
+        if (!found.any((existing) => existing.contains(l))) {
+          found.add(l);
+        }
+      }
     }
+
     for (String a in allergens) {
       final lowerA = a.toLowerCase();
       if (lowerA == "latte" ||
@@ -53,9 +66,25 @@ class LactoseChecker {
           lowerA.contains("milch") ||
           lowerA.contains("lattosio") ||
           lowerA.contains("laktose")) {
-        return true;
+        final cleanAllergen = lowerA.replaceFirst(RegExp(r'^[a-z]{2}:'), '');
+        if (!found.any((f) => f == cleanAllergen || f == 'latte' || f == 'lattosio')) {
+          found.add(cleanAllergen.isNotEmpty ? cleanAllergen : 'latte');
+        }
       }
     }
-    return false;
+
+    found.sort((a, b) {
+      final posA = lowerIng.indexOf(a);
+      final posB = lowerIng.indexOf(b);
+      if (posA != -1 && posB != -1) return posA.compareTo(posB);
+      if (posA != -1) return -1;
+      if (posB != -1) return 1;
+      return 0;
+    });
+
+    return found;
   }
+
+  static bool checkLactose(String ingredients, List<String> allergens) =>
+      findLactoseIngredients(ingredients, allergens).isNotEmpty;
 }

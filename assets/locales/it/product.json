@@ -41,16 +41,16 @@
       "naturalSafeReason": "Prodotto di base a bassissimo rischio (es. olio, acqua).",
       "missingDataIngredient": "Dati Assenti",
       "missingDataReason": "Nessun ingrediente trovato.",
-      "uncertainIngredientReason": "Ambiguità segnalata dal filtro Avvertimento Additivi.",
+      "uncertainIngredientReason": "Ambiguità segnalata dal Filtro Avvertimento Additivi.",
       
       "safeTraceIngredient": "Tracce (<20ppm)",
       "safeTraceReason": "Tracce segnalate, ma il bollino garantisce limiti sicuri.",
-      "traceWarningReason": "Contaminazione crociata. Il filtro rigido è disattivato.",
+      "traceWarningReason": "Contaminazione crociata. Il Filtro Rigido è disattivato.",
       "maltIngredient": "Malto",
       "maltReason": "Possibile malto d'orzo. Origine non specificata.",
       
       "contaminationBlocked": "Vietato dal Filtro Rigido Contaminazioni.",
-      "lactoseDetected": "Vietato per Intolleranza al Lattosio."
+      "lactoseDetected": "Vietato dal Filtro Intolleranza al Lattosio."
     },
     "actions": {
       "reportError": "Segnala errore o inesattezza",
@@ -72,7 +72,7 @@
       "dangerBadge": "Pericolo",
       "warningBadge": "Attenzione",
       "safeBadge": "Sicuro",
-      
+
       "insufficientDataLabel": "Informazioni Insufficienti",
       "noneLabel": "Nessuno dichiarato"
     },

@@ -353,6 +353,27 @@ class AnalyzerService {
       finalAllergens.add(glutenLabel);
     }
 
+    // ─── STEP 9: Intolleranza al Lattosio (se alertLactose è attivo) ──────────
+    if (alertLactose) {
+      final lactoseItems = LactoseChecker.findLactoseIngredients(
+        safeIngredients,
+        allergensList,
+      );
+      for (final item in lactoseItems) {
+        if (!ingredientsAnalyzed.any(
+          (i) => i.ingredient.toLowerCase() == item.toLowerCase(),
+        )) {
+          ingredientsAnalyzed.add(
+            IngredientAnalyzed(
+              ingredient: item,
+              dangerLevel: "danger",
+              reason: "product.analysis.lactoseDetected".tr(),
+            ),
+          );
+        }
+      }
+    }
+
     return AnalyzerResult(
       status: status,
       reason: reason,

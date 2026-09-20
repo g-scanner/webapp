@@ -561,7 +561,38 @@ void main() {
       expect(AnalyzerService.checkLactose('', ['en:soy']), isFalse);
     });
 
-    test('analyzeGlutenSafety with alertLactose does not pollute gluten analysis results', () {
+    test('findLactoseIngredients extracts dairy ingredients', () {
+      expect(
+        AnalyzerService.checkLactose('latte scremato, burro', []),
+        isTrue,
+      );
+      final items = LactoseChecker.findLactoseIngredients(
+        'latte scremato, burro',
+        [],
+      );
+      expect(items, contains('latte'));
+      expect(items, contains('burro'));
+    });
+
+    test('analyzeGlutenSafety with alertLactose false does not add lactose ingredients', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Yogurt Intero',
+        brand: 'Dairy',
+        ingredients: 'Latte intero, fermenti lattici vivi',
+        allergensList: ['en:milk'],
+        reportCount: 0,
+        categoriesTags: ['en:milks'],
+        alertLactose: false,
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto); // Gluten-wise safe
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.reason == 'product.analysis.lactoseDetected'.tr()),
+        isFalse,
+      );
+    });
+
+    test('analyzeGlutenSafety with alertLactose true adds lactose ingredients with danger badge', () {
       final res = AnalyzerService.analyzeGlutenSafety(
         name: 'Yogurt Intero',
         brand: 'Dairy',
@@ -573,15 +604,15 @@ void main() {
       );
 
       expect(res.status, GlutenSafetyStatus.adatto); // Gluten-wise safe
-      expect(res.reason.contains('🥛'), isFalse);
-      expect(
-        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
-        isFalse,
+      final lactoseItem = res.ingredientsAnalyzed.firstWhere(
+        (i) => i.ingredient.toLowerCase() == 'latte',
       );
+      expect(lactoseItem.dangerLevel, 'danger');
+      expect(lactoseItem.reason, 'product.analysis.lactoseDetected'.tr());
     });
 
     test(
-        'OFF tag en:milk does not pollute gluten analysis even if alertLactose is true',
+        'OFF tag en:milk does not pollute gluten analysis reason even if alertLactose is true',
         () {
       final res = AnalyzerService.analyzeGlutenSafety(
         name: 'Cracker Salati',
@@ -600,10 +631,6 @@ void main() {
       );
 
       expect(res.reason.contains('🥛'), isFalse);
-      expect(
-        res.ingredientsAnalyzed.any((i) => i.ingredient == 'Allergene Latte (OFF)'),
-        isFalse,
-      );
     });
   });
 
@@ -793,8 +820,10 @@ void main() {
       expect(res.status, GlutenSafetyStatus.adatto);
       expect(res.reason.contains('🥛'), isFalse);
       expect(
-        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
-        isFalse,
+        res.ingredientsAnalyzed.any(
+          (i) => i.dangerLevel == 'danger' && i.reason == 'product.analysis.lactoseDetected'.tr(),
+        ),
+        isTrue,
       );
       expect(AnalyzerService.checkLactose('vollmilchpulver', []), isTrue);
     });
