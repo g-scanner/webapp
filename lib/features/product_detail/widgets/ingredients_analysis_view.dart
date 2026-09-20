@@ -10,13 +10,11 @@ import 'section_card.dart';
 class IngredientsAnalysisView extends StatelessWidget {
   final String displayedIngredients;
   final List<IngredientAnalyzed> displayedIngredientsAnalyzed;
-  final bool hasIngredientData;
 
   const IngredientsAnalysisView({
     super.key,
     required this.displayedIngredients,
     required this.displayedIngredientsAnalyzed,
-    required this.hasIngredientData,
   });
 
   @override
@@ -62,13 +60,6 @@ class IngredientsAnalysisView extends StatelessWidget {
                   pillBg = colorScheme.tertiaryContainer.withValues(alpha: 0.2);
                   pillText = colorScheme.tertiary;
                   pillLabel = "product.ingredients.warningBadge".tr();
-                  break;
-                case "uncertain":
-                  pillBg = colorScheme.tertiaryContainer.withValues(
-                    alpha: 0.15,
-                  );
-                  pillText = colorScheme.tertiary;
-                  pillLabel = "product.ingredients.uncertainBadge".tr();
                   break;
                 case "safe":
                 default:
@@ -143,19 +134,6 @@ class IngredientsAnalysisView extends StatelessWidget {
                 ),
               );
             }),
-          ] else if (displayedIngredients.trim().isEmpty) ...[
-            Text(
-              // hasIngredientData=false → ghost product: dati non disponibili
-              // hasIngredientData=true ma ingredienti vuoti → prodotto pulito, nessun rischio
-              !hasIngredientData
-                  ? "product.ingredients.insufficientDataLabel".tr()
-                  : "product.ingredients.noRisksDetected".tr(),
-              style: TextStyle(
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-              ),
-            ),
           ],
         ],
       ),

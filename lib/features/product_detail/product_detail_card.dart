@@ -250,7 +250,6 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     // hasAllergenData = true → allergensMap ha almeno una chiave lingua (anche con lista vuota = "nessuno dichiarato")
     // hasAllergenData = false → allergensMap è completamente assente = Ghost Product / dati non acquisiti
     final bool hasAllergenData = currentProduct.hasAllergenData;
-    final bool hasIngredientData = currentProduct.hasIngredientData;
 
     final bool isReported =
         (currentProduct.pendingReportsCount > 0) || _hasUserReported;
@@ -438,7 +437,6 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               IngredientsAnalysisView(
                 displayedIngredients: displayedIngredients,
                 displayedIngredientsAnalyzed: displayedIngredientsAnalyzed,
-                hasIngredientData: hasIngredientData,
               ),
               const SizedBox(height: 24),
 
