@@ -133,7 +133,11 @@ class LocalCacheService {
     String barcode,
   ) async {
     try {
-      final docSnap = await db.collection(productsCollection).doc(barcode).get();
+      final docSnap = await db
+          .collection(productsCollection)
+          .doc(barcode)
+          .get()
+          .timeout(const Duration(seconds: 5));
       if (docSnap.exists && docSnap.data() != null) {
         final prod = Product.fromJson(docSnap.data()!);
         await upsertLocalProduct(prod);
