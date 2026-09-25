@@ -184,6 +184,7 @@ class HistoryDbService {
       }
     } catch (e) {
       debugPrint("Could not wipe history: $e");
+      rethrow;
     }
   }
 
@@ -224,6 +225,7 @@ class HistoryDbService {
       }
     } catch (e) {
       debugPrint("Could not delete history items by barcode: $e");
+      rethrow;
     }
   }
 
@@ -256,6 +258,7 @@ class HistoryDbService {
       }
     } catch (e) {
       debugPrint("Could not delete history item: $e");
+      rethrow;
     }
   }
 }

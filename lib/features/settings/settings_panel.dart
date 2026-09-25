@@ -130,6 +130,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
       try {
         await widget.onClearHistory();
         _triggerToast("common.status.historyClearedSuccess".tr());
+      } catch (_) {
+        // Errore già notificato con SnackBar
       } finally {
         if (mounted) setState(() => _clearing = false);
       }

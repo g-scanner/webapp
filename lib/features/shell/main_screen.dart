@@ -609,7 +609,53 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> handleDeleteHistoryByBarcode(String barcode) async {
-    await DbService.deleteHistoryByBarcodeLocal(barcode);
+    try {
+      await DbService.deleteHistoryByBarcodeLocal(barcode);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('common.actions.deleteError'.tr()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      return;
+    }
+    await _loadLocalHistory();
+  }
+
+  Future<void> handleDeleteHistoryItem(String id) async {
+    try {
+      await DbService.deleteHistoryItemLocal(id);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('common.actions.deleteError'.tr()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      return;
+    }
+    await _loadLocalHistory();
+  }
+
+  Future<void> handleClearHistory() async {
+    try {
+      await DbService.wipeHistoryLocal();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('common.actions.deleteHistoryError'.tr()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      rethrow;
+    }
     await _loadLocalHistory();
   }
 
@@ -627,7 +673,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('common.actions.deleteReportError'.tr()),
+            content: Text('common.actions.deleteError'.tr()),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -854,14 +900,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               _navigateToProduct(match);
             }
           },
-          onClearHistory: () async {
-            await DbService.wipeHistoryLocal();
-            await _loadLocalHistory();
-          },
-          onDeleteHistoryItem: (id) async {
-            await DbService.deleteHistoryItemLocal(id);
-            await _loadLocalHistory();
-          },
+          onClearHistory: handleClearHistory,
+          onDeleteHistoryItem: handleDeleteHistoryItem,
         ),
         ReportsList(
           products: products,
@@ -896,10 +936,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               _navController.resetToScanner();
             });
           },
-          onClearHistory: () async {
-            await DbService.wipeHistoryLocal();
-            await _loadLocalHistory();
-          },
+          onClearHistory: handleClearHistory,
         ),
       ],
     );
