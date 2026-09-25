@@ -111067,7 +111067,7 @@ i=f.e
 i===$&&A.a()
 k=A.bZ(e,e,e,e,e,i,e,e,e,j,k)
 j=A.bZ(e,e,e,e,e,e,e,e,e,e,A.y("auth.legal.checkboxMid",e))
-i=A.y("auth.legal.checkboxPrivacy",e)
+i=A.y("common.legal.privacyPolicy",e)
 h=A.a_(e,e,A.r(a0).ax.b,e,B.iV,e,e,e,e,e,e,e,e,e,B.at,e,e,!0,e,e,e,e,e,e,e,e)
 g=f.f
 g===$&&A.a()
@@ -113094,16 +113094,16 @@ s.c.kE(B.iW)
 s.d.fs()},
 $S:0}
 A.a0C.prototype={
-J(a){var s,r,q,p,o=this,n=null,m=A.r(a).ax,l=A.r(a).ax.a===B.E?B.jv:B.jB,k=A.b_(32),j=m.k3,i=A.S(A.y("scanner.ui.safetyIndicators",n),n,n,n,A.a_(n,n,j,n,n,n,n,n,n,n,n,20,n,n,B.S,n,n,!0,n,n,n,n,n,n,n,n),n,n),h=A.y("scanner.states.safe",n),g=A.y("scanner.states.glutenFree",n),f=m.d
+J(a){var s,r,q,p,o=this,n=null,m=A.r(a).ax,l=A.r(a).ax.a===B.E?B.jv:B.jB,k=A.b_(32),j=m.k3,i=A.S(A.y("scanner.ui.safetyIndicators",n),n,n,n,A.a_(n,n,j,n,n,n,n,n,n,n,n,20,n,n,B.S,n,n,!0,n,n,n,n,n,n,n,n),n,n),h=A.y("product.status.safe",n),g=A.y("scanner.states.glutenFree",n),f=m.d
 h=o.Ca(f==null?m.b:f,a,B.UJ,g,h)
-g=A.y("scanner.states.uncertain",n)
+g=A.y("product.status.uncertain",n)
 f=A.y("scanner.states.checkLabel",n)
 s=m.cy
 if(s==null){s=m.CW
 if(s==null)s=m.y}g=o.Ca(s,a,B.uN,f,g)
-f=A.y("scanner.states.unsafe",n)
+f=A.y("product.status.unsafe",n)
 f=o.Ca(m.fy,a,B.UI,A.y("scanner.states.hasGluten",n),f)
-s=A.y("scanner.states.unknown",n)
+s=A.y("product.status.unknown",n)
 r=A.y("scanner.states.notFound",n)
 q=m.rx
 p=t.p
@@ -113231,7 +113231,7 @@ break
 default:r=l
 s=r}q=t.p
 p=A.b([A.bl(r,B.k,l,l,48),B.aT,A.S(s,l,l,l,B.agr,B.aU,l)],q)
-if(j===B.n2){o=A.S(A.y("scanner.camera.retry",l),l,l,l,l,l,l)
+if(j===B.n2){o=A.S(A.y("common.actions.retry",l),l,l,l,l,l,l)
 n=k.d
 if(n==null)n=k.b
 m=k.e
@@ -113898,7 +113898,7 @@ r=A.y("settings.legalMenu.termsAndConditionsSubtitle",m)
 q=l.rx
 p=q==null
 s=A.b38(!0,!1,new A.arq(a,l),!0,A.S(r,m,m,m,A.a_(m,m,p?l.k3:q,m,m,m,m,m,m,m,m,13,m,m,m,m,1.3,!0,m,m,m,m,m,m,m,m),m,m),s)
-r=A.y("settings.legalMenu.privacyPolicyTitle",m)
+r=A.y("common.legal.privacyPolicy",m)
 o=A.y("settings.legalMenu.privacyPolicySubtitle",m)
 r=A.b38(!1,!1,new A.arr(a,l),!0,A.S(o,m,m,m,A.a_(m,m,p?l.k3:q,m,m,m,m,m,m,m,m,13,m,m,m,m,1.3,!0,m,m,m,m,m,m,m,m),m,m),r)
 o=A.y("settings.legalMenu.licensesTitle",m)
@@ -113909,7 +113909,7 @@ $0(){var s=A.y(u.G,null),r=this.b,q=r.rx
 A.bdz(this.a,s,A.bux(q==null?r.k3:q))},
 $S:0}
 A.arr.prototype={
-$0(){var s=A.y("settings.legalMenu.privacyPolicyTitle",null),r=this.b,q=r.rx
+$0(){var s=A.y("common.legal.privacyPolicy",null),r=this.b,q=r.rx
 A.bdz(this.a,s,A.buw(q==null?r.k3:q))},
 $S:0}
 A.ars.prototype={

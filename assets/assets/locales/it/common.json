@@ -25,9 +25,6 @@
       "cancel": "Annulla",
       "save": "Salva",
       "or": "Oppure",
-      "confirm": "Conferma",
-      "retry": "Riprova",
-      "close": "Chiudi",
       "delete": "Elimina",
       "signOut": "Esci",
       "deleteHistoryConfirmTitle": "Elimina scansione",
@@ -36,13 +33,8 @@
       "deleteReportConfirmBody": "Sei sicuro di voler eliminare questa segnalazione? Questa azione è irreversibile.",
       "deleteError": "Errore durante l'eliminazione. Riprova.",
       "deleteHistoryError": "Errore durante l'eliminazione dalla cronologia. Riprova.",
-      "edit": "Modifica",
       "search": "Cerca per nome o codice a barre...",
-      "loading": "Caricamento...",
-      "error": "Errore",
-      "yes": "Sì",
-      "no": "No",
-      "ok": "OK",
+      "retry": "Riprova",
       "settings": "Impostazioni"
     },
     "languages": {
@@ -57,18 +49,12 @@
       "light": "Chiaro",
       "dark": "Scuro"
     },
-    "dates": {
-      "scannedAt": "Scansionato il: {}",
-      "reportedAt": "Segnalato il: {}"
+    "legal": {
+      "privacyPolicy": "Privacy Policy"
     },
     "status": {
-      "noData": "Nessun dato disponibile",
-      "noResults": "Nessun risultato trovato",
-      "networkError": "Errore di rete. Controlla la connessione.",
-      "unknownError": "Si è verificato un errore sconosciuto.",
       "preferencesSaved": "Preferenze salvate ed applicate!",
-      "historyClearedSuccess": "Cronologia svuotata con successo!",
-      "securityForcedLogout": "Per motivi di sicurezza, effettua nuovamente l'accesso e riprovare. Verrai reindirizzato alla schermata di login."
+      "historyClearedSuccess": "Cronologia svuotata con successo!"
     }
   }
 }
