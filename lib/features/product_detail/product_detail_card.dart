@@ -391,19 +391,27 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                           preferredLanguage: currentLang,
                           ignoreReports: true,
                         );
-                    if (origAnalysisCopy.status != effectiveStatus) {
-                      final String oldStatusTranslated = _translateGlutenStatus(
-                        origAnalysisCopy.status,
+                    final String oldStatusTranslated = _translateGlutenStatus(
+                      origAnalysisCopy.status,
+                    );
+                    String cleanReason = displayedReason.trim();
+                    if (cleanReason.endsWith('.')) {
+                      cleanReason = cleanReason.substring(
+                        0,
+                        cleanReason.length - 1,
                       );
-                      String cleanReason = displayedReason.trim();
-                      if (cleanReason.endsWith('.')) {
-                        cleanReason = cleanReason.substring(
-                          0,
-                          cleanReason.length - 1,
-                        );
-                      }
+                    }
+                    if (origAnalysisCopy.status != effectiveStatus) {
                       final String prevStatusText =
                           "product.alert.previousStatus".tr(
+                            namedArgs: {"status": oldStatusTranslated},
+                          );
+                      displayedReasonWithOldStatus =
+                          "$cleanReason. $prevStatusText";
+                    } else if (origAnalysisCopy.status ==
+                        GlutenSafetyStatus.incerto) {
+                      final String prevStatusText =
+                          "product.alert.previousStatusAlready".tr(
                             namedArgs: {"status": oldStatusTranslated},
                           );
                       displayedReasonWithOldStatus =

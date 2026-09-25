@@ -346,6 +346,44 @@ void main() {
     );
 
     testWidgets(
+      'Status Uncertain: displays previousStatus when original status was safe',
+      (WidgetTester tester) async {
+        final reportedProduct = createSampleProduct(
+          pendingReportsCount: 1,
+          nameMap: {'it': 'Pasta Senza Glutine'},
+          ingredientsMap: {'it': 'Farina di riso, acqua.'},
+        );
+
+        await pumpProductDetailCard(tester, product: reportedProduct);
+
+        expect(find.text('PRODUCT.STATUS.UNCERTAIN'), findsOneWidget);
+        expect(
+          find.textContaining('product.alert.previousStatus'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'Status Uncertain: displays previousStatusAlready when original status was already uncertain',
+      (WidgetTester tester) async {
+        final reportedProduct = createSampleProduct(
+          pendingReportsCount: 1,
+          nameMap: {'it': 'Biscotti generici'},
+          ingredientsMap: {'it': 'Zucchero, amido modificato, aromi.'},
+        );
+
+        await pumpProductDetailCard(tester, product: reportedProduct);
+
+        expect(find.text('PRODUCT.STATUS.UNCERTAIN'), findsOneWidget);
+        expect(
+          find.textContaining('product.alert.previousStatusAlready'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'Status Unknown: loading skeleton displays unknown grey status',
       (WidgetTester tester) async {
         final product = createSampleProduct();
