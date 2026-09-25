@@ -48,7 +48,7 @@ class LegalSection extends StatelessWidget {
             isFirst: true,
           ),
           buildLegalItem(
-            title: "settings.legalMenu.privacyPolicyTitle".tr(),
+            title: "common.legal.privacyPolicy".tr(),
             subtitle: Text(
               "settings.legalMenu.privacyPolicySubtitle".tr(),
               style: TextStyle(
@@ -60,7 +60,7 @@ class LegalSection extends StatelessWidget {
             onTap: () {
               showLegalBottomSheet(
                 context,
-                "settings.legalMenu.privacyPolicyTitle".tr(),
+                "common.legal.privacyPolicy".tr(),
                 buildNativePrivacyPolicy(colorScheme.onSurfaceVariant),
               );
             },

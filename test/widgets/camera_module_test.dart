@@ -374,8 +374,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
-        expect(find.text('scanner.camera.openSettings'), findsOneWidget);
-        expect(find.text('scanner.camera.retry'), findsNothing);
+        expect(find.text('common.actions.settings'), findsOneWidget);
+        expect(find.text('common.actions.retry'), findsNothing);
 
         // Svuota il timer del retry silenzioso per evitare timersPending
         await tester.pump(const Duration(seconds: 2));
@@ -460,8 +460,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('scanner.camera.retry'), findsOneWidget);
-      expect(find.text('scanner.camera.openSettings'), findsNothing);
+      expect(find.text('common.actions.retry'), findsOneWidget);
+      expect(find.text('common.actions.settings'), findsNothing);
     });
 
     testWidgets('3B-4: tapping retry button on hardware error calls _startCamera',
@@ -480,7 +480,7 @@ void main() {
       final prevStartCount = hwController.startCallCount;
 
       // After tap the error still occurs (hardware still broken), but start is called again
-      await tester.tap(find.text('scanner.camera.retry'));
+      await tester.tap(find.text('common.actions.retry'));
       await tester.pump();
 
       expect(hwController.startCallCount, greaterThan(prevStartCount));
@@ -935,19 +935,19 @@ void main() {
 
       expect(find.text('scanner.ui.safetyIndicators'), findsOneWidget);
 
-      expect(find.text('scanner.states.safe'), findsOneWidget);
+      expect(find.text('product.status.safe'), findsOneWidget);
       expect(find.text('scanner.states.glutenFree'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
 
-      expect(find.text('scanner.states.uncertain'), findsOneWidget);
+      expect(find.text('product.status.uncertain'), findsOneWidget);
       expect(find.text('scanner.states.checkLabel'), findsOneWidget);
       expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
 
-      expect(find.text('scanner.states.unsafe'), findsOneWidget);
+      expect(find.text('product.status.unsafe'), findsOneWidget);
       expect(find.text('scanner.states.hasGluten'), findsOneWidget);
       expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
 
-      expect(find.text('scanner.states.unknown'), findsOneWidget);
+      expect(find.text('product.status.unknown'), findsOneWidget);
       expect(find.text('scanner.states.notFound'), findsOneWidget);
       expect(find.byIcon(Icons.help_rounded), findsOneWidget);
     });

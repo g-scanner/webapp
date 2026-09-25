@@ -549,7 +549,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text('settings.legalMenu.privacyPolicyTitle'),
+        find.text('common.legal.privacyPolicy'),
         findsOneWidget,
       );
       expect(find.text('settings.legalMenu.licensesTitle'), findsOneWidget);
@@ -569,7 +569,7 @@ void main() {
     testWidgets('tapping Privacy Policy opens a bottom sheet', (tester) async {
       await _pump(tester, cb: cb, auth: auth);
 
-      await tester.tap(find.text('settings.legalMenu.privacyPolicyTitle'));
+      await tester.tap(find.text('common.legal.privacyPolicy'));
       await tester.pumpAndSettle();
 
       expect(find.byType(BottomSheet), findsOneWidget);

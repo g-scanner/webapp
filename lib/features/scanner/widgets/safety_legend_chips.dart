@@ -38,7 +38,7 @@ class SafetyLegendChips extends StatelessWidget {
                 child: _buildIndicatorItem(
                   context: context,
                   icon: Icons.check_circle_rounded,
-                  title: "scanner.states.safe".tr(),
+                  title: "product.status.safe".tr(),
                   subtitle: "scanner.states.glutenFree".tr(),
                   color: colorScheme.primaryContainer,
                 ),
@@ -48,7 +48,7 @@ class SafetyLegendChips extends StatelessWidget {
                 child: _buildIndicatorItem(
                   context: context,
                   icon: Icons.warning_rounded,
-                  title: "scanner.states.uncertain".tr(),
+                  title: "product.status.uncertain".tr(),
                   subtitle: "scanner.states.checkLabel".tr(),
                   color: colorScheme.tertiaryContainer,
                 ),
@@ -58,7 +58,7 @@ class SafetyLegendChips extends StatelessWidget {
                 child: _buildIndicatorItem(
                   context: context,
                   icon: Icons.cancel_rounded,
-                  title: "scanner.states.unsafe".tr(),
+                  title: "product.status.unsafe".tr(),
                   subtitle: "scanner.states.hasGluten".tr(),
                   color: colorScheme.error,
                 ),
@@ -68,7 +68,7 @@ class SafetyLegendChips extends StatelessWidget {
                 child: _buildIndicatorItem(
                   context: context,
                   icon: Icons.help_rounded,
-                  title: "scanner.states.unknown".tr(),
+                  title: "product.status.unknown".tr(),
                   subtitle: "scanner.states.notFound".tr(),
                   color: colorScheme.onSurfaceVariant,
                 ),

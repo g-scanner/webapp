@@ -6,32 +6,23 @@
       "safetyIndicators": "Indicatori di Sicurezza"
     },
     "states": {
-      "safe": "Sicuro",
       "glutenFree": "Senza glutine",
-      "uncertain": "Incerto",
       "checkLabel": "Controlla l'etichetta",
-      "unsafe": "Vietato",
       "hasGluten": "Contiene glutine",
-      "unknown": "Sconosciuto",
       "notFound": "Prodotto non trovato"
     },
     "camera": {
       "permissionDeniedWeb": "Permesso fotocamera negato.\nClicca sull'icona del lucchetto nella barra degli indirizzi del browser per consentire l'accesso, poi ricarica la pagina.",
       "permissionDeniedMobile": "Permesso fotocamera negato.\nConcedi l'accesso alla fotocamera nelle impostazioni del dispositivo.",
-      "hardwareOrMemoryError": "Impossibile avviare la fotocamera. Il problema potrebbe essere causato dalla memoria del dispositivo piena o da un errore hardware. Prova a liberare spazio sul dispositivo, ricarica la pagina e riprova.",
-      "openSettings": "Impostazioni",
-      "retry": "Riprova"
+      "hardwareOrMemoryError": "Impossibile avviare la fotocamera. Il problema potrebbe essere causato dalla memoria del dispositivo piena o da un errore hardware. Prova a liberare spazio sul dispositivo, ricarica la pagina e riprova."
     },
     "manualInput": {
       "hint": "ES. 8024567890123"
     },
     "result": {
-      "scanning": "Scansione in corso...",
-      "notFound": "Prodotto non trovato",
       "analysisError": "Errore durante l'analisi",
       "networkError": "Connessione debole o server non raggiungibile. Riprova tra poco.",
-      "offlineNoDbPrompt": "Sei offline! Scarica il database offline dalle Impostazioni per scansionare senza connessione.",
-      "staleDataWarning": "Dati in cache locale: potresti vedere informazioni non aggiornate."
+      "offlineNoDbPrompt": "Sei offline! Scarica il database offline dalle Impostazioni per scansionare senza connessione."
     }
   }
 }

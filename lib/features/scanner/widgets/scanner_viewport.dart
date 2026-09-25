@@ -392,7 +392,7 @@ class _ScannerViewportState extends State<ScannerViewport> {
                   await widget.onStartCamera();
                 },
                 icon: const Icon(Icons.refresh, size: 18),
-                label: Text('scanner.camera.openSettings'.tr()),
+                label: Text('common.actions.settings'.tr()),
                 style: FilledButton.styleFrom(
                   backgroundColor: colorScheme.primaryContainer,
                   foregroundColor: colorScheme.onPrimaryContainer,
@@ -405,7 +405,7 @@ class _ScannerViewportState extends State<ScannerViewport> {
                   await widget.onStartCamera();
                 },
                 icon: const Icon(Icons.refresh, size: 18),
-                label: Text('scanner.camera.retry'.tr()),
+                label: Text('common.actions.retry'.tr()),
                 style: FilledButton.styleFrom(
                   backgroundColor: colorScheme.primaryContainer,
                   foregroundColor: colorScheme.onPrimaryContainer,

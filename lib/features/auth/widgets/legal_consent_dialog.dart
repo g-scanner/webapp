@@ -202,7 +202,7 @@ class _LegalConsentDialogState extends State<LegalConsentDialog> {
                             ),
                             TextSpan(text: "auth.legal.checkboxMid".tr()),
                             TextSpan(
-                              text: "auth.legal.checkboxPrivacy".tr(),
+                              text: "common.legal.privacyPolicy".tr(),
                               style: TextStyle(
                                 color: context.colorScheme.primary,
                                 fontWeight: FontWeight.bold,
