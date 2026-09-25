@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget & Business Logic Tests: ReportDetailCard
 
 // ignore_for_file: unused_import
@@ -190,14 +190,14 @@ void main() {
   // GROUP 1: AppBar & Header
   // ═══════════════════════════════════════════════════════════════════════════
   group('AppBar & Header', () {
-    testWidgets('renders AppBar title (report.title key)', (tester) async {
+    testWidgets('renders AppBar title (report.detail.title key)', (tester) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
       );
-      expect(find.text('report.title'), findsOneWidget);
+      expect(find.text('report.detail.title'), findsOneWidget);
     });
 
     testWidgets('back button calls onBack callback', (tester) async {
@@ -362,7 +362,7 @@ void main() {
       );
     });
 
-    testWidgets('shows "report.ui.generic" for unknown reason key', (
+    testWidgets('shows "report.detail.generic" for unknown reason key', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
@@ -373,7 +373,7 @@ void main() {
         reportReasonKey: 'some_unknown_key_xyz',
       );
       expect(
-        findRichTextContaining('report.ui.generic'),
+        findRichTextContaining('report.detail.generic'),
         findsAtLeastNWidgets(1),
       );
     });
@@ -392,7 +392,7 @@ void main() {
     });
 
     testWidgets(
-      'shows "report.ui.noAdditionalComment" when reportComment is empty',
+      'shows "report.detail.noAdditionalComment" when reportComment is empty',
       (tester) async {
         _stubFirestoreEmptyQuery(mockFirestore);
         await _pumpReportDetailCard(
@@ -401,12 +401,12 @@ void main() {
           mockFirestore: mockFirestore,
           reportComment: '',
         );
-        expect(find.text('report.ui.noAdditionalComment'), findsOneWidget);
+        expect(find.text('report.detail.noAdditionalComment'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'shows "report.ui.noAdditionalComment" when reportComment is "Nessun commento"',
+      'shows "report.detail.noAdditionalComment" when reportComment is "Nessun commento"',
       (tester) async {
         _stubFirestoreEmptyQuery(mockFirestore);
         await _pumpReportDetailCard(
@@ -415,12 +415,12 @@ void main() {
           mockFirestore: mockFirestore,
           reportComment: 'Nessun commento',
         );
-        expect(find.text('report.ui.noAdditionalComment'), findsOneWidget);
+        expect(find.text('report.detail.noAdditionalComment'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'shows "report.ui.noAdditionalComment" when reportComment is whitespace',
+      'shows "report.detail.noAdditionalComment" when reportComment is whitespace',
       (tester) async {
         _stubFirestoreEmptyQuery(mockFirestore);
         await _pumpReportDetailCard(
@@ -429,7 +429,7 @@ void main() {
           mockFirestore: mockFirestore,
           reportComment: '   ',
         );
-        expect(find.text('report.ui.noAdditionalComment'), findsOneWidget);
+        expect(find.text('report.detail.noAdditionalComment'), findsOneWidget);
       },
     );
   });
@@ -438,7 +438,7 @@ void main() {
   // GROUP 4: Report Date Display
   // ═══════════════════════════════════════════════════════════════════════════
   group('Report Date Display', () {
-    testWidgets('shows "report.ui.reportDate.today" for today ISO date', (
+    testWidgets('shows "report.detail.date.today" for today ISO date', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
@@ -451,10 +451,10 @@ void main() {
         mockFirestore: mockFirestore,
         reportDate: todayIso,
       );
-      expect(find.textContaining('report.ui.reportDate.today'), findsOneWidget);
+      expect(find.textContaining('report.detail.date.today'), findsOneWidget);
     });
 
-    testWidgets('shows "report.ui.reportDate.yesterday" for yesterday', (
+    testWidgets('shows "report.detail.date.yesterday" for yesterday', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
@@ -468,12 +468,12 @@ void main() {
         reportDate: iso,
       );
       expect(
-        find.textContaining('report.ui.reportDate.yesterday'),
+        find.textContaining('report.detail.date.yesterday'),
         findsOneWidget,
       );
     });
 
-    testWidgets('shows "report.ui.reportDate.default" for older dates', (
+    testWidgets('shows "report.detail.date.default" for older dates', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
@@ -484,7 +484,7 @@ void main() {
         reportDate: '2024-01-15T14:30:00Z',
       );
       expect(
-        find.textContaining('report.ui.reportDate.default'),
+        find.textContaining('report.detail.date.default'),
         findsOneWidget,
       );
     });
@@ -1133,7 +1133,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 200));
 
         expect(
-          find.textContaining('report.ui.reportDate.yesterday'),
+          find.textContaining('report.detail.date.yesterday'),
           findsOneWidget,
         );
       },
@@ -1189,8 +1189,8 @@ void main() {
         showProductLink: true,
       );
 
-      expect(find.text('report.ui.showProductCard'), findsOneWidget);
-      expect(find.text('report.ui.ingredientsAllergensNotes'), findsOneWidget);
+      expect(find.text('report.detail.showProductCard'), findsOneWidget);
+      expect(find.text('report.detail.ingredientsAllergensNotes'), findsOneWidget);
     });
 
     testWidgets('hides product card link when showProductLink=false', (
@@ -1204,7 +1204,7 @@ void main() {
         showProductLink: false,
       );
 
-      expect(find.text('report.ui.showProductCard'), findsNothing);
+      expect(find.text('report.detail.showProductCard'), findsNothing);
     });
 
     testWidgets('tapping product link navigates to ProductDetailCard', (
@@ -1218,7 +1218,7 @@ void main() {
         showProductLink: true,
       );
 
-      await tester.tap(find.text('report.ui.showProductCard'));
+      await tester.tap(find.text('report.detail.showProductCard'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

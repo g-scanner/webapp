@@ -47,25 +47,25 @@ class HistoryItemTile extends StatelessWidget {
       case GlutenSafetyStatus.adatto:
         bgColor = colorScheme.primaryContainer.withValues(alpha: 0.15);
         textColor = colorScheme.primary;
-        label = "history.status.safe".tr();
+        label = "history.item.status.safe".tr();
         icon = Icons.check_circle_outline;
         break;
       case GlutenSafetyStatus.nonAdatto:
         bgColor = colorScheme.errorContainer.withValues(alpha: 0.15);
         textColor = colorScheme.error;
-        label = "history.status.unsafe".tr();
+        label = "history.item.status.unsafe".tr();
         icon = Icons.cancel_outlined;
         break;
       case GlutenSafetyStatus.incerto:
         bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
         textColor = colorScheme.tertiary;
-        label = "history.status.uncertain".tr();
+        label = "history.item.status.uncertain".tr();
         icon = Icons.help_outline;
         break;
       case GlutenSafetyStatus.sconosciuto:
         bgColor = colorScheme.surfaceContainerHighest;
         textColor = colorScheme.onSurfaceVariant;
-        label = "history.status.unknown".tr();
+        label = "history.item.status.unknown".tr();
         icon = Icons.search_off;
         break;
     }
@@ -117,7 +117,7 @@ class HistoryItemTile extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            "history.lactose".tr(),
+            "history.item.lactose".tr(),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,

@@ -275,7 +275,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     final String displayedReason = showSkeleton
         ? "product.analysis.unknown".tr()
         : (isReported
-              ? "product.alert.activeReportWarning".tr()
+              ? "product.glutenEvaluation.activeReportWarning".tr()
               : analysis.reason);
     final List<IngredientAnalyzed> displayedIngredientsAnalyzed =
         analysis.ingredientsAnalyzed;
@@ -316,7 +316,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
         ),
         title: Center(
           child: Text(
-            "product.titles.scanDetail".tr(),
+            "product.appBar.title".tr(),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w500,
@@ -403,7 +403,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     }
                     if (origAnalysisCopy.status != effectiveStatus) {
                       final String prevStatusText =
-                          "product.alert.previousStatus".tr(
+                          "product.glutenEvaluation.previousStatus".tr(
                             namedArgs: {"status": oldStatusTranslated},
                           );
                       displayedReasonWithOldStatus =
@@ -411,7 +411,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                     } else if (origAnalysisCopy.status ==
                         GlutenSafetyStatus.incerto) {
                       final String prevStatusText =
-                          "product.alert.previousStatusAlready".tr(
+                          "product.glutenEvaluation.previousStatusAlready".tr(
                             namedArgs: {"status": oldStatusTranslated},
                           );
                       displayedReasonWithOldStatus =

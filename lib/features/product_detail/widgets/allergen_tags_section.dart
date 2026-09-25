@@ -21,7 +21,7 @@ class AllergenTagsSection extends StatelessWidget {
     final colorScheme = context.colorScheme;
 
     return SectionCard(
-      title: "product.titles.declaredAllergens".tr(),
+      title: "product.declaredAllergens.title".tr(),
       icon: Icons.coronavirus,
       child: Wrap(
         spacing: 8,
@@ -39,7 +39,7 @@ class AllergenTagsSection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Text(
-                    "product.ingredients.insufficientDataLabel".tr(),
+                    "product.declaredAllergens.insufficientDataLabel".tr(),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -82,7 +82,7 @@ class AllergenTagsSection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Text(
-                    "product.ingredients.noneLabel".tr(),
+                    "product.declaredAllergens.noneLabel".tr(),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,

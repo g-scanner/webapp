@@ -159,7 +159,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
       case "other":
         return "common.reportReasons.other".tr();
       default:
-        return "report.ui.generic".tr();
+        return "report.detail.generic".tr();
     }
   }
 
@@ -225,7 +225,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
           onPressed: widget.onBack,
         ),
         title: Text(
-          "report.title".tr(),
+          "report.detail.title".tr(),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w500,
@@ -489,7 +489,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "report.ui.showProductCard".tr(),
+                              "report.detail.showProductCard".tr(),
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -498,7 +498,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              "report.ui.ingredientsAllergensNotes".tr(),
+                              "report.detail.ingredientsAllergensNotes".tr(),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: colorScheme.onSurfaceVariant,
@@ -523,7 +523,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             _buildSectionCard(
               colorScheme: colorScheme,
               cardBg: cardBg,
-              title: "report.ui.previousStatus".tr(),
+              title: "report.detail.previousStatus".tr(),
               icon: Icons.history,
               child: Row(
                 children: [
@@ -546,7 +546,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        "report.ui.resultFromOnOff".tr(),
+                        "report.detail.resultFromOnOff".tr(),
                         style: TextStyle(
                           fontSize: 12,
                           color: colorScheme.onSurfaceVariant.withValues(
@@ -565,7 +565,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             _buildSectionCard(
               colorScheme: colorScheme,
               cardBg: cardBg,
-              title: "report.ui.reportDetails".tr(),
+              title: "report.detail.reportDetails".tr(),
               icon: Icons.chat_bubble_outline,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,7 +584,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                             ),
                             children: [
                               TextSpan(
-                                text: "${"report.ui.reasonLabel".tr()} ",
+                                text: "${"report.detail.reasonLabel".tr()} ",
                                 style: TextStyle(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -608,7 +608,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
                   // Commento dell'utente stile "Blockquote"
                   Text(
-                    "report.ui.userComment".tr(),
+                    "report.detail.userComment".tr(),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -642,7 +642,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                             effectiveComment == "Nessun commento";
                         return Text(
                           isEmpty
-                              ? "report.ui.noAdditionalComment".tr()
+                              ? "report.detail.noAdditionalComment".tr()
                               : '"$effectiveComment"',
                           style: TextStyle(
                             fontSize: 15,

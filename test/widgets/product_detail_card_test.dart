@@ -162,7 +162,7 @@ void main() {
 
         await pumpProductDetailCard(tester, product: product);
 
-        expect(find.text('product.titles.scanDetail'), findsOneWidget);
+        expect(find.text('product.appBar.title'), findsOneWidget);
 
         final backButtonFinder = find.byIcon(Icons.arrow_back_ios_new);
         expect(backButtonFinder, findsOneWidget);
@@ -341,7 +341,7 @@ void main() {
 
         expect(find.text('PRODUCT.STATUS.UNCERTAIN'), findsOneWidget);
         expect(find.byIcon(Icons.warning), findsOneWidget);
-        expect(find.text('product.report.goToReport'), findsOneWidget);
+        expect(find.text('product.reportSheet.goToReport'), findsOneWidget);
       },
     );
 
@@ -358,7 +358,7 @@ void main() {
 
         expect(find.text('PRODUCT.STATUS.UNCERTAIN'), findsOneWidget);
         expect(
-          find.textContaining('product.alert.previousStatus'),
+          find.textContaining('product.glutenEvaluation.previousStatus'),
           findsOneWidget,
         );
       },
@@ -377,7 +377,7 @@ void main() {
 
         expect(find.text('PRODUCT.STATUS.UNCERTAIN'), findsOneWidget);
         expect(
-          find.textContaining('product.alert.previousStatusAlready'),
+          find.textContaining('product.glutenEvaluation.previousStatusAlready'),
           findsOneWidget,
         );
       },
@@ -430,8 +430,8 @@ void main() {
           userSettings: lactoseSettings,
         );
 
-        expect(find.text('product.titles.lactosePresence'), findsOneWidget);
-        expect(find.text('product.warnings.lactoseAlertBody'), findsOneWidget);
+        expect(find.text('product.lactoseAlert.title'), findsOneWidget);
+        expect(find.text('product.lactoseAlert.body'), findsOneWidget);
       },
     );
 
@@ -451,7 +451,7 @@ void main() {
         userSettings: defaultSettings, // alertLactose: false
       );
 
-      expect(find.text('product.titles.lactosePresence'), findsNothing);
+      expect(find.text('product.lactoseAlert.title'), findsNothing);
     });
 
     // ==========================================
@@ -471,9 +471,9 @@ void main() {
 
         await pumpProductDetailCard(tester, product: ghostProduct);
 
-        expect(find.text('product.titles.declaredAllergens'), findsOneWidget);
+        expect(find.text('product.declaredAllergens.title'), findsOneWidget);
         expect(
-          find.text('product.ingredients.insufficientDataLabel'),
+          find.text('product.declaredAllergens.insufficientDataLabel'),
           findsWidgets,
         );
       },
@@ -489,7 +489,7 @@ void main() {
 
         await pumpProductDetailCard(tester, product: cleanProduct);
 
-        expect(find.text('product.ingredients.noneLabel'), findsOneWidget);
+        expect(find.text('product.declaredAllergens.noneLabel'), findsOneWidget);
       },
     );
 
@@ -523,7 +523,7 @@ void main() {
         expect(find.text('Senza Glutine'), findsNothing);
         expect(find.text('it:senza-glutine'), findsNothing);
         expect(find.text('en:gluten-free'), findsNothing);
-        expect(find.text('product.ingredients.noneLabel'), findsOneWidget);
+        expect(find.text('product.declaredAllergens.noneLabel'), findsOneWidget);
       },
     );
 
@@ -565,8 +565,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verifica apertura bottom sheet
-      expect(find.text('product.report.communityCallout'), findsOneWidget);
-      expect(find.text('product.report.reasonLabel'), findsOneWidget);
+      expect(find.text('product.reportSheet.communityCallout'), findsOneWidget);
+      expect(find.text('product.reportSheet.reasonLabel'), findsOneWidget);
 
       // Inserisci un commento nel TextField
       final commentField = find.byType(TextField);
@@ -580,7 +580,7 @@ void main() {
       // Tap sul pulsante Invia segnalazione
       final submitBtn = find.widgetWithText(
         FilledButton,
-        'product.report.submit',
+        'product.reportSheet.submit',
       );
       expect(submitBtn, findsOneWidget);
       await tester.ensureVisible(submitBtn);
@@ -670,7 +670,7 @@ void main() {
           showReportLink: true,
         );
 
-        final goToReportBtn = find.text('product.report.goToReport');
+        final goToReportBtn = find.text('product.reportSheet.goToReport');
         expect(goToReportBtn, findsOneWidget);
 
         await tester.ensureVisible(goToReportBtn);
@@ -695,7 +695,7 @@ void main() {
           isStaleData: false,
         );
 
-        expect(find.text('product.warnings.staleDataTitle'), findsNothing);
+        expect(find.text('product.staleData.title'), findsNothing);
       },
     );
 
@@ -706,9 +706,9 @@ void main() {
 
       await pumpProductDetailCard(tester, product: product, isStaleData: true);
 
-      expect(find.text('product.warnings.staleDataTitle'), findsOneWidget);
-      expect(find.text('product.warnings.staleDataBody'), findsOneWidget);
-      expect(find.text('product.warnings.staleDataCaution'), findsOneWidget);
+      expect(find.text('product.staleData.title'), findsOneWidget);
+      expect(find.text('product.staleData.body'), findsOneWidget);
+      expect(find.text('product.staleData.caution'), findsOneWidget);
     });
 
     testWidgets(
@@ -723,12 +723,12 @@ void main() {
           isStaleDataNotifier: staleNotifier,
         );
 
-        expect(find.text('product.warnings.staleDataTitle'), findsNothing);
+        expect(find.text('product.staleData.title'), findsNothing);
 
         staleNotifier.value = true;
         await tester.pumpAndSettle();
 
-        expect(find.text('product.warnings.staleDataTitle'), findsOneWidget);
+        expect(find.text('product.staleData.title'), findsOneWidget);
       },
     );
 
@@ -749,7 +749,7 @@ void main() {
         );
 
         // All'inizio è stale -> card visibile
-        expect(find.text('product.warnings.staleDataTitle'), findsOneWidget);
+        expect(find.text('product.staleData.title'), findsOneWidget);
 
         // Viene fatto il check/refresh online: nuovo prodotto fresco
         final freshProduct = createSampleProduct(
@@ -759,7 +759,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // L'avviso DEVE sparire automaticamente
-        expect(find.text('product.warnings.staleDataTitle'), findsNothing);
+        expect(find.text('product.staleData.title'), findsNothing);
         expect(staleNotifier.value, isFalse);
       },
     );
@@ -791,7 +791,7 @@ void main() {
         );
 
         // All'inizio è offline -> non chiama refresh, card visibile
-        expect(find.text('product.warnings.staleDataTitle'), findsOneWidget);
+        expect(find.text('product.staleData.title'), findsOneWidget);
         expect(refreshOnlineCalled, isFalse);
 
         // Il dispositivo torna online
@@ -803,7 +803,7 @@ void main() {
 
         // Ha invocato onRefreshOnline e la card è sparita!
         expect(refreshOnlineCalled, isTrue);
-        expect(find.text('product.warnings.staleDataTitle'), findsNothing);
+        expect(find.text('product.staleData.title'), findsNothing);
         expect(staleNotifier.value, isFalse);
 
         ConnectivityHelper.mockIsConnected = null;

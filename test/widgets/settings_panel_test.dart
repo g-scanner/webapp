@@ -329,10 +329,10 @@ void main() {
 
     testWidgets('section toggle titles are visible', (tester) async {
       await _pump(tester, cb: cb, auth: auth);
-      expect(find.text('settings.toggles.warnAdditivesTitle'), findsOneWidget);
-      expect(find.text('settings.toggles.strictFilterTitle'), findsOneWidget);
+      expect(find.text('settings.analysisRules.warnAdditivesTitle'), findsOneWidget);
+      expect(find.text('settings.analysisRules.strictFilterTitle'), findsOneWidget);
       expect(
-        find.text('settings.toggles.lactoseIntoleranceTitle'),
+        find.text('settings.analysisRules.lactoseIntoleranceTitle'),
         findsOneWidget,
       );
     });
@@ -492,13 +492,13 @@ void main() {
       await _pump(tester, cb: cb, auth: auth);
 
       await tester.tap(
-        find.text('settings.destructive.clearHistoryTitle').first,
+        find.text('settings.dataAndHistory.clearHistoryTitle').first,
       );
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(
-        find.text('settings.destructive.clearHistoryConfirm'),
+        find.text('settings.dataAndHistory.clearHistoryConfirm'),
         findsOneWidget,
       );
     });
@@ -509,7 +509,7 @@ void main() {
       await _pump(tester, cb: cb, auth: auth);
 
       await tester.tap(
-        find.text('settings.destructive.clearHistoryTitle').first,
+        find.text('settings.dataAndHistory.clearHistoryTitle').first,
       );
       await tester.pumpAndSettle();
 
@@ -523,13 +523,13 @@ void main() {
       await _pump(tester, cb: cb, auth: auth);
 
       await tester.tap(
-        find.text('settings.destructive.clearHistoryTitle').first,
+        find.text('settings.dataAndHistory.clearHistoryTitle').first,
       );
       await tester.pumpAndSettle();
 
       final allMatches = find.descendant(
         of: find.byType(AlertDialog),
-        matching: find.text('settings.destructive.clearHistoryAction'),
+        matching: find.text('settings.dataAndHistory.clearHistoryAction'),
       );
       await tester.tap(allMatches.last);
       await tester.pumpAndSettle();

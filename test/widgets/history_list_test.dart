@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget & Business Logic Tests: HistoryList
 
 import 'package:flutter/material.dart';
@@ -147,7 +147,7 @@ void main() {
         isSynced: true,
       );
 
-      expect(find.text('history.title'), findsOneWidget);
+      expect(find.text('history.header.title'), findsOneWidget);
       expect(find.text('history.empty.subtitle'), findsWidgets);
     });
   });
@@ -307,7 +307,7 @@ void main() {
 
       expect(find.text('Riso Scotti'), findsOneWidget);
       expect(find.text('Scotti'), findsOneWidget);
-      expect(find.text('history.status.safe'), findsOneWidget);
+      expect(find.text('history.item.status.safe'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     });
 
@@ -330,7 +330,7 @@ void main() {
       );
 
       expect(find.text('Biscotti Frumento'), findsOneWidget);
-      expect(find.text('history.status.unsafe'), findsOneWidget);
+      expect(find.text('history.item.status.unsafe'), findsOneWidget);
       expect(find.byIcon(Icons.cancel_outlined), findsOneWidget);
     });
 
@@ -352,7 +352,7 @@ void main() {
       );
 
       expect(find.text('Barretta Avena'), findsOneWidget);
-      expect(find.text('history.status.uncertain'), findsOneWidget);
+      expect(find.text('history.item.status.uncertain'), findsOneWidget);
       expect(find.byIcon(Icons.help_outline), findsOneWidget);
     });
 
@@ -369,11 +369,11 @@ void main() {
       );
 
       expect(
-        find.textContaining('history.loading.productFallbackName'),
+        find.textContaining('history.item.fallbackName'),
         findsOneWidget,
       );
-      expect(find.text('history.loading.brandLoading'), findsOneWidget);
-      expect(find.text('history.status.unknown'), findsOneWidget);
+      expect(find.text('history.item.brandLoading'), findsOneWidget);
+      expect(find.text('history.item.status.unknown'), findsOneWidget);
     });
 
     testWidgets('renders unknownBrand key when product brand is empty', (
@@ -415,7 +415,7 @@ void main() {
           userSettings: _createSettings(alertLactose: true),
         );
 
-        expect(find.text('history.lactose'), findsOneWidget);
+        expect(find.text('history.item.lactose'), findsOneWidget);
         expect(find.byIcon(Icons.water_drop_outlined), findsOneWidget);
       },
     );
@@ -439,7 +439,7 @@ void main() {
         userSettings: _createSettings(alertLactose: false),
       );
 
-      expect(find.text('history.lactose'), findsNothing);
+      expect(find.text('history.item.lactose'), findsNothing);
     });
 
     testWidgets(
@@ -460,7 +460,7 @@ void main() {
           liveProducts: [prod],
         );
 
-        expect(find.text('history.status.uncertain'), findsOneWidget);
+        expect(find.text('history.item.status.uncertain'), findsOneWidget);
       },
     );
 
@@ -482,7 +482,7 @@ void main() {
         userSettings: _createSettings(reportedBarcodes: ['111']),
       );
 
-      expect(find.text('history.status.uncertain'), findsOneWidget);
+      expect(find.text('history.item.status.uncertain'), findsOneWidget);
     });
   });
 

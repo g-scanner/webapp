@@ -1,21 +1,39 @@
 {
   "product": {
-    "titles": {
-      "scanDetail": "Dettaglio scansione",
-      "glutenEvaluation": "VALUTAZIONE GLUTINE",
-      "lactosePresence": "PRESENZA LATTOSIO",
-      "declaredAllergens": "ALLERGENI DICHIARATI",
-      "ingredientsAnalysis": "ANALISI INGREDIENTI",
-      "infoAndWarnings": "INFORMAZIONI E AVVERTENZE"
+    "appBar": {
+      "title": "Dettaglio scansione"
     },
-    "warnings": {
-      "lactoseAlertBody": "Questo prodotto contiene ingredienti o allergeni che indicano la presenza di lattosio. Non adatto agli intolleranti.",
+    "glutenEvaluation": {
+      "title": "VALUTAZIONE GLUTINE",
+      "activeReportWarning": "Questo prodotto è stato segnalato da un utente. Consulta la segnalazione per maggiori dettagli.",
+      "previousStatus": "Lo stato precedente alla segnalazione era \"{status}\".",
+      "previousStatusAlready": "Lo stato precedente alla segnalazione era già \"{status}\"."
+    },
+    "lactoseAlert": {
+      "title": "PRESENZA LATTOSIO",
+      "body": "Questo prodotto contiene ingredienti o allergeni che indicano la presenza di lattosio. Non adatto agli intolleranti."
+    },
+    "declaredAllergens": {
+      "title": "ALLERGENI DICHIARATI",
+      "insufficientDataLabel": "Informazioni Insufficienti",
+      "noneLabel": "Nessuno dichiarato"
+    },
+    "ingredients": {
+      "title": "ANALISI INGREDIENTI",
+      "dangerBadge": "Pericolo",
+      "warningBadge": "Attenzione",
+      "safeBadge": "Sicuro"
+    },
+    "disclaimer": {
+      "title": "INFORMAZIONI E AVVERTENZE",
       "infoPre": "I dati sono forniti dalla community di ",
       "infoSource": "Open Food Facts",
-      "infoPost": ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico.",
-      "staleDataTitle": "AVVISO DATI NON AGGIORNATI",
-      "staleDataBody": "I dati di questo prodotto provengono dalla memoria locale e non vengono aggiornati da oltre 30 giorni. L'aggiornamento automatico avverrà appena il dispositivo sarà connesso a Internet.",
-      "staleDataCaution": "Le ricette e gli stabilimenti possono cambiare nel tempo. Leggi l'etichetta fisica per sicurezza."
+      "infoPost": ". Verifica SEMPRE fisicamente l'etichetta e le scritte sul prodotto prima di consumarlo. L'app non sostituisce il parere medico."
+    },
+    "staleData": {
+      "title": "AVVISO DATI NON AGGIORNATI",
+      "body": "I dati di questo prodotto provengono dalla memoria locale e non vengono aggiornati da oltre 30 giorni. L'aggiornamento automatico avverrà appena il dispositivo sarà connesso a Internet.",
+      "caution": "Le ricette e gli stabilimenti possono cambiare nel tempo. Leggi l'etichetta fisica per sicurezza."
     },
     "status": {
       "unknownProductName": "Prodotto Sconosciuto",
@@ -33,7 +51,6 @@
       "uncertainTraces": "Trovate diciture di contaminazione. Verifica l'etichetta.",
       "unknown": "Informazioni insufficienti. Leggi l'etichetta fisica.",
       "strictFilterBlocked": "Rilevate possibili tracce di contaminazione crociata dal Filtro Rigido Contaminazioni.",
-
       "glutenSource": "Fonte diretta di glutine.",
       "glutenFreeIngredient": "Etichetta Senza Glutine",
       "glutenFreeReason": "Prodotto certificato o dichiarato senza glutine.",
@@ -42,13 +59,11 @@
       "missingDataIngredient": "Dati Assenti",
       "missingDataReason": "Nessun ingrediente trovato.",
       "uncertainIngredientReason": "Ambiguità segnalata dal Filtro Avvertimento Additivi.",
-      
       "safeTraceIngredient": "Tracce (<20ppm)",
       "safeTraceReason": "Tracce segnalate, ma il bollino garantisce limiti sicuri.",
       "traceWarningReason": "Contaminazione crociata. Il Filtro Rigido è disattivato.",
       "maltIngredient": "Malto",
       "maltReason": "Possibile malto d'orzo. Origine non specificata.",
-      
       "contaminationBlocked": "Vietato dal Filtro Rigido Contaminazioni.",
       "lactoseDetected": "Vietato dal Filtro Intolleranza al Lattosio."
     },
@@ -56,7 +71,7 @@
       "reportError": "Segnala errore o inesattezza",
       "alreadyReported": "Prodotto già segnalato"
     },
-    "report": {
+    "reportSheet": {
       "communityCallout": "Aiuta la community segnalando eventuali informazioni errate o inesatte riportate per questo prodotto.",
       "reasonLabel": "Motivo della segnalazione",
       "detailsLabel": "Dettagli (Opzionale)",
@@ -64,23 +79,12 @@
       "submit": "Invia segnalazione",
       "goToReport": "Vai alla segnalazione"
     },
-    "alert": {
-      "activeReportWarning": "Questo prodotto è stato segnalato da un utente. Consulta la segnalazione per maggiori dettagli.",
-      "previousStatus": "Lo stato precedente alla segnalazione era \"{status}\".",
-      "previousStatusAlready": "Lo stato precedente alla segnalazione era già \"{status}\"."
-    },
-    "ingredients": {
-      "dangerBadge": "Pericolo",
-      "warningBadge": "Attenzione",
-      "safeBadge": "Sicuro",
-
-      "insufficientDataLabel": "Informazioni Insufficienti",
-      "noneLabel": "Nessuno dichiarato"
-    },
-    "scanDate": {
-      "today": "Scansionato oggi, {time}",
-      "yesterday": "Scansionato ieri, {time}",
-      "default": "Scansionato il {date}, {time}"
+    "header": {
+      "scanDate": {
+        "today": "Scansionato oggi, {time}",
+        "yesterday": "Scansionato ieri, {time}",
+        "default": "Scansionato il {date}, {time}"
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "report": {
-    "ui": {
+    "detail": {
       "showProductCard": "Mostra scheda prodotto",
       "ingredientsAllergensNotes": "Dettagli su ingredienti e allergeni",
       "previousStatus": "STATO PRECEDENTE",
@@ -11,28 +11,30 @@
       "noAdditionalComment": "Non sono state fornite informazioni aggiuntive.",
       "agreeQuestion": "Sei d'accordo con questa segnalazione?",
       "generic": "Segnalazione generica",
-      "reportDate": {
+      "date": {
         "today": "Segnalato oggi, {time}",
         "yesterday": "Segnalato ieri, {time}",
         "default": "Segnalato il {date}, {time}"
+      },
+      "title": "Dettaglio segnalazione"
+    },
+    "list": {
+      "dropdown": {
+        "all": "Tutte",
+        "mine": "Le mie"
+      },
+      "item": {
+        "activeBadge": "Attualmente in revisione",
+        "examineDetails": "Esamina dettagli segnalazione"
+      },
+      "title": "Segnalazioni attive",
+      "subtitle": "Consulta i prodotti segnalati dalla community.",
+      "empty": {
+        "allTitle": "Nessuna segnalazione disponibile",
+        "allSubtitle": "Non ci sono prodotti segnalati al momento.",
+        "mineTitle": "Nessuna segnalazione inviata",
+        "mineSubtitle": "Non hai ancora inviato alcuna segnalazione."
       }
-    },
-    "dropdown": {
-      "all": "Tutte",
-      "mine": "Le mie"
-    },
-    "lists": {
-      "activeReports": "Attualmente in revisione",
-      "examineDetails": "Esamina dettagli segnalazione"
-    },
-    "title": "Dettaglio segnalazione",
-    "listTitle": "Segnalazioni attive",
-    "subtitle": "Consulta i prodotti segnalati dalla community.",
-    "empty": {
-      "title": "Nessuna segnalazione disponibile",
-      "subtitle": "Non ci sono prodotti segnalati al momento.",
-      "mineTitle": "Nessuna segnalazione inviata",
-      "mineSubtitle": "Non hai ancora inviato alcuna segnalazione."
     }
   }
 }

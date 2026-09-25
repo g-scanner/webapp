@@ -177,8 +177,8 @@ void main() {
     testWidgets('renders main title, subtitle and divider', (tester) async {
       await _pumpCameraModule(tester, cb: cb, controller: controller);
 
-      expect(find.text('scanner.ui.scanProduct'), findsOneWidget);
-      expect(find.text('scanner.ui.alignBarcodeHint'), findsOneWidget);
+      expect(find.text('scanner.header.title'), findsOneWidget);
+      expect(find.text('scanner.viewport.alignBarcodeHint'), findsOneWidget);
       expect(find.text('common.actions.or'), findsOneWidget);
       expect(find.byType(Divider), findsNWidgets(2));
     });
@@ -933,22 +933,22 @@ void main() {
         (tester) async {
       await _pumpCameraModule(tester, cb: cb, controller: controller);
 
-      expect(find.text('scanner.ui.safetyIndicators'), findsOneWidget);
+      expect(find.text('scanner.legend.title'), findsOneWidget);
 
       expect(find.text('product.status.safe'), findsOneWidget);
-      expect(find.text('scanner.states.glutenFree'), findsOneWidget);
+      expect(find.text('scanner.legend.subtitles.glutenFree'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
 
       expect(find.text('product.status.uncertain'), findsOneWidget);
-      expect(find.text('scanner.states.checkLabel'), findsOneWidget);
+      expect(find.text('scanner.legend.subtitles.checkLabel'), findsOneWidget);
       expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
 
       expect(find.text('product.status.unsafe'), findsOneWidget);
-      expect(find.text('scanner.states.hasGluten'), findsOneWidget);
+      expect(find.text('scanner.legend.subtitles.hasGluten'), findsOneWidget);
       expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
 
       expect(find.text('product.status.unknown'), findsOneWidget);
-      expect(find.text('scanner.states.notFound'), findsOneWidget);
+      expect(find.text('scanner.legend.subtitles.notFound'), findsOneWidget);
       expect(find.byIcon(Icons.help_rounded), findsOneWidget);
     });
   });

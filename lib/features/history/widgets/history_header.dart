@@ -17,7 +17,7 @@ class HistoryHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "history.title".tr(),
+          "history.header.title".tr(),
           style: TextStyle(
             fontSize: 22,
             fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
@@ -26,7 +26,7 @@ class HistoryHeader extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          "history.subtitle".tr(),
+          "history.header.subtitle".tr(),
           style: TextStyle(
             fontSize: 14,
             color: colorScheme.onSurfaceVariant,

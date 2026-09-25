@@ -22,7 +22,7 @@ class IngredientsAnalysisView extends StatelessWidget {
     final colorScheme = context.colorScheme;
 
     return SectionCard(
-      title: "product.titles.ingredientsAnalysis".tr(),
+      title: "product.ingredients.title".tr(),
       icon: Icons.science,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,12 +149,12 @@ class LactoseAlertSection extends StatelessWidget {
     final colorScheme = context.colorScheme;
 
     return SectionCard(
-      title: "product.titles.lactosePresence".tr(),
+      title: "product.lactoseAlert.title".tr(),
       icon: Icons.water_drop,
       isLactose: true,
       bgColor: colorScheme.secondaryContainer.withValues(alpha: 0.15),
       child: Text(
-        "product.warnings.lactoseAlertBody".tr(),
+        "product.lactoseAlert.body".tr(),
         style: TextStyle(
           fontSize: 14,
           color: colorScheme.onSurfaceVariant,
@@ -173,7 +173,7 @@ class ProductWarningCard extends StatelessWidget {
     final colorScheme = context.colorScheme;
 
     return SectionCard(
-      title: "product.titles.infoAndWarnings".tr(),
+      title: "product.disclaimer.title".tr(),
       icon: Icons.info_outline,
       isCaution: true,
       child: RichText(
@@ -184,12 +184,12 @@ class ProductWarningCard extends StatelessWidget {
             color: colorScheme.onSurfaceVariant,
           ),
           children: <TextSpan>[
-            TextSpan(text: "product.warnings.infoPre".tr()),
+            TextSpan(text: "product.disclaimer.infoPre".tr()),
             TextSpan(
-              text: "product.warnings.infoSource".tr(),
+              text: "product.disclaimer.infoSource".tr(),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            TextSpan(text: "product.warnings.infoPost".tr()),
+            TextSpan(text: "product.disclaimer.infoPost".tr()),
           ],
         ),
       ),

@@ -21,7 +21,7 @@ class SafetyLegendChips extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            "scanner.ui.safetyIndicators".tr(),
+            "scanner.legend.title".tr(),
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -39,7 +39,7 @@ class SafetyLegendChips extends StatelessWidget {
                   context: context,
                   icon: Icons.check_circle_rounded,
                   title: "product.status.safe".tr(),
-                  subtitle: "scanner.states.glutenFree".tr(),
+                  subtitle: "scanner.legend.subtitles.glutenFree".tr(),
                   color: colorScheme.primaryContainer,
                 ),
               ),
@@ -49,7 +49,7 @@ class SafetyLegendChips extends StatelessWidget {
                   context: context,
                   icon: Icons.warning_rounded,
                   title: "product.status.uncertain".tr(),
-                  subtitle: "scanner.states.checkLabel".tr(),
+                  subtitle: "scanner.legend.subtitles.checkLabel".tr(),
                   color: colorScheme.tertiaryContainer,
                 ),
               ),
@@ -59,7 +59,7 @@ class SafetyLegendChips extends StatelessWidget {
                   context: context,
                   icon: Icons.cancel_rounded,
                   title: "product.status.unsafe".tr(),
-                  subtitle: "scanner.states.hasGluten".tr(),
+                  subtitle: "scanner.legend.subtitles.hasGluten".tr(),
                   color: colorScheme.error,
                 ),
               ),
@@ -69,7 +69,7 @@ class SafetyLegendChips extends StatelessWidget {
                   context: context,
                   icon: Icons.help_rounded,
                   title: "product.status.unknown".tr(),
-                  subtitle: "scanner.states.notFound".tr(),
+                  subtitle: "scanner.legend.subtitles.notFound".tr(),
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),

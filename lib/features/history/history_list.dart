@@ -128,10 +128,10 @@ class _HistoryListState extends State<HistoryList> {
 
     if (product == null) {
       return AnalyzedItemData(
-        productName: "history.loading.productFallbackName".tr(
+        productName: "history.item.fallbackName".tr(
           namedArgs: {"barcode": item.barcode},
         ),
-        brand: "history.loading.brandLoading".tr(),
+        brand: "history.item.brandLoading".tr(),
         status: GlutenSafetyStatus.sconosciuto,
         hasLactose: false,
       );

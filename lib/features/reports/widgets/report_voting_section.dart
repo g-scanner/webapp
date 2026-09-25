@@ -31,7 +31,7 @@ class ReportVotingSection extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                "report.ui.agreeQuestion".tr(),
+                "report.detail.agreeQuestion".tr(),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -90,7 +90,7 @@ class ReportVotingSection extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            "report.ui.agreeQuestion".tr(),
+            "report.detail.agreeQuestion".tr(),
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,

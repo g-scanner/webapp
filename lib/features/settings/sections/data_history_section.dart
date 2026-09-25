@@ -60,7 +60,7 @@ class DataHistorySection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "settings.destructive.clearHistoryTitle".tr(),
+                    "settings.dataAndHistory.clearHistoryTitle".tr(),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -69,7 +69,7 @@ class DataHistorySection extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "settings.destructive.clearHistorySubtitle".tr(),
+                    "settings.dataAndHistory.clearHistorySubtitle".tr(),
                     style: TextStyle(fontSize: 13, color: colorScheme.error),
                   ),
                 ],

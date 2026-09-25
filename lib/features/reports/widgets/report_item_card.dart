@@ -163,7 +163,7 @@ class ReportItemCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "report.lists.examineDetails".tr(),
+                    "report.list.item.examineDetails".tr(),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

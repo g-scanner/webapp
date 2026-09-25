@@ -139,7 +139,7 @@ class GlutenEvaluationCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  "product.titles.glutenEvaluation".tr(),
+                  "product.glutenEvaluation.title".tr(),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -178,7 +178,7 @@ class GlutenEvaluationCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "product.report.goToReport".tr(),
+                  "product.reportSheet.goToReport".tr(),
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,

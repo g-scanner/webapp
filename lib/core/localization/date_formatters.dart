@@ -53,9 +53,9 @@ String formatScanDate(String isoDate) {
     final timeStr = "$hour:$minute";
 
     if (targetDate == today) {
-      return "product.scanDate.today".tr(namedArgs: {"time": timeStr});
+      return "product.header.scanDate.today".tr(namedArgs: {"time": timeStr});
     } else if (targetDate == yesterday) {
-      return "product.scanDate.yesterday".tr(namedArgs: {"time": timeStr});
+      return "product.header.scanDate.yesterday".tr(namedArgs: {"time": timeStr});
     } else {
       const months = [
         'Gen',
@@ -73,7 +73,7 @@ String formatScanDate(String isoDate) {
       ];
       final dateStr =
           "${parsed.day} ${months[parsed.month - 1]} ${parsed.year}";
-      return "product.scanDate.default"
+      return "product.header.scanDate.default"
           .tr(namedArgs: {"date": dateStr, "time": timeStr});
     }
   } catch (e) {
@@ -94,9 +94,9 @@ String formatReportDate(String isoDate) {
     final timeStr = "$hour:$minute";
 
     if (targetDate == today) {
-      return "report.ui.reportDate.today".tr(namedArgs: {"time": timeStr});
+      return "report.detail.date.today".tr(namedArgs: {"time": timeStr});
     } else if (targetDate == yesterday) {
-      return "report.ui.reportDate.yesterday".tr(namedArgs: {"time": timeStr});
+      return "report.detail.date.yesterday".tr(namedArgs: {"time": timeStr});
     } else {
       const months = [
         'Gen',
@@ -114,7 +114,7 @@ String formatReportDate(String isoDate) {
       ];
       final dateStr =
           "${parsed.day} ${months[parsed.month - 1]} ${parsed.year}";
-      return "report.ui.reportDate.default"
+      return "report.detail.date.default"
           .tr(namedArgs: {"date": dateStr, "time": timeStr});
     }
   } catch (e) {

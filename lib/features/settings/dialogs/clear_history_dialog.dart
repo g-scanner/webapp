@@ -14,11 +14,11 @@ Future<bool?> showClearHistoryDialog(BuildContext context) {
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: Text(
-        "settings.destructive.clearHistoryTitle".tr(),
+        "settings.dataAndHistory.clearHistoryTitle".tr(),
         style: TextStyle(color: ctx.colorScheme.onSurface),
       ),
       content: Text(
-        "settings.destructive.clearHistoryConfirm".tr(),
+        "settings.dataAndHistory.clearHistoryConfirm".tr(),
         style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
       ),
       actions: [
@@ -32,7 +32,7 @@ Future<bool?> showClearHistoryDialog(BuildContext context) {
         TextButton(
           onPressed: () => Navigator.pop(ctx, true),
           style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.error),
-          child: Text("settings.destructive.clearHistoryAction".tr()),
+          child: Text("settings.dataAndHistory.clearHistoryAction".tr()),
         ),
       ],
     ),

@@ -97,7 +97,7 @@ void showSubmitReportBottomSheet({
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "product.report.communityCallout".tr(),
+                    "product.reportSheet.communityCallout".tr(),
                     style: TextStyle(
                       fontSize: 14,
                       color: sheetCtx.colorScheme.onSurfaceVariant,
@@ -108,7 +108,7 @@ void showSubmitReportBottomSheet({
 
                   // --- Dropdown M3 ---
                   Text(
-                    "product.report.reasonLabel".tr(),
+                    "product.reportSheet.reasonLabel".tr(),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -164,7 +164,7 @@ void showSubmitReportBottomSheet({
 
                   // --- TextField M3 ---
                   Text(
-                    "product.report.detailsLabel".tr(),
+                    "product.reportSheet.detailsLabel".tr(),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -180,7 +180,7 @@ void showSubmitReportBottomSheet({
                       color: sheetCtx.colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
-                      hintText: "product.report.detailsHint".tr(),
+                      hintText: "product.reportSheet.detailsHint".tr(),
                       hintStyle: TextStyle(
                         color: sheetCtx.colorScheme.onSurfaceVariant.withValues(
                           alpha: 0.5,
@@ -300,7 +300,7 @@ void showSubmitReportBottomSheet({
                                     ),
                                   )
                                 : Text(
-                                    "product.report.submit".tr(),
+                                    "product.reportSheet.submit".tr(),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                     ),

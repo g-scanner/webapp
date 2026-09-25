@@ -301,13 +301,13 @@ class _ReportsListState extends State<ReportsList> {
                   } else if (_reportFilter == "Mie") {
                     // 2. Filtro "Mie" attivo senza segnalazioni dell'utente
                     emptyIcon = Icons.assignment_outlined;
-                    emptyTitle = "report.empty.mineTitle".tr();
-                    emptySubtitle = "report.empty.mineSubtitle".tr();
+                    emptyTitle = "report.list.empty.mineTitle".tr();
+                    emptySubtitle = "report.list.empty.mineSubtitle".tr();
                   } else {
                     // 3. Nessuna segnalazione nel database di base
                     emptyIcon = Icons.task_alt;
-                    emptyTitle = "report.empty.title".tr();
-                    emptySubtitle = "report.empty.subtitle".tr();
+                    emptyTitle = "report.list.empty.allTitle".tr();
+                    emptySubtitle = "report.list.empty.allSubtitle".tr();
                   }
 
                   return Container(

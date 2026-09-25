@@ -63,7 +63,7 @@ class ReportsFilterHeader extends StatelessWidget {
       children: [
         // ── Intestazione Pagina ─────────────────────────────────────
         Text(
-          "report.listTitle".tr(),
+          "report.list.title".tr(),
           style: TextStyle(
             fontSize: 22,
             fontWeight: kIsWeb ? FontWeight.w600 : FontWeight.w500,
@@ -72,7 +72,7 @@ class ReportsFilterHeader extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          "report.subtitle".tr(),
+          "report.list.subtitle".tr(),
           style: TextStyle(
             fontSize: 14,
             color: colorScheme.onSurfaceVariant,
@@ -117,7 +117,7 @@ class ReportsFilterHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    "report.lists.activeReports".tr(),
+                    "report.list.item.activeBadge".tr(),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -244,7 +244,7 @@ class ReportsFilterHeader extends StatelessWidget {
                   DropdownMenuItem(
                     value: "Tutte",
                     child: Text(
-                      "report.dropdown.all".tr(),
+                      "report.list.dropdown.all".tr(),
                       style: _dropdownItemTextStyle(
                         colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                       ),
@@ -253,7 +253,7 @@ class ReportsFilterHeader extends StatelessWidget {
                   DropdownMenuItem(
                     value: "Mie",
                     child: Text(
-                      "report.dropdown.mine".tr(),
+                      "report.list.dropdown.mine".tr(),
                       style: _dropdownItemTextStyle(
                         colorScheme.onSecondaryContainer,
                       ),

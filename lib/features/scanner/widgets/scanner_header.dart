@@ -17,7 +17,7 @@ class ScannerHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          "scanner.ui.scanProduct".tr(),
+          "scanner.header.title".tr(),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 28,
@@ -31,7 +31,7 @@ class ScannerHeader extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            "scanner.ui.alignBarcodeHint".tr(),
+            "scanner.viewport.alignBarcodeHint".tr(),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,

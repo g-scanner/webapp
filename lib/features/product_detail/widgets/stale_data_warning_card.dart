@@ -17,14 +17,14 @@ class StaleDataWarningCard extends StatelessWidget {
     final colorScheme = context.colorScheme;
 
     return SectionCard(
-      title: 'product.warnings.staleDataTitle'.tr(),
+      title: 'product.staleData.title'.tr(),
       icon: Icons.safety_check_outlined,
       isCaution: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'product.warnings.staleDataBody'.tr(),
+            'product.staleData.body'.tr(),
             style: TextStyle(
               fontSize: 14,
               height: 1.4,
@@ -33,7 +33,7 @@ class StaleDataWarningCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'product.warnings.staleDataCaution'.tr(),
+            'product.staleData.caution'.tr(),
             style: TextStyle(
               fontSize: 13,
               height: 1.4,

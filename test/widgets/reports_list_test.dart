@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget & Business Logic Tests: ReportsList
 
 import 'package:flutter/material.dart';
@@ -148,9 +148,9 @@ void main() {
         isSynced: true,
       );
 
-      expect(find.text('report.listTitle'), findsOneWidget);
-      expect(find.text('report.subtitle'), findsOneWidget);
-      expect(find.text('report.empty.title'), findsWidgets);
+      expect(find.text('report.list.title'), findsOneWidget);
+      expect(find.text('report.list.subtitle'), findsOneWidget);
+      expect(find.text('report.list.empty.allTitle'), findsWidgets);
     });
   });
 
@@ -175,7 +175,7 @@ void main() {
         isSynced: true,
       );
 
-      expect(find.text('report.lists.activeReports'), findsOneWidget);
+      expect(find.text('report.list.item.activeBadge'), findsOneWidget);
       expect(find.text('2'), findsOneWidget); // 2 reported products
       expect(find.byIcon(Icons.pending_actions), findsOneWidget);
     });
@@ -192,7 +192,7 @@ void main() {
           isSynced: true,
         );
 
-        expect(find.text('report.lists.activeReports'), findsNothing);
+        expect(find.text('report.list.item.activeBadge'), findsNothing);
         expect(find.byIcon(Icons.pending_actions), findsNothing);
       },
     );
@@ -207,7 +207,7 @@ void main() {
         isSynced: false, // showSkeleton = true
       );
 
-      expect(find.text('report.lists.activeReports'), findsOneWidget);
+      expect(find.text('report.list.item.activeBadge'), findsOneWidget);
       expect(find.text('99'), findsOneWidget); // skeleton placeholder count
     });
   });
@@ -229,7 +229,7 @@ void main() {
       );
 
       expect(find.byIcon(Icons.task_alt), findsOneWidget);
-      expect(find.text('report.empty.title'), findsWidgets);
+      expect(find.text('report.list.empty.allTitle'), findsWidgets);
     });
 
     testWidgets('shows empty search state when search returns 0 results', (
@@ -279,7 +279,7 @@ void main() {
       expect(find.text('Biscotti Senza Glutine'), findsOneWidget);
       expect(find.text('Mulino Buono'), findsOneWidget);
       expect(find.text('8001234567890'), findsOneWidget);
-      expect(find.text('report.lists.examineDetails'), findsOneWidget);
+      expect(find.text('report.list.item.examineDetails'), findsOneWidget);
       expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
       expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
       expect(find.byIcon(Icons.qr_code_2), findsOneWidget);
@@ -443,7 +443,7 @@ void main() {
       await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('report.dropdown.mine').last);
+      await tester.tap(find.text('report.list.dropdown.mine').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Mia Segnalazione'), findsOneWidget);
