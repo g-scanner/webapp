@@ -27,7 +27,7 @@
       "deleteReauthBody": "Per motivi di sicurezza, prima di procedere con l'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo \"Procedi\" verrai disconnesso automaticamente.",
       "updateNameError": "Errore durante l’aggiornamento del nome. Riprova più tardi."
     },
-    "toggles": {
+    "analysisRules": {
       "warnAdditivesTitle": "Avvertimento Additivi",
       "warnAdditivesSubtitle": "Genera un avviso per amidi modificati o aromi senza origine specificata.",
       "strictFilterTitle": "Filtro Rigido Contaminazioni",
@@ -41,7 +41,7 @@
       "preferredLanguageTitle": "Lingua preferita",
       "preferredLanguageSubtitle": "Usata dall'interfaccia quando possibile"
     },
-    "destructive": {
+    "dataAndHistory": {
       "clearHistoryTitle": "Svuota Cronologia",
       "clearHistorySubtitle": "Rimuove in modo permanente la tua cronologia scansioni.",
       "clearHistoryConfirm": "Confermi di voler eliminare tutta la cronologia? Questa azione è irreversibile.",

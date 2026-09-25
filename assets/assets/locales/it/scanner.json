@@ -1,15 +1,19 @@
 {
   "scanner": {
-    "ui": {
-      "scanProduct": "Scansione prodotto",
-      "alignBarcodeHint": "Inquadra il codice a barre per per ottenere l'analisi dettagliata.",
-      "safetyIndicators": "Indicatori di Sicurezza"
+    "header": {
+      "title": "Scansione prodotto"
     },
-    "states": {
-      "glutenFree": "Senza glutine",
-      "checkLabel": "Controlla l'etichetta",
-      "hasGluten": "Contiene glutine",
-      "notFound": "Prodotto non trovato"
+    "viewport": {
+      "alignBarcodeHint": "Inquadra il codice a barre per per ottenere l'analisi dettagliata."
+    },
+    "legend": {
+      "title": "Indicatori di Sicurezza",
+      "subtitles": {
+        "glutenFree": "Senza glutine",
+        "checkLabel": "Controlla l'etichetta",
+        "hasGluten": "Contiene glutine",
+        "notFound": "Prodotto non trovato"
+      }
     },
     "camera": {
       "permissionDeniedWeb": "Permesso fotocamera negato.\nClicca sull'icona del lucchetto nella barra degli indirizzi del browser per consentire l'accesso, poi ricarica la pagina.",

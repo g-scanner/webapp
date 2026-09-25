@@ -1,7 +1,9 @@
 {
   "history": {
-    "title": "Cronologia scansioni",
-    "subtitle": "Consulta i prodotti scansionati in passato.",
+    "header": {
+      "title": "Cronologia scansioni",
+      "subtitle": "Consulta i prodotti scansionati in passato."
+    },
     "empty": {
       "title": "Nessuna scansione ancora",
       "subtitle": "Le scansioni effettuate appariranno qui."
@@ -15,16 +17,16 @@
       "noResultsTitle": "Ancora niente qui",
       "noResultsForFilter": "Nessun prodotto corrisponde al filtro selezionato."
     },
-    "status": {
-      "safe": "Sicuro - non contiene glutine",
-      "unsafe": "Vietato - contiene glutine",
-      "uncertain": "Incerto - potrebbe contenere glutine",
-      "unknown": "Sconosciuto - informazioni insufficienti"
-    },
-    "loading": {
-      "productFallbackName": "Prodotto {barcode}",
-      "brandLoading": "Caricamento in corso..."
-    },
-    "lactose": "Lattosio"
+    "item": {
+      "status": {
+        "safe": "Sicuro - non contiene glutine",
+        "unsafe": "Vietato - contiene glutine",
+        "uncertain": "Incerto - potrebbe contenere glutine",
+        "unknown": "Sconosciuto - informazioni insufficienti"
+      },
+      "fallbackName": "Prodotto {barcode}",
+      "brandLoading": "Caricamento in corso...",
+      "lactose": "Lattosio"
+    }
   }
 }
