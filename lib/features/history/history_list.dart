@@ -187,7 +187,26 @@ class _HistoryListState extends State<HistoryList> {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
 
-    final bool showSkeleton = widget.history.isEmpty && !widget.isSynced;
+    // Includi e posiziona in cima le scansioni in background non ancora persistite
+    final List<ScanHistoryItem> effectiveHistory = [
+      ...widget.pendingBarcodes.map(
+        (barcode) =>
+            widget.history.cast<ScanHistoryItem?>().firstWhere(
+              (h) => h?.barcode == barcode,
+              orElse: () => null,
+            ) ??
+            ScanHistoryItem(
+              id: 'pending_$barcode',
+              barcode: barcode,
+              scannedAt: DateTime.now().toIso8601String(),
+            ),
+      ),
+      ...widget.history.where(
+        (h) => !widget.pendingBarcodes.contains(h.barcode),
+      ),
+    ];
+
+    final bool showSkeleton = effectiveHistory.isEmpty && !widget.isSynced;
 
     // Calcolo in memoria per ricerca e filtri o paginazione standard
     List<MapEntry<ScanHistoryItem, AnalyzedItemData>> processedList = [];
@@ -196,7 +215,7 @@ class _HistoryListState extends State<HistoryList> {
     int dangerCount = 0;
     int uncertainCount = 0;
 
-    for (var item in widget.history) {
+    for (var item in effectiveHistory) {
       final data = _analyzeHistoryItem(item);
       if (data.status == GlutenSafetyStatus.adatto) safeCount++;
       if (data.status == GlutenSafetyStatus.nonAdatto) dangerCount++;

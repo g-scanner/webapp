@@ -68,6 +68,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   /// Quando il fetch termina, il notifier viene aggiornato e il barcode rimosso.
   final Map<String, ValueNotifier<Product?>> _pendingScans = {};
 
+  /// Elementi temporanei di cronologia per mostrare la card skeleton nella lista
+  /// finché il fetch in background non è completato.
+  final Map<String, ScanHistoryItem> _pendingHistoryItems = {};
+
   GlobalKey<NavigatorState> get _contentNavigatorKey =>
       _navController.contentNavigatorKey;
   Map<String, ValueNotifier<Product?>> get _openProductNotifiers =>
@@ -335,11 +339,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<bool> handleScanSuccess(String barcode) async {
-    setState(() {
-      scanningProgress = true;
-      scanError = null;
-      _navController.setCameraActive(false);
-    });
+    final now = DateTime.now().toIso8601String();
+    final pendingItem = ScanHistoryItem(
+      id: 'pending_$barcode',
+      barcode: barcode,
+      scannedAt: now,
+    );
 
     final productNotifier = ValueNotifier<Product?>(null);
     _openProductNotifiers[barcode] = productNotifier;
@@ -348,6 +353,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // condiviso con _openProductNotifiers: quando il fetch termina (o se
     // l'utente torna indietro) la storia può mostrare lo stato di caricamento.
     _pendingScans[barcode] = productNotifier;
+    _pendingHistoryItems[barcode] = pendingItem;
+
+    setState(() {
+      scanningProgress = true;
+      scanError = null;
+      _navController.setCameraActive(false);
+    });
 
     final placeholderProduct = Product(
       barcode: barcode,
@@ -469,6 +481,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       // Rimuovi dalla lista delle scansioni pendenti: il fetch è completato
       // (con successo o errore).
       _pendingScans.remove(barcode);
+      _pendingHistoryItems.remove(barcode);
       if (mounted) {
         setState(() => scanningProgress = false);
       }
@@ -1003,7 +1016,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           scanError: scanError,
         ),
         HistoryList(
-          history: history,
+          history: [
+            ..._pendingHistoryItems.values,
+            ...history.where(
+              (h) => !_pendingHistoryItems.containsKey(h.barcode),
+            ),
+          ],
           liveProducts: products,
           pendingBarcodes: _pendingScans.keys.toSet(),
           onRefresh: refreshAllData,

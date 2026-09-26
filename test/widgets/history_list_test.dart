@@ -990,5 +990,34 @@ void main() {
         verify(() => mockCallbacks.onSelectItem('8009999999999')).called(1);
       },
     );
+
+    testWidgets(
+      'pending scan card appears immediately at index 0 even when history is empty',
+      (tester) async {
+        final mockCallbacks = MockHistoryCallbacks();
+
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: const [], // Empty history
+          liveProducts: const [],
+          pendingBarcodes: {'8008888888888'},
+        );
+
+        // Empty state is suppressed because an item is pending
+        expect(find.text('history.empty.title'), findsNothing);
+
+        // The pending skeleton card is rendered
+        expect(find.byType(HistoryItemTile), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.help_outline), findsOneWidget);
+
+        // Clicking it opens the product detail skeleton
+        await tester.tap(find.byType(HistoryItemTile));
+        await tester.pump();
+
+        verify(() => mockCallbacks.onSelectItem('8008888888888')).called(1);
+      },
+    );
   });
 }
