@@ -304,6 +304,18 @@ void main() {
         debugDefaultTargetPlatformOverride = null;
       }
     });
+
+    testWidgets('does NOT render flashlight button on non-mobile (e.g. desktop)',
+        (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        await _pumpCameraModule(tester, cb: cb, controller: controller);
+        expect(find.byIcon(Icons.flashlight_off), findsNothing);
+        expect(find.byIcon(Icons.flashlight_on), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

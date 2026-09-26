@@ -7,7 +7,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
-import '../../../core/utils/utils.dart';
 import 'scanner_view_painters.dart';
 
 export 'scanner_view_painters.dart';
@@ -67,105 +66,15 @@ class ScannerViewport extends StatefulWidget {
 }
 
 class _ScannerViewportState extends State<ScannerViewport> {
-  bool _webTorchOn = false;
-
-  /// Su web inizia a true di default: viene mostrato subito e rimosso solo se
-  /// i controlli post-avvio confermano l'assenza o incompatibilità della torcia.
-  bool _webTorchAvailable = true;
-  bool _hasCheckedWebTorch = false;
-
   bool get _isMobile =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
 
   Future<void> _handleToggleTorch() async {
-    if (kIsWeb) {
-      final target = !_webTorchOn;
-      // Reattività immediata al tocco come su mobile
-      setState(() {
-        _webTorchOn = target;
-      });
-      final success = await jsToggleWebTorch(target);
-      if (!success && mounted) {
-        // Se non è stato possibile accendere la torcia (hardware non supportato),
-        // rimuoviamo il pulsante dalla UI.
-        setState(() {
-          _webTorchOn = false;
-          _webTorchAvailable = false;
-        });
-      }
-    } else {
-      if (widget.controller.value.isRunning) {
-        await widget.controller.toggleTorch();
-      }
+    if (widget.controller.value.isRunning) {
+      await widget.controller.toggleTorch();
     }
-  }
-
-  /// Controlla se la torcia è disponibile sul browser e aggiorna lo stato.
-  Future<void> _checkWebTorchAvailability() async {
-    // Breve attesa per dare tempo al browser di agganciare lo stream e le capabilities
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-    final available = await jsHasWebTorch();
-    if (mounted && _webTorchAvailable != available) {
-      setState(() {
-        _webTorchAvailable = available;
-      });
-    }
-  }
-
-  /// Listener sul controller: appena la camera è in esecuzione e priva di errori, verifica la torcia una sola volta.
-  void _onControllerChanged() {
-    if (!mounted) return;
-    final state = widget.controller.value;
-    if (state.isRunning && !_hasCheckedWebTorch && state.error == null && widget.cameraError == null) {
-      _hasCheckedWebTorch = true;
-      _checkWebTorchAvailability();
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    if (kIsWeb) {
-      widget.controller.addListener(_onControllerChanged);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && widget.controller.value.isRunning && !_hasCheckedWebTorch) {
-          _hasCheckedWebTorch = true;
-          _checkWebTorchAvailability();
-        }
-      });
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant ScannerViewport oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (kIsWeb && oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_onControllerChanged);
-      widget.controller.addListener(_onControllerChanged);
-    }
-    if (widget.cameraError != null && oldWidget.cameraError == null) {
-      // Errore camera: torcia spenta e controllo da ripetere al riavvio.
-      setState(() {
-        _webTorchOn = false;
-        _hasCheckedWebTorch = false;
-      });
-    }
-    // Camera riavviata: ri-verifica disponibilità al prossimo _onControllerChanged.
-    if (widget.cameraError == null && oldWidget.cameraError != null && kIsWeb) {
-      _hasCheckedWebTorch = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    if (kIsWeb) {
-      widget.controller.removeListener(_onControllerChanged);
-      if (_webTorchOn) jsToggleWebTorch(false);
-    }
-    super.dispose();
   }
 
   @override
@@ -179,13 +88,12 @@ class _ScannerViewportState extends State<ScannerViewport> {
         final hasError = state.error != null || widget.cameraError != null;
         final currentError = state.error ?? widget.cameraError;
 
-        // Su mobile: di default presente all'avvio, rimosso solo se running con torchState == unavailable (lasciato così).
-        // Su web: mostrato SOLO ed ESCLUSIVAMENTE se il browser/hardware certifica che la torcia esiste ed è supportata.
-        final bool hasTorch = kIsWeb
-            ? _webTorchAvailable
-            : (!state.isRunning || state.torchState != TorchState.unavailable);
+        // Su mobile: di default presente all'avvio, rimosso solo se running con torchState == unavailable.
+        // Su web: disabilitato completamente per evitare incompatibilità e blocchi dei browser/SO.
+        final bool hasTorch = _isMobile &&
+            (!state.isRunning || state.torchState != TorchState.unavailable);
 
-        // Il pulsante torcia è visibile solo se supportato e la fotocamera NON ha errori.
+        // Il pulsante torcia è visibile solo se supportato (mobile) e la fotocamera NON ha errori.
         final bool showTorchButton = hasTorch && !hasError;
         final double buttonOverflow = showTorchButton ? 28.0 : 0.0;
 
@@ -288,14 +196,13 @@ class _ScannerViewportState extends State<ScannerViewport> {
               ),
             ),
 
-            // Pulsante Flashlight per dispositivi Mobile e Web (attivo solo se non ci sono errori)
+            // Pulsante Flashlight per dispositivi Mobile (attivo solo se non ci sono errori)
             if (showTorchButton)
               ValueListenableBuilder<MobileScannerState>(
                 valueListenable: widget.controller,
                 builder: (context, controllerState, _) {
-                  final isTorchOn = kIsWeb
-                      ? _webTorchOn
-                      : controllerState.torchState == TorchState.on;
+                  final isTorchOn =
+                      controllerState.torchState == TorchState.on;
                   return Positioned(
                     bottom: 0,
                     left: 0,
