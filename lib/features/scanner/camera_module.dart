@@ -235,8 +235,8 @@ class _CameraModuleState extends State<CameraModule>
     if (_manualCodeController.text.trim().isEmpty) return;
     final code = _manualCodeController.text.trim();
     _manualFocusNode.unfocus();
-    // Il campo viene svuotato solo se la scan ha avuto successo.
-    // In caso di errore di rete o offline, il testo rimane così l'utente può riprovare.
+    // Il campo viene mantenuto se l'utente torna indietro dalla schermata di scan
+    // o in caso di errore di rete/offline, permettendo di riprovare o modificare il codice.
     final success = await widget.onScanSuccess(code);
     if (success && mounted) {
       _manualCodeController.clear();
@@ -320,7 +320,6 @@ class _CameraModuleState extends State<CameraModule>
             ScannerViewport(
               controller: _controller,
               cameraError: _cameraError,
-              scanningProgress: widget.scanningProgress,
               onDetect: _onDetect,
               onStartCamera: _startCamera,
             ),

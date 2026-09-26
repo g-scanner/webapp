@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../../../core/theme/theme.dart';
 import '../../../models/models.dart';
 
@@ -23,6 +24,7 @@ class AnalyzedItemData {
 class HistoryItemTile extends StatelessWidget {
   final ScanHistoryItem item;
   final AnalyzedItemData data;
+  final bool isPending;
   final ValueChanged<String> onSelectItem;
   final VoidCallback onLongPress;
   final bool alertLactose;
@@ -31,6 +33,7 @@ class HistoryItemTile extends StatelessWidget {
     super.key,
     required this.item,
     required this.data,
+    this.isPending = false,
     required this.onSelectItem,
     required this.onLongPress,
     this.alertLactose = false,
@@ -135,6 +138,192 @@ class HistoryItemTile extends StatelessWidget {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
 
+    Widget cardContent = Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (isPending)
+                      Skeletonizer(
+                        enabled: true,
+                        child: _buildStatusTag(
+                          context,
+                          GlutenSafetyStatus.incerto,
+                        ),
+                      )
+                    else
+                      _buildStatusTag(context, data.status),
+                    if (!isPending && alertLactose && data.hasLactose)
+                      _buildLactoseTag(context),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (isPending) ...[
+                  Skeletonizer(
+                    enabled: true,
+                    child: Container(
+                      width: 220,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.storefront_outlined,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.6,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Skeletonizer(
+                            enabled: true,
+                            child: Container(
+                              width: 80,
+                              height: 13,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.calendar_month_outlined,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            formatRelativeDate(item.scannedAt),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ]
+                else ...[
+                  Text(
+                    data.productName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.storefront_outlined,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.6,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              data.brand,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.calendar_month_outlined,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            formatRelativeDate(item.scannedAt),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Transform.translate(
+              offset: const Offset(8, 0),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.3,
+                ),
+                size: 26,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -148,113 +337,10 @@ class HistoryItemTile extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () => onSelectItem(item.barcode),
-        onLongPress: onLongPress,
+        onLongPress: isPending ? null : onLongPress,
         hoverColor: colorScheme.surfaceContainerHighest,
         highlightColor: context.surfaceContainerLow,
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _buildStatusTag(context, data.status),
-                        if (alertLactose && data.hasLactose)
-                          _buildLactoseTag(context),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      data.productName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.storefront_outlined,
-                              size: 14,
-                              color: colorScheme.onSurfaceVariant.withValues(
-                                alpha: 0.6,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                data.brand,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: colorScheme.onSurfaceVariant
-                                      .withValues(alpha: 0.9),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.calendar_month_outlined,
-                              size: 14,
-                              color: colorScheme.onSurfaceVariant.withValues(
-                                alpha: 0.4,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              formatRelativeDate(item.scannedAt),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.6,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Transform.translate(
-                  offset: const Offset(8, 0),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                    size: 26,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: cardContent,
       ),
     );
   }

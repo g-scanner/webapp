@@ -197,25 +197,13 @@ void main() {
     });
 
     testWidgets(
-        'renders loading overlay when scanningProgress is true', (tester) async {
-      await _pumpCameraModule(
-        tester,
-        cb: cb,
-        controller: controller,
-        scanningProgress: true,
-      );
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Analisi in corso...'), findsOneWidget);
-    });
-
-    testWidgets('hides loading overlay when scanningProgress is false',
+        'camera viewport does not display loading overlay even when scanningProgress is true',
         (tester) async {
       await _pumpCameraModule(
         tester,
         cb: cb,
         controller: controller,
-        scanningProgress: false,
+        scanningProgress: true,
       );
 
       expect(find.byType(CircularProgressIndicator), findsNothing);

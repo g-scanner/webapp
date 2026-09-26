@@ -78,6 +78,7 @@ Future<void> _pumpHistoryList(
   required MockHistoryCallbacks callbacks,
   required List<ScanHistoryItem> history,
   required List<Product> liveProducts,
+  Set<String> pendingBarcodes = const {},
   UserSettings? userSettings,
   bool isSynced = true,
 }) async {
@@ -94,6 +95,7 @@ Future<void> _pumpHistoryList(
         body: HistoryList(
           history: history,
           liveProducts: liveProducts,
+          pendingBarcodes: pendingBarcodes,
           onSelectItem: (barcode) => callbacks.onSelectItem(barcode),
           onClearHistory: () => callbacks.onClearHistory(),
           onDeleteHistoryItem: (id) => callbacks.onDeleteHistoryItem(id),
@@ -949,6 +951,43 @@ void main() {
         expect(find.text('Prodotto 20'), findsOneWidget);
         expect(find.text('Prodotto 39'), findsOneWidget);
         expect(find.text('Prodotto 40'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'pending scan card renders skeleton with incerto status pill, chevron arrow and no spinners, and is clickable',
+      (tester) async {
+        final mockCallbacks = MockHistoryCallbacks();
+        final history = [
+          _createHistoryItem(id: 'hist_pending', barcode: '8009999999999'),
+        ];
+
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: history,
+          liveProducts: const [],
+          pendingBarcodes: {'8009999999999'},
+        );
+
+        // No spinners anywhere on the card
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+
+        // Chevron arrow is displayed normally
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+
+        // Status pill displays incerto for safety
+        expect(find.byIcon(Icons.help_outline), findsOneWidget);
+
+        // Brand icon and scan date are visible immediately outside skeleton
+        expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.calendar_month_outlined), findsOneWidget);
+
+        // Tapping the card triggers onSelectItem
+        await tester.tap(find.byType(HistoryItemTile));
+        await tester.pump();
+
+        verify(() => mockCallbacks.onSelectItem('8009999999999')).called(1);
       },
     );
   });

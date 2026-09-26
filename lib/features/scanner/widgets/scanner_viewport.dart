@@ -48,7 +48,6 @@ CameraErrorCategory categorizeCameraError(Object error) {
 class ScannerViewport extends StatefulWidget {
   final MobileScannerController controller;
   final Object? cameraError;
-  final bool scanningProgress;
   final void Function(BarcodeCapture) onDetect;
   final Future<void> Function() onStartCamera;
 
@@ -56,7 +55,6 @@ class ScannerViewport extends StatefulWidget {
     super.key,
     required this.controller,
     required this.cameraError,
-    required this.scanningProgress,
     required this.onDetect,
     required this.onStartCamera,
   });
@@ -165,29 +163,6 @@ class _ScannerViewportState extends State<ScannerViewport> {
                                     child: _buildCorners(colorScheme),
                                   ),
                                 ),
-                                if (widget.scanningProgress)
-                                  Container(
-                                    color: Colors.black.withValues(alpha: 0.6),
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          CircularProgressIndicator(
-                                            color: colorScheme.primaryContainer,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          const Text(
-                                            'Analisi in corso...',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
                               ],
                             );
                           },

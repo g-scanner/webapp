@@ -63,6 +63,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   String? scanError;
   bool _isSyncing = false;
 
+  /// Scansioni in background: il fetch continua anche se l'utente torna
+  /// indietro dalla schermata del prodotto.  Barcode → productNotifier.
+  /// Quando il fetch termina, il notifier viene aggiornato e il barcode rimosso.
+  final Map<String, ValueNotifier<Product?>> _pendingScans = {};
+
   GlobalKey<NavigatorState> get _contentNavigatorKey =>
       _navController.contentNavigatorKey;
   Map<String, ValueNotifier<Product?>> get _openProductNotifiers =>
@@ -338,6 +343,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     final productNotifier = ValueNotifier<Product?>(null);
     _openProductNotifiers[barcode] = productNotifier;
+
+    // Registra la scansione come "pending" fin da subito. Il notifier è
+    // condiviso con _openProductNotifiers: quando il fetch termina (o se
+    // l'utente torna indietro) la storia può mostrare lo stato di caricamento.
+    _pendingScans[barcode] = productNotifier;
+
     final placeholderProduct = Product(
       barcode: barcode,
       nameMap: const {'it': 'Caricamento prodotto...'},
@@ -399,13 +410,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         pushFuture = Navigator.push(context, route);
       }
 
+      // Quando l'utente torna indietro, resetta lo scanner ma NON rimuovere
+      // _pendingScans: il fetch continua in background.
       pushFuture.then((_) async {
         _openProductNotifiers.remove(barcode);
         _openReportIdNotifiers.remove(barcode);
         isInHistoryNotifier.dispose();
         isStaleDataNotifier.dispose();
         if (mounted) {
-          setState(() => _navController.setCameraActive(true));
+          setState(() {
+            scanningProgress = false;
+            _navController.setCameraActive(true);
+          });
         }
       });
     }
@@ -437,7 +453,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           },
         );
       }
-      return true;
+      // Restituisce false per preservare l'eventuale codice inserito manualmente
+      // nel controller di CameraModule quando l'utente torna alla schermata di scan.
+      return false;
     } on OfflineWithoutDbException catch (e) {
       _handleScanError(e.localizationKey);
       return false;
@@ -448,6 +466,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _handleScanError('scanner.result.analysisError');
       return false;
     } finally {
+      // Rimuovi dalla lista delle scansioni pendenti: il fetch è completato
+      // (con successo o errore).
+      _pendingScans.remove(barcode);
       if (mounted) {
         setState(() => scanningProgress = false);
       }
@@ -728,6 +749,14 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   void _navigateToProduct(Product match) async {
+    // Se il barcode è ancora in caricamento (scansione pendente), mostra
+    // la schermata skeleton con il notifier pendente che aggiornerà
+    // automaticamente quando il fetch termina.
+    if (_pendingScans.containsKey(match.barcode)) {
+      _navigateToPendingProduct(match.barcode);
+      return;
+    }
+
     setState(() => _navController.setCameraActive(false));
 
     if (!mounted) return;
@@ -802,6 +831,94 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _openProductNotifiers.remove(match.barcode);
     _openReportIdNotifiers.remove(match.barcode);
     _openStaleNotifiers.remove(match.barcode)?.dispose();
+
+    if (mounted) {
+      setState(() => _navController.setCameraActive(true));
+    }
+  }
+
+  /// Naviga a un prodotto la cui scansione è ancora in corso (pendente).
+  /// Mostra il ProductDetailCard in modalità skeleton con il notifier
+  /// condiviso con la scansione in background.
+  void _navigateToPendingProduct(String barcode) async {
+    setState(() => _navController.setCameraActive(false));
+    if (!mounted) return;
+
+    final pendingNotifier = _pendingScans[barcode]!;
+
+    // Riusa il notifier pendente come openProductNotifier per questa sessione.
+    _openProductNotifiers[barcode] = pendingNotifier;
+
+    final placeholderProduct = Product(
+      barcode: barcode,
+      nameMap: const {'it': 'Caricamento prodotto...'},
+      brandMap: const {'it': 'Analisi in corso'},
+      ingredientsMap: const {'it': 'Analisi degli ingredienti in corso...'},
+      allergensMap: const {'it': <String>[]},
+      lastUpdated: DateTime.now().toIso8601String(),
+      pendingReportsCount: 0,
+    );
+
+    final userReport = reports.cast<ProductReport?>().firstWhere(
+      (r) => r?.barcode == barcode && r?.userId == userId,
+      orElse: () => null,
+    );
+
+    final reportIdNotifier = _openReportIdNotifiers.putIfAbsent(
+      barcode,
+      () => ValueNotifier<String?>(userReport?.id),
+    );
+    reportIdNotifier.value = userReport?.id;
+
+    final isInHistoryNotifier = ValueNotifier<bool>(
+      history.any((h) => h.barcode == barcode),
+    );
+
+    final isStaleDataNotifier = ValueNotifier<bool>(false);
+
+    final historyItem = history.cast<ScanHistoryItem?>().firstWhere(
+      (h) => h?.barcode == barcode,
+      orElse: () => null,
+    );
+
+    final route = MaterialPageRoute(
+      builder: (context) => ProductDetailCard(
+        product: placeholderProduct,
+        productNotifier: pendingNotifier,
+        reportIdNotifier: reportIdNotifier,
+        isInHistoryNotifier: isInHistoryNotifier,
+        isStaleDataNotifier: isStaleDataNotifier,
+        isLoading: true,
+        scannedAt: historyItem?.scannedAt ?? DateTime.now().toIso8601String(),
+        onBack: () => Navigator.pop(context),
+        onReportSubmit: handleReportSubmit,
+        onProductUpdate: handleProductUpdate,
+        userSettings: userSettings,
+        onDeleteHistoryByBarcode: handleDeleteHistoryByBarcode,
+        hasReportedThisSession:
+            reportedSessionBarcodes.contains(barcode) || userReport != null,
+        userReportId: userReport?.id,
+        onDeleteReport: handleDeleteReport,
+        onViewReport: (loadedProduct) =>
+            _openReportDetail(context, loadedProduct),
+        onRefreshOnline: _refreshProductOnline,
+      ),
+    );
+
+    final isWideScreen = MediaQuery.of(context).size.width > 960;
+    final Future<void> pushFuture;
+    if (isWideScreen) {
+      pushFuture =
+          _contentNavigatorKey.currentState?.push(route) ?? Future.value();
+    } else {
+      pushFuture = Navigator.push(context, route);
+    }
+
+    await pushFuture;
+    _openProductNotifiers.remove(barcode);
+    _openReportIdNotifiers.remove(barcode);
+    isInHistoryNotifier.dispose();
+    isStaleDataNotifier.dispose();
 
     if (mounted) {
       setState(() => _navController.setCameraActive(true));
@@ -888,10 +1005,17 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         HistoryList(
           history: history,
           liveProducts: products,
+          pendingBarcodes: _pendingScans.keys.toSet(),
           onRefresh: refreshAllData,
           userSettings: userSettings,
           isSynced: _isHistorySynced,
           onSelectItem: (barcode) {
+            // Se è una scansione pendente (ancora in caricamento), naviga
+            // direttamente alla skeleton view con il notifier condiviso.
+            if (_pendingScans.containsKey(barcode)) {
+              _navigateToPendingProduct(barcode);
+              return;
+            }
             final match = products.cast<Product?>().firstWhere(
               (p) => p?.barcode == barcode,
               orElse: () => null,

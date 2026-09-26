@@ -14,6 +14,7 @@ export 'widgets/widgets.dart';
 class HistoryList extends StatefulWidget {
   final List<ScanHistoryItem> history;
   final List<Product> liveProducts;
+  final Set<String> pendingBarcodes;
   final Function(String) onSelectItem;
   final Future<void> Function() onClearHistory;
   final Future<void> Function(String) onDeleteHistoryItem;
@@ -25,6 +26,7 @@ class HistoryList extends StatefulWidget {
     super.key,
     required this.history,
     required this.liveProducts,
+    this.pendingBarcodes = const {},
     required this.onSelectItem,
     required this.onClearHistory,
     required this.onDeleteHistoryItem,
@@ -120,19 +122,22 @@ class _HistoryListState extends State<HistoryList> {
 
   // Helper per analizzare un item di cronologia al volo (Pure-Data / Zero-DB)
   AnalyzedItemData _analyzeHistoryItem(ScanHistoryItem item) {
+    final bool isItemPending = widget.pendingBarcodes.contains(item.barcode);
     final lang = widget.userSettings.preferredLanguage;
     final Product? product = widget.liveProducts.cast<Product?>().firstWhere(
       (p) => p?.barcode == item.barcode,
       orElse: () => null,
     );
 
-    if (product == null) {
+    if (product == null || isItemPending) {
       return AnalyzedItemData(
         productName: "history.item.fallbackName".tr(
           namedArgs: {"barcode": item.barcode},
         ),
         brand: "history.item.brandLoading".tr(),
-        status: GlutenSafetyStatus.sconosciuto,
+        status: isItemPending
+            ? GlutenSafetyStatus.incerto
+            : GlutenSafetyStatus.sconosciuto,
         hasLactose: false,
       );
     }
@@ -300,9 +305,13 @@ class _HistoryListState extends State<HistoryList> {
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final entry = displayItems[index];
+                  final isPending = widget.pendingBarcodes.contains(
+                    entry.key.barcode,
+                  );
                   return HistoryItemTile(
                     item: entry.key,
                     data: entry.value,
+                    isPending: isPending,
                     onSelectItem: widget.onSelectItem,
                     onLongPress: () => _confirmDelete(entry.key.id),
                     alertLactose: widget.userSettings.alertLactose,
