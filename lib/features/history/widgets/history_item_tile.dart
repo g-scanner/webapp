@@ -21,7 +21,7 @@ class AnalyzedItemData {
   });
 }
 
-class HistoryItemTile extends StatelessWidget {
+class HistoryItemTile extends StatefulWidget {
   final ScanHistoryItem item;
   final AnalyzedItemData data;
   final bool isPending;
@@ -38,6 +38,13 @@ class HistoryItemTile extends StatelessWidget {
     required this.onLongPress,
     this.alertLactose = false,
   });
+
+  @override
+  State<HistoryItemTile> createState() => _HistoryItemTileState();
+}
+
+class _HistoryItemTileState extends State<HistoryItemTile> {
+  bool _isHovered = false;
 
   Widget _buildStatusTag(BuildContext context, GlutenSafetyStatus status) {
     final colorScheme = context.colorScheme;
@@ -102,6 +109,21 @@ class HistoryItemTile extends StatelessWidget {
     );
   }
 
+  /// Colore dei placeholder skeleton: di default surfaceContainerHighest,
+  /// ma su hover si scurisce con un blend di onSurfaceVariant per mantenere
+  /// contrasto visibile quando l'overlay hover copre la card.
+  Color _skeletonColor(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    if (_isHovered) {
+      return Color.lerp(
+        colorScheme.surfaceContainerHighest,
+        colorScheme.onSurfaceVariant,
+        0.15,
+      )!;
+    }
+    return colorScheme.surfaceContainerHighest;
+  }
+
   Widget _buildSkeletonStatusPill(BuildContext context) {
     final colorScheme = context.colorScheme;
     final bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
@@ -112,21 +134,16 @@ class HistoryItemTile extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Skeletonizer(
-            enabled: true,
-            child: Container(
-              width: 52,
-              height: 11,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
+      child: Skeletonizer(
+        enabled: true,
+        child: Container(
+          width: 52,
+          height: 11,
+          decoration: BoxDecoration(
+            color: colorScheme.tertiary,
+            borderRadius: BorderRadius.circular(4),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -166,6 +183,7 @@ class HistoryItemTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
+    final skeletonBg = _skeletonColor(context);
 
     Widget cardContent = Padding(
       padding: const EdgeInsets.all(20.0),
@@ -180,23 +198,25 @@ class HistoryItemTile extends StatelessWidget {
                   runSpacing: 4,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    if (isPending)
+                    if (widget.isPending)
                       _buildSkeletonStatusPill(context)
                     else
-                      _buildStatusTag(context, data.status),
-                    if (!isPending && alertLactose && data.hasLactose)
+                      _buildStatusTag(context, widget.data.status),
+                    if (!widget.isPending &&
+                        widget.alertLactose &&
+                        widget.data.hasLactose)
                       _buildLactoseTag(context),
                   ],
                 ),
                 const SizedBox(height: 8),
-                if (isPending) ...[
+                if (widget.isPending) ...[
                   Skeletonizer(
                     enabled: true,
                     child: Container(
                       width: 220,
                       height: 18,
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
+                        color: skeletonBg,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -224,7 +244,7 @@ class HistoryItemTile extends StatelessWidget {
                               width: 80,
                               height: 13,
                               decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest,
+                                color: skeletonBg,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -243,7 +263,7 @@ class HistoryItemTile extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            formatRelativeDate(item.scannedAt),
+                            formatRelativeDate(widget.item.scannedAt),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -258,7 +278,7 @@ class HistoryItemTile extends StatelessWidget {
                   ),
                 ] else ...[
                   Text(
-                    data.productName,
+                    widget.data.productName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -287,7 +307,7 @@ class HistoryItemTile extends StatelessWidget {
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              data.brand,
+                              widget.data.brand,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -312,7 +332,7 @@ class HistoryItemTile extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            formatRelativeDate(item.scannedAt),
+                            formatRelativeDate(widget.item.scannedAt),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -357,8 +377,11 @@ class HistoryItemTile extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: () => onSelectItem(item.barcode),
-        onLongPress: isPending ? null : onLongPress,
+        onTap: () => widget.onSelectItem(widget.item.barcode),
+        onLongPress: widget.isPending ? null : widget.onLongPress,
+        onHover: widget.isPending
+            ? (hovering) => setState(() => _isHovered = hovering)
+            : null,
         hoverColor: colorScheme.surfaceContainerHighest,
         highlightColor: context.surfaceContainerLow,
         child: cardContent,
