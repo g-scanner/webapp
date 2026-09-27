@@ -140,7 +140,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
           width: 52,
           height: 11,
           decoration: BoxDecoration(
-            color: colorScheme.tertiary.withValues(alpha: 0.45),
+            color: colorScheme.tertiary.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
