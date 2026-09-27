@@ -435,6 +435,50 @@ void main() {
       // ProductDetailCard route is pushed
       expect(find.byType(ProductDetailCard), findsOneWidget);
     });
+
+    testWidgets(
+      'handleScanSuccess returns true (clear manual input) when product already loaded on back',
+      (tester) async {
+        ConnectivityHelper.mockIsConnected = true;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+        final testProduct = Product(
+          barcode: '8001234567890',
+          nameMap: const {'it': 'Pasta Senza Glutine'},
+          brandMap: const {'it': 'Brand Bio'},
+          ingredientsMap: const {'it': 'Farina di riso'},
+          allergensMap: const {'it': <String>[]},
+          lastUpdated: DateTime.now().toIso8601String(),
+          fetchedFromOffAt: DateTime.now().toIso8601String(),
+          pendingReportsCount: 0,
+        );
+        await DbService.saveLocalProducts([testProduct]);
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        final cameraModule = tester.widget<CameraModule>(
+          find.byType(CameraModule),
+        );
+
+        // Avvia la scansione e attendi che il prodotto sia caricato
+        final scanFuture = cameraModule.onScanSuccess('8001234567890');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Il dettaglio è aperto, verifica che la route sia attiva
+        expect(find.byType(ProductDetailCard), findsOneWidget);
+
+        // Torna indietro dalla schermata dettaglio
+        final backBtn = find.byIcon(Icons.arrow_back_ios_new);
+        await tester.tap(backBtn);
+        await tester.pumpAndSettle();
+
+        // Il Future restituisce true perché il prodotto era già caricato:
+        // il campo manuale deve essere svuotato
+        final shouldClear = await scanFuture;
+        expect(shouldClear, isTrue);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

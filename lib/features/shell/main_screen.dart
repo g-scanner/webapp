@@ -377,6 +377,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     final isStaleDataNotifier = ValueNotifier<bool>(false);
 
+    Future<void>? pushFuture;
+
     if (mounted) {
       final userReport = reports.cast<ProductReport?>().firstWhere(
         (r) => r?.barcode == barcode && r?.userId == userId,
@@ -414,77 +416,96 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
 
       final isWideScreen = MediaQuery.of(context).size.width > 960;
-      final Future<void> pushFuture;
       if (isWideScreen) {
         pushFuture =
             _contentNavigatorKey.currentState?.push(route) ?? Future.value();
       } else {
         pushFuture = Navigator.push(context, route);
       }
-
-      // Quando l'utente torna indietro, resetta lo scanner ma NON rimuovere
-      // _pendingScans: il fetch continua in background.
-      pushFuture.then((_) async {
-        _openProductNotifiers.remove(barcode);
-        _openReportIdNotifiers.remove(barcode);
-        isInHistoryNotifier.dispose();
-        isStaleDataNotifier.dispose();
-        if (mounted) {
-          setState(() {
-            scanningProgress = false;
-            _navController.setCameraActive(true);
-          });
-        }
-      });
     }
 
-    try {
-      final scanResult = await DbService.scanBarcodeClientSide(
-        barcode,
-        userSettings,
-      );
+    bool detailClosed = false;
+    bool scanFinished = false;
 
-      isStaleDataNotifier.value = scanResult.isStaleResult;
-      productNotifier.value = scanResult.product;
-      await _loadLocalHistory();
-      isInHistoryNotifier.value = true;
-      _fetchProducts();
+    void cleanupNotifiers() {
+      if (detailClosed && scanFinished) {
+        isInHistoryNotifier.dispose();
+        isStaleDataNotifier.dispose();
+      }
+    }
 
-      // Se il risultato è stale (dispositivo offline o fallback da cache), avvia un check
-      // in background con callback: quando il prodotto viene rinfrescato da OFF,
-      // aggiorna productNotifier così che il banner stale sparisca automaticamente.
-      if (scanResult.isStaleResult) {
-        OffIngestionService.checkAndRefreshOffStaleCache(
-          db: DbService.db,
-          product: scanResult.product,
-          settings: userSettings,
-          onRefreshed: (freshProduct) {
-            if (_openProductNotifiers.containsKey(freshProduct.barcode)) {
-              _openProductNotifiers[freshProduct.barcode]!.value = freshProduct;
-            }
-          },
+    final scanFuture = () async {
+      try {
+        final scanResult = await DbService.scanBarcodeClientSide(
+          barcode,
+          userSettings,
         );
+
+        if (!detailClosed) {
+          isStaleDataNotifier.value = scanResult.isStaleResult;
+          isInHistoryNotifier.value = true;
+        }
+        productNotifier.value = scanResult.product;
+        await _loadLocalHistory();
+        _fetchProducts();
+
+        // Se il risultato è stale (dispositivo offline o fallback da cache), avvia un check
+        // in background con callback: quando il prodotto viene rinfrescato da OFF,
+        // aggiorna productNotifier così che il banner stale sparisca automaticamente.
+        if (scanResult.isStaleResult) {
+          OffIngestionService.checkAndRefreshOffStaleCache(
+            db: DbService.db,
+            product: scanResult.product,
+            settings: userSettings,
+            onRefreshed: (freshProduct) {
+              if (_openProductNotifiers.containsKey(freshProduct.barcode)) {
+                _openProductNotifiers[freshProduct.barcode]!.value =
+                    freshProduct;
+              }
+            },
+          );
+        }
+      } on OfflineWithoutDbException catch (e) {
+        _handleScanError(e.localizationKey);
+      } on OffNetworkException catch (e) {
+        _handleScanError(e.localizationKey);
+      } catch (_) {
+        _handleScanError('scanner.result.analysisError');
+      } finally {
+        scanFinished = true;
+        cleanupNotifiers();
+        _pendingScans.remove(barcode);
+        _pendingHistoryItems.remove(barcode);
+        if (mounted) {
+          setState(() => scanningProgress = false);
+        }
       }
-      // Restituisce false per preservare l'eventuale codice inserito manualmente
-      // nel controller di CameraModule quando l'utente torna alla schermata di scan.
-      return false;
-    } on OfflineWithoutDbException catch (e) {
-      _handleScanError(e.localizationKey);
-      return false;
-    } on OffNetworkException catch (e) {
-      _handleScanError(e.localizationKey);
-      return false;
-    } catch (_) {
-      _handleScanError('scanner.result.analysisError');
-      return false;
-    } finally {
-      // Rimuovi dalla lista delle scansioni pendenti: il fetch è completato
-      // (con successo o errore).
-      _pendingScans.remove(barcode);
-      _pendingHistoryItems.remove(barcode);
+    }();
+
+    if (pushFuture != null) {
+      await pushFuture;
+      detailClosed = true;
+      cleanupNotifiers();
+
+      // Quando l'utente torna indietro dalla schermata di dettaglio prodotto:
+      // se al momento del ritorno i dati del prodotto sono stati caricati con successo
+      // (non più in stato skeleton), restituiamo true per svuotare l'inserimento manuale.
+      // Se invece l'utente è tornato indietro mentre la schermata era ancora in caricamento
+      // con skeleton (o in caso di errore), restituiamo false per preservare il codice digitato.
+      final wasLoaded = productNotifier.value != null;
+
+      _openProductNotifiers.remove(barcode);
+      _openReportIdNotifiers.remove(barcode);
       if (mounted) {
-        setState(() => scanningProgress = false);
+        setState(() {
+          scanningProgress = false;
+          _navController.setCameraActive(true);
+        });
       }
+      return wasLoaded;
+    } else {
+      await scanFuture;
+      return productNotifier.value != null;
     }
   }
 

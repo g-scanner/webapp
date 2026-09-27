@@ -102,6 +102,35 @@ class HistoryItemTile extends StatelessWidget {
     );
   }
 
+  Widget _buildSkeletonStatusPill(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Skeletonizer(
+            enabled: true,
+            child: Container(
+              width: 52,
+              height: 11,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLactoseTag(BuildContext context) {
     final colorScheme = context.colorScheme;
     return Container(
@@ -152,13 +181,7 @@ class HistoryItemTile extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     if (isPending)
-                      Skeletonizer(
-                        enabled: true,
-                        child: _buildStatusTag(
-                          context,
-                          GlutenSafetyStatus.incerto,
-                        ),
-                      )
+                      _buildSkeletonStatusPill(context)
                     else
                       _buildStatusTag(context, data.status),
                     if (!isPending && alertLactose && data.hasLactose)
@@ -233,8 +256,7 @@ class HistoryItemTile extends StatelessWidget {
                       ),
                     ],
                   ),
-                ]
-                else ...[
+                ] else ...[
                   Text(
                     data.productName,
                     maxLines: 2,
@@ -270,8 +292,9 @@ class HistoryItemTile extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.9),
+                                color: colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.9,
+                                ),
                               ),
                             ),
                           ),
@@ -313,9 +336,7 @@ class HistoryItemTile extends StatelessWidget {
               offset: const Offset(8, 0),
               child: Icon(
                 Icons.chevron_right_rounded,
-                color: colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.3,
-                ),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                 size: 26,
               ),
             ),

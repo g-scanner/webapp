@@ -745,6 +745,42 @@ void main() {
       // Il campo non deve essere stato svuotato — il codice deve restare.
       expect(find.text('8001234567890'), findsOneWidget);
     });
+
+    testWidgets(
+        'manual field is preserved when user goes back while product is still skeleton (false)',
+        (tester) async {
+      // onScanSuccess returns false = utente torna indietro mentre era skeleton
+      when(() => cb.onScanSuccess(any())).thenAnswer((_) async => false);
+      await _pumpCameraModule(tester, cb: cb, controller: controller);
+
+      await tester.enterText(find.byType(TextField), '9991234567890');
+      await tester.pump();
+
+      final submitBtn = find.byIcon(Icons.chevron_right_rounded);
+      await tester.tap(submitBtn);
+      await tester.pumpAndSettle();
+
+      // Il codice deve restare poiché il prodotto non era ancora caricato
+      expect(find.text('9991234567890'), findsOneWidget);
+    });
+
+    testWidgets(
+        'manual field is cleared when user goes back after product loaded (true)',
+        (tester) async {
+      // onScanSuccess returns true = utente torna indietro dopo che il prodotto era già caricato
+      when(() => cb.onScanSuccess(any())).thenAnswer((_) async => true);
+      await _pumpCameraModule(tester, cb: cb, controller: controller);
+
+      await tester.enterText(find.byType(TextField), '8001234567890');
+      await tester.pump();
+
+      final submitBtn = find.byIcon(Icons.chevron_right_rounded);
+      await tester.tap(submitBtn);
+      await tester.pumpAndSettle();
+
+      // Il campo deve essere svuotato perché il prodotto era già caricato al ritorno
+      expect(find.text('8001234567890'), findsNothing);
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
