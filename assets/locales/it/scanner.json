@@ -26,7 +26,8 @@
     "result": {
       "analysisError": "Errore durante l'analisi",
       "networkError": "Connessione debole o server non raggiungibile. Riprova tra poco.",
-      "offlineNoDbPrompt": "Sei offline! Scarica il database offline dalle Impostazioni per scansionare senza connessione."
+      "offlineNoDbPrompt": "Sei offline! Scarica il database offline dalle Impostazioni per scansionare senza connessione.",
+      "backgroundScanFailed": "Una scansione è fallita a causa della connessione debole o assente."
     }
   }
 }

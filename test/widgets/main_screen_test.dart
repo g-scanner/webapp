@@ -21,6 +21,7 @@ import 'package:gscanner/features/scanner/camera_module.dart';
 import 'package:gscanner/features/settings/settings_panel.dart';
 import 'package:gscanner/features/product_detail/product_detail_card.dart';
 import 'package:gscanner/features/sync/sync_data_screen.dart';
+import 'package:gscanner/features/history/history_list.dart';
 import 'package:gscanner/core/network/connectivity_helper.dart';
 import '../mocks/shared_mocks.dart';
 
@@ -477,6 +478,143 @@ void main() {
         // il campo manuale deve essere svuotato
         final shouldClear = await scanFuture;
         expect(shouldClear, isTrue);
+      },
+    );
+
+    testWidgets(
+      'offline fail-fast: aborts scan immediately and shows offline prompt without pushing detail route',
+      (tester) async {
+        // Dispositivo offline e prodotto non in cache SQLite
+        ConnectivityHelper.mockIsConnected = false;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        final cameraModule = tester.widget<CameraModule>(
+          find.byType(CameraModule),
+        );
+
+        final scanFuture = cameraModule.onScanSuccess('8009999999999');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Non deve aprire la schermata di dettaglio
+        expect(find.byType(ProductDetailCard), findsNothing);
+
+        // Deve restituire false per non cancellare l'eventuale codice digitato
+        final result = await scanFuture;
+        expect(result, isFalse);
+
+        // Deve mostrare il prompt per scaricare il DB offline
+        expect(find.text('scanner.result.offlineNoDbPrompt'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'weak connection: pending skeleton card in history vanishes on failure and shows background error',
+      (tester) async {
+        // Inizia online (permette l'apertura dello skeleton)
+        ConnectivityHelper.mockIsConnected = true;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        final cameraModule = tester.widget<CameraModule>(
+          find.byType(CameraModule),
+        );
+
+        // Scansiona un barcode
+        cameraModule.onScanSuccess('8007777777777');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Schermata dettaglio skeleton aperta
+        expect(find.byType(ProductDetailCard), findsOneWidget);
+
+        // L'utente torna indietro alla schermata principale
+        final backBtn = find.byIcon(Icons.arrow_back_ios_new);
+        await tester.tap(backBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(ProductDetailCard), findsNothing);
+
+        // Passa alla tab Cronologia: la card skeleton è presente
+        await tester.tap(find.text('common.navigation.history'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(HistoryItemTile), findsOneWidget);
+
+        // La connessione cade o i retry falliscono
+        ConnectivityHelper.mockIsConnected = false;
+
+        // Avanza il tempo per completare i retry
+        await tester.pump(const Duration(seconds: 10));
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // La card skeleton è stata rimossa dalla cronologia
+        expect(find.byType(HistoryItemTile), findsNothing);
+
+        // Mostra lo snackbar di scansione fallita in background
+        expect(find.text('scanner.result.backgroundScanFailed'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'pending skeleton card in history becomes effective when connection is restored before retry timeout',
+      (tester) async {
+        // Inizia online
+        ConnectivityHelper.mockIsConnected = true;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        final cameraModule = tester.widget<CameraModule>(
+          find.byType(CameraModule),
+        );
+
+        // Scansiona un barcode
+        cameraModule.onScanSuccess('8008888888888');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Schermata dettaglio skeleton aperta
+        expect(find.byType(ProductDetailCard), findsOneWidget);
+
+        // L'utente torna indietro alla schermata principale
+        final backBtn = find.byIcon(Icons.arrow_back_ios_new);
+        await tester.tap(backBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(ProductDetailCard), findsNothing);
+
+        // Passa alla tab Cronologia
+        await tester.tap(find.text('common.navigation.history'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // La card skeleton è presente in cronologia
+        expect(find.byType(HistoryItemTile), findsOneWidget);
+
+        // Il prodotto diventa disponibile nel DB/cache
+        final recoveredProduct = Product(
+          barcode: '8008888888888',
+          nameMap: const {'it': 'Biscotti Riso Senza Glutine'},
+          brandMap: const {'it': 'BioBrand'},
+          ingredientsMap: const {'it': 'Farina di riso'},
+          allergensMap: const {'it': <String>[]},
+          lastUpdated: DateTime.now().toIso8601String(),
+          fetchedFromOffAt: DateTime.now().toIso8601String(),
+          pendingReportsCount: 0,
+        );
+        await DbService.saveLocalProducts([recoveredProduct]);
+
+        // Avanza il tempo per far scattare il ciclo di retry (8s)
+        await tester.pump(const Duration(seconds: 9));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // La card diventa effettiva mostrando il nome reale
+        expect(find.byType(HistoryItemTile), findsOneWidget);
+        expect(find.text('Biscotti Riso Senza Glutine'), findsOneWidget);
       },
     );
   });

@@ -72,6 +72,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   /// finché il fetch in background non è completato.
   final Map<String, ScanHistoryItem> _pendingHistoryItems = {};
 
+  /// Callback per chiudere la route di dettaglio del prodotto (se attualmente aperta)
+  /// in caso di fallimento della scansione.
+  final Map<String, VoidCallback> _pendingDetailClosers = {};
+
   GlobalKey<NavigatorState> get _contentNavigatorKey =>
       _navController.contentNavigatorKey;
   Map<String, ValueNotifier<Product?>> get _openProductNotifiers =>
@@ -339,6 +343,21 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<bool> handleScanSuccess(String barcode) async {
+    // 0. Fail-fast immediato se offline e prodotto non in cache SQLite:
+    // Se siamo offline e il prodotto non è già memorizzato localmente, abortiamo subito
+    // senza aprire lo skeleton e senza creare elementi orfani in cronologia.
+    final localProduct =
+        await LocalCacheService.getLocalProductByBarcode(barcode);
+    final isConnected = await ConnectivityHelper.hasInternetConnection();
+    if (localProduct == null && !isConnected) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('scanner.result.offlineNoDbPrompt'.tr())),
+        );
+      }
+      return false;
+    }
+
     final now = DateTime.now().toIso8601String();
     final pendingItem = ScanHistoryItem(
       id: 'pending_$barcode',
@@ -415,6 +434,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         ),
       );
 
+      _pendingDetailClosers[barcode] = () {
+        if (route.isActive) {
+          route.navigator?.pop();
+        }
+      };
+
       final isWideScreen = MediaQuery.of(context).size.width > 960;
       if (isWideScreen) {
         pushFuture =
@@ -436,10 +461,43 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     final scanFuture = () async {
       try {
-        final scanResult = await DbService.scanBarcodeClientSide(
-          barcode,
-          userSettings,
-        );
+        ScanResult? scanResult;
+        // Se la connessione è debole, attendiamo con un numero limitato di retry (2 retry, 3 tentativi totali).
+        // Con pause da 8s e i timeout delle richieste, il tempo totale si colloca tra i 16 e i 28 secondi,
+        // senza sovraccaricare il server di richieste.
+        int scanRetries = 0;
+        const maxScanRetries = 2;
+        const retryDelay = Duration(seconds: 8);
+
+        while (true) {
+          try {
+            scanResult = await DbService.scanBarcodeClientSide(
+              barcode,
+              userSettings,
+            );
+            break; // Scansione completata con successo!
+          } on OfflineWithoutDbException catch (_) {
+            scanRetries++;
+            if (scanRetries > maxScanRetries || !mounted) {
+              rethrow;
+            }
+            await Future.delayed(retryDelay);
+            final hasNet = await ConnectivityHelper.hasInternetConnection();
+            if (!hasNet) {
+              rethrow;
+            }
+          } on OffNetworkException catch (_) {
+            scanRetries++;
+            if (scanRetries > maxScanRetries || !mounted) {
+              rethrow;
+            }
+            await Future.delayed(retryDelay);
+            final hasNet = await ConnectivityHelper.hasInternetConnection();
+            if (!hasNet) {
+              rethrow;
+            }
+          }
+        }
 
         if (!detailClosed) {
           isStaleDataNotifier.value = scanResult.isStaleResult;
@@ -466,16 +524,17 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           );
         }
       } on OfflineWithoutDbException catch (e) {
-        _handleScanError(e.localizationKey);
+        await _handleScanFailure(barcode, e.localizationKey);
       } on OffNetworkException catch (e) {
-        _handleScanError(e.localizationKey);
+        await _handleScanFailure(barcode, e.localizationKey);
       } catch (_) {
-        _handleScanError('scanner.result.analysisError');
+        await _handleScanFailure(barcode, 'scanner.result.analysisError');
       } finally {
         scanFinished = true;
         cleanupNotifiers();
         _pendingScans.remove(barcode);
         _pendingHistoryItems.remove(barcode);
+        _pendingDetailClosers.remove(barcode);
         if (mounted) {
           setState(() => scanningProgress = false);
         }
@@ -486,6 +545,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await pushFuture;
       detailClosed = true;
       cleanupNotifiers();
+      _pendingDetailClosers.remove(barcode);
 
       // Quando l'utente torna indietro dalla schermata di dettaglio prodotto:
       // se al momento del ritorno i dati del prodotto sono stati caricati con successo
@@ -509,18 +569,49 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// Chiude la route aperta dalla scansione e mostra una SnackBar di errore localizzata.
-  void _handleScanError(String localizationKey) {
-    if (!mounted) return;
-    final isWideScreen = MediaQuery.of(context).size.width > 960;
-    if (isWideScreen) {
-      _contentNavigatorKey.currentState?.maybePop();
+  /// Gestisce il fallimento di una scansione sia se l'utente è ancora nella route skeleton,
+  /// sia se è tornato indietro (es. alla cronologia o fotocamera).
+  Future<void> _handleScanFailure(
+    String barcode,
+    String localizationKey,
+  ) async {
+    final closer = _pendingDetailClosers.remove(barcode);
+    if (closer != null) {
+      // Caso 1: L'utente si trova attualmente sulla schermata skeleton del prodotto.
+      // Chiudiamo la schermata e mostriamo lo snackbar di errore specifico.
+      closer();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(localizationKey.tr())),
+        );
+      }
     } else {
-      Navigator.of(context).maybePop();
+      // Caso 2: L'utente è tornato indietro durante il caricamento e si trova altrove
+      // (es. in cronologia, fotocamera o impostazioni). Mostriamo l'avviso che la scansione è fallita.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('scanner.result.backgroundScanFailed'.tr())),
+        );
+      }
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(localizationKey.tr())));
+
+    // In entrambi i casi: rimuoviamo la card skeleton dalla cronologia ed eliminiamo
+    // ogni eventuale traccia dal database locale, così che riscansionando in futuro
+    // non risorga alcun prodotto fallito.
+    _pendingScans.remove(barcode);
+    _pendingHistoryItems.remove(barcode);
+    try {
+      await DbService.deleteHistoryByBarcodeLocal(barcode);
+    } catch (e) {
+      debugPrint("Errore rimozione history item fallito: $e");
+    }
+    await _loadLocalHistory();
+
+    if (mounted) {
+      setState(() {
+        scanningProgress = false;
+      });
+    }
   }
 
   /// Effettua il refresh asincrono da Open Food Facts per un prodotto attualmente
@@ -939,17 +1030,24 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       ),
     );
 
-    final isWideScreen = MediaQuery.of(context).size.width > 960;
-    final Future<void> pushFuture;
-    if (isWideScreen) {
-      pushFuture =
-          _contentNavigatorKey.currentState?.push(route) ?? Future.value();
-    } else {
-      pushFuture = Navigator.push(context, route);
-    }
+      _pendingDetailClosers[barcode] = () {
+        if (route.isActive) {
+          route.navigator?.pop();
+        }
+      };
 
-    await pushFuture;
-    _openProductNotifiers.remove(barcode);
+      final isWideScreen = MediaQuery.of(context).size.width > 960;
+      final Future<void> pushFuture;
+      if (isWideScreen) {
+        pushFuture =
+            _contentNavigatorKey.currentState?.push(route) ?? Future.value();
+      } else {
+        pushFuture = Navigator.push(context, route);
+      }
+
+      await pushFuture;
+      _pendingDetailClosers.remove(barcode);
+      _openProductNotifiers.remove(barcode);
     _openReportIdNotifiers.remove(barcode);
     isInHistoryNotifier.dispose();
     isStaleDataNotifier.dispose();

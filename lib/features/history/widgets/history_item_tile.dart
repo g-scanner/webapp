@@ -132,7 +132,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
     final highlightAlpha = _isHovered ? 0.35 : 0.20;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(24),
