@@ -169,23 +169,47 @@ class OffIngestionService {
       );
     }
 
-    // ⚠️ ERRORE DI RETE / TIMEOUT / SERVER OFF OVERLOADED:
-    // NON creare alcun Ghost Product per non inquinare il DB con falsi sconosciuti per 30 giorni!
-    // Registra comunque l'evento di scansione in cronologia locale se richiesto.
-    if (settings.autoSaveHistory) {
-      final nowIso = DateTime.now().toIso8601String();
-      final placeholder = Product(
-        barcode: barcode,
-        nameMap: {},
-        brandMap: {},
-        ingredientsMap: {},
-        allergensMap: {},
-        pendingReportsCount: 0,
-        lastUpdated: nowIso,
-      );
-      await HistoryDbService.saveHistoryItem(db, auth, placeholder);
+    // ⚠️ ERRORE DI RETE / TIMEOUT TEMPORANEO:
+    // Prima di dichiarare errore, controlla se nel frattempo la connessione è tornata
+    // (es. l'utente era temporaneamente offline/debole durante la prima chiamata).
+    final bool isNowConnected = await ConnectivityHelper.hasInternetConnection();
+    if (isNowConnected) {
+      final retryResult = await fetchOffProduct(barcode, settings);
+      if (retryResult.status == OffFetchStatus.found &&
+          retryResult.product != null) {
+        return await _persistAndEmitResult(
+          db: db,
+          auth: auth,
+          product: retryResult.product!,
+          settings: settings,
+          saveToFirestore: true,
+        );
+      }
+      if (retryResult.status == OffFetchStatus.notFound) {
+        final nowIso = DateTime.now().toIso8601String();
+        final ghostProduct = Product(
+          barcode: barcode,
+          nameMap: {},
+          brandMap: {},
+          ingredientsMap: {},
+          allergensMap: {},
+          pendingReportsCount: 0,
+          lastUpdated: nowIso,
+          fetchedFromOffAt: nowIso,
+        );
+        return await _persistAndEmitResult(
+          db: db,
+          auth: auth,
+          product: ghostProduct,
+          settings: settings,
+          saveToFirestore: true,
+        );
+      }
     }
 
+    // Se la rete è davvero assente o non risponde:
+    // NON salvare alcun placeholder orfano in cronologia e NON creare alcun Ghost Product,
+    // così da evitare di mostrare card in cronologia prive di dati corrispondenti nel DB.
     throw const OffNetworkException();
   }
 

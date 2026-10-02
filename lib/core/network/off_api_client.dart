@@ -53,7 +53,7 @@ class OffApiClient {
     return Uri.https('world.openfoodfacts.org', path, query);
   }
 
-  static const Duration defaultTimeout = Duration(seconds: 10);
+  static const Duration defaultTimeout = Duration(seconds: 6);
   static const int maxRetries = 1;
 
   static Future<http.Response> getProduct(

@@ -9,6 +9,7 @@ import 'package:gscanner/models/models.dart';
 import 'package:gscanner/core/core.dart';
 import 'package:gscanner/services/database/off_ingestion_service.dart';
 import 'package:gscanner/services/database/local_cache_service.dart';
+import 'package:gscanner/services/database/history_db_service.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {
@@ -131,6 +132,10 @@ void main() {
       final localProduct = await LocalCacheService.getLocalProductByBarcode('0000000000000');
       // Must NOT have saved a ghost product in local cache!
       expect(localProduct, isNull);
+
+      final history = await HistoryDbService.getHistory(mockAuth);
+      // Must NOT have saved an orphan placeholder to history!
+      expect(history.any((h) => h.barcode == '0000000000000'), isFalse);
     });
   });
 

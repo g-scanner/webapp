@@ -1061,6 +1061,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             );
             if (match != null) {
               _navigateToProduct(match);
+            } else {
+              handleScanSuccess(barcode);
             }
           },
           onClearHistory: handleClearHistory,
