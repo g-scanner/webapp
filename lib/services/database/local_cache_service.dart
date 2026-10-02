@@ -137,7 +137,7 @@ class LocalCacheService {
           .collection(productsCollection)
           .doc(barcode)
           .get()
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 3));
       if (docSnap.exists && docSnap.data() != null) {
         final prod = Product.fromJson(docSnap.data()!);
         await upsertLocalProduct(prod);

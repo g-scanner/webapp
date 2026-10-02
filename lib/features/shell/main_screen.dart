@@ -76,6 +76,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   /// in caso di fallimento della scansione.
   final Map<String, VoidCallback> _pendingDetailClosers = {};
 
+  /// Set dei barcode annullati o falliti per evitare che Future asincroni tardivi salvino dati.
+  final Set<String> _cancelledBarcodes = {};
+
   GlobalKey<NavigatorState> get _contentNavigatorKey =>
       _navController.contentNavigatorKey;
   Map<String, ValueNotifier<Product?>> get _openProductNotifiers =>
@@ -343,6 +346,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<bool> handleScanSuccess(String barcode) async {
+    // Se è già in corso una scansione per questo barcode, deduplica ed evita scan concorrenti
+    if (_pendingScans.containsKey(barcode)) {
+      return false;
+    }
+
+    _cancelledBarcodes.remove(barcode);
+
     // 0. Fail-fast immediato se offline e prodotto non in cache SQLite:
     // Se siamo offline e il prodotto non è già memorizzato localmente, abortiamo subito
     // senza aprire lo skeleton e senza creare elementi orfani in cronologia.
@@ -460,16 +470,21 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
 
     final scanFuture = () async {
+      final scanStartTime = DateTime.now();
+      const maxScanDuration = Duration(seconds: 28);
+      const retryDelay = Duration(seconds: 4);
+      int scanRetries = 0;
+      const maxScanRetries = 2; // 2 retry (3 tentativi totali: iniziale + 2 retry)
+
       try {
         ScanResult? scanResult;
-        // Se la connessione è debole, attendiamo con un numero limitato di retry (2 retry, 3 tentativi totali).
-        // Con pause da 8s e i timeout delle richieste, il tempo totale si colloca tra i 16 e i 28 secondi,
-        // senza sovraccaricare il server di richieste.
-        int scanRetries = 0;
-        const maxScanRetries = 2;
-        const retryDelay = Duration(seconds: 8);
 
         while (true) {
+          final elapsed = DateTime.now().difference(scanStartTime);
+          if (elapsed >= maxScanDuration || _cancelledBarcodes.contains(barcode)) {
+            throw const OffNetworkException();
+          }
+
           try {
             scanResult = await DbService.scanBarcodeClientSide(
               barcode,
@@ -478,7 +493,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             break; // Scansione completata con successo!
           } on OfflineWithoutDbException catch (_) {
             scanRetries++;
-            if (scanRetries > maxScanRetries || !mounted) {
+            final currentElapsed = DateTime.now().difference(scanStartTime);
+            if (scanRetries > maxScanRetries ||
+                currentElapsed >= maxScanDuration ||
+                !mounted) {
               rethrow;
             }
             await Future.delayed(retryDelay);
@@ -488,7 +506,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             }
           } on OffNetworkException catch (_) {
             scanRetries++;
-            if (scanRetries > maxScanRetries || !mounted) {
+            final currentElapsed = DateTime.now().difference(scanStartTime);
+            if (scanRetries > maxScanRetries ||
+                currentElapsed >= maxScanDuration ||
+                !mounted) {
               rethrow;
             }
             await Future.delayed(retryDelay);
@@ -496,7 +517,14 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             if (!hasNet) {
               rethrow;
             }
+          } catch (_) {
+            rethrow;
           }
+        }
+
+        // Se nel frattempo la scansione era stata annullata o è fallita, scarta il risultato:
+        if (_cancelledBarcodes.contains(barcode)) {
+          return;
         }
 
         if (!detailClosed) {
@@ -536,7 +564,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         _pendingHistoryItems.remove(barcode);
         _pendingDetailClosers.remove(barcode);
         if (mounted) {
-          setState(() => scanningProgress = false);
+          setState(() => scanningProgress = _pendingScans.isNotEmpty);
         }
       }
     }();
@@ -558,7 +586,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _openReportIdNotifiers.remove(barcode);
       if (mounted) {
         setState(() {
-          scanningProgress = false;
+          scanningProgress = _pendingScans.isNotEmpty;
           _navController.setCameraActive(true);
         });
       }
@@ -575,42 +603,55 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     String barcode,
     String localizationKey,
   ) async {
+    _cancelledBarcodes.add(barcode);
+
+    // 1. Rimuovi IMMEDIATAMENTE dalle strutture in memoria per aggiornare la UI
+    _pendingScans.remove(barcode);
+    _pendingHistoryItems.remove(barcode);
+
+    // 2. Chiudi IMMEDIATAMENTE la route se aperta
     final closer = _pendingDetailClosers.remove(barcode);
     if (closer != null) {
-      // Caso 1: L'utente si trova attualmente sulla schermata skeleton del prodotto.
-      // Chiudiamo la schermata e mostriamo lo snackbar di errore specifico.
       closer();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(localizationKey.tr())),
-        );
-      }
-    } else {
-      // Caso 2: L'utente è tornato indietro durante il caricamento e si trova altrove
-      // (es. in cronologia, fotocamera o impostazioni). Mostriamo l'avviso che la scansione è fallita.
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('scanner.result.backgroundScanFailed'.tr())),
+    }
+
+    // 3. Mostra la notifica di fallimento
+    if (mounted) {
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger != null) {
+        messenger.clearSnackBars();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              closer != null
+                  ? localizationKey.tr()
+                  : 'scanner.result.backgroundScanFailed'.tr(),
+            ),
+          ),
         );
       }
     }
 
-    // In entrambi i casi: rimuoviamo la card skeleton dalla cronologia ed eliminiamo
-    // ogni eventuale traccia dal database locale, così che riscansionando in futuro
-    // non risorga alcun prodotto fallito.
-    _pendingScans.remove(barcode);
-    _pendingHistoryItems.remove(barcode);
+    // 4. AGGIORNA SUBITO LA UI: la card skeleton scompare all'istante
+    if (mounted) {
+      setState(() {
+        scanningProgress = _pendingScans.isNotEmpty;
+      });
+    }
+
+    // 5. Pulizia asincrona protetta da timeout per non bloccare
     try {
-      await DbService.deleteHistoryByBarcodeLocal(barcode);
+      await DbService.deleteHistoryByBarcodeLocal(barcode).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => debugPrint("Firestore history delete timeout (offline)"),
+      );
     } catch (e) {
       debugPrint("Errore rimozione history item fallito: $e");
     }
     await _loadLocalHistory();
 
     if (mounted) {
-      setState(() {
-        scanningProgress = false;
-      });
+      setState(() {});
     }
   }
 
@@ -772,6 +813,20 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> handleDeleteHistoryItem(String id) async {
+    if (id.startsWith('pending_')) {
+      final barcode = id.substring('pending_'.length);
+      _cancelledBarcodes.add(barcode);
+      _pendingScans.remove(barcode);
+      _pendingHistoryItems.remove(barcode);
+      _pendingDetailClosers.remove(barcode);
+      if (mounted) {
+        setState(() {
+          scanningProgress = _pendingScans.isNotEmpty;
+        });
+      }
+      return;
+    }
+
     try {
       await DbService.deleteHistoryItemLocal(id);
     } catch (e) {

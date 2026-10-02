@@ -46,6 +46,8 @@ class _CameraModuleState extends State<CameraModule>
   bool _isRetrying = false;
   Timer? _retryTimer;
   Object? _cameraError;
+  String? _lastScannedBarcode;
+  DateTime? _lastScannedTime;
 
   @override
   void initState() {
@@ -249,6 +251,14 @@ class _CameraModuleState extends State<CameraModule>
     final List<Barcode> barcodes = capture.barcodes;
     final String? raw = barcodes.firstOrNull?.rawValue?.trim();
     if (raw != null && raw.isNotEmpty) {
+      final now = DateTime.now();
+      if (_lastScannedBarcode == raw &&
+          _lastScannedTime != null &&
+          now.difference(_lastScannedTime!) < const Duration(seconds: 4)) {
+        return;
+      }
+      _lastScannedBarcode = raw;
+      _lastScannedTime = now;
       _isProcessing = true;
       try {
         await widget.onScanSuccess(raw);

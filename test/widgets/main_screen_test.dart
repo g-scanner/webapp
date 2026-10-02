@@ -617,6 +617,22 @@ void main() {
         expect(find.text('Biscotti Riso Senza Glutine'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'syncHistoryWithFirestore ignores and purges previously cancelled or deleted barcodes',
+      (tester) async {
+        ConnectivityHelper.mockIsConnected = true;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        // Elimina un barcode per registrarlo nel filtro di cancellazione/annullamento
+        await DbService.deleteHistoryByBarcodeLocal('800CANCELLED01');
+
+        final synced = await DbService.syncHistoryWithFirestore();
+        expect(synced.any((item) => item.barcode == '800CANCELLED01'), isFalse);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
