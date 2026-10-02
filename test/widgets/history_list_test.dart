@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/features/history/history_list.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -976,8 +977,9 @@ void main() {
         // Chevron arrow is displayed normally
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
 
-        // Status pill displays incerto for safety
-        expect(find.byIcon(Icons.help_outline), findsOneWidget);
+        // Status pill does not render icon (only shimmer text bone)
+        expect(find.byIcon(Icons.help_outline), findsNothing);
+        expect(find.byWidgetPredicate((w) => w is Skeletonizer), findsWidgets);
 
         // Brand icon and scan date are visible immediately outside skeleton
         expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
@@ -1010,7 +1012,8 @@ void main() {
         // The pending skeleton card is rendered
         expect(find.byType(HistoryItemTile), findsOneWidget);
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.help_outline), findsOneWidget);
+        expect(find.byIcon(Icons.help_outline), findsNothing);
+        expect(find.byWidgetPredicate((w) => w is Skeletonizer), findsWidgets);
 
         // Clicking it opens the product detail skeleton
         await tester.tap(find.byType(HistoryItemTile));

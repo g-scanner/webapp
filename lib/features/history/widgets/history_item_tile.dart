@@ -127,6 +127,9 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
   Widget _buildSkeletonStatusPill(BuildContext context) {
     final colorScheme = context.colorScheme;
     final bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
+    final tertiary = colorScheme.tertiary;
+    final baseAlpha = _isHovered ? 0.65 : 0.45;
+    final highlightAlpha = _isHovered ? 0.35 : 0.20;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -136,11 +139,15 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
       ),
       child: Skeletonizer(
         enabled: true,
+        effect: ShimmerEffect(
+          baseColor: tertiary.withValues(alpha: baseAlpha),
+          highlightColor: tertiary.withValues(alpha: highlightAlpha),
+        ),
         child: Container(
           width: 52,
           height: 11,
           decoration: BoxDecoration(
-            color: colorScheme.tertiary.withValues(alpha: 0.3),
+            color: tertiary.withValues(alpha: baseAlpha),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
