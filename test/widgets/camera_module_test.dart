@@ -858,6 +858,133 @@ void main() {
 
       verifyNever(() => cb.onScanSuccess(any()));
     });
+
+    testWidgets(
+        'identical barcode detected within 4 seconds is ignored (cooldown)',
+        (tester) async {
+      await _pumpCameraModule(tester, cb: cb, controller: controller);
+
+      final scannerFinder = find.byType(MobileScanner);
+      final MobileScanner scannerWidget = tester.widget(scannerFinder);
+
+      // Primo rilevamento: deve essere invocato
+      scannerWidget.onDetect!(
+        BarcodeCapture(
+          barcodes: [
+            Barcode(rawValue: '8001112223334', format: BarcodeFormat.ean13),
+          ],
+        ),
+      );
+      await tester.pump();
+      verify(() => cb.onScanSuccess('8001112223334')).called(1);
+
+      // Secondo rilevamento immediato dello stesso barcode: ignorato da cooldown
+      scannerWidget.onDetect!(
+        BarcodeCapture(
+          barcodes: [
+            Barcode(rawValue: '8001112223334', format: BarcodeFormat.ean13),
+          ],
+        ),
+      );
+      await tester.pump();
+      // Nessuna nuova invocazione
+      verifyNever(() => cb.onScanSuccess('8001112223334'));
+    });
+
+    testWidgets(
+        'different barcode detected within 4 seconds is processed immediately',
+        (tester) async {
+      await _pumpCameraModule(tester, cb: cb, controller: controller);
+
+      final scannerFinder = find.byType(MobileScanner);
+      final MobileScanner scannerWidget = tester.widget(scannerFinder);
+
+      // Primo barcode
+      scannerWidget.onDetect!(
+        BarcodeCapture(
+          barcodes: [
+            Barcode(rawValue: '8001111111111', format: BarcodeFormat.ean13),
+          ],
+        ),
+      );
+      await tester.pump();
+      verify(() => cb.onScanSuccess('8001111111111')).called(1);
+
+      // Secondo barcode differente: non subisce il cooldown del primo
+      scannerWidget.onDetect!(
+        BarcodeCapture(
+          barcodes: [
+            Barcode(rawValue: '8002222222222', format: BarcodeFormat.ean13),
+          ],
+        ),
+      );
+      await tester.pump();
+      verify(() => cb.onScanSuccess('8002222222222')).called(1);
+    });
+
+    testWidgets(
+        'identical barcode detected after 4 seconds is processed',
+        (tester) async {
+      var currentTime = DateTime(2026, 1, 1, 12, 0, 0);
+      CameraModule.nowProvider = () => currentTime;
+      addTearDown(() => CameraModule.nowProvider = DateTime.now);
+
+      await _pumpCameraModule(tester, cb: cb, controller: controller);
+
+      final scannerFinder = find.byType(MobileScanner);
+      final MobileScanner scannerWidget = tester.widget(scannerFinder);
+
+      // Primo rilevamento
+      scannerWidget.onDetect!(
+        BarcodeCapture(
+          barcodes: [
+            Barcode(rawValue: '8003333333333', format: BarcodeFormat.ean13),
+          ],
+        ),
+      );
+      await tester.pump();
+      verify(() => cb.onScanSuccess('8003333333333')).called(1);
+
+      // Avanza il tempo oltre i 4 secondi di cooldown
+      currentTime = currentTime.add(const Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 5));
+
+      // Secondo rilevamento dello stesso barcode: ora deve essere accettato
+      scannerWidget.onDetect!(
+        BarcodeCapture(
+          barcodes: [
+            Barcode(rawValue: '8003333333333', format: BarcodeFormat.ean13),
+          ],
+        ),
+      );
+      await tester.pump();
+      verify(() => cb.onScanSuccess('8003333333333')).called(1);
+    });
+
+    testWidgets(
+        'barcode detected while scanningProgress is true is ignored',
+        (tester) async {
+      await _pumpCameraModule(
+        tester,
+        cb: cb,
+        controller: controller,
+        scanningProgress: true,
+      );
+
+      final scannerFinder = find.byType(MobileScanner);
+      final MobileScanner scannerWidget = tester.widget(scannerFinder);
+
+      scannerWidget.onDetect!(
+        BarcodeCapture(
+          barcodes: [
+            Barcode(rawValue: '8004444444444', format: BarcodeFormat.ean13),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      verifyNever(() => cb.onScanSuccess(any()));
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

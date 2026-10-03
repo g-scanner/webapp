@@ -633,6 +633,170 @@ void main() {
         expect(synced.any((item) => item.barcode == '800CANCELLED01'), isFalse);
       },
     );
+
+    testWidgets(
+      'deduplication: concurrent handleScanSuccess call for already-pending barcode returns false and does not spawn new scan',
+      (tester) async {
+        ConnectivityHelper.mockIsConnected = true;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        final cameraModule = tester.widget<CameraModule>(
+          find.byType(CameraModule),
+        );
+
+        // Avvia prima scansione
+        cameraModule.onScanSuccess('800DEDUP0001');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(ProductDetailCard), findsOneWidget);
+
+        // Seconda scansione concorrente per lo stesso barcode
+        final scanFuture2 = cameraModule.onScanSuccess('800DEDUP0001');
+        final result2 = await scanFuture2;
+
+        // Deve essere rifiutata immediatamente per deduplicazione
+        expect(result2, isFalse);
+
+        // Chiudi il dettaglio per ripulire
+        final backBtn = find.byIcon(Icons.arrow_back_ios_new);
+        await tester.tap(backBtn);
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 10));
+      },
+    );
+
+    testWidgets(
+      'tapping pending skeleton card in history opens pending detail screen and closes automatically on failure',
+      (tester) async {
+        ConnectivityHelper.mockIsConnected = true;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        final cameraModule = tester.widget<CameraModule>(
+          find.byType(CameraModule),
+        );
+
+        // Avvia scansione
+        cameraModule.onScanSuccess('800PENDINGTAP1');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // L'utente torna indietro alla schermata principale
+        final backBtn = find.byIcon(Icons.arrow_back_ios_new);
+        await tester.tap(backBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(ProductDetailCard), findsNothing);
+
+        // Passa alla tab Cronologia
+        await tester.tap(find.text('common.navigation.history'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Clicca sulla card skeleton in cronologia
+        expect(find.byType(HistoryItemTile), findsOneWidget);
+        await tester.tap(find.byType(HistoryItemTile));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Schermata dettaglio pendente aperta
+        expect(find.byType(ProductDetailCard), findsOneWidget);
+
+        // La connessione fallisce
+        ConnectivityHelper.mockIsConnected = false;
+        await tester.pump(const Duration(seconds: 10));
+        await tester.pumpAndSettle();
+
+        // Schermata dettaglio chiusa automaticamente da closer()
+        expect(find.byType(ProductDetailCard), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'deleting pending skeleton card in history aborts scan and removes item immediately from UI',
+      (tester) async {
+        ConnectivityHelper.mockIsConnected = true;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        final cameraModule = tester.widget<CameraModule>(
+          find.byType(CameraModule),
+        );
+
+        cameraModule.onScanSuccess('800DELETEPENDING');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Torna indietro e vai in cronologia
+        final backBtn = find.byIcon(Icons.arrow_back_ios_new);
+        await tester.tap(backBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        await tester.tap(find.text('common.navigation.history'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(HistoryItemTile), findsOneWidget);
+
+        // Elimina l'elemento pendente
+        final historyList = tester.widget<HistoryList>(find.byType(HistoryList));
+        await historyList.onDeleteHistoryItem('pending_800DELETEPENDING');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // La card skeleton deve scomparire all'istante
+        expect(find.byType(HistoryItemTile), findsNothing);
+
+        // Smaltisci eventuali timer/future pendenti prima di completare il test
+        await tester.pump(const Duration(seconds: 10));
+      },
+    );
+
+    testWidgets(
+      'offline scan with product already in SQLite cache does not fail-fast and loads product as stale',
+      (tester) async {
+        // Salva un prodotto in cache locale
+        final cachedProduct = Product(
+          barcode: '800CACHEDOFFLINE',
+          nameMap: const {'it': 'Prodotto Offline In Cache'},
+          brandMap: const {'it': 'Marca Cache'},
+          ingredientsMap: const {'it': 'Riso'},
+          allergensMap: const {'it': <String>[]},
+          lastUpdated: DateTime.now().toIso8601String(),
+          fetchedFromOffAt: DateTime.now().toIso8601String(),
+          pendingReportsCount: 0,
+        );
+        await DbService.saveLocalProducts([cachedProduct]);
+
+        // Dispositivo completamente offline
+        ConnectivityHelper.mockIsConnected = false;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        final cameraModule = tester.widget<CameraModule>(
+          find.byType(CameraModule),
+        );
+
+        // La scansione deve avere successo recuperando il prodotto locale
+        cameraModule.onScanSuccess('800CACHEDOFFLINE');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Dettaglio aperto con successo (non abortito fail-fast)
+        expect(find.byType(ProductDetailCard), findsOneWidget);
+        expect(find.text('Prodotto Offline In Cache'), findsOneWidget);
+
+        // Torna indietro
+        final backBtn = find.byIcon(Icons.arrow_back_ios_new);
+        await tester.tap(backBtn);
+        await tester.pumpAndSettle();
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

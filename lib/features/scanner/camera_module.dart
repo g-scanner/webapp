@@ -20,6 +20,9 @@ class CameraModule extends StatefulWidget {
   final String? scanError;
   final bool isActive;
 
+  @visibleForTesting
+  static DateTime Function() nowProvider = DateTime.now;
+
   const CameraModule({
     super.key,
     this.controller,
@@ -251,7 +254,7 @@ class _CameraModuleState extends State<CameraModule>
     final List<Barcode> barcodes = capture.barcodes;
     final String? raw = barcodes.firstOrNull?.rawValue?.trim();
     if (raw != null && raw.isNotEmpty) {
-      final now = DateTime.now();
+      final now = CameraModule.nowProvider();
       if (_lastScannedBarcode == raw &&
           _lastScannedTime != null &&
           now.difference(_lastScannedTime!) < const Duration(seconds: 4)) {
