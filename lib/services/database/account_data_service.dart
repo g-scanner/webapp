@@ -14,6 +14,7 @@ import 'daos/product_report_dao.dart';
 import 'daos/sync_metadata_dao.dart';
 import 'local_cache_service.dart';
 import 'reports_db_service.dart' show reportsCollection;
+import 'settings_db_service.dart';
 
 /// Servizio responsabile della migrazione dei dati anonimi post-login
 /// e della cancellazione/pulizia di tutti i dati locali.
@@ -22,6 +23,23 @@ class AccountDataService {
   static const ProductReportDao _reportDao = ProductReportDao();
   static const ProductDao _productDao = ProductDao();
   static const SyncMetadataDao _syncMetadataDao = SyncMetadataDao();
+
+  /// Chiave SharedPreferences per tracciare l'UID dell'ultimo utente anonimo.
+  static const String lastAnonymousUidKey = 'last_anonymous_uid';
+
+  /// Verifica se l'utente anonimo corrente è diverso dall'ultimo tracciato.
+  /// Se sì, significa che è un NUOVO anonimo → i dati del precedente vanno cancellati.
+  static Future<bool> isNewAnonymousSession(String currentAnonUid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastUid = prefs.getString(lastAnonymousUidKey);
+    return lastUid != null && lastUid != currentAnonUid;
+  }
+
+  /// Salva l'UID dell'utente anonimo corrente per rilevare transizioni future.
+  static Future<void> trackAnonymousSession(String anonUid) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(lastAnonymousUidKey, anonUid);
+  }
 
   /// Recupera la cronologia creata in modalità anonima (non sincronizzata).
   static Future<List<ScanHistoryItem>> getLocalUnsyncedHistory() async {
@@ -59,7 +77,31 @@ class AccountDataService {
     }
   }
 
-  /// Migra la cronologia e le segnalazioni locali anonime su Firestore al momento dell'autenticazione.
+  /// Verifica la presenza di impostazioni salvate/personalizzate in modalità anonima.
+  static Future<bool> hasAnonymousSettings() =>
+      SettingsDbService.hasAnonymousSettings();
+
+  /// Verifica se esistono dati orfani o appartenenti a un utente anonimo
+  /// (scansioni, segnalazioni, impostazioni).
+  static Future<bool> hasAnonymousData() async {
+    try {
+      final history = await getLocalUnsyncedHistory();
+      if (history.isNotEmpty) return true;
+
+      final reports = await getLocalUnsyncedReports();
+      if (reports.isNotEmpty) return true;
+
+      final anonSettings = await hasAnonymousSettings();
+      if (anonSettings) return true;
+
+      return false;
+    } catch (e) {
+      debugPrint("Error checking anonymous data: $e");
+      return false;
+    }
+  }
+
+  /// Migra la cronologia, le segnalazioni e le impostazioni locali anonime su Firestore al momento dell'autenticazione.
   static Future<void> migrateLocalDataToFirestore(
     FirebaseFirestore db,
     String newUid,
@@ -76,16 +118,20 @@ class AccountDataService {
             .toList();
       }
       if (localHistory.isNotEmpty) {
-        final historyBatch = db.batch();
-        final historyRefBase = db.collection("users/$newUid/history");
+        try {
+          final historyBatch = db.batch();
+          final historyRefBase = db.collection("users/$newUid/history");
 
-        for (final item in localHistory) {
-          final docRef = historyRefBase.doc(
-            item.id.isNotEmpty ? item.id : historyRefBase.doc().id,
-          );
-          historyBatch.set(docRef, item.toJson());
+          for (final item in localHistory) {
+            final docRef = historyRefBase.doc(
+              item.id.isNotEmpty ? item.id : historyRefBase.doc().id,
+            );
+            historyBatch.set(docRef, item.toJson());
+          }
+          await historyBatch.commit();
+        } catch (e) {
+          debugPrint("Failed committing history batch to Firestore: $e");
         }
-        await historyBatch.commit();
         await _historyDao.reassignAnonymousHistory(newUid);
       }
 
@@ -98,16 +144,20 @@ class AccountDataService {
             .toList();
       }
       if (localReports.isNotEmpty) {
-        final reportsBatch = db.batch();
-        for (final report in localReports) {
-          final docRef = db.collection(reportsCollection).doc(
-            report.id.isNotEmpty ? report.id : db.collection(reportsCollection).doc().id,
-          );
-          final rMap = report.toJson();
-          rMap['userId'] = newUid;
-          reportsBatch.set(docRef, rMap);
+        try {
+          final reportsBatch = db.batch();
+          for (final report in localReports) {
+            final docRef = db.collection(reportsCollection).doc(
+              report.id.isNotEmpty ? report.id : db.collection(reportsCollection).doc().id,
+            );
+            final rMap = report.toJson();
+            rMap['userId'] = newUid;
+            reportsBatch.set(docRef, rMap);
+          }
+          await reportsBatch.commit();
+        } catch (e) {
+          debugPrint("Failed committing reports batch to Firestore: $e");
         }
-        await reportsBatch.commit();
         await _reportDao.reassignAnonymousReports(newUid);
       }
 
@@ -117,17 +167,69 @@ class AccountDataService {
         reportedBarcodes = prefs.getStringList('celiac_reported_barcodes') ?? [];
       }
       if (reportedBarcodes.isNotEmpty) {
-        await db.collection("users").doc(newUid).set({
-          'reportedBarcodes': FieldValue.arrayUnion(reportedBarcodes),
-        }, SetOptions(merge: true));
+        try {
+          await db.collection("users").doc(newUid).set({
+            'reportedBarcodes': FieldValue.arrayUnion(reportedBarcodes),
+          }, SetOptions(merge: true));
+        } catch (e) {
+          debugPrint("Failed merging reported barcodes to Firestore: $e");
+        }
       }
 
-      // 4. Pulizia chiavi residue SharedPreferences se presenti
+      // 4. MIGRAZIONE IMPOSTAZIONI
+      final localSettings = await SettingsDbService.getLocalSettings();
+      final updatedSettings = UserSettings(
+        userId: newUid,
+        strictMode: localSettings.strictMode,
+        alertLactose: localSettings.alertLactose,
+        warnAdditives: localSettings.warnAdditives,
+        autoSaveHistory: localSettings.autoSaveHistory,
+        preferredLanguage: localSettings.preferredLanguage,
+        preferredTheme: localSettings.preferredTheme,
+        reportedBarcodes: localSettings.reportedBarcodes,
+      );
+      await SettingsDbService.saveLocalSettings(updatedSettings);
+      try {
+        await db.collection("users").doc(newUid).set(
+          updatedSettings.toJson(),
+          SetOptions(merge: true),
+        );
+      } catch (e) {
+        debugPrint("Failed saving migrated settings to Firestore: $e");
+      }
+
+      // 5. Pulizia chiavi residue SharedPreferences e tabelle SQLite anonime
       await prefs.remove('celiac_history');
       await prefs.remove('celiac_reports');
       await prefs.remove('celiac_reported_barcodes');
+      await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
+      await prefs.remove(lastAnonymousUidKey);
+      await _historyDao.wipeHistory('anonymous');
+      await _reportDao.wipeReports('anonymous');
     } catch (e) {
       debugPrint("Errore durante la migrazione: $e");
+    }
+  }
+
+  /// Svuota unicamente i dati appartenenti all'utente anonimo (scartati alla schermata sincro).
+  static Future<void> wipeAnonymousData() async {
+    try {
+      await _historyDao.wipeHistory('anonymous');
+      await _reportDao.wipeReports('anonymous');
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('celiac_history');
+      await prefs.remove('celiac_reports');
+      await prefs.remove('celiac_reported_barcodes');
+      await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
+      await prefs.remove(lastAnonymousUidKey);
+
+      final currentSettings = await SettingsDbService.getLocalSettings();
+      if (currentSettings.userId == 'anonymous' || currentSettings.userId == null) {
+        await prefs.remove(SettingsDbService.settingsKey);
+      }
+    } catch (e) {
+      debugPrint("Errore durante il wipe dei dati anonimi: $e");
     }
   }
 
@@ -148,7 +250,9 @@ class AccountDataService {
 
       // 2. Svuota SharedPreferences (settings e chiavi residue)
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('celiac_settings');
+      await prefs.remove(SettingsDbService.settingsKey);
+      await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
+      await prefs.remove(lastAnonymousUidKey);
       await prefs.remove(LocalCacheService.productsKey);
       await prefs.remove(LocalCacheService.lastSyncKey);
       await prefs.remove('celiac_history');
@@ -163,6 +267,7 @@ class AccountDataService {
     }
   }
 
+  /// Svuota i dati locali dell'utente (utilizzato anche in cancellazione account).
   static Future<void> wipeCurrentUserLocalData(FirebaseAuth auth) async {
     await wipeAllLocalData(auth);
   }

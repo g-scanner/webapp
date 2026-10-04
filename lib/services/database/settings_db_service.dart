@@ -13,6 +13,7 @@ class SettingsDbService {
   static const String settingsKey = 'celiac_settings';
   static const String reportedBarcodesKey = 'celiac_reported_barcodes';
   static const String termsAcceptedKey = 'gscanner_terms_accepted';
+  static const String hasAnonymousSettingsKey = 'has_anonymous_settings';
 
   static Future<UserSettings> getLocalSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -61,11 +62,24 @@ class SettingsDbService {
             preferredTheme: settings.preferredTheme,
             reportedBarcodes: settings.reportedBarcodes,
           )
-        : settings;
+        : UserSettings(
+            userId: 'anonymous',
+            strictMode: settings.strictMode,
+            alertLactose: settings.alertLactose,
+            warnAdditives: settings.warnAdditives,
+            autoSaveHistory: settings.autoSaveHistory,
+            preferredLanguage: settings.preferredLanguage,
+            preferredTheme: settings.preferredTheme,
+            reportedBarcodes: settings.reportedBarcodes,
+          );
 
     await saveLocalSettings(effectiveSettings);
 
-    if (user != null && !user.isAnonymous) {
+    final prefs = await SharedPreferences.getInstance();
+    if (user == null || user.isAnonymous) {
+      await prefs.setBool(hasAnonymousSettingsKey, true);
+    } else {
+      await prefs.remove(hasAnonymousSettingsKey);
       try {
         await db
             .collection("users")
@@ -74,6 +88,23 @@ class SettingsDbService {
       } catch (e) {
         debugPrint("Failed saving settings to Firestore: $e");
       }
+    }
+  }
+
+  static Future<bool> hasAnonymousSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(hasAnonymousSettingsKey) == true) return true;
+
+      final settingsStr = prefs.getString(settingsKey);
+      if (settingsStr != null) {
+        final decoded = json.decode(settingsStr) as Map<String, dynamic>;
+        final uid = decoded['userId'] ?? decoded['user_id'];
+        if (uid == 'anonymous') return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
     }
   }
 

@@ -37,14 +37,14 @@ class UserSettings {
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
     return UserSettings(
-      userId: json['userId'],
-      strictMode: json['strictMode'] ?? true,
-      alertLactose: json['alertLactose'] ?? false,
-      warnAdditives: json['warnAdditives'] ?? true,
-      autoSaveHistory: json['autoSaveHistory'] ?? true,
-      preferredLanguage: json['preferredLanguage'] ?? defaultSystemLanguage,
-      preferredTheme: json['preferredTheme'] ?? 'system',
-      reportedBarcodes: List<String>.from(json['reportedBarcodes'] ?? []),
+      userId: json['userId'] ?? json['user_id'],
+      strictMode: json['strictMode'] ?? json['strict_mode'] ?? true,
+      alertLactose: json['alertLactose'] ?? json['alert_lactose'] ?? false,
+      warnAdditives: json['warnAdditives'] ?? json['warn_additives'] ?? true,
+      autoSaveHistory: json['autoSaveHistory'] ?? json['auto_save_history'] ?? true,
+      preferredLanguage: json['preferredLanguage'] ?? json['preferred_language'] ?? defaultSystemLanguage,
+      preferredTheme: json['preferredTheme'] ?? json['preferred_theme'] ?? 'system',
+      reportedBarcodes: List<String>.from(json['reportedBarcodes'] ?? json['reported_barcodes'] ?? []),
     );
   }
 

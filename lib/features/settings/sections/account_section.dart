@@ -197,7 +197,6 @@ class AccountSection extends StatelessWidget {
     if (confirm == true) {
       onTriggerToast("auth.social.preparingLogin".tr());
       try {
-        await DbService.wipeAllLocalData();
         await auth.currentUser?.delete();
         await auth.signOut();
       } catch (e) {
@@ -241,7 +240,7 @@ class AccountSection extends StatelessWidget {
     if (confirm == true) {
       onTriggerToast("settings.account.signingOut".tr());
       try {
-        await DbService.wipeAllLocalData();
+        await DbService.wipeCurrentUserLocalData();
         await auth.signOut();
       } catch (e) {
         onTriggerToast("Errore durante la disconnessione: $e");

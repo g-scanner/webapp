@@ -91,7 +91,10 @@ class _MyAppState extends State<MyApp> {
               }
 
               if (snapshot.hasData && snapshot.data != null) {
-                return MainScreen(auth: _firebaseAuth);
+                return MainScreen(
+                  key: ValueKey(snapshot.data!.uid),
+                  auth: _firebaseAuth,
+                );
               }
 
               return AuthScreen(firebaseAuth: _firebaseAuth);

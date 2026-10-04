@@ -162,18 +162,25 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         var settings = await DbService.getLocalSettings();
         if (mounted) setState(() => userSettings = settings);
 
-        final localHistory = await DbService.getLocalUnsyncedHistory();
-        final localReports = await DbService.getLocalUnsyncedReports();
-
-        if (!user.isAnonymous &&
-            (localHistory.isNotEmpty || localReports.isNotEmpty) &&
-            settings.userId != user.uid) {
-          if (mounted) {
-            setState(() {
-              _requiresSyncDecision = true;
-            });
+        if (user.isAnonymous) {
+          // Se è un NUOVO anonimo (diverso dal precedente), cancella i dati del vecchio
+          final isNew = await DbService.isNewAnonymousSession(user.uid);
+          if (isNew) {
+            await DbService.wipeAnonymousData();
           }
-          return;
+          // Traccia l'UID anonimo corrente per confronti futuri
+          await DbService.trackAnonymousSession(user.uid);
+        } else {
+          // Utente autenticato: verifica se ci sono dati anonimi da sincronizzare
+          final hasAnonData = await DbService.hasAnonymousData();
+          if (hasAnonData) {
+            if (mounted) {
+              setState(() {
+                _requiresSyncDecision = true;
+              });
+            }
+            return;
+          }
         }
       }
 
@@ -1275,7 +1282,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             if (wantToSync) {
               await DbService.migrateLocalDataToFirestore(userId!);
             } else {
-              await DbService.wipeAllLocalData();
+              await DbService.wipeAnonymousData();
             }
 
             await _loadAllData();

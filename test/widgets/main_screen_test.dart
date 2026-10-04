@@ -943,6 +943,143 @@ void main() {
         expect(find.byType(CameraModule), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'renders SyncDataScreen for RETURNING non-anonymous user when anonymous data exists',
+      (tester) async {
+        final fakeHistory = [
+          ScanHistoryItem(
+            id: 'hist_anon_2',
+            barcode: '333333',
+            scannedAt: DateTime.now().toIso8601String(),
+          ),
+        ];
+
+        // Settings already belong to this returning user
+        SharedPreferences.setMockInitialValues({
+          'celiac_history': [json.encode(fakeHistory.first.toJson())],
+          'celiac_settings': json.encode({
+            'userId': 'returning_user_999',
+            'strictMode': true,
+            'alertLactose': false,
+            'warnAdditives': true,
+            'autoSaveHistory': true,
+            'preferredLanguage': 'it',
+            'preferredTheme': 'system',
+          }),
+        });
+
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('returning_user_999');
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        // Even though user is returning and settings.userId == user.uid,
+        // sync screen MUST be displayed because anonymous data exists!
+        expect(find.byType(SyncDataScreen), findsOneWidget);
+        expect(find.byType(CameraModule), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'renders SyncDataScreen when ONLY anonymous settings exist',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({
+          'has_anonymous_settings': true,
+          'celiac_settings': json.encode({
+            'userId': 'anonymous',
+            'strictMode': false,
+            'alertLactose': true,
+            'warnAdditives': false,
+            'autoSaveHistory': true,
+            'preferredLanguage': 'it',
+            'preferredTheme': 'dark',
+          }),
+        });
+
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('registered_user_456');
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        expect(find.byType(SyncDataScreen), findsOneWidget);
+        expect(find.byType(CameraModule), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'new anonymous user wipes old anonymous data (anonymous → anonymous transition)',
+      (tester) async {
+        // Old anonymous user left data behind
+        SharedPreferences.setMockInitialValues({
+          'last_anonymous_uid': 'old_anon_firebase_uid',
+          'celiac_history': [
+            json.encode(ScanHistoryItem(
+              id: 'hist_old_anon',
+              barcode: '999999',
+              scannedAt: DateTime.now().toIso8601String(),
+            ).toJson()),
+          ],
+          'has_anonymous_settings': true,
+          'celiac_settings': json.encode({
+            'userId': 'anonymous',
+            'strictMode': true,
+            'alertLactose': false,
+            'warnAdditives': true,
+            'autoSaveHistory': true,
+            'preferredLanguage': 'it',
+            'preferredTheme': 'system',
+          }),
+        });
+
+        // New anonymous user with DIFFERENT UID
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn('new_anon_firebase_uid');
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        // Should NOT show SyncDataScreen (anonymous users skip sync)
+        expect(find.byType(SyncDataScreen), findsNothing);
+
+        // Old data should have been wiped
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getStringList('celiac_history'), isNull);
+        expect(prefs.getBool('has_anonymous_settings'), isNull);
+
+        // New UID should be tracked
+        expect(prefs.getString('last_anonymous_uid'), 'new_anon_firebase_uid');
+      },
+    );
+
+    testWidgets(
+      'same anonymous user keeps their data (no wipe on same session)',
+      (tester) async {
+        // Anonymous user data with matching UID
+        SharedPreferences.setMockInitialValues({
+          'last_anonymous_uid': 'same_anon_uid',
+          'celiac_history': [
+            json.encode(ScanHistoryItem(
+              id: 'hist_same_anon',
+              barcode: '888888',
+              scannedAt: DateTime.now().toIso8601String(),
+            ).toJson()),
+          ],
+        });
+
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn('same_anon_uid');
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+
+        // Should NOT show SyncDataScreen
+        expect(find.byType(SyncDataScreen), findsNothing);
+
+        // Data should still be there (not wiped)
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getStringList('celiac_history'), isNotNull);
+        expect(prefs.getStringList('celiac_history')!.length, 1);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

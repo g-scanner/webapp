@@ -144,8 +144,23 @@ class DbService {
   static Future<List<ProductReport>> getLocalUnsyncedReports() =>
       AccountDataService.getLocalUnsyncedReports();
 
+  static Future<bool> hasAnonymousSettings() =>
+      AccountDataService.hasAnonymousSettings();
+
+  static Future<bool> hasAnonymousData() =>
+      AccountDataService.hasAnonymousData();
+
   static Future<void> migrateLocalDataToFirestore(String newUid) =>
       AccountDataService.migrateLocalDataToFirestore(db, newUid);
+
+  static Future<void> wipeAnonymousData() =>
+      AccountDataService.wipeAnonymousData();
+
+  static Future<bool> isNewAnonymousSession(String currentAnonUid) =>
+      AccountDataService.isNewAnonymousSession(currentAnonUid);
+
+  static Future<void> trackAnonymousSession(String anonUid) =>
+      AccountDataService.trackAnonymousSession(anonUid);
 
   static Future<void> wipeAllLocalData() =>
       AccountDataService.wipeAllLocalData(auth);

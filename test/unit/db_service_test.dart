@@ -965,12 +965,87 @@ void main() {
       await prefs.setStringList('celiac_history', ['{}']);
       await prefs.setStringList('celiac_reports', ['{}']);
       await prefs.setString('celiac_settings', '{}');
+      await prefs.setString('last_anonymous_uid', 'anon_old');
 
       await DbService.wipeAllLocalData();
 
       expect(prefs.getStringList('celiac_history'), isNull);
       expect(prefs.getStringList('celiac_reports'), isNull);
       expect(prefs.getString('celiac_settings'), isNull);
+      expect(prefs.getString('last_anonymous_uid'), isNull);
+    });
+
+    test('trackAnonymousSession stores the UID in SharedPreferences', () async {
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('last_anonymous_uid'), isNull);
+
+      await DbService.trackAnonymousSession('anon_uid_abc');
+
+      expect(prefs.getString('last_anonymous_uid'), 'anon_uid_abc');
+    });
+
+    test('isNewAnonymousSession returns false when no previous UID is stored', () async {
+      SharedPreferences.setMockInitialValues({});
+
+      final result = await DbService.isNewAnonymousSession('anon_uid_1');
+
+      expect(result, isFalse);
+    });
+
+    test('isNewAnonymousSession returns false when UID matches the stored one', () async {
+      SharedPreferences.setMockInitialValues({
+        'last_anonymous_uid': 'anon_uid_1',
+      });
+
+      final result = await DbService.isNewAnonymousSession('anon_uid_1');
+
+      expect(result, isFalse);
+    });
+
+    test('isNewAnonymousSession returns true when UID differs from stored one', () async {
+      SharedPreferences.setMockInitialValues({
+        'last_anonymous_uid': 'anon_uid_OLD',
+      });
+
+      final result = await DbService.isNewAnonymousSession('anon_uid_NEW');
+
+      expect(result, isTrue);
+    });
+
+    test('wipeAnonymousData clears last_anonymous_uid key', () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_anonymous_uid', 'anon_uid_to_wipe');
+      await prefs.setBool('has_anonymous_settings', true);
+      await prefs.setStringList('celiac_history', ['{}']);
+
+      await DbService.wipeAnonymousData();
+
+      expect(prefs.getString('last_anonymous_uid'), isNull);
+      expect(prefs.getBool('has_anonymous_settings'), isNull);
+      expect(prefs.getStringList('celiac_history'), isNull);
+    });
+
+    test('migrateLocalDataToFirestore clears last_anonymous_uid key', () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_anonymous_uid', 'anon_uid_migrated');
+      await prefs.setStringList('celiac_history', [
+        json.encode(ScanHistoryItem(
+          id: 'h_m',
+          barcode: '999',
+          scannedAt: '2026-08-01T00:00:00Z',
+        ).toJson()),
+      ]);
+
+      final mockUserHistoryCol = MockCollectionReference();
+      when(
+        () => mockDb.collection('users/migrate_user/history'),
+      ).thenReturn(mockUserHistoryCol);
+      when(() => mockUserHistoryCol.doc(any())).thenReturn(mockDocRef);
+      when(() => mockUsersCol.doc('migrate_user')).thenReturn(mockDocRef);
+
+      await DbService.migrateLocalDataToFirestore('migrate_user');
+
+      expect(prefs.getString('last_anonymous_uid'), isNull);
     });
   });
 
