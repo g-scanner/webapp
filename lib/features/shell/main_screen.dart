@@ -89,6 +89,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _navController.openStaleNotifiers;
 
   bool _requiresSyncDecision = false;
+  AnonymousDataSummary _anonDataSummary = const AnonymousDataSummary();
 
   @override
   void initState() {
@@ -171,11 +172,19 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           // Traccia l'UID anonimo corrente per confronti futuri
           await DbService.trackAnonymousSession(user.uid);
         } else {
-          // Utente autenticato: verifica se ci sono dati anonimi da sincronizzare
-          final hasAnonData = await DbService.hasAnonymousData();
-          if (hasAnonData) {
+          // Utente autenticato: raccoglie i dati anonimi per la schermata sincro
+          final anonHistory = await DbService.getLocalUnsyncedHistory();
+          final anonReports = await DbService.getLocalUnsyncedReports();
+          final anonSettings = await DbService.hasAnonymousSettings();
+
+          if (anonHistory.isNotEmpty || anonReports.isNotEmpty || anonSettings) {
             if (mounted) {
               setState(() {
+                _anonDataSummary = AnonymousDataSummary(
+                  history: anonHistory,
+                  reports: anonReports,
+                  hasSettings: anonSettings,
+                );
                 _requiresSyncDecision = true;
               });
             }
@@ -723,9 +732,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
 
       final pIdx = products.indexWhere((p) => p.barcode == barcode);
+      final Product updatedProd;
       if (pIdx != -1) {
         final p = products[pIdx];
-        products[pIdx] = Product(
+        updatedProd = Product(
           barcode: p.barcode,
           nameMap: p.nameMap,
           brandMap: p.brandMap,
@@ -736,10 +746,23 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           pendingReportsCount: p.pendingReportsCount + 1,
           fetchedFromOffAt: p.fetchedFromOffAt,
         );
+        products[pIdx] = updatedProd;
         if (_openProductNotifiers.containsKey(barcode)) {
-          _openProductNotifiers[barcode]!.value = products[pIdx];
+          _openProductNotifiers[barcode]!.value = updatedProd;
         }
+      } else {
+        updatedProd = Product(
+          barcode: barcode,
+          nameMap: product.nameMap,
+          brandMap: product.brandMap,
+          ingredientsMap: product.ingredientsMap,
+          allergensMap: product.allergensMap,
+          lastUpdated: DateTime.now().toIso8601String(),
+          pendingReportsCount: 1,
+        );
+        products.add(updatedProd);
       }
+      await DbService.upsertLocalProduct(updatedProd);
 
       setState(() {
         reportedSessionBarcodes.add(barcode);
@@ -896,7 +919,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         final pIdx = products.indexWhere((p) => p.barcode == barcode);
         if (pIdx != -1) {
           final p = products[pIdx];
-          products[pIdx] = Product(
+          final updatedProd = Product(
             barcode: p.barcode,
             nameMap: p.nameMap,
             brandMap: p.brandMap,
@@ -907,8 +930,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             pendingReportsCount: (p.pendingReportsCount - 1).clamp(0, 9999),
             fetchedFromOffAt: p.fetchedFromOffAt,
           );
+          products[pIdx] = updatedProd;
+          DbService.upsertLocalProduct(updatedProd);
           if (_openProductNotifiers.containsKey(barcode)) {
-            _openProductNotifiers[barcode]!.value = products[pIdx];
+            _openProductNotifiers[barcode]!.value = updatedProd;
           }
           if (_openReportIdNotifiers.containsKey(barcode)) {
             _openReportIdNotifiers[barcode]!.value = null;
@@ -1243,6 +1268,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             );
             if (match != null) {
               _navigateToProduct(match);
+            } else {
+              handleScanSuccess(barcode);
             }
           },
         ),
@@ -1270,27 +1297,30 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     if (_requiresSyncDecision) {
-      return Scaffold(
-        backgroundColor: context.colorScheme.surface,
-        body: SyncDataScreen(
-          onDecision: (bool wantToSync) async {
-            setState(() {
-              _requiresSyncDecision = false;
-              _isSyncing = true;
-            });
+      return SyncDataScreen(
+        dataSummary: _anonDataSummary,
+        onDecision: (bool wantToSync, [SyncChoices choices = const SyncChoices()]) async {
+          setState(() {
+            _requiresSyncDecision = false;
+            _isSyncing = true;
+          });
 
-            if (wantToSync) {
-              await DbService.migrateLocalDataToFirestore(userId!);
-            } else {
-              await DbService.wipeAnonymousData();
-            }
+          if (wantToSync) {
+            await DbService.migrateLocalDataToFirestore(
+              userId!,
+              syncHistory: choices.syncHistory,
+              syncReports: choices.syncReports,
+              syncSettings: choices.syncSettings,
+            );
+          } else {
+            await DbService.wipeAnonymousData();
+          }
 
-            await _loadAllData();
-            setState(() {
-              _isSyncing = false;
-            });
-          },
-        ),
+          await _loadAllData();
+          setState(() {
+            _isSyncing = false;
+          });
+        },
       );
     }
 

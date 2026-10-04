@@ -102,100 +102,117 @@ class AccountDataService {
   }
 
   /// Migra la cronologia, le segnalazioni e le impostazioni locali anonime su Firestore al momento dell'autenticazione.
+  /// Rispetta la scelta granulare dell'utente per ciascuna categoria.
   static Future<void> migrateLocalDataToFirestore(
     FirebaseFirestore db,
-    String newUid,
-  ) async {
+    String newUid, {
+    bool syncHistory = true,
+    bool syncReports = true,
+    bool syncSettings = true,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
       // 1. MIGRAZIONE CRONOLOGIA
-      var localHistory = await _historyDao.getHistory('anonymous');
-      if (localHistory.isEmpty) {
-        final histStr = prefs.getStringList('celiac_history') ?? [];
-        localHistory = histStr
-            .map((e) => ScanHistoryItem.fromJson(json.decode(e) as Map<String, dynamic>))
-            .toList();
-      }
-      if (localHistory.isNotEmpty) {
-        try {
-          final historyBatch = db.batch();
-          final historyRefBase = db.collection("users/$newUid/history");
-
-          for (final item in localHistory) {
-            final docRef = historyRefBase.doc(
-              item.id.isNotEmpty ? item.id : historyRefBase.doc().id,
-            );
-            historyBatch.set(docRef, item.toJson());
-          }
-          await historyBatch.commit();
-        } catch (e) {
-          debugPrint("Failed committing history batch to Firestore: $e");
+      if (syncHistory) {
+        var localHistory = await _historyDao.getHistory('anonymous');
+        if (localHistory.isEmpty) {
+          final histStr = prefs.getStringList('celiac_history') ?? [];
+          localHistory = histStr
+              .map((e) => ScanHistoryItem.fromJson(json.decode(e) as Map<String, dynamic>))
+              .toList();
         }
-        await _historyDao.reassignAnonymousHistory(newUid);
+        if (localHistory.isNotEmpty) {
+          try {
+            final historyBatch = db.batch();
+            final historyRefBase = db.collection("users/$newUid/history");
+
+            for (final item in localHistory) {
+              final docRef = historyRefBase.doc(
+                item.id.isNotEmpty ? item.id : historyRefBase.doc().id,
+              );
+              historyBatch.set(docRef, item.toJson());
+            }
+            await historyBatch.commit();
+          } catch (e) {
+            debugPrint("Failed committing history batch to Firestore: $e");
+          }
+          await _historyDao.reassignAnonymousHistory(newUid);
+        }
       }
 
       // 2. MIGRAZIONE SEGNALAZIONI
-      var localReports = await _reportDao.getUserReports('anonymous');
-      if (localReports.isEmpty) {
-        final reportsStr = prefs.getStringList('celiac_reports') ?? [];
-        localReports = reportsStr
-            .map((e) => ProductReport.fromJson(json.decode(e) as Map<String, dynamic>))
-            .toList();
-      }
-      if (localReports.isNotEmpty) {
-        try {
-          final reportsBatch = db.batch();
-          for (final report in localReports) {
-            final docRef = db.collection(reportsCollection).doc(
-              report.id.isNotEmpty ? report.id : db.collection(reportsCollection).doc().id,
-            );
-            final rMap = report.toJson();
-            rMap['userId'] = newUid;
-            reportsBatch.set(docRef, rMap);
-          }
-          await reportsBatch.commit();
-        } catch (e) {
-          debugPrint("Failed committing reports batch to Firestore: $e");
+      if (syncReports) {
+        var localReports = await _reportDao.getUserReports('anonymous');
+        if (localReports.isEmpty) {
+          final reportsStr = prefs.getStringList('celiac_reports') ?? [];
+          localReports = reportsStr
+              .map((e) => ProductReport.fromJson(json.decode(e) as Map<String, dynamic>))
+              .toList();
         }
-        await _reportDao.reassignAnonymousReports(newUid);
-      }
+        if (localReports.isNotEmpty) {
+          try {
+            final reportsBatch = db.batch();
+            for (final report in localReports) {
+              final docRef = db.collection(reportsCollection).doc(
+                report.id.isNotEmpty ? report.id : db.collection(reportsCollection).doc().id,
+              );
+              final rMap = report.toJson();
+              rMap['userId'] = newUid;
+              reportsBatch.set(docRef, rMap);
+            }
+            await reportsBatch.commit();
+          } catch (e) {
+            debugPrint("Failed committing reports batch to Firestore: $e");
+          }
+          await _reportDao.reassignAnonymousReports(newUid);
+        }
 
-      // 3. REPORTED BARCODES
-      var reportedBarcodes = await _reportDao.getReportedBarcodes(newUid);
-      if (reportedBarcodes.isEmpty) {
-        reportedBarcodes = prefs.getStringList('celiac_reported_barcodes') ?? [];
-      }
-      if (reportedBarcodes.isNotEmpty) {
-        try {
-          await db.collection("users").doc(newUid).set({
-            'reportedBarcodes': FieldValue.arrayUnion(reportedBarcodes),
-          }, SetOptions(merge: true));
-        } catch (e) {
-          debugPrint("Failed merging reported barcodes to Firestore: $e");
+        // 3. REPORTED BARCODES
+        var reportedBarcodes = await _reportDao.getReportedBarcodes(newUid);
+        if (reportedBarcodes.isEmpty) {
+          reportedBarcodes = prefs.getStringList('celiac_reported_barcodes') ?? [];
+        }
+        if (reportedBarcodes.isNotEmpty) {
+          try {
+            await db.collection("users").doc(newUid).set({
+              'reportedBarcodes': FieldValue.arrayUnion(reportedBarcodes),
+            }, SetOptions(merge: true));
+          } catch (e) {
+            debugPrint("Failed merging reported barcodes to Firestore: $e");
+          }
         }
       }
 
       // 4. MIGRAZIONE IMPOSTAZIONI
-      final localSettings = await SettingsDbService.getLocalSettings();
-      final updatedSettings = UserSettings(
-        userId: newUid,
-        strictMode: localSettings.strictMode,
-        alertLactose: localSettings.alertLactose,
-        warnAdditives: localSettings.warnAdditives,
-        autoSaveHistory: localSettings.autoSaveHistory,
-        preferredLanguage: localSettings.preferredLanguage,
-        preferredTheme: localSettings.preferredTheme,
-        reportedBarcodes: localSettings.reportedBarcodes,
-      );
-      await SettingsDbService.saveLocalSettings(updatedSettings);
-      try {
-        await db.collection("users").doc(newUid).set(
-          updatedSettings.toJson(),
-          SetOptions(merge: true),
+      if (syncSettings) {
+        final localSettings = await SettingsDbService.getLocalSettings();
+        final updatedSettings = UserSettings(
+          userId: newUid,
+          strictMode: localSettings.strictMode,
+          alertLactose: localSettings.alertLactose,
+          warnAdditives: localSettings.warnAdditives,
+          autoSaveHistory: localSettings.autoSaveHistory,
+          preferredLanguage: localSettings.preferredLanguage,
+          preferredTheme: localSettings.preferredTheme,
+          reportedBarcodes: localSettings.reportedBarcodes,
         );
-      } catch (e) {
-        debugPrint("Failed saving migrated settings to Firestore: $e");
+        await SettingsDbService.saveLocalSettings(updatedSettings);
+        try {
+          await db.collection("users").doc(newUid).set(
+            updatedSettings.toJson(),
+            SetOptions(merge: true),
+          );
+        } catch (e) {
+          debugPrint("Failed saving migrated settings to Firestore: $e");
+        }
+      } else {
+        // Se non vuole migrare le impostazioni anonime, rimuove le impostazioni locali
+        // con userId anonimo per fare spazio a quelle del profilo cloud
+        final currentSettings = await SettingsDbService.getLocalSettings();
+        if (currentSettings.userId == 'anonymous' || currentSettings.userId == null) {
+          await prefs.remove(SettingsDbService.settingsKey);
+        }
       }
 
       // 5. Pulizia chiavi residue SharedPreferences e tabelle SQLite anonime

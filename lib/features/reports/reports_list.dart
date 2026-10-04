@@ -95,8 +95,10 @@ class _ReportsListState extends State<ReportsList> {
           product: prod,
           originalStatus: origA.status,
           onBack: () => Navigator.pop(context),
-          reportReasonKey: "label_unclear",
-          reportComment: "Nessun commento",
+          reportReasonKey: userReport?.type ?? "label_unclear",
+          reportComment: (userReport?.comments != null && userReport!.comments.isNotEmpty)
+              ? userReport.comments
+              : "Nessun commento",
           reportDate: userReport?.submittedAt ?? "",
           onVote: (vote) async {
             await DbService.voteOnReportByBarcode(prod.barcode, vote);
@@ -158,10 +160,55 @@ class _ReportsListState extends State<ReportsList> {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
 
+    // 1. Inizia dai prodotti in cache che hanno pendingReportsCount > 0,
+    //    oppure che risultano segnalati dall'utente (reportedBarcodes o userReports).
+    final Map<String, Product> productMap = {};
+    for (final p in widget.products) {
+      final bool isReported = p.pendingReportsCount > 0 ||
+          widget.reportedBarcodes.contains(p.barcode) ||
+          (widget.userReports?.any((r) => r.barcode == p.barcode) ?? false);
+      if (isReported) {
+        productMap[p.barcode] = p.pendingReportsCount > 0
+            ? p
+            : Product(
+                barcode: p.barcode,
+                nameMap: p.nameMap,
+                brandMap: p.brandMap,
+                ingredientsMap: p.ingredientsMap,
+                allergensMap: p.allergensMap,
+                imageUrl: p.imageUrl,
+                lastUpdated: p.lastUpdated,
+                pendingReportsCount: 1,
+                fetchedFromOffAt: p.fetchedFromOffAt,
+              );
+      }
+    }
+
+    // 2. Se l'utente ha segnalazioni in userReports i cui prodotti non sono ancora
+    //    presenti nella cache locale widget.products, sintetizza il Product dai dati del report.
+    if (widget.userReports != null) {
+      for (final report in widget.userReports!) {
+        if (!productMap.containsKey(report.barcode)) {
+          productMap[report.barcode] = Product(
+            barcode: report.barcode,
+            nameMap: {
+              'it': report.productName.isNotEmpty
+                  ? report.productName
+                  : report.barcode,
+            },
+            brandMap: {'it': report.brand},
+            ingredientsMap: const {'it': ''},
+            allergensMap: const {'it': <String>[]},
+            lastUpdated: report.submittedAt,
+            pendingReportsCount: 1,
+          );
+        }
+      }
+    }
+
     // Estrai i prodotti con segnalazioni, ordinati per data decrescente
-    final reportedProducts =
-        widget.products.where((p) => p.pendingReportsCount > 0).toList()
-          ..sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
+    final reportedProducts = productMap.values.toList()
+      ..sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
 
     final bool showSkeleton = reportedProducts.isEmpty && !widget.isSynced;
 
@@ -184,7 +231,8 @@ class _ReportsListState extends State<ReportsList> {
 
       final filterMatches = _reportFilter == "Tutte"
           ? true
-          : widget.reportedBarcodes.contains(p.barcode);
+          : (widget.reportedBarcodes.contains(p.barcode) ||
+              (widget.userReports?.any((r) => r.barcode == p.barcode) ?? false));
 
       return queryMatches && filterMatches;
     }).toList();

@@ -960,6 +960,60 @@ void main() {
       },
     );
 
+    test(
+      'migrateLocalDataToFirestore with syncHistory: false skips history migration',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        final fakeHistory = [
+          ScanHistoryItem(
+            id: 'h1',
+            barcode: '111',
+            scannedAt: '2026-08-01T00:00:00Z',
+          ),
+        ];
+        await prefs.setStringList('celiac_history', [
+          json.encode(fakeHistory.first.toJson()),
+        ]);
+
+        when(() => mockUsersCol.doc('new_user_123')).thenReturn(mockDocRef);
+
+        await DbService.migrateLocalDataToFirestore(
+          'new_user_123',
+          syncHistory: false,
+          syncReports: false,
+          syncSettings: false,
+        );
+
+        expect(prefs.getStringList('celiac_history'), isNull);
+        verifyNever(() => mockBatch.commit());
+      },
+    );
+
+    test(
+      'migrateLocalDataToFirestore with syncSettings: false removes anonymous settings without writing to Firestore',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          'celiac_settings',
+          json.encode({'userId': 'anonymous', 'strictMode': true}),
+        );
+        await prefs.setBool('has_anonymous_settings', true);
+
+        when(() => mockUsersCol.doc('new_user_123')).thenReturn(mockDocRef);
+
+        await DbService.migrateLocalDataToFirestore(
+          'new_user_123',
+          syncHistory: false,
+          syncReports: false,
+          syncSettings: false,
+        );
+
+        expect(prefs.getString('celiac_settings'), isNull);
+        expect(prefs.getBool('has_anonymous_settings'), isNull);
+        verifyNever(() => mockUsersCol.doc('new_user_123').set(any(), any()));
+      },
+    );
+
     test('wipeAllLocalData removes all SharedPreferences keys', () async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('celiac_history', ['{}']);

@@ -150,8 +150,19 @@ class DbService {
   static Future<bool> hasAnonymousData() =>
       AccountDataService.hasAnonymousData();
 
-  static Future<void> migrateLocalDataToFirestore(String newUid) =>
-      AccountDataService.migrateLocalDataToFirestore(db, newUid);
+  static Future<void> migrateLocalDataToFirestore(
+    String newUid, {
+    bool syncHistory = true,
+    bool syncReports = true,
+    bool syncSettings = true,
+  }) =>
+      AccountDataService.migrateLocalDataToFirestore(
+        db,
+        newUid,
+        syncHistory: syncHistory,
+        syncReports: syncReports,
+        syncSettings: syncSettings,
+      );
 
   static Future<void> wipeAnonymousData() =>
       AccountDataService.wipeAnonymousData();
