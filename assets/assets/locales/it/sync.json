@@ -2,19 +2,19 @@
   "sync": {
     "localDataFound": {
       "title": "Sincronizza i tuoi dati",
-      "body": "Abbiamo trovato informazioni salvate in locale su questo dispositivo. Desideri unirle al tuo profilo cloud?",
+      "body": "Abbiamo trovato dati appartenenti a un utente anonimo salvati su questo dispositivo. Desideri unirli al tuo profilo?",
       "merge": "Sincronizza selezionati",
-      "discard": "Elimina dati locali",
-      "discardConfirmTitle": "Eliminare tutti i dati locali?",
-      "discardConfirmBody": "Questa azione cancellerà definitivamente i dati selezionati salvati solo su questo dispositivo.",
+      "discard": "Elimina dati anonimi",
+      "discardConfirmTitle": "Eliminare tutti i dati anonimi?",
+      "discardConfirmBody": "Questa azione cancellerà definitivamente i dati anonimi salvati su questo dispositivo.",
       "discardConfirmAction": "Conferma eliminazione",
       "noneSelected": "Nessun elemento selezionato",
       "toSync": "Da sincronizzare",
-      "historySubtitleOne": "{count} scansione recente",
-      "historySubtitleOther": "{count} scansioni recenti",
+      "historySubtitleOne": "{count} scansione trovata",
+      "historySubtitleOther": "{count} scansioni trovate",
       "reportsSubtitleOne": "{count} segnalazione inviata",
       "reportsSubtitleOther": "{count} segnalazioni inviate",
-      "settingsSubtitle": "Filtri contaminazioni e preferenze",
+      "settingsSubtitle": "Regole di analisi e preferenze",
       "selectAll": "Seleziona tutti",
       "deselectAll": "Deseleziona tutti"
     }
