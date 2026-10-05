@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:gscanner/core/theme/app_theme.dart';
 
 /// Sezione "Lingua" con selettore lingua a popup.
 class LanguageSection extends StatelessWidget {
@@ -62,47 +63,93 @@ class LanguageSection extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: PopupMenuButton<String>(
               tooltip: "Scegli lingua",
-              initialValue: preferredLanguage,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              color: Theme.of(context).cardColor,
+              elevation: 6,
+              shadowColor: Colors.black.withValues(alpha: 0.12),
               position: PopupMenuPosition.under,
+              offset: const Offset(0, 8),
+              color: context.cardBackground,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: context.colorScheme.outlineVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                ),
+              ),
               onSelected: onLanguageChange,
-              itemBuilder: (context) => [
-                PopupMenuItem(value: 'it', child: Text("common.languages.it".tr())),
-                PopupMenuItem(value: 'en', child: Text("common.languages.en".tr())),
-                PopupMenuItem(value: 'es', child: Text("common.languages.es".tr())),
-                PopupMenuItem(value: 'de', child: Text("common.languages.de".tr())),
-                PopupMenuItem(value: 'fr', child: Text("common.languages.fr".tr())),
-              ],
+              itemBuilder: (context) {
+                final colorScheme = context.colorScheme;
+
+                return [
+                  _buildLanguageMenuItem(
+                    value: 'it',
+                    label: "common.languages.it".tr(),
+                    isSelected: preferredLanguage == 'it',
+                    colorScheme: colorScheme,
+                  ),
+                  _buildLanguageMenuItem(
+                    value: 'en',
+                    label: "common.languages.en".tr(),
+                    isSelected: preferredLanguage == 'en',
+                    colorScheme: colorScheme,
+                  ),
+                  _buildLanguageMenuItem(
+                    value: 'es',
+                    label: "common.languages.es".tr(),
+                    isSelected: preferredLanguage == 'es',
+                    colorScheme: colorScheme,
+                  ),
+                  _buildLanguageMenuItem(
+                    value: 'de',
+                    label: "common.languages.de".tr(),
+                    isSelected: preferredLanguage == 'de',
+                    colorScheme: colorScheme,
+                  ),
+                  _buildLanguageMenuItem(
+                    value: 'fr',
+                    label: "common.languages.fr".tr(),
+                    isSelected: preferredLanguage == 'fr',
+                    colorScheme: colorScheme,
+                  ),
+                ];
+              },
+              // ── Trigger a Pillola Larga Identica a quella del Tema ──
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 100, maxWidth: 140),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            langLabels[preferredLanguage] ?? 'Italiano',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                constraints: const BoxConstraints(minWidth: 130, maxWidth: 160),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          langLabels[preferredLanguage] ?? 'Italiano',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: context.colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_drop_down,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 22,
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -112,4 +159,72 @@ class LanguageSection extends StatelessWidget {
       ),
     );
   }
+}
+
+PopupMenuItem<String> _buildLanguageMenuItem({
+  required String value,
+  required String label,
+  required bool isSelected,
+  required ColorScheme colorScheme,
+}) {
+  return PopupMenuItem<String>(
+    value: value,
+    // AZZERA il padding nativo per evitare il rettangolo grigio spigoloso
+    padding: EdgeInsets.zero,
+    height: 48,
+    child: Padding(
+      // Distanza dai bordi del menu a tendina
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          // Overlay primario semitrasparente che ti piaceva!
+          color: isSelected
+              ? colorScheme.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
+          // Raggio interno che non toccherà mai i bordi del menu
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.onSurface,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Checkbox circolare
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: isSelected ? colorScheme.primary : Colors.transparent,
+                shape: BoxShape.circle,
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.6,
+                        ),
+                        width: 1.5,
+                      ),
+              ),
+              child: isSelected
+                  ? Icon(Icons.check, size: 14, color: colorScheme.onPrimary)
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

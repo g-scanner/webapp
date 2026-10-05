@@ -161,34 +161,95 @@ class AccountSection extends StatelessWidget {
   }
 
   Future<void> _handleAnonymousAction(BuildContext context) async {
+    final colorScheme = context.colorScheme;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: ctx.cardBackground,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        icon: Center(
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.cloud_upload_rounded,
+              color: colorScheme.onPrimaryContainer,
+              size: 28,
+            ),
+          ),
+        ),
         title: Text(
           "auth.social.signInAction".tr(),
-          style: TextStyle(color: ctx.colorScheme.onSurface),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Text(
           "auth.social.signInCloudPrompt".tr(),
-          style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            style: TextButton.styleFrom(
-              foregroundColor: ctx.colorScheme.onSurfaceVariant,
-            ),
-            child: Text("common.actions.cancel".tr()),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 14,
+            height: 1.5,
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(
-              foregroundColor: ctx.colorScheme.primary,
-            ),
-            child: Text("auth.social.proceed".tr()),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        actions: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Azione 1: Procedi con il login (Pillola Primaria)
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: Text(
+                  "auth.social.proceed".tr(),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Azione 2: Annulla (Pillola Outlined neutra)
+              OutlinedButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.onSurface,
+                  side: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: Text(
+                  "common.actions.cancel".tr(),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -206,32 +267,95 @@ class AccountSection extends StatelessWidget {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
+    final colorScheme = context.colorScheme;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: ctx.cardBackground,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        icon: Center(
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: colorScheme.errorContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.logout_rounded,
+              color: colorScheme.onErrorContainer,
+              size: 28,
+            ),
+          ),
+        ),
         title: Text(
           "settings.account.signOutConfirmTitle".tr(),
-          style: TextStyle(color: ctx.colorScheme.onSurface),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Text(
           "settings.account.signOutConfirmBody".tr(),
-          style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            style: TextButton.styleFrom(
-              foregroundColor: ctx.colorScheme.onSurfaceVariant,
-            ),
-            child: Text("common.actions.cancel".tr()),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 14,
+            height: 1.5,
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.error),
-            child: Text("common.actions.signOut".tr()),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        actions: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Azione 1: Esci dall'account (Filled a pillola)
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.error,
+                  foregroundColor: colorScheme.onError,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: Text(
+                  "common.actions.signOut".tr(),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Azione 2: Annulla (Outlined neutro a pillola)
+              OutlinedButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.onSurface,
+                  side: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: Text(
+                  "common.actions.cancel".tr(),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

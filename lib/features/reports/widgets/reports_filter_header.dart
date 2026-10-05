@@ -35,8 +35,35 @@ class ReportsFilterHeader extends StatelessWidget {
     required this.onFilterChanged,
   });
 
-  TextStyle _dropdownItemTextStyle(Color color) {
-    return TextStyle(color: color, fontWeight: FontWeight.w600);
+  Color _getFilterColor(BuildContext context, String filter) {
+    final colorScheme = context.colorScheme;
+    if (filter == "Mie") {
+      return colorScheme.secondaryContainer.withValues(alpha: 0.15);
+    }
+    return colorScheme.surfaceContainerHighest;
+  }
+
+  Color _getFilterTextColor(BuildContext context, String filter) {
+    final colorScheme = context.colorScheme;
+    if (filter == "Mie") {
+      return colorScheme.onSecondaryContainer;
+    }
+    return colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
+  }
+
+  Color _getFilterIconColor(BuildContext context, String filter) {
+    final colorScheme = context.colorScheme;
+    if (filter == "Mie") {
+      return colorScheme.onSecondaryContainer;
+    }
+    return colorScheme.onSurfaceVariant.withValues(alpha: 0.6);
+  }
+
+  String _getFilterLabel(String filter) {
+    if (filter == "Mie") {
+      return "report.list.dropdown.mine".tr();
+    }
+    return "report.list.dropdown.all".tr();
   }
 
   @override
@@ -45,18 +72,6 @@ class ReportsFilterHeader extends StatelessWidget {
     final cardBg = context.cardBackground;
 
     final bool showClearIcon = isSearchFocused && searchTerm.isNotEmpty;
-
-    // --- Variabili di Stile Dinamiche per il Filtro ---
-    final bool isMineSelected = reportFilter == "Mie";
-    final Color filterBgColor = isMineSelected
-        ? colorScheme.secondaryContainer.withValues(alpha: 0.15)
-        : colorScheme.surfaceContainerHighest;
-    final Color filterTextColor = isMineSelected
-        ? colorScheme.onSecondaryContainer
-        : colorScheme.onSurface;
-    final Color filterIconColor = isMineSelected
-        ? colorScheme.onSecondaryContainer
-        : colorScheme.onSurfaceVariant.withValues(alpha: 0.6);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -158,7 +173,6 @@ class ReportsFilterHeader extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              flex: 5,
               child: TextField(
                 controller: searchController,
                 focusNode: searchFocusNode,
@@ -220,49 +234,136 @@ class ReportsFilterHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Flexible(
-              flex: 2,
-              child: DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: reportFilter,
-                icon: Icon(Icons.filter_list, color: filterIconColor, size: 20),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: filterTextColor,
+
+            // ── Filtro a Pillola PopupMenuButton (Stesso Design System) ──
+            PopupMenuButton<String>(
+              tooltip: "Filtra segnalazioni",
+              elevation: 6,
+              shadowColor: Colors.black.withValues(alpha: 0.12),
+              offset: const Offset(0, 48),
+              color: cardBg,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
                 ),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: filterBgColor,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  border: OutlineInputBorder(
+              ),
+              itemBuilder: (context) {
+                final options = ["Tutte", "Mie"];
+
+                return options.map((option) {
+                  final isSelected = reportFilter == option;
+                  final statusBg = _getFilterColor(context, option);
+                  final statusText = _getFilterTextColor(context, option);
+
+                  return PopupMenuItem<String>(
+                    value: option,
+                    onTap: () => onFilterChanged(option),
+                    padding: EdgeInsets.zero,
+                    height: 48,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected ? statusBg : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _getFilterLabel(option),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? statusText
+                                      : colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Checkbox circolare coordinata
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? statusText
+                                    : Colors.transparent,
+                                shape: BoxShape.circle,
+                                border: isSelected
+                                    ? null
+                                    : Border.all(
+                                        color: colorScheme.outlineVariant
+                                            .withValues(alpha: 0.6),
+                                        width: 1.5,
+                                      ),
+                              ),
+                              child: isSelected
+                                  ? Icon(
+                                      Icons.check,
+                                      size: 14,
+                                      color: colorScheme.surface,
+                                    )
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList();
+              },
+              // Trigger a Pillola (Senza bordi, colore coerente alla selezione)
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 110, maxWidth: 150),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getFilterColor(context, reportFilter),
                     borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide.none,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _getFilterLabel(reportFilter),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _getFilterTextColor(context, reportFilter),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.filter_list_rounded,
+                        size: 20,
+                        color: _getFilterIconColor(context, reportFilter),
+                      ),
+                    ],
                   ),
                 ),
-                items: [
-                  DropdownMenuItem(
-                    value: "Tutte",
-                    child: Text(
-                      "report.list.dropdown.all".tr(),
-                      style: _dropdownItemTextStyle(
-                        colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: "Mie",
-                    child: Text(
-                      "report.list.dropdown.mine".tr(),
-                      style: _dropdownItemTextStyle(
-                        colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: (val) {
-                  if (val != null) onFilterChanged(val);
-                },
               ),
             ),
           ],

@@ -10,50 +10,95 @@ import '../../../services/db_service.dart';
 /// Mostra il dialog "serve riautenticazione" e, se confermato, effettua il signOut
 /// e chiude il Bottom Sheet settings. Restituisce true se l'utente ha confermato.
 Future<bool> _showReauthDialog(BuildContext context, FirebaseAuth auth) async {
+  final colorScheme = context.colorScheme;
+
   final confirm = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: ctx.cardBackground,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: ctx.colorScheme.outlineVariant, width: 1.5),
-      ),
-      icon: Icon(
-        Icons.security_rounded,
-        color: ctx.colorScheme.primary,
-        size: 36,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      icon: Center(
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.security_rounded,
+            color: colorScheme.onPrimaryContainer,
+            size: 28,
+          ),
+        ),
       ),
       title: Text(
         "settings.account.deleteReauthTitle".tr(),
-        style: TextStyle(
-          color: ctx.colorScheme.onSurface,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
         textAlign: TextAlign.center,
+        style: TextStyle(
+          color: colorScheme.onSurface,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       content: Text(
         "settings.account.deleteReauthBody".tr(),
-        style: TextStyle(color: ctx.colorScheme.onSurfaceVariant, fontSize: 14),
         textAlign: TextAlign.center,
-      ),
-      actionsAlignment: MainAxisAlignment.center,
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          style: TextButton.styleFrom(
-            foregroundColor: ctx.colorScheme.onSurfaceVariant,
-          ),
-          child: Text("common.actions.cancel".tr()),
+        style: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 14,
+          height: 1.5,
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          style: FilledButton.styleFrom(
-            backgroundColor: ctx.colorScheme.primary,
-            foregroundColor: ctx.colorScheme.onPrimary,
-          ),
-          child: Text("auth.social.proceed".tr()),
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      actions: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Azione 1: Procedi con il login (Primaria a pillola)
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(
+                "auth.social.proceed".tr(),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Azione 2: Annulla (Outlined neutro a pillola)
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colorScheme.onSurface,
+                side: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(
+                "common.actions.cancel".tr(),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     ),
@@ -97,145 +142,174 @@ Future<void> showDeleteAccountFlow({
     context: context,
     barrierDismissible: false,
     builder: (ctx) => StatefulBuilder(
-      builder: (dialogCtx, setDialogState) => AlertDialog(
-        backgroundColor: dialogCtx.cardBackground,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(
-            color: dialogCtx.colorScheme.errorContainer,
-            width: 2,
+      builder: (dialogCtx, setDialogState) {
+        final colorScheme = dialogCtx.colorScheme;
+
+        return AlertDialog(
+          backgroundColor: dialogCtx.cardBackground,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
           ),
-        ),
-        icon: Icon(
-          Icons.warning_amber_rounded,
-          color: dialogCtx.colorScheme.error,
-          size: 36,
-        ),
-        title: Text(
-          "settings.account.deleteConfirmTitle".tr(),
-          style: TextStyle(
-            color: dialogCtx.colorScheme.error,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        content: Text(
-          "settings.account.deleteConfirmBody".tr(),
-          style: TextStyle(
-            color: dialogCtx.colorScheme.onSurface,
-            fontSize: 14,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: isDeletingAccount
-                ? null
-                : () => Navigator.pop(dialogCtx),
-            style: TextButton.styleFrom(
-              foregroundColor: dialogCtx.colorScheme.onSurfaceVariant,
-            ),
-            child: Text("common.actions.cancel".tr()),
-          ),
-          FilledButton(
-            onPressed: isDeletingAccount
-                ? null
-                : () async {
-                    setDialogState(() {
-                      isDeletingAccount = true;
-                    });
-                    try {
-                      final String uid = user.uid;
-
-                      // Ri-verifica che la sessione sia ancora fresca prima di procedere
-                      // (guard contro race condition: dialogo aperto → sessione scade → conferma)
-                      final lastSignInNow =
-                          auth.currentUser?.metadata.lastSignInTime;
-                      final bool sessionStillFresh =
-                          lastSignInNow != null &&
-                          DateTime.now().difference(lastSignInNow) <=
-                              const Duration(minutes: 5);
-                      if (!sessionStillFresh) {
-                        if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                        if (context.mounted) {
-                          await _showReauthDialog(context, auth);
-                        }
-                        return;
-                      }
-
-                      // STEP 1: Elimina l'account Firebase PRIMA di toccare qualsiasi dato.
-                      // Se fallisce (es. requires-recent-login), nessun dato viene cancellato.
-                      await user.delete();
-
-                      // STEP 2: Firebase ha confermato l'eliminazione — ora elimina i dati locali e cloud.
-                      await Future.wait([
-                        DbService.deleteUserSettings(uid),
-                        DbService.deleteUserHistory(uid),
-                        DbService.anonymizeUserReports(uid),
-                        DbService.wipeCurrentUserLocalData(),
-                      ]);
-
-                      // Chiude il popup e la bottom sheet tornando a MainScreen
-                      if (dialogCtx.mounted) {
-                        Navigator.of(
-                          dialogCtx,
-                        ).popUntil((route) => route.isFirst);
-                      }
-
-                      await auth.signOut();
-                    } on FirebaseAuthException catch (e) {
-                      if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                      if (e.code == 'requires-recent-login') {
-                        // user.delete() ha fallito → nessun dato è stato eliminato
-                        if (context.mounted) {
-                          await _showReauthDialog(context, auth);
-                        }
-                      } else {
-                        onTriggerToast("Errore: ${e.message}");
-                      }
-                    } catch (e) {
-                      if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                      onTriggerToast("Errore imprevisto: $e");
-                    }
-                  },
-            style: FilledButton.styleFrom(
-              backgroundColor: dialogCtx.colorScheme.error,
-              foregroundColor: dialogCtx.colorScheme.onError,
-              minimumSize: const Size(0, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+          icon: Center(
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: colorScheme.errorContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.warning_rounded,
+                color: colorScheme.onErrorContainer,
+                size: 28,
               ),
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Opacity(
-                  opacity: isDeletingAccount ? 0.0 : 1.0,
-                  child: const Text(
-                    "Elimina definitivamente",
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                if (isDeletingAccount)
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: dialogCtx.colorScheme.onError.withValues(
-                        alpha: 0.7,
-                      ),
-                      strokeWidth: 2,
-                    ),
-                  ),
-              ],
+          ),
+          title: Text(
+            "settings.account.deleteConfirmTitle".tr(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: colorScheme.onSurface,
             ),
           ),
-        ],
-      ),
+          content: Text(
+            "settings.account.deleteConfirmBody".tr(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          actions: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Pulsante 1: Elimina definitivamente (Azione Distruttiva)
+                FilledButton(
+                  onPressed: isDeletingAccount
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isDeletingAccount = true;
+                          });
+                          try {
+                            final String uid = user.uid;
+
+                            // Ri-verifica freschezza sessione
+                            final lastSignInNow =
+                                auth.currentUser?.metadata.lastSignInTime;
+                            final bool sessionStillFresh =
+                                lastSignInNow != null &&
+                                DateTime.now().difference(lastSignInNow) <=
+                                    const Duration(minutes: 5);
+                            if (!sessionStillFresh) {
+                              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                              if (context.mounted) {
+                                await _showReauthDialog(context, auth);
+                              }
+                              return;
+                            }
+
+                            // STEP 1: Elimina account Auth
+                            await user.delete();
+
+                            // STEP 2: Elimina dati DB e cache
+                            await Future.wait([
+                              DbService.deleteUserSettings(uid),
+                              DbService.deleteUserHistory(uid),
+                              DbService.anonymizeUserReports(uid),
+                              DbService.wipeCurrentUserLocalData(),
+                            ]);
+
+                            if (dialogCtx.mounted) {
+                              Navigator.of(
+                                dialogCtx,
+                              ).popUntil((route) => route.isFirst);
+                            }
+
+                            await auth.signOut();
+                          } on FirebaseAuthException catch (e) {
+                            if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                            if (e.code == 'requires-recent-login') {
+                              if (context.mounted) {
+                                await _showReauthDialog(context, auth);
+                              }
+                            } else {
+                              onTriggerToast("Errore: ${e.message}");
+                            }
+                          } catch (e) {
+                            if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                            onTriggerToast("Errore imprevisto: $e");
+                          }
+                        },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colorScheme.error,
+                    foregroundColor: colorScheme.onError,
+                    disabledBackgroundColor: colorScheme.error.withValues(
+                      alpha: 0.6,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: isDeletingAccount
+                        ? SizedBox(
+                            key: const ValueKey('loading'),
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: colorScheme.onError,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            "settings.account.deleteConfirmAction".tr(),
+                            key: const ValueKey('text'),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Pulsante 2: Annulla (Outlined neutro a pillola)
+                OutlinedButton(
+                  onPressed: isDeletingAccount
+                      ? null
+                      : () => Navigator.pop(dialogCtx),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colorScheme.onSurface,
+                    side: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: Text(
+                    "common.actions.cancel".tr(),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     ),
   );
 }

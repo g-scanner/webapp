@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:gscanner/core/theme/app_theme.dart';
 
 /// Sezione "Aspetto" con selettore tema a popup.
 class AppearanceSection extends StatelessWidget {
@@ -59,45 +60,85 @@ class AppearanceSection extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: PopupMenuButton<String>(
               tooltip: "Scegli tema",
-              initialValue: preferredTheme,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              color: Theme.of(context).cardColor,
+              elevation: 6,
+              offset: const Offset(0, 8),
+              shadowColor: Colors.black.withValues(alpha: 0.12),
               position: PopupMenuPosition.under,
+              color: context.cardBackground,
+              surfaceTintColor: Colors.transparent,
+              // Raggio morbido per il menu
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: context.colorScheme.outlineVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                ),
+              ),
               onSelected: onThemeChange,
-              itemBuilder: (context) => [
-                PopupMenuItem(value: 'system', child: Text("common.themes.system".tr())),
-                PopupMenuItem(value: 'light', child: Text("common.themes.light".tr())),
-                PopupMenuItem(value: 'dark', child: Text("common.themes.dark".tr())),
-              ],
+              itemBuilder: (context) {
+                final colorScheme = context.colorScheme;
+
+                return [
+                  _buildThemeMenuItem(
+                    value: 'system',
+                    label: "common.themes.system".tr(),
+                    isSelected: preferredTheme == 'system',
+                    colorScheme: colorScheme,
+                  ),
+                  _buildThemeMenuItem(
+                    value: 'light',
+                    label: "common.themes.light".tr(),
+                    isSelected: preferredTheme == 'light',
+                    colorScheme: colorScheme,
+                  ),
+                  _buildThemeMenuItem(
+                    value: 'dark',
+                    label: "common.themes.dark".tr(),
+                    isSelected: preferredTheme == 'dark',
+                    colorScheme: colorScheme,
+                  ),
+                ];
+              },
+              // ── Trigger a Pillola GRANDE (Stile Lingua) ──
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 100, maxWidth: 140),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            themeLabels[preferredTheme] ?? 'Sistema',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                // Constraints più ampi per matchare il selettore "Italiano"
+                constraints: const BoxConstraints(minWidth: 130, maxWidth: 160),
+                child: Container(
+                  // Padding maggiorato per rendere la pillola più spessa e cliccabile
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment
+                        .spaceBetween, // Distanzia testo e freccia
+                    children: [
+                      Flexible(
+                        child: Text(
+                          themeLabels[preferredTheme] ?? 'Sistema',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: context.colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_drop_down,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 22, // Freccia leggermente più grande
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -107,4 +148,72 @@ class AppearanceSection extends StatelessWidget {
       ),
     );
   }
+}
+
+PopupMenuItem<String> _buildThemeMenuItem({
+  required String value,
+  required String label,
+  required bool isSelected,
+  required ColorScheme colorScheme,
+}) {
+  return PopupMenuItem<String>(
+    value: value,
+    // AZZERA il padding nativo per evitare il rettangolo grigio spigoloso
+    padding: EdgeInsets.zero,
+    height: 48,
+    child: Padding(
+      // Distanza dai bordi del menu a tendina
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          // Overlay primario semitrasparente che ti piaceva!
+          color: isSelected
+              ? colorScheme.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
+          // Raggio interno che non toccherà mai i bordi del menu
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.onSurface,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Checkbox circolare
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: isSelected ? colorScheme.primary : Colors.transparent,
+                shape: BoxShape.circle,
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.6,
+                        ),
+                        width: 1.5,
+                      ),
+              ),
+              child: isSelected
+                  ? Icon(Icons.check, size: 14, color: colorScheme.onPrimary)
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

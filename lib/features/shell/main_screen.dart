@@ -436,6 +436,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
       reportIdNotifier.value = userReport?.id;
 
+      final isWideScreen = MediaQuery.of(context).size.width > 960;
       final route = MaterialPageRoute(
         builder: (context) => ProductDetailCard(
           product: placeholderProduct,
@@ -457,6 +458,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           onViewReport: (loadedProduct) =>
               _openReportDetail(context, loadedProduct),
           onRefreshOnline: _refreshProductOnline,
+          useResponsiveWrapper: !isWideScreen,
         ),
       );
 
@@ -466,7 +468,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         }
       };
 
-      final isWideScreen = MediaQuery.of(context).size.width > 960;
       if (isWideScreen) {
         pushFuture =
             _contentNavigatorKey.currentState?.push(route) ?? Future.value();

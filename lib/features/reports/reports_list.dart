@@ -96,7 +96,8 @@ class _ReportsListState extends State<ReportsList> {
           originalStatus: origA.status,
           onBack: () => Navigator.pop(context),
           reportReasonKey: userReport?.type ?? "label_unclear",
-          reportComment: (userReport?.comments != null && userReport!.comments.isNotEmpty)
+          reportComment:
+              (userReport?.comments != null && userReport!.comments.isNotEmpty)
               ? userReport.comments
               : "Nessun commento",
           reportDate: userReport?.submittedAt ?? "",
@@ -124,31 +125,94 @@ class _ReportsListState extends State<ReportsList> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: cardBg,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        icon: Center(
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: colorScheme.errorContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.report_gmailerrorred_rounded,
+              color: colorScheme.onErrorContainer,
+              size: 28,
+            ),
+          ),
+        ),
         title: Text(
           "common.actions.deleteReportConfirmTitle".tr(),
-          style: TextStyle(color: colorScheme.onSurface),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Text(
           "common.actions.deleteReportConfirmBody".tr(),
-          style: TextStyle(color: colorScheme.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: TextButton.styleFrom(
-              foregroundColor: colorScheme.onSurfaceVariant,
-            ),
-            child: Text("common.actions.cancel".tr()),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 14,
+            height: 1.5,
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              if (reportId != null && widget.onDeleteReport != null) {
-                await widget.onDeleteReport!(reportId);
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-            child: Text("common.actions.delete".tr()),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        actions: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Azione 1: Elimina segnalazione (Filled distruttivo a pillola)
+              FilledButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  if (reportId != null && widget.onDeleteReport != null) {
+                    await widget.onDeleteReport!(reportId);
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.error,
+                  foregroundColor: colorScheme.onError,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: Text(
+                  "common.actions.delete".tr(),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Azione 2: Annulla (Outlined neutro a pillola)
+              OutlinedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.onSurface,
+                  side: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: Text(
+                  "common.actions.cancel".tr(),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -164,7 +228,8 @@ class _ReportsListState extends State<ReportsList> {
     //    oppure che risultano segnalati dall'utente (reportedBarcodes o userReports).
     final Map<String, Product> productMap = {};
     for (final p in widget.products) {
-      final bool isReported = p.pendingReportsCount > 0 ||
+      final bool isReported =
+          p.pendingReportsCount > 0 ||
           widget.reportedBarcodes.contains(p.barcode) ||
           (widget.userReports?.any((r) => r.barcode == p.barcode) ?? false);
       if (isReported) {
@@ -232,7 +297,8 @@ class _ReportsListState extends State<ReportsList> {
       final filterMatches = _reportFilter == "Tutte"
           ? true
           : (widget.reportedBarcodes.contains(p.barcode) ||
-              (widget.userReports?.any((r) => r.barcode == p.barcode) ?? false));
+                (widget.userReports?.any((r) => r.barcode == p.barcode) ??
+                    false));
 
       return queryMatches && filterMatches;
     }).toList();

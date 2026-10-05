@@ -16,9 +16,9 @@ class HistoryFilterChips extends StatelessWidget {
     required this.onChanged,
   });
 
-  Color _getFilterColor(BuildContext context) {
+  Color _getFilterColorFor(BuildContext context, GlutenSafetyStatus? status) {
     final colorScheme = context.colorScheme;
-    switch (filter) {
+    switch (status) {
       case GlutenSafetyStatus.adatto:
         return colorScheme.primary.withValues(alpha: 0.12);
       case GlutenSafetyStatus.incerto:
@@ -32,9 +32,12 @@ class HistoryFilterChips extends StatelessWidget {
     }
   }
 
-  Color _getFilterTextColor(BuildContext context) {
+  Color _getFilterTextColorFor(
+    BuildContext context,
+    GlutenSafetyStatus? status,
+  ) {
     final colorScheme = context.colorScheme;
-    switch (filter) {
+    switch (status) {
       case GlutenSafetyStatus.adatto:
         return colorScheme.primary;
       case GlutenSafetyStatus.incerto:
@@ -44,96 +47,161 @@ class HistoryFilterChips extends StatelessWidget {
       case GlutenSafetyStatus.sconosciuto:
         return colorScheme.onSurfaceVariant;
       default:
-        return colorScheme.onSurfaceVariant.withValues(alpha: 0.6);
+        return colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
     }
   }
 
   Color _getFilterIconColor(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    switch (filter) {
-      case GlutenSafetyStatus.adatto:
-        return colorScheme.primary;
-      case GlutenSafetyStatus.incerto:
-        return colorScheme.tertiary;
-      case GlutenSafetyStatus.nonAdatto:
-        return colorScheme.error;
-      case GlutenSafetyStatus.sconosciuto:
-        return colorScheme.onSurfaceVariant;
-      default:
-        return colorScheme.onSurfaceVariant.withValues(alpha: 0.6);
-    }
+    return _getFilterTextColorFor(context, filter);
   }
 
-  TextStyle _dropdownItemTextStyle(Color color) {
-    return TextStyle(color: color, fontWeight: FontWeight.w600);
+  String _getFilterLabel(GlutenSafetyStatus? status) {
+    switch (status) {
+      case GlutenSafetyStatus.adatto:
+        return "history.filters.safe".tr();
+      case GlutenSafetyStatus.incerto:
+        return "history.filters.uncertain".tr();
+      case GlutenSafetyStatus.nonAdatto:
+        return "history.filters.unsafe".tr();
+      case GlutenSafetyStatus.sconosciuto:
+        return "history.filters.unknown".tr();
+      default:
+        return "history.filters.all".tr();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
 
-    return DropdownButtonFormField<GlutenSafetyStatus?>(
-      isExpanded: true,
-      initialValue: filter,
-      icon: Icon(
-        Icons.filter_list,
-        color: _getFilterIconColor(context),
-        size: 20,
-      ),
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: _getFilterTextColor(context),
-      ),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: _getFilterColor(context),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(999),
-          borderSide: BorderSide.none,
+    return PopupMenuButton<GlutenSafetyStatus?>(
+      tooltip: "Filtra cronologia",
+      elevation: 6,
+      shadowColor: Colors.black.withValues(alpha: 0.12),
+      offset: const Offset(0, 48),
+      color: context.cardBackground,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
         ),
       ),
-      items: [
-        DropdownMenuItem(
-          value: null,
-          child: Text(
-            "history.filters.all".tr(),
-            style: _dropdownItemTextStyle(
-              colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+      itemBuilder: (context) {
+        final options = [
+          null,
+          GlutenSafetyStatus.adatto,
+          GlutenSafetyStatus.incerto,
+          GlutenSafetyStatus.nonAdatto,
+          GlutenSafetyStatus.sconosciuto,
+        ];
+
+        return options.map((status) {
+          final isSelected = filter == status;
+          final statusBgColor = _getFilterColorFor(context, status);
+          final statusTextColor = _getFilterTextColorFor(context, status);
+
+          return PopupMenuItem<GlutenSafetyStatus?>(
+            value: status,
+            // FIX: Invoca onChanged direttamente su onTap, così anche null (Tutti) viene eseguito!
+            onTap: () => onChanged(status),
+            padding: EdgeInsets.zero,
+            height: 48,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? statusBgColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _getFilterLabel(status),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? statusTextColor
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Checkbox circolare coordinata
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? statusTextColor
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: isSelected
+                            ? null
+                            : Border.all(
+                                color: colorScheme.outlineVariant.withValues(
+                                  alpha: 0.6,
+                                ),
+                                width: 1.5,
+                              ),
+                      ),
+                      child: isSelected
+                          ? Icon(
+                              Icons.check,
+                              size: 14,
+                              color: colorScheme.surface,
+                            )
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+          );
+        }).toList();
+      },
+      // ── Trigger a Pillola (Niente bordi, colore dinamico) ──
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: _getFilterColorFor(context, filter),
+          borderRadius: BorderRadius.circular(999),
         ),
-        DropdownMenuItem(
-          value: GlutenSafetyStatus.adatto,
-          child: Text(
-            "history.filters.safe".tr(),
-            style: _dropdownItemTextStyle(colorScheme.primary),
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Text(
+                _getFilterLabel(filter),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _getFilterTextColorFor(context, filter),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.filter_list_rounded,
+              size: 20,
+              color: _getFilterIconColor(context),
+            ),
+          ],
         ),
-        DropdownMenuItem(
-          value: GlutenSafetyStatus.incerto,
-          child: Text(
-            "history.filters.uncertain".tr(),
-            style: _dropdownItemTextStyle(colorScheme.tertiary),
-          ),
-        ),
-        DropdownMenuItem(
-          value: GlutenSafetyStatus.nonAdatto,
-          child: Text(
-            "history.filters.unsafe".tr(),
-            style: _dropdownItemTextStyle(colorScheme.error),
-          ),
-        ),
-        DropdownMenuItem(
-          value: GlutenSafetyStatus.sconosciuto,
-          child: Text(
-            "history.filters.unknown".tr(),
-            style: _dropdownItemTextStyle(colorScheme.onSurfaceVariant),
-          ),
-        ),
-      ],
-      onChanged: onChanged,
+      ),
     );
   }
 }

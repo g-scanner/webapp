@@ -236,8 +236,22 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
         actions: [
           if (widget.isOwnReport && widget.onDeleteReport != null)
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+              tooltip: "common.actions.moreOptions".tr(),
+              elevation: 6,
+              shadowColor: Colors.black.withValues(alpha: 0.12),
+              offset: const Offset(
+                0,
+                48,
+              ), // 40dp (altezza bottone) + 8dp di stacco
               color: cardBg,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                  width: 1,
+                ),
+              ),
               onSelected: (value) {
                 if (value == 'delete_report') {
                   showDialog(
@@ -245,36 +259,113 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     builder: (ctx) {
                       final ctxColorScheme = ctx.colorScheme;
                       final ctxCardBg = ctx.cardBackground;
+
                       return AlertDialog(
                         backgroundColor: ctxCardBg,
+                        surfaceTintColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        icon: Center(
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: ctxColorScheme.errorContainer,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.report_gmailerrorred_rounded,
+                              color: ctxColorScheme.onErrorContainer,
+                              size: 28,
+                            ),
+                          ),
+                        ),
                         title: Text(
                           "common.actions.deleteReportConfirmTitle".tr(),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: ctxColorScheme.onSurface,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         content: Text(
                           "common.actions.deleteReportConfirmBody".tr(),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: ctxColorScheme.onSurfaceVariant,
+                            fontSize: 14,
+                            height: 1.5,
+                          ),
+                        ),
+                        actionsPadding: const EdgeInsets.fromLTRB(
+                          24,
+                          8,
+                          24,
+                          24,
                         ),
                         actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            style: TextButton.styleFrom(
-                              foregroundColor: ctxColorScheme.onSurfaceVariant,
-                            ),
-                            child: Text("common.actions.cancel".tr()),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              Navigator.pop(ctx);
-                              final targetId =
-                                  widget.reportId ?? _activeReport?.id;
-                              if (targetId != null) {
-                                await widget.onDeleteReport!(targetId);
-                              }
-                              if (mounted) widget.onBack();
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: ctxColorScheme.error,
-                            ),
-                            child: Text("common.actions.delete".tr()),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Azione 1: Elimina report (Filled distruttivo a pillola)
+                              FilledButton(
+                                onPressed: () async {
+                                  Navigator.pop(ctx);
+                                  final targetId =
+                                      widget.reportId ?? _activeReport?.id;
+                                  if (targetId != null &&
+                                      widget.onDeleteReport != null) {
+                                    await widget.onDeleteReport!(targetId);
+                                  }
+                                  if (mounted) widget.onBack();
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: ctxColorScheme.error,
+                                  foregroundColor: ctxColorScheme.onError,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                                child: Text(
+                                  "common.actions.delete".tr(),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Azione 2: Annulla (Outlined neutro a pillola)
+                              OutlinedButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: ctxColorScheme.onSurface,
+                                  side: BorderSide(
+                                    color: ctxColorScheme.outlineVariant
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                                child: Text(
+                                  "common.actions.cancel".tr(),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       );
@@ -283,26 +374,75 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                 }
               },
               itemBuilder: (context) => [
-                PopupMenuItem(
+                PopupMenuItem<String>(
                   value: 'delete_report',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.delete_outline,
-                        color: colorScheme.error,
-                        size: 20,
+                  padding:
+                      EdgeInsets.zero, // Azzera il padding nativo squadrato
+                  height: 48,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "common.actions.deleteReportConfirmTitle".tr(),
-                          style: TextStyle(color: colorScheme.error),
-                        ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
+                      child: Row(
+                        children: [
+                          // Bollino morbido d'errore attorno all'icona
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: colorScheme.error.withValues(alpha: 0.10),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.report_gmailerrorred_rounded,
+                              color: colorScheme.error,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              "common.actions.deleteReportConfirmTitle".tr(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colorScheme.error,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
+              // ── Trigger Circolare 40dp con hover morbido ──
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.4,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.more_vert_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+              ),
             ),
         ],
       ),

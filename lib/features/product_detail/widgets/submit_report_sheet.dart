@@ -23,6 +23,20 @@ void showSubmitReportBottomSheet({
       TextEditingController();
   bool submittingReport = false;
 
+  String getReportTypeLabel(String type) {
+    switch (type) {
+      case "label_unclear":
+        return "common.reportReasons.unclear".tr();
+      case "outdated":
+        return "common.reportReasons.outdated".tr();
+      case "incorrect_status":
+        return "common.reportReasons.wrongStatus".tr();
+      case "other":
+      default:
+        return "common.reportReasons.other".tr();
+    }
+  }
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -33,6 +47,8 @@ void showSubmitReportBottomSheet({
     builder: (BuildContext sheetCtx) {
       return StatefulBuilder(
         builder: (BuildContext ctx, StateSetter setSheetState) {
+          final colorScheme = sheetCtx.colorScheme;
+
           return Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
@@ -45,272 +61,383 @@ void showSubmitReportBottomSheet({
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // --- M3 Drag Handle ---
-                  Center(
-                    child: Container(
-                      width: 32,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 24),
-                      decoration: BoxDecoration(
-                        color: sheetCtx.colorScheme.outlineVariant.withValues(
-                          alpha: 0.4,
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-
-                  // --- Intestazione ---
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // --- M3 Drag Handle ---
+                    Center(
+                      child: Container(
+                        width: 32,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 24),
                         decoration: BoxDecoration(
-                          color: sheetCtx.colorScheme.error.withValues(
-                            alpha: 0.1,
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.4,
                           ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.flag_rounded,
-                          color: sheetCtx.colorScheme.error,
-                          size: 24,
+                          borderRadius: BorderRadius.circular(4),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          "product.actions.reportError".tr(),
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                            color: sheetCtx.colorScheme.onSurface,
-                            letterSpacing: -0.5,
+                    ),
+
+                    // --- Intestazione ---
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colorScheme.error.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.flag_rounded,
+                            color: colorScheme.error,
+                            size: 24,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "product.reportSheet.communityCallout".tr(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: sheetCtx.colorScheme.onSurfaceVariant,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // --- Dropdown M3 ---
-                  Text(
-                    "product.reportSheet.reasonLabel".tr(),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: sheetCtx.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    initialValue: reportType,
-                    icon: Icon(
-                      Icons.expand_more,
-                      color: sheetCtx.colorScheme.onSurfaceVariant,
-                    ),
-                    dropdownColor: sheetCtx.cardBackground,
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(24),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: sheetCtx.colorScheme.surfaceContainerHighest,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: "label_unclear",
-                        child: Text("common.reportReasons.unclear".tr()),
-                      ),
-                      DropdownMenuItem(
-                        value: "outdated",
-                        child: Text("common.reportReasons.outdated".tr()),
-                      ),
-                      DropdownMenuItem(
-                        value: "incorrect_status",
-                        child: Text("common.reportReasons.wrongStatus".tr()),
-                      ),
-                      DropdownMenuItem(
-                        value: "other",
-                        child: Text("common.reportReasons.other".tr()),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setSheetState(() => reportType = val);
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // --- TextField M3 ---
-                  Text(
-                    "product.reportSheet.detailsLabel".tr(),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: sheetCtx.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: reportCommentsController,
-                    maxLines: 3,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: sheetCtx.colorScheme.onSurface,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: "product.reportSheet.detailsHint".tr(),
-                      hintStyle: TextStyle(
-                        color: sheetCtx.colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
-                      filled: true,
-                      fillColor: sheetCtx.colorScheme.surfaceContainerHighest,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.all(16),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // --- Azioni M3 (Pill Buttons) ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Flexible(
-                        child: TextButton(
-                          onPressed: submittingReport
-                              ? null
-                              : () => Navigator.pop(sheetCtx),
-                          style: TextButton.styleFrom(
-                            foregroundColor:
-                                sheetCtx.colorScheme.onSurfaceVariant,
-                            minimumSize: const Size(0, 48),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                          ),
+                        const SizedBox(width: 16),
+                        Expanded(
                           child: Text(
-                            "common.actions.cancel".tr(),
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            "product.actions.reportError".tr(),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                              letterSpacing: -0.5,
+                            ),
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "product.reportSheet.communityCallout".tr(),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.4,
                       ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        flex: 2,
-                        child: SizedBox(
-                          height: 48,
-                          child: FilledButton(
+                    ),
+                    const SizedBox(height: 32),
+
+                    // --- Selettore Motivo (Stile Pillola G-Scanner) ---
+                    Text(
+                      "product.reportSheet.reasonLabel".tr(),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return PopupMenuButton<String>(
+                          // 1. Forza il popup a essere largo ESATTAMENTE quanto il bottone:
+                          constraints: BoxConstraints.tightFor(
+                            width: constraints.maxWidth,
+                          ),
+                          tooltip: "product.reportSheet.reasonLabel".tr(),
+                          elevation: 6,
+                          shadowColor: Colors.black.withValues(alpha: 0.12),
+                          offset: const Offset(0, 60),
+                          color: sheetCtx.cardBackground,
+                          surfaceTintColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: colorScheme.outlineVariant.withValues(
+                                alpha: 0.4,
+                              ),
+                            ),
+                          ),
+                          itemBuilder: (context) {
+                            final options = [
+                              "label_unclear",
+                              "outdated",
+                              "incorrect_status",
+                              "other",
+                            ];
+
+                            return options.map((type) {
+                              final isSelected = reportType == type;
+
+                              return PopupMenuItem<String>(
+                                value: type,
+                                onTap: () =>
+                                    setSheetState(() => reportType = type),
+                                padding: EdgeInsets.zero,
+                                height: 48,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? colorScheme.primary.withValues(
+                                              alpha: 0.12,
+                                            )
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            getReportTypeLabel(type),
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
+                                              color: isSelected
+                                                  ? colorScheme.primary
+                                                  : colorScheme.onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+
+                                        // Spunta circolare animata
+                                        AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? colorScheme.primary
+                                                : Colors.transparent,
+                                            shape: BoxShape.circle,
+                                            border: isSelected
+                                                ? null
+                                                : Border.all(
+                                                    color: colorScheme
+                                                        .outlineVariant
+                                                        .withValues(alpha: 0.6),
+                                                    width: 1.5,
+                                                  ),
+                                          ),
+                                          child: isSelected
+                                              ? Icon(
+                                                  Icons.check,
+                                                  size: 14,
+                                                  color: colorScheme.onPrimary,
+                                                )
+                                              : null,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList();
+                          },
+                          // Trigger a Pillola (Full-width, zero bordi)
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    getReportTypeLabel(reportType),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_drop_down_rounded,
+                                  size: 24,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    // --- TextField M3 ---
+                    Text(
+                      "product.reportSheet.detailsLabel".tr(),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: reportCommentsController,
+                      maxLines: 3,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "product.reportSheet.detailsHint".tr(),
+                        hintStyle: TextStyle(
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: colorScheme.surfaceContainerHighest,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.all(16),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // --- Azioni M3 (Pill Buttons) ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Flexible(
+                          child: TextButton(
                             onPressed: submittingReport
                                 ? null
-                                : () async {
-                                    setSheetState(
-                                      () => submittingReport = true,
-                                    );
-                                    try {
-                                      final currentLang =
-                                          userSettings.preferredLanguage;
-                                      final origAnalysis =
-                                          AnalyzerService.analyzeGlutenSafety(
-                                            name: currentProduct.getName(
-                                              currentLang,
-                                            ),
-                                            brand: currentProduct.getBrand(
-                                              currentLang,
-                                            ),
-                                            ingredients: currentProduct
-                                                .getIngredients(currentLang),
-                                            allergensList: currentProduct
-                                                .getAllergens(currentLang),
-                                            reportCount: 0,
-                                            categoriesTags: const [],
-                                            strictMode: userSettings.strictMode,
-                                            warnAdditives:
-                                                userSettings.warnAdditives,
-                                            alertLactose:
-                                                userSettings.alertLactose,
-                                            preferredLanguage: currentLang,
-                                            ignoreReports: true,
-                                          );
-                                      await onReportSubmit(
-                                        currentProduct.barcode,
-                                        {
-                                          "type": reportType,
-                                          "comments":
-                                              reportCommentsController.text,
-                                          "originalStatus":
-                                              origAnalysis.status.name,
-                                        },
-                                      );
-                                      onSubmitted();
-                                      if (sheetCtx.mounted) {
-                                        Navigator.pop(sheetCtx);
-                                      }
-                                      reportCommentsController.clear();
-                                    } catch (err) {
-                                      debugPrint('Report submit error: $err');
-                                    } finally {
-                                      setSheetState(
-                                        () => submittingReport = false,
-                                      );
-                                    }
-                                  },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: sheetCtx.colorScheme.error,
-                              foregroundColor: sheetCtx.colorScheme.onError,
+                                : () => Navigator.pop(sheetCtx),
+                            style: TextButton.styleFrom(
+                              foregroundColor: colorScheme.onSurfaceVariant,
+                              minimumSize: const Size(0, 48),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              "common.actions.cancel".tr(),
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            child: submittingReport
-                                ? SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: sheetCtx.colorScheme.onError
-                                          .withValues(alpha: 0.5),
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    "product.reportSheet.submit".tr(),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 12),
+                        Flexible(
+                          flex: 2,
+                          child: SizedBox(
+                            height: 48,
+                            child: FilledButton(
+                              onPressed: submittingReport
+                                  ? null
+                                  : () async {
+                                      setSheetState(
+                                        () => submittingReport = true,
+                                      );
+                                      try {
+                                        final currentLang =
+                                            userSettings.preferredLanguage;
+                                        final origAnalysis =
+                                            AnalyzerService.analyzeGlutenSafety(
+                                              name: currentProduct.getName(
+                                                currentLang,
+                                              ),
+                                              brand: currentProduct.getBrand(
+                                                currentLang,
+                                              ),
+                                              ingredients: currentProduct
+                                                  .getIngredients(currentLang),
+                                              allergensList: currentProduct
+                                                  .getAllergens(currentLang),
+                                              reportCount: 0,
+                                              categoriesTags: const [],
+                                              strictMode:
+                                                  userSettings.strictMode,
+                                              warnAdditives:
+                                                  userSettings.warnAdditives,
+                                              alertLactose:
+                                                  userSettings.alertLactose,
+                                              preferredLanguage: currentLang,
+                                              ignoreReports: true,
+                                            );
+                                        await onReportSubmit(
+                                          currentProduct.barcode,
+                                          {
+                                            "type": reportType,
+                                            "comments":
+                                                reportCommentsController.text,
+                                            "originalStatus":
+                                                origAnalysis.status.name,
+                                          },
+                                        );
+                                        onSubmitted();
+                                        if (sheetCtx.mounted) {
+                                          Navigator.pop(sheetCtx);
+                                        }
+                                        reportCommentsController.clear();
+                                      } catch (err) {
+                                        debugPrint('Report submit error: $err');
+                                      } finally {
+                                        setSheetState(
+                                          () => submittingReport = false,
+                                        );
+                                      }
+                                    },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: colorScheme.error,
+                                foregroundColor: colorScheme.onError,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                              child: submittingReport
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: colorScheme.onError.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      "product.reportSheet.submit".tr(),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           );

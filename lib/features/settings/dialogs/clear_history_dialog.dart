@@ -7,32 +7,95 @@ import '../../../core/theme/theme.dart';
 
 /// Dialog di conferma eliminazione cronologia.
 Future<bool?> showClearHistoryDialog(BuildContext context) {
+  final colorScheme = context.colorScheme;
+
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: ctx.cardBackground,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      icon: Center(
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: colorScheme.errorContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.delete_sweep_rounded,
+            color: colorScheme.onErrorContainer,
+            size: 28,
+          ),
+        ),
+      ),
       title: Text(
         "settings.dataAndHistory.clearHistoryTitle".tr(),
-        style: TextStyle(color: ctx.colorScheme.onSurface),
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: colorScheme.onSurface,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       content: Text(
         "settings.dataAndHistory.clearHistoryConfirm".tr(),
-        style: TextStyle(color: ctx.colorScheme.onSurfaceVariant),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          style: TextButton.styleFrom(
-            foregroundColor: ctx.colorScheme.onSurfaceVariant,
-          ),
-          child: Text("common.actions.cancel".tr()),
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 14,
+          height: 1.5,
         ),
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          style: TextButton.styleFrom(foregroundColor: ctx.colorScheme.error),
-          child: Text("settings.dataAndHistory.clearHistoryAction".tr()),
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      actions: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Azione Distruttiva: Cancella cronologia
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.error,
+                foregroundColor: colorScheme.onError,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(
+                "settings.dataAndHistory.clearHistoryAction".tr(),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Azione Neutra: Annulla
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colorScheme.onSurface,
+                side: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(
+                "common.actions.cancel".tr(),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     ),
