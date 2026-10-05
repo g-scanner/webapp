@@ -21,6 +21,7 @@
       "signOutConfirmBody": "Uscendo dal tuo account, i dati salvati su questo dispositivo verranno rimossi.\nSaranno ripristinati al prossimo accesso.",
       "signingOut": "Uscita in corso...",
       "deleteAccount": "Elimina Account",
+      "deleteConfirmAction": "Elimina definitivamente",
       "deleteConfirmTitle": "Eliminazione Account",
       "deleteConfirmBody": "Sei sicuro di voler eliminare il tuo account? Questa azione è irreversibile.\n\nPerderai:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nLe tue segnalazioni rimarranno attive ma verranno anonimizzate.",
       "deleteReauthTitle": "Accesso richiesto per sicurezza",
@@ -45,7 +46,7 @@
       "clearHistoryTitle": "Svuota Cronologia",
       "clearHistorySubtitle": "Rimuove in modo permanente la tua cronologia scansioni.",
       "clearHistoryConfirm": "Confermi di voler eliminare tutta la cronologia? Questa azione è irreversibile.",
-      "clearHistoryAction": "Svuota"
+      "clearHistoryAction": "Elimina Cronologia"
     },
     "legalMenu": {
       "termsAndConditionsTitle": "Termini e Condizioni",
