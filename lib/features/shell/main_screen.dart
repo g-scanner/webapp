@@ -1006,6 +1006,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       orElse: () => null,
     );
 
+    final isWideScreen = MediaQuery.of(context).size.width > 960;
     final route = MaterialPageRoute(
       builder: (context) => ProductDetailCard(
         product: match,
@@ -1028,10 +1029,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         onViewReport: (loadedProduct) =>
             _openReportDetail(context, loadedProduct),
         onRefreshOnline: _refreshProductOnline,
+        useResponsiveWrapper: !isWideScreen,
       ),
     );
 
-    final isWideScreen = MediaQuery.of(context).size.width > 960;
     final Future<void> pushFuture;
     if (isWideScreen) {
       pushFuture =
@@ -1094,6 +1095,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       orElse: () => null,
     );
 
+    final isWideScreen = MediaQuery.of(context).size.width > 960;
     final route = MaterialPageRoute(
       builder: (context) => ProductDetailCard(
         product: placeholderProduct,
@@ -1115,6 +1117,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         onViewReport: (loadedProduct) =>
             _openReportDetail(context, loadedProduct),
         onRefreshOnline: _refreshProductOnline,
+        useResponsiveWrapper: !isWideScreen,
       ),
     );
 
@@ -1124,7 +1127,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         }
       };
 
-      final isWideScreen = MediaQuery.of(context).size.width > 960;
       final Future<void> pushFuture;
       if (isWideScreen) {
         pushFuture =

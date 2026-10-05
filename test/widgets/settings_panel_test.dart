@@ -1051,7 +1051,7 @@ void main() {
 
         // Immediate delete confirmation dialog is shown
         expect(find.byType(AlertDialog), findsOneWidget);
-        expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
         expect(
           find.text('settings.account.deleteConfirmTitle'),
           findsOneWidget,

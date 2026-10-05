@@ -738,22 +738,16 @@ void main() {
       expect(find.text('Pane Frumento'), findsOneWidget);
 
       await tester.tap(
-        find.byType(DropdownButtonFormField<GlutenSafetyStatus?>),
+        find.byType(PopupMenuButton<GlutenSafetyStatus?>),
       );
       await tester.pumpAndSettle();
 
       expect(
-        find.descendant(
-          of: find.byType(DropdownMenuItem<GlutenSafetyStatus?>),
-          matching: find.text('history.filters.unknown'),
-        ),
+        find.text('history.filters.unknown'),
         findsOneWidget,
       );
 
-      final safeMenuItem = find.descendant(
-        of: find.byType(DropdownMenuItem<GlutenSafetyStatus?>),
-        matching: find.text('history.filters.safe'),
-      );
+      final safeMenuItem = find.text('history.filters.safe');
       await tester.tap(safeMenuItem.last);
       await tester.pumpAndSettle();
 
@@ -787,14 +781,11 @@ void main() {
       );
 
       await tester.tap(
-        find.byType(DropdownButtonFormField<GlutenSafetyStatus?>),
+        find.byType(PopupMenuButton<GlutenSafetyStatus?>),
       );
       await tester.pumpAndSettle();
 
-      final unsafeMenuItem = find.descendant(
-        of: find.byType(DropdownMenuItem<GlutenSafetyStatus?>),
-        matching: find.text('history.filters.unsafe'),
-      );
+      final unsafeMenuItem = find.text('history.filters.unsafe');
       await tester.tap(unsafeMenuItem.last);
       await tester.pumpAndSettle();
 
@@ -842,14 +833,11 @@ void main() {
       expect(find.text('Riso Basmati'), findsNothing);
 
       await tester.tap(
-        find.byType(DropdownButtonFormField<GlutenSafetyStatus?>),
+        find.byType(PopupMenuButton<GlutenSafetyStatus?>),
       );
       await tester.pumpAndSettle();
 
-      final safeMenuItem = find.descendant(
-        of: find.byType(DropdownMenuItem<GlutenSafetyStatus?>),
-        matching: find.text('history.filters.safe'),
-      );
+      final safeMenuItem = find.text('history.filters.safe');
       await tester.tap(safeMenuItem.last);
       await tester.pumpAndSettle();
 

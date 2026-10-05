@@ -64,7 +64,7 @@ void main() {
 
       final skeletonFinder = find.byWidgetPredicate((w) => w is Skeletonizer);
       expect(skeletonFinder, findsOneWidget);
-      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
       expect(find.byType(PopupMenuButton<String>), findsNothing);
     });
 

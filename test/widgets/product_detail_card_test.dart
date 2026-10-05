@@ -186,7 +186,7 @@ void main() {
         isInHistoryNotifier: ValueNotifier<bool>(true),
       );
 
-      final moreVertFinder = find.byIcon(Icons.more_vert);
+      final moreVertFinder = find.byIcon(Icons.more_vert_rounded);
       expect(moreVertFinder, findsOneWidget);
       await tester.tap(moreVertFinder);
       await tester.pumpAndSettle();
@@ -243,7 +243,7 @@ void main() {
           isInHistoryNotifier: ValueNotifier<bool>(false),
         );
 
-        final moreVertFinder = find.byIcon(Icons.more_vert);
+        final moreVertFinder = find.byIcon(Icons.more_vert_rounded);
         expect(moreVertFinder, findsOneWidget);
         await tester.tap(moreVertFinder);
         await tester.pumpAndSettle();
@@ -284,7 +284,7 @@ void main() {
               null, // null notifier should not block popup menu
         );
 
-        final moreVertFinder = find.byIcon(Icons.more_vert);
+        final moreVertFinder = find.byIcon(Icons.more_vert_rounded);
         expect(moreVertFinder, findsOneWidget);
         await tester.tap(moreVertFinder);
         await tester.pumpAndSettle();

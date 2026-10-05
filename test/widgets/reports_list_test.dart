@@ -440,7 +440,7 @@ void main() {
       expect(find.text('Altra Segnalazione'), findsOneWidget);
 
       // Change dropdown filter to "Mie"
-      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.tap(find.byType(PopupMenuButton<String>));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('report.list.dropdown.mine').last);

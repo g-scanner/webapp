@@ -46,7 +46,7 @@ class ProductDetailAppBarActions extends StatelessWidget {
           child: IconButton(
             color: cardBg,
             onPressed: () {},
-            icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+            icon: Icon(Icons.more_vert_rounded, color: colorScheme.onSurfaceVariant),
           ),
         ),
       );

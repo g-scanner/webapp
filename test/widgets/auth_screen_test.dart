@@ -113,7 +113,7 @@ void main() {
         expect(startBtn.onPressed, isNull);
 
         // Tap sulla checkbox
-        final checkboxFinder = find.byType(Checkbox);
+        final checkboxFinder = find.byKey(const Key('legalConsentCheckbox'));
         expect(checkboxFinder, findsOneWidget);
         await tester.tap(checkboxFinder);
         await tester.pumpAndSettle();

@@ -167,6 +167,7 @@ class _LegalConsentDialogState extends State<LegalConsentDialog> {
 
                 // ── L'UNICA CARD: Checkbox con Allineamento Centrato ──
                 GestureDetector(
+                  key: const Key('legalConsentCheckbox'),
                   onTap: () => setState(() => _isChecked = !_isChecked),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),

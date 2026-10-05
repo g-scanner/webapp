@@ -879,7 +879,7 @@ void main() {
           mockFirestore: mockFirestore,
           isOwnReport: true,
         );
-        expect(find.byIcon(Icons.more_vert), findsOneWidget);
+        expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
       },
     );
 
@@ -893,7 +893,7 @@ void main() {
         mockFirestore: mockFirestore,
         isOwnReport: false,
       );
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
     });
 
     testWidgets(
@@ -907,7 +907,7 @@ void main() {
           isOwnReport: true,
           passOnDeleteReport: false,
         );
-        expect(find.byIcon(Icons.more_vert), findsNothing);
+        expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
       },
     );
 
@@ -922,7 +922,7 @@ void main() {
         isOwnReport: true,
       );
 
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
       await _pumpAndSettleIgnoringOverflow(tester);
 
       expect(
@@ -942,7 +942,7 @@ void main() {
         isOwnReport: true,
       );
 
-      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
       await _pumpAndSettleIgnoringOverflow(tester);
       await tester.tap(find.text('common.actions.deleteReportConfirmTitle'));
       await _pumpAndSettleIgnoringOverflow(tester);
@@ -968,7 +968,7 @@ void main() {
           isOwnReport: true,
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(Icons.more_vert_rounded));
         await _pumpAndSettleIgnoringOverflow(tester);
         await tester.tap(find.text('common.actions.deleteReportConfirmTitle'));
         await _pumpAndSettleIgnoringOverflow(tester);
@@ -992,7 +992,7 @@ void main() {
           reportId: 'test_report_id_999',
         );
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(Icons.more_vert_rounded));
         await _pumpAndSettleIgnoringOverflow(tester);
         await tester.tap(find.text('common.actions.deleteReportConfirmTitle'));
         await _pumpAndSettleIgnoringOverflow(tester);
@@ -1030,7 +1030,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 200));
 
-        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.tap(find.byIcon(Icons.more_vert_rounded));
         await _pumpAndSettleIgnoringOverflow(tester);
         await tester.tap(find.text('common.actions.deleteReportConfirmTitle'));
         await _pumpAndSettleIgnoringOverflow(tester);
