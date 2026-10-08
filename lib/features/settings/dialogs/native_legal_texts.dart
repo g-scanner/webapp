@@ -78,7 +78,7 @@ Widget buildNativeTos(Color textColor) {
         children: [
           h2("Termini e Condizioni d'Uso (ToS) di G-Scanner"),
           p(
-            "**Versione:** 1.0\n**Data di entrata in vigore:** 17 luglio 2026\n**Data di ultimo aggiornamento:** 17 luglio 2026",
+            "**Versione:** 1.0\n**Data di entrata in vigore:** 9 ottobre 2026\n**Data di ultimo aggiornamento:** 9 ottobre 2026",
           ),
           divider(),
 
@@ -270,6 +270,9 @@ Widget buildNativeTos(Color textColor) {
           ),
           p(
             "In particolare, G-Scanner non certifica la conformità normativa dei prodotti alimentari, la sicurezza degli stessi o la correttezza delle informazioni presenti nelle etichette dei produttori.",
+          ),
+          p(
+            "I dati eventualmente memorizzati localmente per consentire il funzionamento offline possono inoltre essere soggetti a ritardi nell'aggiornamento rispetto ai dati disponibili online.",
           ),
           divider(),
 
@@ -531,6 +534,7 @@ Widget buildNativeTos(Color textColor) {
           divider(),
 
           h1("11. Disponibilità, Aggiornamenti ed Evoluzione del Software"),
+          h2("11.1 Modifiche ed evoluzione del servizio"),
           p(
             "L'Utente riconosce che G-Scanner è un software in continua evoluzione.",
           ),
@@ -551,6 +555,20 @@ Widget buildNativeTos(Color textColor) {
           bullet("mantenimento indefinito di tutte le funzionalità."),
           p(
             "Tali modifiche non attribuiscono automaticamente all'Utente diritto a compensazioni, rimborsi o risarcimenti, nei limiti massimi consentiti dalla normativa applicabile e fatti salvi i diritti inderogabili dell'Utente quale consumatore.",
+          ),
+
+          h2("11.2 Modalità offline e database locali"),
+          p(
+            "G-Scanner può offrire una modalità di utilizzo offline che consente all'Utente di utilizzare determinate funzionalità dell'Applicazione senza una connessione Internet attiva.",
+          ),
+          p(
+            "Per consentire l'utilizzo offline, l'Applicazione può mettere a disposizione dell'Utente differenti varianti di un database locale, caratterizzate da dimensioni e quantità di dati differenti. L'Utente può scegliere e scaricare la variante più adatta alle proprie esigenze e allo spazio di archiviazione disponibile sul proprio dispositivo.",
+          ),
+          p(
+            "La disponibilità, il contenuto, le dimensioni, il numero delle varianti e le funzionalità supportate dai database offline possono essere modificati, aggiornati, limitati o rimossi dallo Sviluppatore in qualsiasi momento.",
+          ),
+          p(
+            "I dati presenti nel database locale possono inoltre risultare meno aggiornati rispetto ai dati disponibili online. L'utilizzo della modalità offline non modifica né attenua gli obblighi dell'Utente di verificare personalmente e integralmente le informazioni riportate sulla confezione originale dei prodotti prima del consumo.",
           ),
           divider(),
 
@@ -765,7 +783,7 @@ Widget buildNativeTos(Color textColor) {
           h1("Contatti"),
           p("**Applicazione:** G-Scanner"),
           p("**Sviluppatore:** Emanuele Ciotola"),
-          p("**Email di supporto:**\n**supporto-gscanner@googlegroups.com**"),
+          p("**E-mail di supporto:**\n**supporto-gscanner@googlegroups.com**"),
 
           const SizedBox(height: 40),
         ],
@@ -849,7 +867,7 @@ Widget buildNativePrivacyPolicy(Color textColor) {
         children: [
           h2("Privacy Policy di G-Scanner"),
           p(
-            "**Versione:** 1.0\n**Data di entrata in vigore:** 17 luglio 2026\n**Data di ultimo aggiornamento:** 17 luglio 2026",
+            "**Versione:** 1.0\n**Data di entrata in vigore:** 9 ottobre 2026\n**Data di ultimo aggiornamento:** 9 ottobre 2026",
           ),
           divider(),
 
@@ -1001,6 +1019,27 @@ Widget buildNativePrivacyPolicy(Color textColor) {
           ),
           divider(),
 
+          h2("2.5 Database locale per l'utilizzo offline"),
+          p(
+            "G-Scanner può consentire all'utente di scaricare sul proprio dispositivo una copia locale di dati relativi ai prodotti alimentari, al fine di permettere la consultazione e la scansione dei prodotti anche in assenza di una connessione Internet.",
+          ),
+          p(
+            "Il database offline contiene esclusivamente informazioni relative ai prodotti alimentari necessarie al funzionamento delle funzionalità offline e non contiene dati personali dell'utente.",
+          ),
+          p(
+            "L'utente può scegliere tra differenti configurazioni del database offline, caratterizzate da un diverso livello di copertura e dalla conseguente diversa quantità di dati memorizzati sul dispositivo.",
+          ),
+          p(
+            "I dati presenti nel database offline costituiscono una copia locale dei dati disponibili al momento del relativo aggiornamento e potrebbero pertanto non riflettere eventuali modifiche o aggiornamenti successivi delle informazioni relative ai prodotti.",
+          ),
+          p(
+            "I dati consultati tramite il database offline non vengono automaticamente associati al profilo personale dell'utente né utilizzati per creare o aggiornare il relativo profilo.",
+          ),
+          p(
+            "Il database offline può essere aggiornato o eliminato dall'utente mediante le funzionalità messe a disposizione dall'applicazione.",
+          ),
+          divider(),
+
           h1("3. Dati appartenenti a categorie particolari (Art. 9 GDPR)"),
           p(
             "G-Scanner consente all'utente di configurare specifiche preferenze personali finalizzate alla consultazione delle informazioni sui prodotti alimentari. Tali impostazioni possono riflettere lo stato di salute o particolari esigenze alimentari dell'utente e, pertanto, possono costituire **categorie particolari di dati personali**, ai sensi dell'**art. 9 del Regolamento (UE) 2016/679 (GDPR)**.",
@@ -1053,6 +1092,9 @@ Widget buildNativePrivacyPolicy(Color textColor) {
             "consentire la scansione dei codici a barre e la consultazione delle informazioni relative ai prodotti alimentari;",
           ),
           bullet(
+            "consentire la consultazione delle informazioni relative ai prodotti anche in assenza di una connessione Internet, mediante l'eventuale database locale scaricato dall'utente;",
+          ),
+          bullet(
             "permettere la personalizzazione dell'esperienza dell'utente tramite la configurazione delle preferenze alimentari e delle impostazioni dell'applicazione;",
           ),
           bullet(
@@ -1095,9 +1137,9 @@ Widget buildNativePrivacyPolicy(Color textColor) {
           ),
           divider(),
 
-          h1("7. Permessi richiesti dall'applicazione"),
+          h1("7. Accesso a funzionalità e informazioni del dispositivo"),
           p(
-            "Per garantire il corretto funzionamento delle funzionalità offerte, G-Scanner può richiedere alcuni permessi del dispositivo dell'utente.",
+            "Per garantire il corretto funzionamento delle funzionalità offerte, G-Scanner può accedere ad alcune funzionalità e informazioni del dispositivo dell'utente.",
           ),
 
           h2("Fotocamera"),
@@ -1110,12 +1152,21 @@ Widget buildNativePrivacyPolicy(Color textColor) {
           divider(),
 
           h2("Connessione Internet"),
-          p("La connessione Internet è necessaria per:"),
+          p(
+            "L'applicazione verifica, ove necessario, la disponibilità della connessione Internet al fine di determinare se le funzionalità che richiedono l'accesso ai servizi online possano essere utilizzate.",
+          ),
+          p("La connessione Internet è necessaria, in particolare, per:"),
           bullet("effettuare l'autenticazione tramite i provider supportati;"),
           bullet("sincronizzare i dati degli utenti autenticati;"),
           bullet("accedere ai servizi cloud utilizzati dall'applicazione;"),
           bullet(
+            "recuperare e aggiornare le informazioni sui prodotti mediante i servizi online;",
+          ),
+          bullet(
             "consentire il funzionamento delle funzionalità basate sui dati della community.",
+          ),
+          p(
+            "Lo stato della connessione viene utilizzato esclusivamente per la gestione tecnica delle funzionalità dell'applicazione e non viene raccolto, conservato o utilizzato per finalità di profilazione o tracciamento.",
           ),
           divider(),
 
@@ -1125,17 +1176,15 @@ Widget buildNativePrivacyPolicy(Color textColor) {
           ),
           divider(),
 
-          h2("Posizione geografica approssimativa di sistema"),
+          h2("Lingua del dispositivo e lingua dell'interfaccia"),
           p(
-            "L'applicazione utilizza esclusivamente la posizione geografica approssimativa fornita dal sistema operativo **soltanto al primo avvio dell'applicazione**, esclusivamente allo scopo di determinare automaticamente la lingua dell'interfaccia.",
+            "Al primo avvio, l'applicazione può leggere la lingua configurata sul dispositivo al fine di determinare automaticamente la lingua dell'interfaccia dell'applicazione.",
           ),
-          p("Tale informazione:"),
-          bullet("viene elaborata esclusivamente sul dispositivo;"),
-          bullet("non comporta l'accesso alla posizione GPS precisa;"),
-          bullet("non viene salvata;"),
-          bullet("non viene trasmessa ai server;"),
-          bullet(
-            "non viene utilizzata per attività di profilazione o tracciamento.",
+          p(
+            "La lingua così determinata viene utilizzata per configurare l'interfaccia dell'applicazione e, per gli utenti autenticati, può essere salvata nel database associato all'account al fine di mantenere la preferenza e sincronizzarla tra i dispositivi.",
+          ),
+          p(
+            "La lingua dell'interfaccia non viene utilizzata per finalità di profilazione, tracciamento o pubblicità.",
           ),
           divider(),
 
@@ -1183,7 +1232,24 @@ Widget buildNativePrivacyPolicy(Color textColor) {
           ),
           divider(),
 
-          h2("9.2 Utenti autenticati"),
+          h2("9.2 Database locale per l'utilizzo offline"),
+          p(
+            "I dati relativi ai prodotti contenuti nel database offline vengono conservati localmente sul dispositivo fino a quando l'utente:",
+          ),
+          bullet(
+            "elimina il database tramite le funzionalità disponibili nell'applicazione;",
+          ),
+          bullet("sostituisce il database con una diversa configurazione;"),
+          bullet("disinstalla l'applicazione;"),
+          bullet(
+            "elimina i relativi dati locali, ove previsto dal sistema operativo.",
+          ),
+          p(
+            "Il database offline può essere aggiornato periodicamente. La versione disponibile sul dispositivo potrebbe pertanto non coincidere con la versione più recente dei dati disponibili online.",
+          ),
+          divider(),
+
+          h2("9.3 Utenti autenticati"),
           p(
             "Per gli utenti autenticati i dati vengono conservati mediante una modalità di **doppia memorizzazione**:",
           ),
@@ -1405,7 +1471,7 @@ Widget buildNativePrivacyPolicy(Color textColor) {
 
           h1("Contatti del Titolare del Trattamento"),
           p("**Emanuele Ciotola**"),
-          p("**Email:**\n**supporto-gscanner@googlegroups.com**"),
+          p("**E-mail:**\n**supporto-gscanner@googlegroups.com**"),
 
           const SizedBox(height: 40),
         ],
