@@ -9,6 +9,7 @@
       "subtitle": "Le scansioni effettuate appariranno qui."
     },
     "filters": {
+      "tooltip": "Filtra cronologia",
       "all": "Tutti",
       "safe": "Sicuri",
       "uncertain": "Incerti",

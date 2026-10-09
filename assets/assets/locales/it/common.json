@@ -31,6 +31,7 @@
       "deleteHistoryConfirmBody": "Sei sicuro di voler eliminare questa scansione dalla cronologia? Questa azione è irreversibile.",
       "deleteReportConfirmTitle": "Elimina segnalazione",
       "deleteReportConfirmBody": "Sei sicuro di voler eliminare questa segnalazione? Questa azione è irreversibile.",
+      "moreOptions": "Altre opzioni",
       "deleteError": "Errore durante l'eliminazione. Riprova.",
       "deleteHistoryError": "Errore durante l'eliminazione dalla cronologia. Riprova.",
       "search": "Cerca per nome o codice a barre...",

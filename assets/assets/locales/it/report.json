@@ -16,10 +16,11 @@
         "yesterday": "Segnalato ieri, {time}",
         "default": "Segnalato il {date}, {time}"
       },
-      "title": "Dettaglio segnalazione"
+        "title": "Dettaglio segnalazione"
     },
     "list": {
       "dropdown": {
+        "tooltip": "Filtra segnalazioni",
         "all": "Tutte",
         "mine": "Le mie"
       },

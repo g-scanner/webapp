@@ -40,7 +40,11 @@
       "appThemeTitle": "Tema dell'app",
       "appThemeSubtitle": "Scegli tra chiaro, scuro o tema di sistema",
       "preferredLanguageTitle": "Lingua preferita",
-      "preferredLanguageSubtitle": "Usata dall'interfaccia quando possibile"
+      "preferredLanguageSubtitle": "Usata dall'interfaccia quando possibile",
+      "tooltips": {
+        "theme": "Scegli tema",
+        "language": "Scegli lingua"
+      }
     },
     "dataAndHistory": {
       "clearHistoryTitle": "Svuota Cronologia",

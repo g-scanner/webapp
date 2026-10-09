@@ -30597,12 +30597,13 @@ bcQ(){var s=$.b2u
 if(s!=null){v.G.document.removeEventListener("visibilitychange",s)
 $.b2u=null}},
 aYJ:function aYJ(a){this.a=a},
-b4z(a,b,c){return new A.D2(a,b,null,c.i("D2<0>"))},
-D2:function D2(a,b,c,d){var _=this
+b4z(a,b,c,d){return new A.D2(a,b,c,null,d.i("D2<0>"))},
+D2:function D2(a,b,c,d,e){var _=this
 _.c=a
 _.d=b
-_.a=c
-_.$ti=d},
+_.e=c
+_.a=d
+_.$ti=e},
 bcX(a,b,c,d,e,f){return A.wB(!0,new A.aZ1(!0,c,f,d,e,a,null),b,t.H)},
 bcY(a,b){var s=A.y("common.actions.deleteHistoryConfirmTitle",null),r=A.y("common.actions.deleteHistoryConfirmBody",null)
 return A.bcX(A.y("common.actions.delete",null),a,B.ov,r,b,s)},
@@ -109443,13 +109444,13 @@ A.aYJ.prototype={
 $1(a){this.a.$1(!v.G.document.hidden)},
 $S:34}
 A.D2.prototype={
-J(a){var s,r,q=null,p=A.v(a).ax,o=A.v(a).ax.a===B.A?B.W:B.l,n=A.y("common.actions.moreOptions",q),m=B.q.R(0.12),l=A.at(20),k=A.at(20),j=p.to
-if(j==null){j=p.q
-if(j==null)j=p.k3}j=j.R(0.4)
-s=p.RG
-s=(s==null?p.k2:s).R(0.4)
-r=p.rx
-return new A.S0(A.axc(l,A.aD(q,A.ba(B.uv,r==null?p.k3:r,q,q,20),B.i,q,q,new A.aH(s,q,q,q,q,q,B.ab),q,40,q,q,q,q,40),B.au,o,q,6,this.c,B.Gg,this.d,q,m,new A.bm(k,new A.aP(j,1,B.v,-1)),B.w,n,this.$ti.c),q)}}
+J(a){var s,r,q=this,p=null,o=A.v(a).ax,n=A.v(a).ax.a===B.A?B.W:B.l,m=B.q.R(0.12),l=A.at(20),k=A.at(20),j=o.to
+if(j==null){j=o.q
+if(j==null)j=o.k3}j=j.R(0.4)
+s=o.RG
+s=(s==null?o.k2:s).R(0.4)
+r=o.rx
+return new A.S0(A.axc(l,A.aD(p,A.ba(B.uv,r==null?o.k3:r,p,p,20),B.i,p,p,new A.aH(s,p,p,p,p,p,B.ab),p,40,p,p,p,p,40),B.au,n,p,6,q.c,B.Gg,q.d,p,m,new A.bm(k,new A.aP(j,1,B.v,-1)),B.w,q.e,q.$ti.c),p)}}
 A.aZ1.prototype={
 $1(a){var s,r,q,p,o,n,m=this,l=null,k=A.v(a).ax,j=A.v(a).ax.a===B.A?B.W:B.l,i=A.at(28),h=k.id
 if(h==null)h=k.fy
@@ -110227,9 +110228,9 @@ case B.cv:return A.y("history.filters.uncertain",s)
 case B.ee:return A.y("history.filters.unsafe",s)
 case B.ef:return A.y("history.filters.unknown",s)
 default:return A.y("history.filters.all",s)}},
-J(a){var s=t.rk
-s=A.V(new A.W(B.WZ,new A.apo(this,a),s),s.i("ah.E"))
-return new A.t4("Filtra cronologia",this.c,s,this.d,null,null,t.a1)}}
+J(a){var s=A.y("common.actions.moreOptions",null),r=t.rk
+r=A.V(new A.W(B.WZ,new A.apo(this,a),r),r.i("ah.E"))
+return new A.t4(s,this.c,r,this.d,null,null,t.a1)}}
 A.apo.prototype={
 $1(a){var s=this.a,r=this.b
 return new A.hA(a,s.apN(a),s.al3(r,a),s.al6(r,a),t.va)},
@@ -110797,7 +110798,7 @@ A.a_m.prototype={
 J(a){var s,r,q=this,p=null
 if(q.c){s=q.Q
 r=s.rx
-return new A.aW(B.RV,A.mI(A.pU(q.z,p,p,A.ba(B.uv,r==null?s.k3:r,p,p,p),p,p,new A.axr(),p,p,p,p),p,!0),p)}if(q.d||q.e)return A.b4z(new A.axs(q),new A.axt(q,a),t.N)
+return new A.aW(B.RV,A.mI(A.pU(q.z,p,p,A.ba(B.uv,r==null?s.k3:r,p,p,p),p,p,new A.axr(),p,p,p,p),p,!0),p)}if(q.d||q.e)return A.b4z(new A.axs(q),new A.axt(q,a),A.y("common.actions.moreOptions",p),t.N)
 return B.aY},
 avP(a){A.bcY(a,new A.axp(this))},
 avQ(a){A.b33(a,new A.axq(this))}}
@@ -111002,7 +111003,7 @@ s=A.iN(s,b,b,b,n,B.cP,new A.bm(A.at(999),B.o),b)
 return new A.aW(new A.aa(0,0,0,a1.f.d),A.aD(b,A.l_(A.b6(A.b([a3,r,B.b6,o,B.dQ,l,B.b6,j,B.ax,i,B.b6,g,B.dQ,A.bA(A.b([new A.e6(1,B.aZ,q,b),B.bI,new A.e6(2,B.aZ,new A.bn(b,48,A.nj(k.b?new A.bn(20,20,A.Dz(b,n.R(0.5),b,b,b,b,b,2,b,b),b):A.X(A.y("product.reportSheet.submit",b),b,b,b,b,B.cI,b,b),a,s),b),b)],p),B.r,B.ip,B.p,0)],p),B.as,b,B.m,B.a5),b,b,B.mP),B.i,b,b,new A.aH(a2,b,b,B.jd,b,b,B.y),b,b,b,B.So,b,b,b),b)},
 $S:246}
 A.aZm.prototype={
-$2(a,a0){var s,r,q,p,o,n,m,l=this,k=null,j=A.at(999),i=A.fn(k,a0.b),h=A.y("product.reportSheet.reasonLabel",k),g=B.q.R(0.12),f=A.v(l.b).ax.a===B.A?B.W:B.l,e=A.at(999),d=A.at(20),c=l.c,b=c.to
+$2(a,a0){var s,r,q,p,o,n,m,l=this,k=null,j=A.at(999),i=A.fn(k,a0.b),h=A.y("product.reportSheet.reasonTooltip",k),g=B.q.R(0.12),f=A.v(l.b).ax.a===B.A?B.W:B.l,e=A.at(999),d=A.at(20),c=l.c,b=c.to
 if(b==null){b=c.q
 if(b==null)b=c.k3}b=b.R(0.4)
 s=l.a
@@ -111144,7 +111145,7 @@ if(r==null)r=b.k3}return A.a2(["text",s.toUpperCase(),"color",r,"icon",B.uj],t.N
 J(a){var s=this,r=A.v(a),q=s.als(s.a.e,r.ax)
 return s.a.ch?A.aA2(s.UB(a,q),500):s.UB(a,q)},
 UB(a2,a3){var s,r,q,p,o,n,m,l,k,j,i=this,h=null,g=A.v(a2).ax,f=A.v(a2).ax.a===B.A?B.W:B.l,e=g.k2,d=g.k3,c=A.pU(h,h,h,A.ba(B.oo,d,h,h,h),h,h,i.a.d,h,h,h,h),b=A.X(A.y("report.detail.title",h),h,h,h,h,A.a5(h,h,d,h,h,h,h,h,h,h,h,20,h,h,B.E,h,h,!0,h,h,h,h,h,h,h,h),h,h),a=t.p,a0=A.b([],a),a1=i.a.at
-if(a1)a0.push(A.b4z(new A.aSl(g),new A.aSm(i,a2),t.N))
+if(a1)a0.push(A.b4z(new A.aSl(g),new A.aSm(i,a2),A.y("common.actions.moreOptions",h),t.N))
 c=A.QZ(a0,!0,f,!0,0,c,0,h,b)
 b=g.cy
 if(b==null){b=g.CW
@@ -111632,9 +111633,10 @@ m=A.at(12)
 l=f?99:k.c
 if(f){if(p)q=i.y}else{q=i.cx
 if(q==null)q=i.z}B.b.N(d,A.b([A.mI(A.aD(j,A.bA(A.b([o,B.bI,g,B.Le,A.aD(j,A.X(""+l,j,j,j,j,A.a5(j,j,q,j,j,j,j,j,j,j,j,14,j,j,B.ai,j,j,!0,j,j,j,j,j,j,j,j),j,j),B.i,j,j,new A.aH(n,j,j,m,j,j,B.y),j,j,j,B.hR,j,j,j)],c),B.r,B.m,B.p,0),B.i,j,j,new A.aH(h,j,s,e,r,j,B.y),j,j,j,B.Sa,j,j,j),j,f),B.ax],c))}g=A.cW(A.b4A(k.f,k.r,k.w,k.y,k.z,k.x),1)
-f=t.aP
-f=A.V(new A.W(A.b(["Tutte","Mie"],t.s),new A.aA_(k,a),f),f.i("ah.E"))
-d.push(A.bA(A.b([g,B.bI,new A.t4("Filtra segnalazioni",k.Q,f,k.as,B.NS,j,t.z3)],c),B.r,B.m,B.p,0))
+f=A.y("report.list.dropdown.tooltip",j)
+e=t.aP
+e=A.V(new A.W(A.b(["Tutte","Mie"],t.s),new A.aA_(k,a),e),e.i("ah.E"))
+d.push(A.bA(A.b([g,B.bI,new A.t4(f,k.Q,e,k.as,B.NS,j,t.z3)],c),B.r,B.m,B.p,0))
 return A.b6(d,B.as,j,B.m,B.p)}}
 A.aA_.prototype={
 $1(a){var s=this.a,r=this.b
@@ -112633,8 +112635,8 @@ A.ags.prototype={
 $1(a){return this.a.f.$2(a,"alertLactose")},
 $S:12}
 A.R1.prototype={
-J(a){var s=null,r=A.y("settings.uiOptions.appThemeTitle",s),q=A.y("settings.uiOptions.appThemeSubtitle",s),p=t.s3
-return A.b8i(this.d,A.b([new A.hP("system",A.y("common.themes.system",s),p),new A.hP("light",A.y("common.themes.light",s),p),new A.hP("dark",A.y("common.themes.dark",s),p)],t.AK),this.c,q,r,"Scegli tema",t.N)}}
+J(a){var s=null,r=A.y("settings.uiOptions.appThemeTitle",s),q=A.y("settings.uiOptions.appThemeSubtitle",s),p=A.y("settings.uiOptions.tooltips.theme",s),o=t.s3
+return A.b8i(this.d,A.b([new A.hP("system",A.y("common.themes.system",s),o),new A.hP("light",A.y("common.themes.light",s),o),new A.hP("dark",A.y("common.themes.dark",s),o)],t.AK),this.c,q,r,p,t.N)}}
 A.Uc.prototype={
 J(a){var s=null,r=A.v(a).ax,q=this.c,p=q?s:this.d,o=A.at(24),n=r.fy,m=n.R(0.12),l=n.R(0.08),k=r.id,j=k==null,i=(j?n:k).R(0.3),h=A.at(24),g=A.eB(j?n:k,1)
 if(j)k=n
@@ -112642,8 +112644,8 @@ q=q?new A.bn(20,20,A.Dz(s,n,s,s,s,s,s,2,s,s),s):A.ba(B.Td,n,s,s,20)
 j=t.p
 return A.hJ(!1,o,!0,A.aD(s,A.bA(A.b([A.aD(s,q,B.i,s,s,new A.aH(k,s,s,s,s,s,B.ab),s,s,s,B.nA,s,s,s),B.ez,A.cW(A.b6(A.b([A.X(A.y(u.H,s),s,s,s,s,A.a5(s,s,n,s,s,s,s,s,s,s,s,16,s,s,B.T,s,s,!0,s,s,s,s,s,s,s,s),s,s),B.cY,A.X(A.y("settings.dataAndHistory.clearHistorySubtitle",s),s,s,s,s,A.a5(s,s,n,s,s,s,s,s,s,s,s,13,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s)],j),B.a8,s,B.m,B.p),1)],j),B.r,B.m,B.p,0),B.i,s,s,new A.aH(i,s,g,h,s,s,B.y),s,s,s,B.e9,s,s,s),s,!0,s,s,l,s,s,s,s,s,p,s,s,m,s,s)}}
 A.Ws.prototype={
-J(a){var s=null,r=A.y("settings.uiOptions.preferredLanguageTitle",s),q=A.y("settings.uiOptions.preferredLanguageSubtitle",s),p=t.s3
-return A.b8i(this.d,A.b([new A.hP("it",A.y("common.languages.it",s),p),new A.hP("en",A.y("common.languages.en",s),p),new A.hP("es",A.y("common.languages.es",s),p),new A.hP("de",A.y("common.languages.de",s),p),new A.hP("fr",A.y("common.languages.fr",s),p)],t.AK),this.c,q,r,"Scegli lingua",t.N)}}
+J(a){var s=null,r=A.y("settings.uiOptions.preferredLanguageTitle",s),q=A.y("settings.uiOptions.preferredLanguageSubtitle",s),p=A.y("settings.uiOptions.tooltips.language",s),o=t.s3
+return A.b8i(this.d,A.b([new A.hP("it",A.y("common.languages.it",s),o),new A.hP("en",A.y("common.languages.en",s),o),new A.hP("es",A.y("common.languages.es",s),o),new A.hP("de",A.y("common.languages.de",s),o),new A.hP("fr",A.y("common.languages.fr",s),o)],t.AK),this.c,q,r,p,t.N)}}
 A.aXx.prototype={
 $1(a){var s,r,q,p,o=this,n=null,m=A.v(a).ax,l=o.b?24:16,k=o.c,j=k?24:16
 if(k)k=n
