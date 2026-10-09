@@ -21,7 +21,7 @@ class LanguageSection extends StatelessWidget {
     return SettingsDropdownTile<String>(
       title: "settings.uiOptions.preferredLanguageTitle".tr(),
       subtitle: "settings.uiOptions.preferredLanguageSubtitle".tr(),
-      tooltip: "Scegli lingua",
+      tooltip: "settings.uiOptions.tooltips.language".tr(),
       selectedValue: preferredLanguage,
       options: [
         SettingsDropdownOption(

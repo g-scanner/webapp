@@ -143,7 +143,7 @@ void showSubmitReportBottomSheet({
                             constraints: BoxConstraints.tightFor(
                               width: constraints.maxWidth,
                             ),
-                            tooltip: "product.reportSheet.reasonLabel".tr(),
+                            tooltip: "product.reportSheet.reasonTooltip".tr(),
                             elevation: 6,
                             shadowColor: Colors.black.withValues(alpha: 0.12),
                             offset: const Offset(0, 60),

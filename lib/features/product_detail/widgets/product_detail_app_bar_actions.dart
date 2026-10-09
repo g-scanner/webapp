@@ -58,6 +58,7 @@ class ProductDetailAppBarActions extends StatelessWidget {
 
     if (canDeleteHistory || canDeleteReport) {
       return AppCircleMoreMenu<String>(
+        tooltip: "common.actions.moreOptions".tr(),
         onSelected: (value) => _handleMenuSelection(context, value),
         itemBuilder: (BuildContext context) {
           final colorScheme = context.colorScheme;

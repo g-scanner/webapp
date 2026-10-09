@@ -177,7 +177,7 @@ class ReportsFilterHeader extends StatelessWidget {
 
             // ── Filtro a Pillola PopupMenuButton (Stesso Design System) ──
             AppPillFilterDropdown<String>(
-              tooltip: "Filtra segnalazioni",
+              tooltip: "report.list.dropdown.tooltip".tr(),
               selectedValue: reportFilter,
               onSelected: onFilterChanged,
               constraints: const BoxConstraints(minWidth: 110, maxWidth: 150),

@@ -237,15 +237,14 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
         actions: [
           if (widget.isOwnReport && widget.onDeleteReport != null)
             AppCircleMoreMenu<String>(
+              tooltip: "common.actions.moreOptions".tr(),
               onSelected: (value) {
                 if (value == 'delete_report') {
                   showDeleteReportConfirmDialog(
                     context: context,
                     onConfirm: () async {
-                      final targetId =
-                          widget.reportId ?? _activeReport?.id;
-                      if (targetId != null &&
-                          widget.onDeleteReport != null) {
+                      final targetId = widget.reportId ?? _activeReport?.id;
+                      if (targetId != null && widget.onDeleteReport != null) {
                         await widget.onDeleteReport!(targetId);
                       }
                       if (mounted) widget.onBack();

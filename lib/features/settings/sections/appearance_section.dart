@@ -21,7 +21,7 @@ class AppearanceSection extends StatelessWidget {
     return SettingsDropdownTile<String>(
       title: "settings.uiOptions.appThemeTitle".tr(),
       subtitle: "settings.uiOptions.appThemeSubtitle".tr(),
-      tooltip: "Scegli tema",
+      tooltip: "settings.uiOptions.tooltips.theme".tr(),
       selectedValue: preferredTheme,
       options: [
         SettingsDropdownOption(

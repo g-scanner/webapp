@@ -78,7 +78,7 @@ class HistoryFilterChips extends StatelessWidget {
     ];
 
     return AppPillFilterDropdown<GlutenSafetyStatus?>(
-      tooltip: "Filtra cronologia",
+      tooltip: "common.actions.moreOptions".tr(),
       selectedValue: filter,
       onSelected: onChanged,
       options: statuses.map((status) {
