@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
-import '../../../core/widgets/app_popup_menu_item.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../models/models.dart';
 import '../../../services/analyzer_service.dart';
 
@@ -168,76 +168,13 @@ void showSubmitReportBottomSheet({
                               ];
 
                               return options.map((type) {
-                                final isSelected = reportType == type;
-
-                                return AppPopupMenuItem<String>(
+                                return AppRadioPopupMenuItem<String>(
                                   value: type,
+                                  label: getReportTypeLabel(type),
+                                  isSelected: reportType == type,
+                                  colorScheme: colorScheme,
                                   onTap: () =>
                                       setSheetState(() => reportType = type),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? colorScheme.primary.withValues(
-                                              alpha: 0.12,
-                                            )
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            getReportTypeLabel(type),
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w700
-                                                  : FontWeight.w500,
-                                              color: isSelected
-                                                  ? colorScheme.primary
-                                                  : colorScheme.onSurface,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-
-                                        // Spunta circolare animata
-                                        AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 200,
-                                          ),
-                                          width: 20,
-                                          height: 20,
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? colorScheme.primary
-                                                : Colors.transparent,
-                                            shape: BoxShape.circle,
-                                            border: isSelected
-                                                ? null
-                                                : Border.all(
-                                                    color: colorScheme
-                                                        .outlineVariant
-                                                        .withValues(alpha: 0.6),
-                                                    width: 1.5,
-                                                  ),
-                                          ),
-                                          child: isSelected
-                                              ? Icon(
-                                                  Icons.check,
-                                                  size: 14,
-                                                  color: colorScheme.onPrimary,
-                                                )
-                                              : null,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
                                 );
                               }).toList();
                             },

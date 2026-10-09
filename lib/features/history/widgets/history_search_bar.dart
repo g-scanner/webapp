@@ -2,9 +2,9 @@
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart';
-import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 
+/// Barra di ricerca della cronologia (wrapper su [AppSearchBar]).
 class HistorySearchBar extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -25,71 +25,13 @@ class HistorySearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-    final bool showClearIcon = isFocused && searchQuery.isNotEmpty;
-
-    return TextField(
+    return AppSearchBar(
       controller: controller,
       focusNode: focusNode,
+      isFocused: isFocused,
+      searchQuery: searchQuery,
       onChanged: onChanged,
-      style: TextStyle(
-        fontSize: 14,
-        color: colorScheme.onSurface,
-      ),
-      decoration: InputDecoration(
-        hintText: "common.actions.search".tr(),
-        hintStyle: TextStyle(
-          color: colorScheme.onSurfaceVariant.withValues(
-            alpha: 0.6,
-          ),
-          fontSize: 14,
-        ),
-        prefixIconConstraints: const BoxConstraints(
-          minWidth: 48,
-          maxWidth: 48,
-          minHeight: 48,
-        ),
-        prefixIcon: Padding(
-          padding: const EdgeInsets.only(left: 4.0),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return ScaleTransition(
-                scale: animation,
-                child: child,
-              );
-            },
-            child: showClearIcon
-                ? IconButton(
-                    key: const ValueKey('clearIcon'),
-                    icon: Icon(
-                      Icons.close,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    onPressed: onClear,
-                  )
-                : Icon(
-                    key: const ValueKey('searchIcon'),
-                    Icons.search,
-                    color: searchQuery.isNotEmpty
-                        ? colorScheme.onSurfaceVariant
-                        : colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.6,
-                          ),
-                  ),
-          ),
-        ),
-        filled: true,
-        fillColor: colorScheme.surfaceContainerHighest,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 0,
-          horizontal: 16,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(999),
-          borderSide: BorderSide.none,
-        ),
-      ),
+      onClear: onClear,
     );
   }
 }

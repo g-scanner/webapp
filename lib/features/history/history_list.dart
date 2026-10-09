@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/theme/theme.dart';
+import '../../core/widgets/widgets.dart';
 import '../../models/models.dart';
 import '../../services/analyzer_service.dart';
 import 'widgets/widgets.dart';
@@ -86,100 +87,9 @@ class _HistoryListState extends State<HistoryList> {
   }
 
   void _confirmDelete(String id) {
-    final colorScheme = context.colorScheme;
-    showDialog(
+    showDeleteHistoryConfirmDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.cardBackground,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        icon: Center(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: colorScheme.errorContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.delete_outline_rounded,
-              color: colorScheme.onErrorContainer,
-              size: 28,
-            ),
-          ),
-        ),
-        title: Text(
-          "common.actions.deleteHistoryConfirmTitle".tr(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          "common.actions.deleteHistoryConfirmBody".tr(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-            fontSize: 14,
-            height: 1.5,
-          ),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Azione 1: Elimina elemento (Filled distruttivo a pillola)
-              FilledButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  widget.onDeleteHistoryItem(id);
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.error,
-                  foregroundColor: colorScheme.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.delete".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Azione 2: Annulla (Outlined neutro a pillola)
-              OutlinedButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onSurface,
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.cancel".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      onConfirm: () => widget.onDeleteHistoryItem(id),
     );
   }
 

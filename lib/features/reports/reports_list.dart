@@ -8,6 +8,7 @@ import '../../services/db_service.dart';
 import '../../services/analyzer_service.dart';
 import '../../models/models.dart';
 import '../../core/theme/theme.dart';
+import '../../core/widgets/widgets.dart';
 import 'report_detail_card.dart';
 import 'widgets/widgets.dart';
 
@@ -119,104 +120,13 @@ class _ReportsListState extends State<ReportsList> {
 
   void _confirmDeleteReport(String? reportId) {
     if (reportId == null || reportId.isEmpty) return;
-    final cardBg = context.cardBackground;
-    final colorScheme = context.colorScheme;
-
-    showDialog(
+    showDeleteReportConfirmDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        icon: Center(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: colorScheme.errorContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.report_gmailerrorred_rounded,
-              color: colorScheme.onErrorContainer,
-              size: 28,
-            ),
-          ),
-        ),
-        title: Text(
-          "common.actions.deleteReportConfirmTitle".tr(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          "common.actions.deleteReportConfirmBody".tr(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-            fontSize: 14,
-            height: 1.5,
-          ),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Azione 1: Elimina segnalazione (Filled distruttivo a pillola)
-              FilledButton(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  if (widget.onDeleteReport != null) {
-                    await widget.onDeleteReport!(reportId);
-                  }
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.error,
-                  foregroundColor: colorScheme.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.delete".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Azione 2: Annulla (Outlined neutro a pillola)
-              OutlinedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onSurface,
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.cancel".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      onConfirm: () async {
+        if (widget.onDeleteReport != null) {
+          await widget.onDeleteReport!(reportId);
+        }
+      },
     );
   }
 

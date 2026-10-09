@@ -2,10 +2,10 @@
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
-import 'package:gscanner/core/theme/app_theme.dart';
-import 'package:gscanner/core/widgets/app_popup_menu_item.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/widgets.dart';
 
 /// Widget dedicato per gestire le azioni dell'AppBar in ProductDetailCard:
 /// - Skeleton durante il caricamento
@@ -47,101 +47,67 @@ class ProductDetailAppBarActions extends StatelessWidget {
           child: IconButton(
             color: cardBg,
             onPressed: () {},
-            icon: Icon(Icons.more_vert_rounded, color: colorScheme.onSurfaceVariant),
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       );
     }
 
     if (canDeleteHistory || canDeleteReport) {
-      return ClipOval(
-        child: PopupMenuButton<String>(
-          tooltip: "common.actions.moreOptions".tr(),
-          elevation: 6,
-          shadowColor: Colors.black.withValues(alpha: 0.12),
-          offset: const Offset(0, 48),
-          color: context.cardBackground,
-          surfaceTintColor: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: context.colorScheme.outlineVariant.withValues(alpha: 0.4),
-              width: 1,
-            ),
-          ),
-          onSelected: (value) => _handleMenuSelection(context, value),
-          itemBuilder: (BuildContext context) {
-            final colorScheme = context.colorScheme;
-            final items = <PopupMenuEntry<String>>[];
+      return AppCircleMoreMenu<String>(
+        onSelected: (value) => _handleMenuSelection(context, value),
+        itemBuilder: (BuildContext context) {
+          final colorScheme = context.colorScheme;
+          final items = <PopupMenuEntry<String>>[];
 
-            // 1. Elimina cronologia
-            if (canDeleteHistory) {
-              items.add(
-                _buildDestructiveMenuItem(
-                  value: 'delete_history',
-                  title: "common.actions.deleteHistoryConfirmTitle".tr(),
-                  icon: Icons.delete_outline_rounded,
-                  colorScheme: colorScheme,
-                ),
-              );
-            }
+          // 1. Elimina cronologia
+          if (canDeleteHistory) {
+            items.add(
+              AppDestructivePopupMenuItem<String>(
+                value: 'delete_history',
+                title: "common.actions.deleteHistoryConfirmTitle".tr(),
+                icon: Icons.delete_outline_rounded,
+                colorScheme: colorScheme,
+              ),
+            );
+          }
 
-            // Divisore: distanziato dai bordi e con lo stesso colore e spessore del bordo del popup
-            if (canDeleteHistory && canDeleteReport) {
-              items.add(
-                PopupMenuItem<String>(
-                  enabled: false,
-                  height: 9, // Altezza compatta
-                  padding: EdgeInsets.zero,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32.0,
-                    ), // Rientro dai bordi
-                    child: Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: colorScheme.outlineVariant.withValues(
-                        alpha: 0.3,
-                      ), // Identico al bordo del popup
-                    ),
+          // Divisore
+          if (canDeleteHistory && canDeleteReport) {
+            items.add(
+              PopupMenuItem<String>(
+                enabled: false,
+                height: 9,
+                padding: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                   ),
                 ),
-              );
-            }
-
-            // 2. Elimina segnalazione
-            if (canDeleteReport) {
-              items.add(
-                _buildDestructiveMenuItem(
-                  value: 'delete_report',
-                  title: "common.actions.deleteReportConfirmTitle".tr(),
-                  icon: Icons.report_gmailerrorred_rounded,
-                  colorScheme: colorScheme,
-                ),
-              );
-            }
-
-            return items;
-          },
-          // Trigger dei 3 puntini da 40dp
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: context.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.4,
               ),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.more_vert_rounded,
-              color: context.colorScheme.onSurfaceVariant,
-              size: 20,
-            ),
-          ),
-        ),
+            );
+          }
+
+          // 2. Elimina segnalazione
+          if (canDeleteReport) {
+            items.add(
+              AppDestructivePopupMenuItem<String>(
+                value: 'delete_report',
+                title: "common.actions.deleteReportConfirmTitle".tr(),
+                icon: Icons.report_gmailerrorred_rounded,
+                colorScheme: colorScheme,
+              ),
+            );
+          }
+
+          return items;
+        },
       );
     }
 
@@ -157,244 +123,26 @@ class ProductDetailAppBarActions extends StatelessWidget {
   }
 
   void _showDeleteHistoryDialog(BuildContext context) {
-    showDialog(
+    showDeleteHistoryConfirmDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        icon: Center(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: colorScheme.errorContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.delete_outline_rounded,
-              color: colorScheme.onErrorContainer,
-              size: 28,
-            ),
-          ),
-        ),
-        title: Text(
-          "common.actions.deleteHistoryConfirmTitle".tr(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          "common.actions.deleteHistoryConfirmBody".tr(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-            fontSize: 14,
-            height: 1.5,
-          ),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Azione 1: Elimina elemento per barcode (Filled distruttivo a pillola)
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  onDeleteHistoryByBarcode?.call(barcode);
-                  onBack();
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.error,
-                  foregroundColor: colorScheme.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.delete".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Azione 2: Annulla (Outlined neutro a pillola)
-              OutlinedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onSurface,
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.cancel".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      onConfirm: () async {
+        if (onDeleteHistoryByBarcode != null) {
+          await onDeleteHistoryByBarcode!(barcode);
+        }
+        onBack();
+      },
     );
   }
 
   void _showDeleteReportDialog(BuildContext context) {
-    showDialog(
+    showDeleteReportConfirmDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        icon: Center(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: colorScheme.errorContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.report_gmailerrorred_rounded,
-              color: colorScheme.onErrorContainer,
-              size: 28,
-            ),
-          ),
-        ),
-        title: Text(
-          "common.actions.deleteReportConfirmTitle".tr(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          "common.actions.deleteReportConfirmBody".tr(),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-            fontSize: 14,
-            height: 1.5,
-          ),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Azione 1: Elimina report (Filled distruttivo a pillola)
-              FilledButton(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  final reportId = effectiveUserReportId;
-                  if (reportId != null) {
-                    await onDeleteReport?.call(reportId);
-                  }
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.error,
-                  foregroundColor: colorScheme.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.delete".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Azione 2: Annulla (Outlined neutro a pillola)
-              OutlinedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onSurface,
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.cancel".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      onConfirm: () async {
+        if (effectiveUserReportId != null && onDeleteReport != null) {
+          await onDeleteReport!(effectiveUserReportId!);
+        }
+        onBack();
+      },
     );
   }
-}
-
-AppPopupMenuItem<String> _buildDestructiveMenuItem({
-  required String value,
-  required String title,
-  required IconData icon,
-  required ColorScheme colorScheme,
-}) {
-  return AppPopupMenuItem<String>(
-    value: value,
-    customSplashColor: colorScheme.error.withValues(alpha: 0.12),
-    customHighlightColor: colorScheme.error.withValues(alpha: 0.08),
-    customHoverColor: colorScheme.error.withValues(alpha: 0.06),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: colorScheme.error.withValues(alpha: 0.10),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: colorScheme.error, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: colorScheme.error,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
 }

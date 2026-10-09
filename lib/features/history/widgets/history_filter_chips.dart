@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
-import '../../../core/widgets/app_popup_menu_item.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../models/models.dart';
 
 class HistoryFilterChips extends StatelessWidget {
@@ -52,10 +52,6 @@ class HistoryFilterChips extends StatelessWidget {
     }
   }
 
-  Color _getFilterIconColor(BuildContext context) {
-    return _getFilterTextColorFor(context, filter);
-  }
-
   String _getFilterLabel(GlutenSafetyStatus? status) {
     switch (status) {
       case GlutenSafetyStatus.adatto:
@@ -73,138 +69,26 @@ class HistoryFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
+    const statuses = [
+      null,
+      GlutenSafetyStatus.adatto,
+      GlutenSafetyStatus.incerto,
+      GlutenSafetyStatus.nonAdatto,
+      GlutenSafetyStatus.sconosciuto,
+    ];
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: PopupMenuButton<GlutenSafetyStatus?>(
-        tooltip: "Filtra cronologia",
-        elevation: 6,
-        shadowColor: Colors.black.withValues(alpha: 0.12),
-        offset: const Offset(0, 48),
-        color: context.cardBackground,
-        surfaceTintColor: Colors.transparent,
-        borderRadius: BorderRadius.circular(999),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-          ),
-        ),
-        itemBuilder: (context) {
-          final options = [
-            null,
-            GlutenSafetyStatus.adatto,
-            GlutenSafetyStatus.incerto,
-            GlutenSafetyStatus.nonAdatto,
-            GlutenSafetyStatus.sconosciuto,
-          ];
-
-          return options.map((status) {
-            final isSelected = filter == status;
-            final statusBgColor = _getFilterColorFor(context, status);
-            final statusTextColor = _getFilterTextColorFor(context, status);
-
-            return AppPopupMenuItem<GlutenSafetyStatus?>(
-              value: status,
-              onTap: () => onChanged(status),
-              customSplashColor: statusTextColor.withValues(alpha: 0.12),
-              customHighlightColor: statusTextColor.withValues(alpha: 0.08),
-              customHoverColor: statusTextColor.withValues(alpha: 0.06),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? statusBgColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _getFilterLabel(status),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? statusTextColor
-                              : colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // Checkbox circolare coordinata
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? statusTextColor
-                            : Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: isSelected
-                            ? null
-                            : Border.all(
-                                color: colorScheme.outlineVariant.withValues(
-                                  alpha: 0.6,
-                                ),
-                                width: 1.5,
-                              ),
-                      ),
-                      child: isSelected
-                          ? Icon(
-                              Icons.check,
-                              size: 14,
-                              color: colorScheme.surface,
-                            )
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList();
-        },
-      // ── Trigger a Pillola (Niente bordi, colore dinamico) ──
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: _getFilterColorFor(context, filter),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Text(
-                _getFilterLabel(filter),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: _getFilterTextColorFor(context, filter),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.filter_list_rounded,
-              size: 20,
-              color: _getFilterIconColor(context),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
+    return AppPillFilterDropdown<GlutenSafetyStatus?>(
+      tooltip: "Filtra cronologia",
+      selectedValue: filter,
+      onSelected: onChanged,
+      options: statuses.map((status) {
+        return AppPillFilterOption<GlutenSafetyStatus?>(
+          value: status,
+          label: _getFilterLabel(status),
+          color: _getFilterColorFor(context, status),
+          textColor: _getFilterTextColorFor(context, status),
+        );
+      }).toList(),
+    );
+  }
 }
