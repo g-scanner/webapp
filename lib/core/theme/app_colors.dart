@@ -22,8 +22,9 @@ const Color lightErrorContainer = Color(0xFFFFDAD6);
 const Color lightOnErrorContainer = Color(0xFF410002);
 
 // ─── Dark Palette ─────────────────────────────────────────────────────────────
-const Color darkPrimary = Color(0xFF81D683);
-const Color darkOnPrimary = Color(0xFF00390E);
+const Color darkPrimary = Color(0xFF3D9142);         // verde medio — contrasto ~6:1 su bianco
+const Color darkOnPrimary = Color(0xFFFFFFFF);        // bianco leggibile su darkPrimary
+const Color darkOnError = Color(0xFF1A0002);          // scuro leggibile su darkError (rosa chiaro)
 const Color darkPrimaryContainer = Color(0xFF065314);
 const Color darkOnPrimaryContainer = Color(0xFF9DF49E);
 const Color darkSurface = Color(0xFF121214);

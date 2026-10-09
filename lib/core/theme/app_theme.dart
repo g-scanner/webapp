@@ -92,7 +92,7 @@ final ThemeData darkTheme = ThemeData(
     tertiaryContainer: darkTertiaryContainer,
     onTertiaryContainer: darkOnTertiaryContainer,
     error: darkError,
-    onError: darkOnPrimary,
+    onError: darkOnError,
     errorContainer: darkErrorContainer,
     onErrorContainer: darkOnErrorContainer,
     surface: darkSurface,
