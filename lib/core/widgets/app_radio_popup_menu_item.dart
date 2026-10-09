@@ -33,7 +33,7 @@ class AppRadioPopupMenuItem<T> extends AppPopupMenuItem<T> {
                  ? (activeBgColor ??
                      colorScheme.primary.withValues(alpha: 0.12))
                  : Colors.transparent,
-             borderRadius: BorderRadius.circular(12),
+             borderRadius: BorderRadius.circular(999),
            ),
            child: Row(
              children: [
