@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/app_popup_menu_item.dart';
 import '../../../models/models.dart';
 
 class HistoryFilterChips extends StatelessWidget {
@@ -74,41 +75,43 @@ class HistoryFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
 
-    return PopupMenuButton<GlutenSafetyStatus?>(
-      tooltip: "Filtra cronologia",
-      elevation: 6,
-      shadowColor: Colors.black.withValues(alpha: 0.12),
-      offset: const Offset(0, 48),
-      color: context.cardBackground,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: PopupMenuButton<GlutenSafetyStatus?>(
+        tooltip: "Filtra cronologia",
+        elevation: 6,
+        shadowColor: Colors.black.withValues(alpha: 0.12),
+        offset: const Offset(0, 48),
+        color: context.cardBackground,
+        surfaceTintColor: Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
-      ),
-      itemBuilder: (context) {
-        final options = [
-          null,
-          GlutenSafetyStatus.adatto,
-          GlutenSafetyStatus.incerto,
-          GlutenSafetyStatus.nonAdatto,
-          GlutenSafetyStatus.sconosciuto,
-        ];
+        itemBuilder: (context) {
+          final options = [
+            null,
+            GlutenSafetyStatus.adatto,
+            GlutenSafetyStatus.incerto,
+            GlutenSafetyStatus.nonAdatto,
+            GlutenSafetyStatus.sconosciuto,
+          ];
 
-        return options.map((status) {
-          final isSelected = filter == status;
-          final statusBgColor = _getFilterColorFor(context, status);
-          final statusTextColor = _getFilterTextColorFor(context, status);
+          return options.map((status) {
+            final isSelected = filter == status;
+            final statusBgColor = _getFilterColorFor(context, status);
+            final statusTextColor = _getFilterTextColorFor(context, status);
 
-          return PopupMenuItem<GlutenSafetyStatus?>(
-            value: status,
-            // FIX: Invoca onChanged direttamente su onTap, così anche null (Tutti) viene eseguito!
-            onTap: () => onChanged(status),
-            padding: EdgeInsets.zero,
-            height: 48,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            return AppPopupMenuItem<GlutenSafetyStatus?>(
+              value: status,
+              onTap: () => onChanged(status),
+              customSplashColor: statusTextColor.withValues(alpha: 0.12),
+              customHighlightColor: statusTextColor.withValues(alpha: 0.08),
+              customHoverColor: statusTextColor.withValues(alpha: 0.06),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -166,10 +169,9 @@ class HistoryFilterChips extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-          );
-        }).toList();
-      },
+            );
+          }).toList();
+        },
       // ── Trigger a Pillola (Niente bordi, colore dinamico) ──
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -202,6 +204,7 @@ class HistoryFilterChips extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

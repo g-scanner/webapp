@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:gscanner/core/theme/app_theme.dart';
+import 'package:gscanner/core/widgets/app_popup_menu_item.dart';
 
 /// Sezione "Lingua" con selettore lingua a popup.
 class LanguageSection extends StatelessWidget {
@@ -56,11 +57,8 @@ class LanguageSection extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          // Pulsante con effetto splash M3
-          Material(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
-            clipBehavior: Clip.antiAlias,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
             child: PopupMenuButton<String>(
               tooltip: "Scegli lingua",
               elevation: 6,
@@ -69,6 +67,8 @@ class LanguageSection extends StatelessWidget {
               offset: const Offset(0, 8),
               color: context.cardBackground,
               surfaceTintColor: Colors.transparent,
+              borderRadius: BorderRadius.circular(999),
+              clipBehavior: Clip.antiAlias,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
@@ -161,69 +161,60 @@ class LanguageSection extends StatelessWidget {
   }
 }
 
-PopupMenuItem<String> _buildLanguageMenuItem({
+AppPopupMenuItem<String> _buildLanguageMenuItem({
   required String value,
   required String label,
   required bool isSelected,
   required ColorScheme colorScheme,
 }) {
-  return PopupMenuItem<String>(
+  return AppPopupMenuItem<String>(
     value: value,
-    // AZZERA il padding nativo per evitare il rettangolo grigio spigoloso
-    padding: EdgeInsets.zero,
-    height: 48,
-    child: Padding(
-      // Distanza dai bordi del menu a tendina
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          // Overlay primario semitrasparente che ti piaceva!
-          color: isSelected
-              ? colorScheme.primary.withValues(alpha: 0.12)
-              : Colors.transparent,
-          // Raggio interno che non toccherà mai i bordi del menu
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected
-                      ? colorScheme.primary
-                      : colorScheme.onSurface,
-                ),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? colorScheme.primary.withValues(alpha: 0.12)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.onSurface,
               ),
             ),
-            const SizedBox(width: 12),
+          ),
+          const SizedBox(width: 12),
 
-            // Checkbox circolare
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: isSelected ? colorScheme.primary : Colors.transparent,
-                shape: BoxShape.circle,
-                border: isSelected
-                    ? null
-                    : Border.all(
-                        color: colorScheme.outlineVariant.withValues(
-                          alpha: 0.6,
-                        ),
-                        width: 1.5,
+          // Checkbox circolare
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: isSelected ? colorScheme.primary : Colors.transparent,
+              shape: BoxShape.circle,
+              border: isSelected
+                  ? null
+                  : Border.all(
+                      color: colorScheme.outlineVariant.withValues(
+                        alpha: 0.6,
                       ),
-              ),
-              child: isSelected
-                  ? Icon(Icons.check, size: 14, color: colorScheme.onPrimary)
-                  : null,
+                      width: 1.5,
+                    ),
             ),
-          ],
-        ),
+            child: isSelected
+                ? Icon(Icons.check, size: 14, color: colorScheme.onPrimary)
+                : null,
+          ),
+        ],
       ),
     ),
   );

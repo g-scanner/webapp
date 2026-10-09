@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:gscanner/core/theme/app_theme.dart';
+import 'package:gscanner/core/widgets/app_popup_menu_item.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -53,91 +54,92 @@ class ProductDetailAppBarActions extends StatelessWidget {
     }
 
     if (canDeleteHistory || canDeleteReport) {
-      return PopupMenuButton<String>(
-        tooltip: "common.actions.moreOptions".tr(),
-        elevation: 6,
-        shadowColor: Colors.black.withValues(alpha: 0.12),
-
-        // ── Offset calcolato: 40 (altezza del bottone) + 8 (spazio vuoto) = 48dp di stacco! ──
-        offset: const Offset(0, 48),
-
-        color: context.cardBackground,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
+      return ClipOval(
+        child: PopupMenuButton<String>(
+          tooltip: "common.actions.moreOptions".tr(),
+          elevation: 6,
+          shadowColor: Colors.black.withValues(alpha: 0.12),
+          offset: const Offset(0, 48),
+          color: context.cardBackground,
+          surfaceTintColor: Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: context.colorScheme.outlineVariant.withValues(alpha: 0.4),
-            width: 1,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: context.colorScheme.outlineVariant.withValues(alpha: 0.4),
+              width: 1,
+            ),
           ),
-        ),
-        onSelected: (value) => _handleMenuSelection(context, value),
-        itemBuilder: (BuildContext context) {
-          final colorScheme = context.colorScheme;
-          final items = <PopupMenuEntry<String>>[];
+          onSelected: (value) => _handleMenuSelection(context, value),
+          itemBuilder: (BuildContext context) {
+            final colorScheme = context.colorScheme;
+            final items = <PopupMenuEntry<String>>[];
 
-          // 1. Elimina cronologia
-          if (canDeleteHistory) {
-            items.add(
-              _buildDestructiveMenuItem(
-                value: 'delete_history',
-                title: "common.actions.deleteHistoryConfirmTitle".tr(),
-                icon: Icons.delete_outline_rounded,
-                colorScheme: colorScheme,
-              ),
-            );
-          }
+            // 1. Elimina cronologia
+            if (canDeleteHistory) {
+              items.add(
+                _buildDestructiveMenuItem(
+                  value: 'delete_history',
+                  title: "common.actions.deleteHistoryConfirmTitle".tr(),
+                  icon: Icons.delete_outline_rounded,
+                  colorScheme: colorScheme,
+                ),
+              );
+            }
 
-          // Divisore: distanziato dai bordi e con lo stesso colore e spessore del bordo del popup
-          if (canDeleteHistory && canDeleteReport) {
-            items.add(
-              PopupMenuItem<String>(
-                enabled: false,
-                height: 9, // Altezza compatta
-                padding: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32.0,
-                  ), // Rientro dai bordi
-                  child: Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: colorScheme.outlineVariant.withValues(
-                      alpha: 0.3,
-                    ), // Identico al bordo del popup
+            // Divisore: distanziato dai bordi e con lo stesso colore e spessore del bordo del popup
+            if (canDeleteHistory && canDeleteReport) {
+              items.add(
+                PopupMenuItem<String>(
+                  enabled: false,
+                  height: 9, // Altezza compatta
+                  padding: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32.0,
+                    ), // Rientro dai bordi
+                    child: Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: colorScheme.outlineVariant.withValues(
+                        alpha: 0.3,
+                      ), // Identico al bordo del popup
+                    ),
                   ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          // 2. Elimina segnalazione
-          if (canDeleteReport) {
-            items.add(
-              _buildDestructiveMenuItem(
-                value: 'delete_report',
-                title: "common.actions.deleteReportConfirmTitle".tr(),
-                icon: Icons.report_gmailerrorred_rounded,
-                colorScheme: colorScheme,
-              ),
-            );
-          }
+            // 2. Elimina segnalazione
+            if (canDeleteReport) {
+              items.add(
+                _buildDestructiveMenuItem(
+                  value: 'delete_report',
+                  title: "common.actions.deleteReportConfirmTitle".tr(),
+                  icon: Icons.report_gmailerrorred_rounded,
+                  colorScheme: colorScheme,
+                ),
+              );
+            }
 
-          return items;
-        },
-        // Trigger dei 3 puntini da 40dp
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: context.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.4,
+            return items;
+          },
+          // Trigger dei 3 puntini da 40dp
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: context.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
+              shape: BoxShape.circle,
             ),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.more_vert_rounded,
-            color: context.colorScheme.onSurfaceVariant,
-            size: 20,
+            child: Icon(
+              Icons.more_vert_rounded,
+              color: context.colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
           ),
         ),
       );
@@ -353,47 +355,45 @@ class ProductDetailAppBarActions extends StatelessWidget {
   }
 }
 
-PopupMenuItem<String> _buildDestructiveMenuItem({
+AppPopupMenuItem<String> _buildDestructiveMenuItem({
   required String value,
   required String title,
   required IconData icon,
   required ColorScheme colorScheme,
 }) {
-  return PopupMenuItem<String>(
+  return AppPopupMenuItem<String>(
     value: value,
-    padding: EdgeInsets.zero,
-    height: 48,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: colorScheme.error.withValues(alpha: 0.10),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: colorScheme.error, size: 18),
+    customSplashColor: colorScheme.error.withValues(alpha: 0.12),
+    customHighlightColor: colorScheme.error.withValues(alpha: 0.08),
+    customHoverColor: colorScheme.error.withValues(alpha: 0.06),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: colorScheme.error.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.error,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+            child: Icon(icon, color: colorScheme.error, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: colorScheme.error,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     ),
   );

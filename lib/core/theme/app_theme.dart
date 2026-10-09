@@ -58,6 +58,18 @@ final ThemeData lightTheme = ThemeData(
     surfaceTintColor: Colors.transparent,
     modalBackgroundColor: Color(0xFFFAF9FC),
   ),
+  popupMenuTheme: PopupMenuThemeData(
+    color: const Color(0xFFFFFFFF),
+    elevation: 6,
+    shadowColor: const Color(0x1F000000),
+    surfaceTintColor: Colors.transparent,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(20),
+      side: BorderSide(
+        color: lightOutline.withValues(alpha: 0.4),
+      ),
+    ),
+  ),
 );
 
 final ThemeData darkTheme = ThemeData(
@@ -110,6 +122,18 @@ final ThemeData darkTheme = ThemeData(
     backgroundColor: Color(0xFF1E1E22),
     surfaceTintColor: Colors.transparent,
     modalBackgroundColor: Color(0xFF121214),
+  ),
+  popupMenuTheme: PopupMenuThemeData(
+    color: const Color(0xFF1E1E22),
+    elevation: 6,
+    shadowColor: const Color(0x3F000000),
+    surfaceTintColor: Colors.transparent,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(20),
+      side: BorderSide(
+        color: darkOutline.withValues(alpha: 0.4),
+      ),
+    ),
   ),
 );
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../core/theme/theme.dart';
+import '../../core/widgets/app_popup_menu_item.dart';
 import '../../models/models.dart';
 import '../../core/utils/responsive_wrapper.dart';
 import '../product_detail/product_detail_card.dart';
@@ -235,155 +236,153 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
         centerTitle: true,
         actions: [
           if (widget.isOwnReport && widget.onDeleteReport != null)
-            PopupMenuButton<String>(
-              tooltip: "common.actions.moreOptions".tr(),
-              elevation: 6,
-              shadowColor: Colors.black.withValues(alpha: 0.12),
-              offset: const Offset(
-                0,
-                48,
-              ), // 40dp (altezza bottone) + 8dp di stacco
-              color: cardBg,
-              surfaceTintColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
+            ClipOval(
+              child: PopupMenuButton<String>(
+                tooltip: "common.actions.moreOptions".tr(),
+                elevation: 6,
+                shadowColor: Colors.black.withValues(alpha: 0.12),
+                offset: const Offset(
+                  0,
+                  48,
+                ), // 40dp (altezza bottone) + 8dp di stacco
+                color: cardBg,
+                surfaceTintColor: Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-                  width: 1,
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    width: 1,
+                  ),
                 ),
-              ),
-              onSelected: (value) {
-                if (value == 'delete_report') {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) {
-                      final ctxColorScheme = ctx.colorScheme;
-                      final ctxCardBg = ctx.cardBackground;
+                onSelected: (value) {
+                  if (value == 'delete_report') {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) {
+                        final ctxColorScheme = ctx.colorScheme;
+                        final ctxCardBg = ctx.cardBackground;
 
-                      return AlertDialog(
-                        backgroundColor: ctxCardBg,
-                        surfaceTintColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        icon: Center(
-                          child: Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: ctxColorScheme.errorContainer,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.report_gmailerrorred_rounded,
-                              color: ctxColorScheme.onErrorContainer,
-                              size: 28,
-                            ),
+                        return AlertDialog(
+                          backgroundColor: ctxCardBg,
+                          surfaceTintColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
                           ),
-                        ),
-                        title: Text(
-                          "common.actions.deleteReportConfirmTitle".tr(),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: ctxColorScheme.onSurface,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        content: Text(
-                          "common.actions.deleteReportConfirmBody".tr(),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: ctxColorScheme.onSurfaceVariant,
-                            fontSize: 14,
-                            height: 1.5,
-                          ),
-                        ),
-                        actionsPadding: const EdgeInsets.fromLTRB(
-                          24,
-                          8,
-                          24,
-                          24,
-                        ),
-                        actions: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Azione 1: Elimina report (Filled distruttivo a pillola)
-                              FilledButton(
-                                onPressed: () async {
-                                  Navigator.pop(ctx);
-                                  final targetId =
-                                      widget.reportId ?? _activeReport?.id;
-                                  if (targetId != null &&
-                                      widget.onDeleteReport != null) {
-                                    await widget.onDeleteReport!(targetId);
-                                  }
-                                  if (mounted) widget.onBack();
-                                },
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: ctxColorScheme.error,
-                                  foregroundColor: ctxColorScheme.onError,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                ),
-                                child: Text(
-                                  "common.actions.delete".tr(),
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                          icon: Center(
+                            child: Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: ctxColorScheme.errorContainer,
+                                shape: BoxShape.circle,
                               ),
-                              const SizedBox(height: 10),
+                              child: Icon(
+                                Icons.report_gmailerrorred_rounded,
+                                color: ctxColorScheme.onErrorContainer,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            "common.actions.deleteReportConfirmTitle".tr(),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: ctxColorScheme.onSurface,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          content: Text(
+                            "common.actions.deleteReportConfirmBody".tr(),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: ctxColorScheme.onSurfaceVariant,
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                          ),
+                          actionsPadding: const EdgeInsets.fromLTRB(
+                            24,
+                            8,
+                            24,
+                            24,
+                          ),
+                          actions: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Azione 1: Elimina report (Filled distruttivo a pillola)
+                                FilledButton(
+                                  onPressed: () async {
+                                    Navigator.pop(ctx);
+                                    final targetId =
+                                        widget.reportId ?? _activeReport?.id;
+                                    if (targetId != null &&
+                                        widget.onDeleteReport != null) {
+                                      await widget.onDeleteReport!(targetId);
+                                    }
+                                    if (mounted) widget.onBack();
+                                  },
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: ctxColorScheme.error,
+                                    foregroundColor: ctxColorScheme.onError,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    "common.actions.delete".tr(),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
 
-                              // Azione 2: Annulla (Outlined neutro a pillola)
-                              OutlinedButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: ctxColorScheme.onSurface,
-                                  side: BorderSide(
-                                    color: ctxColorScheme.outlineVariant
-                                        .withValues(alpha: 0.5),
+                                // Azione 2: Annulla (Outlined neutro a pillola)
+                                OutlinedButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: ctxColorScheme.onSurface,
+                                    side: BorderSide(
+                                      color: ctxColorScheme.outlineVariant
+                                          .withValues(alpha: 0.5),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(999),
+                                  child: Text(
+                                    "common.actions.cancel".tr(),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
-                                child: Text(
-                                  "common.actions.cancel".tr(),
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem<String>(
-                  value: 'delete_report',
-                  padding:
-                      EdgeInsets.zero, // Azzera il padding nativo squadrato
-                  height: 48,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                },
+                itemBuilder: (context) => [
+                  AppPopupMenuItem<String>(
+                    value: 'delete_report',
+                    customSplashColor: colorScheme.error.withValues(alpha: 0.12),
+                    customHighlightColor: colorScheme.error.withValues(alpha: 0.08),
+                    customHoverColor: colorScheme.error.withValues(alpha: 0.06),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -394,12 +393,13 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       ),
                       child: Row(
                         children: [
-                          // Bollino morbido d'errore attorno all'icona
                           Container(
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: colorScheme.error.withValues(alpha: 0.10),
+                              color: colorScheme.error.withValues(
+                                alpha: 0.10,
+                              ),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -425,22 +425,22 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       ),
                     ),
                   ),
-                ),
-              ],
-              // ── Trigger Circolare 40dp con hover morbido ──
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.4,
+                ],
+                // ── Trigger Circolare 40dp con hover morbido ──
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.4,
+                    ),
+                    shape: BoxShape.circle,
                   ),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.more_vert_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 20,
+                  child: Icon(
+                    Icons.more_vert_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
                 ),
               ),
             ),

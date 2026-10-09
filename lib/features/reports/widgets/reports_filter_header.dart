@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/app_popup_menu_item.dart';
 
 class ReportsFilterHeader extends StatelessWidget {
   final int activeReportsCount;
@@ -236,37 +237,37 @@ class ReportsFilterHeader extends StatelessWidget {
             const SizedBox(width: 12),
 
             // ── Filtro a Pillola PopupMenuButton (Stesso Design System) ──
-            PopupMenuButton<String>(
-              tooltip: "Filtra segnalazioni",
-              elevation: 6,
-              shadowColor: Colors.black.withValues(alpha: 0.12),
-              offset: const Offset(0, 48),
-              color: cardBg,
-              surfaceTintColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: PopupMenuButton<String>(
+                tooltip: "Filtra segnalazioni",
+                elevation: 6,
+                shadowColor: Colors.black.withValues(alpha: 0.12),
+                offset: const Offset(0, 48),
+                color: cardBg,
+                surfaceTintColor: Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                  ),
                 ),
-              ),
-              itemBuilder: (context) {
-                final options = ["Tutte", "Mie"];
+                itemBuilder: (context) {
+                  final options = ["Tutte", "Mie"];
 
-                return options.map((option) {
-                  final isSelected = reportFilter == option;
-                  final statusBg = _getFilterColor(context, option);
-                  final statusText = _getFilterTextColor(context, option);
+                  return options.map((option) {
+                    final isSelected = reportFilter == option;
+                    final statusBg = _getFilterColor(context, option);
+                    final statusText = _getFilterTextColor(context, option);
 
-                  return PopupMenuItem<String>(
-                    value: option,
-                    onTap: () => onFilterChanged(option),
-                    padding: EdgeInsets.zero,
-                    height: 48,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
+                    return AppPopupMenuItem<String>(
+                      value: option,
+                      onTap: () => onFilterChanged(option),
+                      customSplashColor: statusText.withValues(alpha: 0.12),
+                      customHighlightColor: statusText.withValues(alpha: 0.08),
+                      customHoverColor: statusText.withValues(alpha: 0.06),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -323,45 +324,45 @@ class ReportsFilterHeader extends StatelessWidget {
                           ],
                         ),
                       ),
+                    );
+                  }).toList();
+                },
+                // Trigger a Pillola (Senza bordi, colore coerente alla selezione)
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 110, maxWidth: 150),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                  );
-                }).toList();
-              },
-              // Trigger a Pillola (Senza bordi, colore coerente alla selezione)
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 110, maxWidth: 150),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getFilterColor(context, reportFilter),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          _getFilterLabel(reportFilter),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: _getFilterTextColor(context, reportFilter),
+                    decoration: BoxDecoration(
+                      color: _getFilterColor(context, reportFilter),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _getFilterLabel(reportFilter),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: _getFilterTextColor(context, reportFilter),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.filter_list_rounded,
-                        size: 20,
-                        color: _getFilterIconColor(context, reportFilter),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.filter_list_rounded,
+                          size: 20,
+                          color: _getFilterIconColor(context, reportFilter),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

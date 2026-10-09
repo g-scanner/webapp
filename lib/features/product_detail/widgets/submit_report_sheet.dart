@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/app_popup_menu_item.dart';
 import '../../../models/models.dart';
 import '../../../services/analyzer_service.dart';
 
@@ -135,47 +136,44 @@ void showSubmitReportBottomSheet({
 
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        return PopupMenuButton<String>(
-                          // 1. Forza il popup a essere largo ESATTAMENTE quanto il bottone:
-                          constraints: BoxConstraints.tightFor(
-                            width: constraints.maxWidth,
-                          ),
-                          tooltip: "product.reportSheet.reasonLabel".tr(),
-                          elevation: 6,
-                          shadowColor: Colors.black.withValues(alpha: 0.12),
-                          offset: const Offset(0, 60),
-                          color: sheetCtx.cardBackground,
-                          surfaceTintColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            side: BorderSide(
-                              color: colorScheme.outlineVariant.withValues(
-                                alpha: 0.4,
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: PopupMenuButton<String>(
+                            // 1. Forza il popup a essere largo ESATTAMENTE quanto il bottone:
+                            constraints: BoxConstraints.tightFor(
+                              width: constraints.maxWidth,
+                            ),
+                            tooltip: "product.reportSheet.reasonLabel".tr(),
+                            elevation: 6,
+                            shadowColor: Colors.black.withValues(alpha: 0.12),
+                            offset: const Offset(0, 60),
+                            color: sheetCtx.cardBackground,
+                            surfaceTintColor: Colors.transparent,
+                            borderRadius: BorderRadius.circular(999),
+                            clipBehavior: Clip.antiAlias,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: colorScheme.outlineVariant.withValues(
+                                  alpha: 0.4,
+                                ),
                               ),
                             ),
-                          ),
-                          itemBuilder: (context) {
-                            final options = [
-                              "label_unclear",
-                              "outdated",
-                              "incorrect_status",
-                              "other",
-                            ];
+                            itemBuilder: (context) {
+                              final options = [
+                                "label_unclear",
+                                "outdated",
+                                "incorrect_status",
+                                "other",
+                              ];
 
-                            return options.map((type) {
-                              final isSelected = reportType == type;
+                              return options.map((type) {
+                                final isSelected = reportType == type;
 
-                              return PopupMenuItem<String>(
-                                value: type,
-                                onTap: () =>
-                                    setSheetState(() => reportType = type),
-                                padding: EdgeInsets.zero,
-                                height: 48,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
+                                return AppPopupMenuItem<String>(
+                                  value: type,
+                                  onTap: () =>
+                                      setSheetState(() => reportType = type),
                                   child: Container(
                                     width: double.infinity,
                                     padding: const EdgeInsets.symmetric(
@@ -240,42 +238,43 @@ void showSubmitReportBottomSheet({
                                       ],
                                     ),
                                   ),
-                                ),
-                              );
-                            }).toList();
-                          },
-                          // Trigger a Pillola (Full-width, zero bordi)
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    getReportTypeLabel(reportType),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onSurface,
+                                );
+                              }).toList();
+                            },
+                            // Trigger a Pillola (Full-width, zero bordi)
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      getReportTypeLabel(reportType),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Icon(
-                                  Icons.arrow_drop_down_rounded,
-                                  size: 24,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ],
+                                  Icon(
+                                    Icons.arrow_drop_down_rounded,
+                                    size: 24,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );
