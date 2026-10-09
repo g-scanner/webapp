@@ -43,7 +43,7 @@ class AppPopupMenuItemState<T, W extends AppPopupMenuItem<T>>
   @override
   Widget build(BuildContext context) {
     final effectiveRadius =
-        widget.itemBorderRadius ?? BorderRadius.circular(12);
+        widget.itemBorderRadius ?? BorderRadius.circular(999);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 

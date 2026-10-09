@@ -18,14 +18,16 @@ class AppRadioPopupMenuItem<T> extends AppPopupMenuItem<T> {
     Color? activeBgColor,
     super.onTap,
   }) : super(
-         customSplashColor: (activeTextColor ?? colorScheme.primary).withValues(
-           alpha: 0.12,
-         ),
-         customHighlightColor: (activeTextColor ?? colorScheme.primary)
-             .withValues(alpha: 0.08),
-         customHoverColor: (activeTextColor ?? colorScheme.primary).withValues(
-           alpha: 0.06,
-         ),
+         mouseCursor: isSelected ? SystemMouseCursors.basic : SystemMouseCursors.click,
+         customSplashColor: isSelected
+             ? Colors.transparent
+             : (activeTextColor ?? colorScheme.primary).withValues(alpha: 0.12),
+         customHighlightColor: isSelected
+             ? Colors.transparent
+             : (activeTextColor ?? colorScheme.primary).withValues(alpha: 0.08),
+         customHoverColor: isSelected
+             ? Colors.transparent
+             : (activeTextColor ?? colorScheme.primary).withValues(alpha: 0.06),
          child: Container(
            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
            decoration: BoxDecoration(

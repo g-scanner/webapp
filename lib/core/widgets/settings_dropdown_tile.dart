@@ -10,10 +10,7 @@ class SettingsDropdownOption<T> {
   final T value;
   final String label;
 
-  const SettingsDropdownOption({
-    required this.value,
-    required this.label,
-  });
+  const SettingsDropdownOption({required this.value, required this.label});
 }
 
 /// Riga standard delle impostazioni con titolo, sottotitolo e selettore a pillola popup,
@@ -113,11 +110,8 @@ class SettingsDropdownTile<T> extends StatelessWidget {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.transparent,
+                    color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
