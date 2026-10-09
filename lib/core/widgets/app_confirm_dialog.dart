@@ -36,14 +36,14 @@ Future<void> showAppConfirmDialog({
             decoration: BoxDecoration(
               color: isDestructive
                   ? colorScheme.errorContainer
-                  : colorScheme.primaryContainer,
+                  : colorScheme.primary.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               color: isDestructive
                   ? colorScheme.onErrorContainer
-                  : colorScheme.onPrimaryContainer,
+                  : colorScheme.primary,
               size: 28,
             ),
           ),

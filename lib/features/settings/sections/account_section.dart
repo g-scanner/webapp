@@ -174,12 +174,12 @@ class AccountSection extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
+              color: colorScheme.primary.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.cloud_upload_rounded,
-              color: colorScheme.onPrimaryContainer,
+              color: colorScheme.primary,
               size: 28,
             ),
           ),
