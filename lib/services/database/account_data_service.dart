@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
-import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -42,17 +41,16 @@ class AccountDataService {
   }
 
   /// Recupera la cronologia creata in modalità anonima (non sincronizzata).
-  static Future<List<ScanHistoryItem>> getLocalUnsyncedHistory() async {
+  static Future<List<ScanHistoryItem>> getLocalUnsyncedHistory([
+    String? anonUid,
+  ]) async {
     try {
-      final list = await _historyDao.getHistory('anonymous');
-      if (list.isNotEmpty) return list;
-
-      // Fallback per test o sessioni legacy
       final prefs = await SharedPreferences.getInstance();
-      final histStr = prefs.getStringList('celiac_history') ?? [];
-      return histStr
-          .map((e) => ScanHistoryItem.fromJson(json.decode(e) as Map<String, dynamic>))
-          .toList();
+      final targetUid = anonUid ?? prefs.getString(lastAnonymousUidKey);
+      if (targetUid != null && targetUid.isNotEmpty) {
+        return await _historyDao.getHistory(targetUid);
+      }
+      return [];
     } catch (e) {
       debugPrint("Error fetching unsynced history: $e");
       return [];
@@ -60,17 +58,16 @@ class AccountDataService {
   }
 
   /// Recupera le segnalazioni create in modalità anonima.
-  static Future<List<ProductReport>> getLocalUnsyncedReports() async {
+  static Future<List<ProductReport>> getLocalUnsyncedReports([
+    String? anonUid,
+  ]) async {
     try {
-      final list = await _reportDao.getUserReports('anonymous');
-      if (list.isNotEmpty) return list;
-
-      // Fallback per test o sessioni legacy
       final prefs = await SharedPreferences.getInstance();
-      final reportsStr = prefs.getStringList('celiac_reports') ?? [];
-      return reportsStr
-          .map((e) => ProductReport.fromJson(json.decode(e) as Map<String, dynamic>))
-          .toList();
+      final targetUid = anonUid ?? prefs.getString(lastAnonymousUidKey);
+      if (targetUid != null && targetUid.isNotEmpty) {
+        return await _reportDao.getUserReports(targetUid);
+      }
+      return [];
     } catch (e) {
       debugPrint("Error fetching unsynced reports: $e");
       return [];
@@ -112,16 +109,12 @@ class AccountDataService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final lastAnonUid = prefs.getString(lastAnonymousUidKey);
+      if (lastAnonUid == null || lastAnonUid.isEmpty) return;
 
       // 1. MIGRAZIONE CRONOLOGIA
       if (syncHistory) {
-        var localHistory = await _historyDao.getHistory('anonymous');
-        if (localHistory.isEmpty) {
-          final histStr = prefs.getStringList('celiac_history') ?? [];
-          localHistory = histStr
-              .map((e) => ScanHistoryItem.fromJson(json.decode(e) as Map<String, dynamic>))
-              .toList();
-        }
+        final localHistory = await _historyDao.getHistory(lastAnonUid);
         if (localHistory.isNotEmpty) {
           try {
             final historyBatch = db.batch();
@@ -137,42 +130,37 @@ class AccountDataService {
           } catch (e) {
             debugPrint("Failed committing history batch to Firestore: $e");
           }
-          await _historyDao.reassignAnonymousHistory(newUid);
+          await _historyDao.reassignHistory(lastAnonUid, newUid);
         }
       }
 
       // 2. MIGRAZIONE SEGNALAZIONI
       if (syncReports) {
-        var localReports = await _reportDao.getUserReports('anonymous');
-        if (localReports.isEmpty) {
-          final reportsStr = prefs.getStringList('celiac_reports') ?? [];
-          localReports = reportsStr
-              .map((e) => ProductReport.fromJson(json.decode(e) as Map<String, dynamic>))
-              .toList();
-        }
+        final localReports = await _reportDao.getUserReports(lastAnonUid);
         if (localReports.isNotEmpty) {
           try {
             final reportsBatch = db.batch();
             for (final report in localReports) {
-              final docRef = db.collection(reportsCollection).doc(
-                report.id.isNotEmpty ? report.id : db.collection(reportsCollection).doc().id,
-              );
+              final docRef = db
+                  .collection(reportsCollection)
+                  .doc(
+                    report.id.isNotEmpty
+                        ? report.id
+                        : db.collection(reportsCollection).doc().id,
+                  );
               final rMap = report.toJson();
               rMap['userId'] = newUid;
-              reportsBatch.set(docRef, rMap);
+              reportsBatch.set(docRef, rMap, SetOptions(merge: true));
             }
             await reportsBatch.commit();
           } catch (e) {
             debugPrint("Failed committing reports batch to Firestore: $e");
           }
-          await _reportDao.reassignAnonymousReports(newUid);
+          await _reportDao.reassignReports(lastAnonUid, newUid);
         }
 
         // 3. REPORTED BARCODES
-        var reportedBarcodes = await _reportDao.getReportedBarcodes(newUid);
-        if (reportedBarcodes.isEmpty) {
-          reportedBarcodes = prefs.getStringList('celiac_reported_barcodes') ?? [];
-        }
+        final reportedBarcodes = await _reportDao.getReportedBarcodes(newUid);
         if (reportedBarcodes.isNotEmpty) {
           try {
             await db.collection("users").doc(newUid).set({
@@ -187,64 +175,61 @@ class AccountDataService {
       // 4. MIGRAZIONE IMPOSTAZIONI
       if (syncSettings) {
         final localSettings = await SettingsDbService.getLocalSettings();
-        final updatedSettings = UserSettings(
-          userId: newUid,
-          strictMode: localSettings.strictMode,
-          alertLactose: localSettings.alertLactose,
-          warnAdditives: localSettings.warnAdditives,
-          autoSaveHistory: localSettings.autoSaveHistory,
-          preferredLanguage: localSettings.preferredLanguage,
-          preferredTheme: localSettings.preferredTheme,
-          reportedBarcodes: localSettings.reportedBarcodes,
-        );
-        await SettingsDbService.saveLocalSettings(updatedSettings);
-        try {
-          await db.collection("users").doc(newUid).set(
-            updatedSettings.toJson(),
-            SetOptions(merge: true),
+        if (localSettings.userId == lastAnonUid) {
+          final updatedSettings = UserSettings(
+            userId: newUid,
+            strictMode: localSettings.strictMode,
+            alertLactose: localSettings.alertLactose,
+            warnAdditives: localSettings.warnAdditives,
+            autoSaveHistory: localSettings.autoSaveHistory,
+            preferredLanguage: localSettings.preferredLanguage,
+            preferredTheme: localSettings.preferredTheme,
+            reportedBarcodes: localSettings.reportedBarcodes,
           );
-        } catch (e) {
-          debugPrint("Failed saving migrated settings to Firestore: $e");
+          await SettingsDbService.saveLocalSettings(updatedSettings);
+          try {
+            await db
+                .collection("users")
+                .doc(newUid)
+                .set(updatedSettings.toJson(), SetOptions(merge: true));
+          } catch (e) {
+            debugPrint("Failed saving migrated settings to Firestore: $e");
+          }
         }
       } else {
         // Se non vuole migrare le impostazioni anonime, rimuove le impostazioni locali
-        // con userId anonimo per fare spazio a quelle del profilo cloud
         final currentSettings = await SettingsDbService.getLocalSettings();
-        if (currentSettings.userId == 'anonymous' || currentSettings.userId == null) {
+        if (currentSettings.userId == lastAnonUid) {
           await prefs.remove(SettingsDbService.settingsKey);
         }
       }
 
-      // 5. Pulizia chiavi residue SharedPreferences e tabelle SQLite anonime
-      await prefs.remove('celiac_history');
-      await prefs.remove('celiac_reports');
-      await prefs.remove('celiac_reported_barcodes');
+      // 5. Pulizia chiavi e dati dell'utente anonimo
       await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
       await prefs.remove(lastAnonymousUidKey);
-      await _historyDao.wipeHistory('anonymous');
-      await _reportDao.wipeReports('anonymous');
+      await _historyDao.wipeHistory(lastAnonUid);
+      await _reportDao.wipeReports(lastAnonUid);
     } catch (e) {
       debugPrint("Errore durante la migrazione: $e");
     }
   }
 
   /// Svuota unicamente i dati appartenenti all'utente anonimo (scartati alla schermata sincro).
-  static Future<void> wipeAnonymousData() async {
+  static Future<void> wipeAnonymousData([String? anonUid]) async {
     try {
-      await _historyDao.wipeHistory('anonymous');
-      await _reportDao.wipeReports('anonymous');
-
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('celiac_history');
-      await prefs.remove('celiac_reports');
-      await prefs.remove('celiac_reported_barcodes');
+      final lastUid = anonUid ?? prefs.getString(lastAnonymousUidKey);
+      if (lastUid != null && lastUid.isNotEmpty) {
+        await _historyDao.wipeHistory(lastUid);
+        await _reportDao.wipeReports(lastUid);
+        final currentSettings = await SettingsDbService.getLocalSettings();
+        if (currentSettings.userId == lastUid) {
+          await prefs.remove(SettingsDbService.settingsKey);
+        }
+      }
+
       await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
       await prefs.remove(lastAnonymousUidKey);
-
-      final currentSettings = await SettingsDbService.getLocalSettings();
-      if (currentSettings.userId == 'anonymous' || currentSettings.userId == null) {
-        await prefs.remove(SettingsDbService.settingsKey);
-      }
     } catch (e) {
       debugPrint("Errore durante il wipe dei dati anonimi: $e");
     }
@@ -255,8 +240,6 @@ class AccountDataService {
     try {
       // 1. Svuota tabelle SQLite
       await _productDao.deleteAllProducts();
-      await _historyDao.wipeHistory('anonymous');
-      await _reportDao.wipeReports('anonymous');
       await _syncMetadataDao.clearAll();
 
       final user = auth.currentUser;
@@ -265,8 +248,14 @@ class AccountDataService {
         await _reportDao.wipeReports(user.uid);
       }
 
-      // 2. Svuota SharedPreferences (settings e chiavi residue)
       final prefs = await SharedPreferences.getInstance();
+      final lastAnonUid = prefs.getString(lastAnonymousUidKey);
+      if (lastAnonUid != null && lastAnonUid.isNotEmpty) {
+        await _historyDao.wipeHistory(lastAnonUid);
+        await _reportDao.wipeReports(lastAnonUid);
+      }
+
+      // 2. Svuota SharedPreferences
       await prefs.remove(SettingsDbService.settingsKey);
       await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
       await prefs.remove(lastAnonymousUidKey);
@@ -274,7 +263,6 @@ class AccountDataService {
       await prefs.remove(LocalCacheService.lastSyncKey);
       await prefs.remove('celiac_history');
       await prefs.remove('celiac_reports');
-      await prefs.remove('celiac_reported_barcodes');
       if (user != null) {
         await prefs.remove('celiac_history_${user.uid}');
         await prefs.remove('celiac_reports_${user.uid}');
@@ -292,7 +280,10 @@ class AccountDataService {
   // ─── ACCOUNT DELETION HELPERS ────────────────────────────────────────────────
 
   /// Elimina le impostazioni utente da Firestore.
-  static Future<void> deleteUserSettings(FirebaseFirestore db, String uid) async {
+  static Future<void> deleteUserSettings(
+    FirebaseFirestore db,
+    String uid,
+  ) async {
     try {
       await db.collection('users').doc(uid).delete();
     } catch (e) {
@@ -301,7 +292,10 @@ class AccountDataService {
   }
 
   /// Elimina tutta la cronologia scansioni dell'utente da Firestore.
-  static Future<void> deleteUserHistory(FirebaseFirestore db, String uid) async {
+  static Future<void> deleteUserHistory(
+    FirebaseFirestore db,
+    String uid,
+  ) async {
     try {
       final snapshot = await db
           .collection('users')
@@ -312,7 +306,9 @@ class AccountDataService {
       for (int i = 0; i < snapshot.docs.length; i += chunkSize) {
         final chunk = snapshot.docs.sublist(
           i,
-          (i + chunkSize < snapshot.docs.length) ? i + chunkSize : snapshot.docs.length,
+          (i + chunkSize < snapshot.docs.length)
+              ? i + chunkSize
+              : snapshot.docs.length,
         );
         final batch = db.batch();
         for (final doc in chunk) {
@@ -326,7 +322,10 @@ class AccountDataService {
   }
 
   /// Anonimizza tutte le segnalazioni dell'utente (rimuove userId e segna come anonymized).
-  static Future<void> anonymizeUserReports(FirebaseFirestore db, String uid) async {
+  static Future<void> anonymizeUserReports(
+    FirebaseFirestore db,
+    String uid,
+  ) async {
     try {
       final snapshot = await db
           .collection(reportsCollection)
@@ -337,7 +336,9 @@ class AccountDataService {
       for (int i = 0; i < snapshot.docs.length; i += chunkSize) {
         final chunk = snapshot.docs.sublist(
           i,
-          (i + chunkSize < snapshot.docs.length) ? i + chunkSize : snapshot.docs.length,
+          (i + chunkSize < snapshot.docs.length)
+              ? i + chunkSize
+              : snapshot.docs.length,
         );
         final batch = db.batch();
         for (final doc in chunk) {

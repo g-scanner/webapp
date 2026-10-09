@@ -21,7 +21,7 @@ class ReportsDbService {
   /// Identificatore logico dell'utente per il partizionamento dei report.
   static String getUserId(FirebaseAuth auth) {
     final user = auth.currentUser;
-    if (user != null && !user.isAnonymous) {
+    if (user != null) {
       return user.uid;
     }
     return 'anonymous';
@@ -30,7 +30,7 @@ class ReportsDbService {
   /// Mantiene compatibilità di interfaccia per eventuali test o chiamate storiche.
   static String getReportsKey(FirebaseAuth auth) {
     final user = auth.currentUser;
-    if (user != null && !user.isAnonymous) {
+    if (user != null) {
       return 'celiac_reports_${user.uid}';
     }
     return 'celiac_reports';
@@ -136,7 +136,7 @@ class ReportsDbService {
       }, SetOptions(merge: true));
 
       // 3. Aggiungi barcode alla lista `reportedBarcodes` dell'utente
-      if (user != null && !user.isAnonymous) {
+      if (user != null) {
         final userRef = db.collection("users").doc(userId);
         batch.set(userRef, {
           'reportedBarcodes': FieldValue.arrayUnion([barcode]),
@@ -191,7 +191,7 @@ class ReportsDbService {
 
       // 4. Rimuovi barcode da `reportedBarcodes` dell'utente
       final user = auth.currentUser;
-      if (user != null && !user.isAnonymous && barcode != null) {
+      if (user != null && barcode != null) {
         batch.set(db.collection("users").doc(user.uid), {
           'reportedBarcodes': FieldValue.arrayRemove([barcode]),
         }, SetOptions(merge: true));

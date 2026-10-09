@@ -18,9 +18,12 @@ class ProductReportDao {
 
   ProductReport _fromMap(Map<String, dynamic> map) {
     final rawJson = map['data_json'] as String;
-    return ProductReport.fromJson(
-      json.decode(rawJson) as Map<String, dynamic>,
-    );
+    final decoded = json.decode(rawJson) as Map<String, dynamic>;
+    final userId = map['user_id'] as String?;
+    if (userId != null && userId.isNotEmpty) {
+      decoded['userId'] = userId;
+    }
+    return ProductReport.fromJson(decoded);
   }
 
   /// Recupera le segnalazioni dell'utente ordinate per data di invio decrescente.
@@ -223,30 +226,30 @@ class ProductReportDao {
     return rows.map((r) => r['barcode'] as String).toList();
   }
 
-  /// Riassegna le segnalazioni e i barcode anonimi al nuovo UID al login.
-  Future<void> reassignAnonymousReports(String newUid) async {
+  /// Riassegna le segnalazioni e i barcode da un UID precedente al nuovo UID al login.
+  Future<void> reassignReports(String fromUid, String toUid) async {
     final db = await _db;
     await db.transaction((txn) async {
       await txn.update(
         reportsTable,
-        {'user_id': newUid},
+        {'user_id': toUid},
         where: 'user_id = ?',
-        whereArgs: ['anonymous'],
+        whereArgs: [fromUid],
       );
 
-      final anonBarcodes = await txn.query(
+      final oldBarcodes = await txn.query(
         reportedBarcodesTable,
         columns: ['barcode', 'reported_at'],
         where: 'user_id = ?',
-        whereArgs: ['anonymous'],
+        whereArgs: [fromUid],
       );
 
-      for (final row in anonBarcodes) {
+      for (final row in oldBarcodes) {
         await txn.insert(
           reportedBarcodesTable,
           {
             'barcode': row['barcode'],
-            'user_id': newUid,
+            'user_id': toUid,
             'reported_at': row['reported_at'],
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -256,7 +259,7 @@ class ProductReportDao {
       await txn.delete(
         reportedBarcodesTable,
         where: 'user_id = ?',
-        whereArgs: ['anonymous'],
+        whereArgs: [fromUid],
       );
     });
   }

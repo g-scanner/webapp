@@ -48,7 +48,11 @@ class AppDatabase {
       return _db!;
     }
 
-    final dbFactory = kIsWeb ? databaseFactoryFfiWeb : databaseFactoryFfi;
+    final dbFactory = kIsWeb
+        ? databaseFactoryFfiWeb
+        : (Platform.environment.containsKey('FLUTTER_TEST')
+            ? databaseFactoryFfiNoIsolate
+            : databaseFactoryFfi);
     final path = inMemory ? inMemoryDatabasePath : 'test_gscanner.db';
     if (!inMemory) {
       await dbFactory.deleteDatabase(path);

@@ -237,6 +237,25 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (mounted) {
       setState(() {
         reports = localData;
+        final reportBarcodes = localData
+            .map((r) => r.barcode)
+            .where((b) => b.isNotEmpty)
+            .toSet();
+        final currentBarcodes = userSettings.reportedBarcodes.toSet();
+        if (!currentBarcodes.containsAll(reportBarcodes)) {
+          final merged = {...currentBarcodes, ...reportBarcodes}.toList();
+          userSettings = UserSettings(
+            userId: userSettings.userId ?? userId,
+            strictMode: userSettings.strictMode,
+            alertLactose: userSettings.alertLactose,
+            warnAdditives: userSettings.warnAdditives,
+            autoSaveHistory: userSettings.autoSaveHistory,
+            preferredLanguage: userSettings.preferredLanguage,
+            preferredTheme: userSettings.preferredTheme,
+            reportedBarcodes: merged,
+          );
+          DbService.saveLocalSettings(userSettings);
+        }
       });
     }
   }
@@ -426,7 +445,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     if (mounted) {
       final userReport = reports.cast<ProductReport?>().firstWhere(
-        (r) => r?.barcode == barcode && r?.userId == userId,
+        (r) => r?.barcode == barcode && (userId == null || r?.userId == userId),
         orElse: () => null,
       );
 
@@ -896,7 +915,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       (r) => r?.id == reportId,
       orElse: () => null,
     );
-    final String? barcode = report?.barcode;
+    String? barcode = report?.barcode;
+    if (barcode == null) {
+      for (final entry in _openReportIdNotifiers.entries) {
+        if (entry.value.value == reportId) {
+          barcode = entry.key;
+          break;
+        }
+      }
+    }
 
     try {
       await DbService.deleteReportFromDb(reportId);
@@ -944,7 +971,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         final updatedBarcodes = List<String>.from(userSettings.reportedBarcodes)
           ..remove(barcode);
         userSettings = UserSettings(
-          userId: userSettings.userId,
+          userId: userSettings.userId ?? userId,
           strictMode: userSettings.strictMode,
           alertLactose: userSettings.alertLactose,
           warnAdditives: userSettings.warnAdditives,
@@ -975,7 +1002,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (!mounted) return;
 
     final userReport = reports.cast<ProductReport?>().firstWhere(
-      (r) => r?.barcode == match.barcode && r?.userId == userId,
+      (r) => r?.barcode == match.barcode && (userId == null || r?.userId == userId),
       orElse: () => null,
     );
     final isInHistory = history.any((h) => h.barcode == match.barcode);
@@ -1074,7 +1101,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
 
     final userReport = reports.cast<ProductReport?>().firstWhere(
-      (r) => r?.barcode == barcode && r?.userId == userId,
+      (r) => r?.barcode == barcode && (userId == null || r?.userId == userId),
       orElse: () => null,
     );
 
@@ -1151,7 +1178,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isWideScreen = screenWidth > 960;
     final reportOfProduct = reports.cast<ProductReport?>().firstWhere(
-      (r) => r?.barcode == loadedProduct.barcode && r?.userId == userId,
+      (r) => r?.barcode == loadedProduct.barcode && (userId == null || r?.userId == userId),
       orElse: () => null,
     );
     final bool isOwn =

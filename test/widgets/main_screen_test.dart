@@ -22,6 +22,9 @@ import 'package:gscanner/features/settings/settings_panel.dart';
 import 'package:gscanner/features/product_detail/product_detail_card.dart';
 import 'package:gscanner/features/sync/sync_data_screen.dart';
 import 'package:gscanner/features/history/history_list.dart';
+import 'package:gscanner/services/database/app_database.dart';
+import 'package:gscanner/services/database/daos/scan_history_dao.dart';
+import 'package:gscanner/services/database/daos/product_report_dao.dart';
 import 'package:gscanner/core/network/connectivity_helper.dart';
 import '../mocks/shared_mocks.dart';
 
@@ -104,10 +107,16 @@ void main() {
     setupMocktailFallbacks();
     SharedPreferences.setMockInitialValues({});
     await EasyLocalization.ensureInitialized();
+    await AppDatabase.instance.initForTesting(inMemory: true);
   });
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    final db = await AppDatabase.instance.database;
+    await db.delete('scan_history');
+    await db.delete('product_reports');
+    await db.delete('products');
+    await db.delete('sync_metadata');
     themeNotifier.value = ThemeMode.light;
 
     mockAuth = MockFirebaseAuth();
@@ -806,7 +815,7 @@ void main() {
     testWidgets(
       'renders SyncDataScreen when unsynced local anonymous history/reports exist',
       (tester) async {
-        // Simulate unsynced local history and reports from anonymous mode
+        const anonUid = 'anon_user_1';
         final fakeHistory = [
           ScanHistoryItem(
             id: 'hist_anon_1',
@@ -817,6 +826,7 @@ void main() {
         final fakeReports = [
           ProductReport(
             id: 'rep_anon_1',
+            userId: anonUid,
             barcode: '222222',
             productName: 'Biscotti',
             brand: 'Brand',
@@ -828,18 +838,21 @@ void main() {
         ];
 
         SharedPreferences.setMockInitialValues({
-          'celiac_history': [json.encode(fakeHistory.first.toJson())],
-          'celiac_reports': [json.encode(fakeReports.first.toJson())],
+          'last_anonymous_uid': anonUid,
+          'has_anonymous_settings': true,
           'user_settings': json.encode({
-            'user_id': null, // settings with no userId (anonymous)
-            'strict_mode': true,
-            'alert_lactose': false,
-            'warn_additives': true,
-            'auto_save_history': true,
-            'preferred_language': 'it',
-            'preferred_theme': 'system',
+            'userId': anonUid,
+            'strictMode': true,
+            'alertLactose': false,
+            'warnAdditives': true,
+            'autoSaveHistory': true,
+            'preferredLanguage': 'it',
+            'preferredTheme': 'system',
           }),
         });
+
+        await const ScanHistoryDao().insertHistoryItem(anonUid, fakeHistory.first);
+        await const ProductReportDao().insertReport(fakeReports.first);
 
         // User logged in as registered non-anonymous user
         when(() => mockUser.isAnonymous).thenReturn(false);
@@ -856,6 +869,7 @@ void main() {
     testWidgets(
       'tapping Merge (wantToSync == true) migrates data, shows syncing loader, and enters MainScreen',
       (tester) async {
+        const anonUid = 'anon_user_1';
         final fakeHistory = [
           ScanHistoryItem(
             id: 'hist_anon_1',
@@ -865,17 +879,19 @@ void main() {
         ];
 
         SharedPreferences.setMockInitialValues({
-          'celiac_history': [json.encode(fakeHistory.first.toJson())],
+          'last_anonymous_uid': anonUid,
+          'has_anonymous_settings': true,
           'user_settings': json.encode({
-            'user_id': null,
-            'strict_mode': true,
-            'alert_lactose': false,
-            'warn_additives': true,
-            'auto_save_history': true,
-            'preferred_language': 'it',
-            'preferred_theme': 'system',
+            'userId': anonUid,
+            'strictMode': true,
+            'alertLactose': false,
+            'warnAdditives': true,
+            'autoSaveHistory': true,
+            'preferredLanguage': 'it',
+            'preferredTheme': 'system',
           }),
         });
+        await const ScanHistoryDao().insertHistoryItem(anonUid, fakeHistory.first);
 
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('registered_user_123');
@@ -903,6 +919,7 @@ void main() {
     testWidgets(
       'tapping Discard (wantToSync == false) wipes local data and enters MainScreen',
       (tester) async {
+        const anonUid = 'anon_user_1';
         final fakeHistory = [
           ScanHistoryItem(
             id: 'hist_anon_1',
@@ -912,17 +929,19 @@ void main() {
         ];
 
         SharedPreferences.setMockInitialValues({
-          'celiac_history': [json.encode(fakeHistory.first.toJson())],
+          'last_anonymous_uid': anonUid,
+          'has_anonymous_settings': true,
           'user_settings': json.encode({
-            'user_id': null,
-            'strict_mode': true,
-            'alert_lactose': false,
-            'warn_additives': true,
-            'auto_save_history': true,
-            'preferred_language': 'it',
-            'preferred_theme': 'system',
+            'userId': anonUid,
+            'strictMode': true,
+            'alertLactose': false,
+            'warnAdditives': true,
+            'autoSaveHistory': true,
+            'preferredLanguage': 'it',
+            'preferredTheme': 'system',
           }),
         });
+        await const ScanHistoryDao().insertHistoryItem(anonUid, fakeHistory.first);
 
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('registered_user_123');
@@ -941,12 +960,16 @@ void main() {
 
         expect(find.byType(SyncDataScreen), findsNothing);
         expect(find.byType(CameraModule), findsOneWidget);
+
+        final anonHistAfter = await const ScanHistoryDao().getHistory(anonUid);
+        expect(anonHistAfter, isEmpty);
       },
     );
 
     testWidgets(
       'renders SyncDataScreen for RETURNING non-anonymous user when anonymous data exists',
       (tester) async {
+        const anonUid = 'anon_user_2';
         final fakeHistory = [
           ScanHistoryItem(
             id: 'hist_anon_2',
@@ -957,7 +980,7 @@ void main() {
 
         // Settings already belong to this returning user
         SharedPreferences.setMockInitialValues({
-          'celiac_history': [json.encode(fakeHistory.first.toJson())],
+          'last_anonymous_uid': anonUid,
           'celiac_settings': json.encode({
             'userId': 'returning_user_999',
             'strictMode': true,
@@ -968,6 +991,7 @@ void main() {
             'preferredTheme': 'system',
           }),
         });
+        await const ScanHistoryDao().insertHistoryItem(anonUid, fakeHistory.first);
 
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('returning_user_999');
@@ -987,7 +1011,7 @@ void main() {
         SharedPreferences.setMockInitialValues({
           'has_anonymous_settings': true,
           'celiac_settings': json.encode({
-            'userId': 'anonymous',
+            'userId': 'anonymous_user_temp',
             'strictMode': false,
             'alertLactose': true,
             'warnAdditives': false,
@@ -1010,19 +1034,19 @@ void main() {
     testWidgets(
       'new anonymous user wipes old anonymous data (anonymous → anonymous transition)',
       (tester) async {
+        const oldAnonUid = 'old_anon_firebase_uid';
+        final oldHist = ScanHistoryItem(
+          id: 'hist_old_anon',
+          barcode: '999999',
+          scannedAt: DateTime.now().toIso8601String(),
+        );
+
         // Old anonymous user left data behind
         SharedPreferences.setMockInitialValues({
-          'last_anonymous_uid': 'old_anon_firebase_uid',
-          'celiac_history': [
-            json.encode(ScanHistoryItem(
-              id: 'hist_old_anon',
-              barcode: '999999',
-              scannedAt: DateTime.now().toIso8601String(),
-            ).toJson()),
-          ],
+          'last_anonymous_uid': oldAnonUid,
           'has_anonymous_settings': true,
           'celiac_settings': json.encode({
-            'userId': 'anonymous',
+            'userId': oldAnonUid,
             'strictMode': true,
             'alertLactose': false,
             'warnAdditives': true,
@@ -1031,6 +1055,7 @@ void main() {
             'preferredTheme': 'system',
           }),
         });
+        await const ScanHistoryDao().insertHistoryItem(oldAnonUid, oldHist);
 
         // New anonymous user with DIFFERENT UID
         when(() => mockUser.isAnonymous).thenReturn(true);
@@ -1041,9 +1066,11 @@ void main() {
         // Should NOT show SyncDataScreen (anonymous users skip sync)
         expect(find.byType(SyncDataScreen), findsNothing);
 
-        // Old data should have been wiped
+        // Old data in SQLite should have been wiped
+        final oldDbHistory = await const ScanHistoryDao().getHistory(oldAnonUid);
+        expect(oldDbHistory, isEmpty);
+
         final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getStringList('celiac_history'), isNull);
         expect(prefs.getBool('has_anonymous_settings'), isNull);
 
         // New UID should be tracked
@@ -1054,20 +1081,21 @@ void main() {
     testWidgets(
       'same anonymous user keeps their data (no wipe on same session)',
       (tester) async {
+        const sameAnonUid = 'same_anon_uid';
+        final item = ScanHistoryItem(
+          id: 'hist_same_anon',
+          barcode: '888888',
+          scannedAt: DateTime.now().toIso8601String(),
+        );
+
         // Anonymous user data with matching UID
         SharedPreferences.setMockInitialValues({
-          'last_anonymous_uid': 'same_anon_uid',
-          'celiac_history': [
-            json.encode(ScanHistoryItem(
-              id: 'hist_same_anon',
-              barcode: '888888',
-              scannedAt: DateTime.now().toIso8601String(),
-            ).toJson()),
-          ],
+          'last_anonymous_uid': sameAnonUid,
         });
+        await const ScanHistoryDao().insertHistoryItem(sameAnonUid, item);
 
         when(() => mockUser.isAnonymous).thenReturn(true);
-        when(() => mockUser.uid).thenReturn('same_anon_uid');
+        when(() => mockUser.uid).thenReturn(sameAnonUid);
 
         await _pumpMainScreen(tester, auth: mockAuth);
 
@@ -1075,9 +1103,9 @@ void main() {
         expect(find.byType(SyncDataScreen), findsNothing);
 
         // Data should still be there (not wiped)
-        final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getStringList('celiac_history'), isNotNull);
-        expect(prefs.getStringList('celiac_history')!.length, 1);
+        final dbHistory = await const ScanHistoryDao().getHistory(sameAnonUid);
+        expect(dbHistory, isNotEmpty);
+        expect(dbHistory.length, 1);
       },
     );
   });

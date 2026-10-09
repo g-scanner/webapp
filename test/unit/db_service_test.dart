@@ -12,6 +12,8 @@ import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/db_service.dart';
 import 'package:gscanner/services/analyzer_service.dart';
 import 'package:gscanner/services/database/app_database.dart';
+import 'package:gscanner/services/database/daos/scan_history_dao.dart';
+import 'package:gscanner/services/database/daos/product_report_dao.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {
@@ -27,6 +29,8 @@ void main() {
   late MockDocumentSnapshot mockDocSnap;
   late MockWriteBatch mockBatch;
   late MockHttpClient mockHttpClient;
+  const historyDao = ScanHistoryDao();
+  const reportDao = ProductReportDao();
 
   setUpAll(() {
     setupMocktailFallbacks();
@@ -909,34 +913,28 @@ void main() {
       'migrateLocalDataToFirestore migrates history, reports, and reported barcodes',
       () async {
         final prefs = await SharedPreferences.getInstance();
+        const anonUid = 'anon_to_migrate_1';
+        await prefs.setString('last_anonymous_uid', anonUid);
 
-        final fakeHistory = [
-          ScanHistoryItem(
-            id: 'h1',
-            barcode: '111',
-            scannedAt: '2026-08-01T00:00:00Z',
-          ),
-        ];
-        final fakeReports = [
-          ProductReport(
-            id: 'r1',
-            barcode: '222',
-            productName: 'P',
-            brand: 'B',
-            type: 't',
-            comments: 'c',
-            submittedAt: '2026-08-01T00:00:00Z',
-            status: 'open',
-          ),
-        ];
+        final fakeHistory = ScanHistoryItem(
+          id: 'h1',
+          barcode: '111',
+          scannedAt: '2026-08-01T00:00:00Z',
+        );
+        final fakeReport = ProductReport(
+          id: 'r1',
+          barcode: '222',
+          productName: 'P',
+          brand: 'B',
+          type: 't',
+          comments: 'c',
+          submittedAt: '2026-08-01T00:00:00Z',
+          status: 'open',
+          userId: anonUid,
+        );
 
-        await prefs.setStringList('celiac_history', [
-          json.encode(fakeHistory.first.toJson()),
-        ]);
-        await prefs.setStringList('celiac_reports', [
-          json.encode(fakeReports.first.toJson()),
-        ]);
-        await prefs.setStringList('celiac_reported_barcodes', ['222']);
+        await historyDao.insertHistoryItem(anonUid, fakeHistory);
+        await reportDao.insertReport(fakeReport);
 
         final mockUserHistoryCol = MockCollectionReference();
         when(
@@ -948,10 +946,8 @@ void main() {
 
         await DbService.migrateLocalDataToFirestore('new_user_123');
 
-        // Anonymous keys wiped
-        expect(prefs.getStringList('celiac_history'), isNull);
-        expect(prefs.getStringList('celiac_reports'), isNull);
-        expect(prefs.getStringList('celiac_reported_barcodes'), isNull);
+        // Anonymous tracking wiped
+        expect(prefs.getString('last_anonymous_uid'), isNull);
 
         // Verify batch commits
         verify(
@@ -964,16 +960,15 @@ void main() {
       'migrateLocalDataToFirestore with syncHistory: false skips history migration',
       () async {
         final prefs = await SharedPreferences.getInstance();
-        final fakeHistory = [
-          ScanHistoryItem(
-            id: 'h1',
-            barcode: '111',
-            scannedAt: '2026-08-01T00:00:00Z',
-          ),
-        ];
-        await prefs.setStringList('celiac_history', [
-          json.encode(fakeHistory.first.toJson()),
-        ]);
+        const anonUid = 'anon_skip_hist';
+        await prefs.setString('last_anonymous_uid', anonUid);
+
+        final fakeHistory = ScanHistoryItem(
+          id: 'h1',
+          barcode: '111',
+          scannedAt: '2026-08-01T00:00:00Z',
+        );
+        await historyDao.insertHistoryItem(anonUid, fakeHistory);
 
         when(() => mockUsersCol.doc('new_user_123')).thenReturn(mockDocRef);
 
@@ -984,7 +979,7 @@ void main() {
           syncSettings: false,
         );
 
-        expect(prefs.getStringList('celiac_history'), isNull);
+        expect(prefs.getString('last_anonymous_uid'), isNull);
         verifyNever(() => mockBatch.commit());
       },
     );
@@ -993,9 +988,11 @@ void main() {
       'migrateLocalDataToFirestore with syncSettings: false removes anonymous settings without writing to Firestore',
       () async {
         final prefs = await SharedPreferences.getInstance();
+        const anonUid = 'anon_settings_uid';
+        await prefs.setString('last_anonymous_uid', anonUid);
         await prefs.setString(
           'celiac_settings',
-          json.encode({'userId': 'anonymous', 'strictMode': true}),
+          json.encode({'userId': anonUid, 'strictMode': true}),
         );
         await prefs.setBool('has_anonymous_settings', true);
 
@@ -1068,27 +1065,29 @@ void main() {
 
     test('wipeAnonymousData clears last_anonymous_uid key', () async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('last_anonymous_uid', 'anon_uid_to_wipe');
+      const anonUid = 'anon_uid_to_wipe';
+      await prefs.setString('last_anonymous_uid', anonUid);
       await prefs.setBool('has_anonymous_settings', true);
-      await prefs.setStringList('celiac_history', ['{}']);
+      await historyDao.insertHistoryItem(
+        anonUid,
+        ScanHistoryItem(id: 'h_w', barcode: '123', scannedAt: '2026-08-01T00:00:00Z'),
+      );
 
       await DbService.wipeAnonymousData();
 
       expect(prefs.getString('last_anonymous_uid'), isNull);
       expect(prefs.getBool('has_anonymous_settings'), isNull);
-      expect(prefs.getStringList('celiac_history'), isNull);
+      expect(await historyDao.getHistory(anonUid), isEmpty);
     });
 
     test('migrateLocalDataToFirestore clears last_anonymous_uid key', () async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('last_anonymous_uid', 'anon_uid_migrated');
-      await prefs.setStringList('celiac_history', [
-        json.encode(ScanHistoryItem(
-          id: 'h_m',
-          barcode: '999',
-          scannedAt: '2026-08-01T00:00:00Z',
-        ).toJson()),
-      ]);
+      const anonUid = 'anon_uid_migrated';
+      await prefs.setString('last_anonymous_uid', anonUid);
+      await historyDao.insertHistoryItem(
+        anonUid,
+        ScanHistoryItem(id: 'h_m', barcode: '999', scannedAt: '2026-08-01T00:00:00Z'),
+      );
 
       final mockUserHistoryCol = MockCollectionReference();
       when(
@@ -1413,35 +1412,31 @@ void main() {
     );
 
     test(
-      'getLocalUnsyncedHistory and getLocalUnsyncedReports read anonymous storage keys',
+      'getLocalUnsyncedHistory and getLocalUnsyncedReports read anonymous user data via tracked UID',
       () async {
         final prefs = await SharedPreferences.getInstance();
-        final fakeHistory = [
-          ScanHistoryItem(
-            id: 'u_h1',
-            barcode: '888',
-            scannedAt: '2026-08-01T00:00:00Z',
-          ),
-        ];
-        final fakeReports = [
-          ProductReport(
-            id: 'u_r1',
-            barcode: '999',
-            productName: 'P',
-            brand: 'B',
-            type: 't',
-            comments: 'c',
-            submittedAt: '2026-08-01T00:00:00Z',
-            status: 'open',
-          ),
-        ];
+        const anonUid = 'tracked_anon_uid_123';
+        await prefs.setString(AccountDataService.lastAnonymousUidKey, anonUid);
 
-        await prefs.setStringList('celiac_history', [
-          json.encode(fakeHistory.first.toJson()),
-        ]);
-        await prefs.setStringList('celiac_reports', [
-          json.encode(fakeReports.first.toJson()),
-        ]);
+        final fakeHistory = ScanHistoryItem(
+          id: 'u_h1',
+          barcode: '888',
+          scannedAt: '2026-08-01T00:00:00Z',
+        );
+        final fakeReport = ProductReport(
+          id: 'u_r1',
+          barcode: '999',
+          productName: 'P',
+          brand: 'B',
+          type: 't',
+          comments: 'c',
+          submittedAt: '2026-08-01T00:00:00Z',
+          status: 'open',
+          userId: anonUid,
+        );
+
+        await historyDao.insertHistoryItem(anonUid, fakeHistory);
+        await reportDao.insertReport(fakeReport);
 
         final unsyncedHist = await DbService.getLocalUnsyncedHistory();
         final unsyncedRep = await DbService.getLocalUnsyncedReports();
@@ -1648,4 +1643,74 @@ void main() {
       },
     );
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP: Anonymous User Real UID Preservation & Deletion
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('Anonymous User Real UID Preservation', () {
+    test('ReportsDbService and HistoryDbService getUserId returns real UID for anonymous user', () {
+      when(() => mockUser.uid).thenReturn('anon_uid_456');
+      when(() => mockUser.isAnonymous).thenReturn(true);
+      when(() => mockAuth.currentUser).thenReturn(mockUser);
+
+      expect(ReportsDbService.getUserId(mockAuth), equals('anon_uid_456'));
+      expect(HistoryDbService.getUserId(mockAuth), equals('anon_uid_456'));
+    });
+
+    test('ReportsDbService.submitProductReportClientSide sets real UID for anonymous user', () async {
+      when(() => mockUser.uid).thenReturn('anon_uid_456');
+      when(() => mockUser.isAnonymous).thenReturn(true);
+      when(() => mockAuth.currentUser).thenReturn(mockUser);
+
+      when(() => mockReportsCol.doc(any())).thenReturn(mockDocRef);
+      when(() => mockReportsCol.doc()).thenReturn(mockDocRef);
+      when(() => mockProductsCol.doc('1234567890')).thenReturn(mockDocRef);
+      when(() => mockUsersCol.doc('anon_uid_456')).thenReturn(mockDocRef);
+
+      final report = await DbService.submitProductReportClientSide(
+        '1234567890',
+        'Test Prodotto Anon',
+        'Test Brand',
+        {'type': 'label_unclear', 'comments': 'Nota di test'},
+      );
+
+      expect(report.userId, equals('anon_uid_456'));
+      verify(() => mockBatch.set<Map<String, dynamic>>(
+        mockDocRef,
+        any(that: predicate<Map<String, dynamic>>((map) => map['userId'] == 'anon_uid_456')),
+      )).called(1);
+    });
+
+    test('ReportsDbService.deleteReportFromDb updates reportedBarcodes for anonymous user', () async {
+      when(() => mockUser.uid).thenReturn('anon_uid_456');
+      when(() => mockUser.isAnonymous).thenReturn(true);
+      when(() => mockAuth.currentUser).thenReturn(mockUser);
+
+      final mockReportDocRef = MockDocumentReference();
+      final mockReportSnap = MockDocumentSnapshot();
+      final mockVotesCol = MockCollectionReference();
+      final mockVotesSnap = MockQuerySnapshot();
+
+      when(() => mockReportsCol.doc('rep_del_1')).thenReturn(mockReportDocRef);
+      when(() => mockReportDocRef.get()).thenAnswer((_) async => mockReportSnap);
+      when(() => mockReportSnap.exists).thenReturn(true);
+      when(() => mockReportSnap.data()).thenReturn({
+        'barcode': '1234567890',
+        'userId': 'anon_uid_456',
+      });
+      when(() => mockReportDocRef.collection('votes')).thenReturn(mockVotesCol);
+      when(() => mockVotesCol.get()).thenAnswer((_) async => mockVotesSnap);
+      when(() => mockVotesSnap.docs).thenReturn([]);
+
+      when(() => mockProductsCol.doc('1234567890')).thenReturn(mockDocRef);
+      when(() => mockUsersCol.doc('anon_uid_456')).thenReturn(mockDocRef);
+
+      await DbService.deleteReportFromDb('rep_del_1');
+
+      verify(() => mockBatch.delete(mockReportDocRef)).called(1);
+      verify(() => mockBatch.set<Map<String, dynamic>>(any(), any(), any())).called(2);
+      verify(() => mockBatch.commit()).called(1);
+    });
+  });
 }
+

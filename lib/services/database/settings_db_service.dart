@@ -51,27 +51,17 @@ class SettingsDbService {
   ) async {
     final user = auth.currentUser;
 
-    final effectiveSettings = user != null && !user.isAnonymous
-        ? UserSettings(
-            userId: user.uid,
-            strictMode: settings.strictMode,
-            alertLactose: settings.alertLactose,
-            warnAdditives: settings.warnAdditives,
-            autoSaveHistory: settings.autoSaveHistory,
-            preferredLanguage: settings.preferredLanguage,
-            preferredTheme: settings.preferredTheme,
-            reportedBarcodes: settings.reportedBarcodes,
-          )
-        : UserSettings(
-            userId: 'anonymous',
-            strictMode: settings.strictMode,
-            alertLactose: settings.alertLactose,
-            warnAdditives: settings.warnAdditives,
-            autoSaveHistory: settings.autoSaveHistory,
-            preferredLanguage: settings.preferredLanguage,
-            preferredTheme: settings.preferredTheme,
-            reportedBarcodes: settings.reportedBarcodes,
-          );
+    final effectiveUserId = user?.uid ?? 'anonymous';
+    final effectiveSettings = UserSettings(
+      userId: effectiveUserId,
+      strictMode: settings.strictMode,
+      alertLactose: settings.alertLactose,
+      warnAdditives: settings.warnAdditives,
+      autoSaveHistory: settings.autoSaveHistory,
+      preferredLanguage: settings.preferredLanguage,
+      preferredTheme: settings.preferredTheme,
+      reportedBarcodes: settings.reportedBarcodes,
+    );
 
     await saveLocalSettings(effectiveSettings);
 
@@ -96,11 +86,14 @@ class SettingsDbService {
       final prefs = await SharedPreferences.getInstance();
       if (prefs.getBool(hasAnonymousSettingsKey) == true) return true;
 
+      final lastAnonUid = prefs.getString('last_anonymous_uid');
       final settingsStr = prefs.getString(settingsKey);
       if (settingsStr != null) {
         final decoded = json.decode(settingsStr) as Map<String, dynamic>;
         final uid = decoded['userId'] ?? decoded['user_id'];
-        if (uid == 'anonymous') return true;
+        if (lastAnonUid != null && lastAnonUid.isNotEmpty && uid == lastAnonUid) {
+          return true;
+        }
       }
       return false;
     } catch (e) {

@@ -144,14 +144,14 @@ class ScanHistoryDao {
     );
   }
 
-  /// Riassegna la cronologia dell'utente anonimo al nuovo UID al momento del login.
-  Future<int> reassignAnonymousHistory(String newUid) async {
+  /// Riassegna la cronologia da un UID precedente al nuovo UID al login.
+  Future<int> reassignHistory(String fromUid, String toUid) async {
     final db = await _db;
     return await db.update(
       tableName,
-      {'user_id': newUid},
+      {'user_id': toUid},
       where: 'user_id = ?',
-      whereArgs: ['anonymous'],
+      whereArgs: [fromUid],
     );
   }
 }

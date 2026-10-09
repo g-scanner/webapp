@@ -268,19 +268,19 @@ void main() {
       expect(await historyDao.getHistory('u1'), isEmpty);
     });
 
-    test('reassignAnonymousHistory reassigns records to new UID on login', () async {
+    test('reassignHistory reassigns records to new UID on login', () async {
       await historyDao.insertHistoryItem(
-        'anonymous',
+        'anon_user_1',
         ScanHistoryItem(id: 'anon_1', barcode: 'A', scannedAt: '2026-08-01T10:00:00Z'),
       );
 
-      expect(await historyDao.getHistory('anonymous'), hasLength(1));
+      expect(await historyDao.getHistory('anon_user_1'), hasLength(1));
       expect(await historyDao.getHistory('logged_user'), isEmpty);
 
-      final updated = await historyDao.reassignAnonymousHistory('logged_user');
+      final updated = await historyDao.reassignHistory('anon_user_1', 'logged_user');
       expect(updated, 1);
 
-      expect(await historyDao.getHistory('anonymous'), isEmpty);
+      expect(await historyDao.getHistory('anon_user_1'), isEmpty);
       expect(await historyDao.getHistory('logged_user'), hasLength(1));
     });
   });
@@ -336,7 +336,7 @@ void main() {
       expect(await reportDao.isBarcodeReported('u_del', 'BAR_DEL'), isFalse);
     });
 
-    test('reassignAnonymousReports transfers anonymous reports and barcodes to new UID', () async {
+    test('reassignReports transfers anonymous reports and barcodes to new UID', () async {
       final report = ProductReport(
         id: 'rep_anon',
         barcode: 'BAR_ANON',
@@ -346,14 +346,14 @@ void main() {
         comments: 'c',
         submittedAt: '2026-08-01T12:00:00Z',
         status: 'open',
-        userId: 'anonymous',
+        userId: 'anon_user_1',
       );
 
       await reportDao.insertReport(report);
 
-      await reportDao.reassignAnonymousReports('auth_user_123');
+      await reportDao.reassignReports('anon_user_1', 'auth_user_123');
 
-      expect(await reportDao.getUserReports('anonymous'), isEmpty);
+      expect(await reportDao.getUserReports('anon_user_1'), isEmpty);
       final transferred = await reportDao.getUserReports('auth_user_123');
       expect(transferred, hasLength(1));
       expect(await reportDao.isBarcodeReported('auth_user_123', 'BAR_ANON'), isTrue);

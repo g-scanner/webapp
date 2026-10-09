@@ -118,6 +118,7 @@ class _ReportsListState extends State<ReportsList> {
   }
 
   void _confirmDeleteReport(String? reportId) {
+    if (reportId == null || reportId.isEmpty) return;
     final cardBg = context.cardBackground;
     final colorScheme = context.colorScheme;
 
@@ -169,7 +170,7 @@ class _ReportsListState extends State<ReportsList> {
               FilledButton(
                 onPressed: () async {
                   Navigator.pop(ctx);
-                  if (reportId != null && widget.onDeleteReport != null) {
+                  if (widget.onDeleteReport != null) {
                     await widget.onDeleteReport!(reportId);
                   }
                 },
@@ -377,22 +378,24 @@ class _ReportsListState extends State<ReportsList> {
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final prod = filtered[index];
-                  final bool isOwnReport = widget.reportedBarcodes.contains(
-                    prod.barcode,
-                  );
                   final userReport = widget.userReports
                       ?.cast<ProductReport?>()
                       .firstWhere(
                         (r) => r?.barcode == prod.barcode,
                         orElse: () => null,
                       );
+                  final bool isOwnReport = widget.reportedBarcodes.contains(
+                    prod.barcode,
+                  ) || userReport != null;
 
                   return ReportItemCard(
                     prod: prod,
                     onTap: () =>
                         _navigateToDetail(prod, isOwnReport, userReport),
-                    onLongPress: (isOwnReport && widget.onDeleteReport != null)
-                        ? () => _confirmDeleteReport(userReport?.id)
+                    onLongPress: (isOwnReport &&
+                            widget.onDeleteReport != null &&
+                            userReport?.id != null)
+                        ? () => _confirmDeleteReport(userReport!.id)
                         : null,
                   );
                 },

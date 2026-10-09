@@ -18,7 +18,7 @@ class HistoryDbService {
   /// Identificatore logico dell'utente per il partizionamento della cronologia.
   static String getUserId(FirebaseAuth auth) {
     final user = auth.currentUser;
-    if (user != null && !user.isAnonymous) {
+    if (user != null) {
       return user.uid;
     }
     return 'anonymous';
@@ -27,7 +27,7 @@ class HistoryDbService {
   /// Mantiene compatibilità di interfaccia per eventuali test o chiamate storiche.
   static String getHistoryKey(FirebaseAuth auth) {
     final user = auth.currentUser;
-    if (user != null && !user.isAnonymous) {
+    if (user != null) {
       return 'celiac_history_${user.uid}';
     }
     return 'celiac_history';
@@ -48,7 +48,7 @@ class HistoryDbService {
       final isDuplicate = await _historyDao.hasRecentScan(userId, product.barcode);
       if (isDuplicate) return;
 
-      final id = user != null && !user.isAnonymous
+      final id = user != null
           ? db.collection("users/${user.uid}/history").doc().id
           : now.millisecondsSinceEpoch.toString();
 

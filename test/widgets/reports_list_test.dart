@@ -591,6 +591,39 @@ void main() {
         verify(() => mockCallbacks.onDeleteReport('rep_999_xyz')).called(1);
       },
     );
+
+    testWidgets(
+      'allows deletion when userReports has the report even if reportedBarcodes is empty',
+      (tester) async {
+        final p1 = _createReportedProduct(
+          barcode: '111',
+          nameIt: 'Mio Prodotto Anonimo',
+        );
+        final report = _createProductReport(id: 'rep_anon_123', barcode: '111');
+
+        await _pumpReportsList(
+          tester,
+          callbacks: mockCallbacks,
+          products: [p1],
+          reportedBarcodes: [], // Empty / desynced
+          userReports: [report],
+          isSynced: true,
+        );
+
+        await tester.longPress(find.text('Mio Prodotto Anonimo'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('common.actions.deleteReportConfirmTitle'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('common.actions.delete'));
+        await tester.pumpAndSettle();
+
+        verify(() => mockCallbacks.onDeleteReport('rep_anon_123')).called(1);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
