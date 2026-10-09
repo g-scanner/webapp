@@ -6,4 +6,3 @@ export 'clear_history_dialog.dart';
 export 'delete_account_dialog.dart';
 export 'edit_name_dialog.dart';
 export 'legal_content_dialog.dart';
-export 'native_legal_texts.dart';
