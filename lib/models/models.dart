@@ -8,4 +8,6 @@ export 'scan_history_item.dart';
 export 'product_report.dart';
 export 'user_settings.dart';
 export 'anonymous_data_summary.dart';
+export 'offline_db_tier.dart';
+export 'offline_sync_progress.dart';
 export '../core/localization/date_formatters.dart';

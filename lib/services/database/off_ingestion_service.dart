@@ -9,6 +9,7 @@ import '../../models/models.dart';
 import '../../core/core.dart';
 import 'local_cache_service.dart';
 import 'history_db_service.dart';
+import 'offline_db_service.dart';
 import 'off_product_parser.dart';
 
 class OffIngestionService {
@@ -74,10 +75,30 @@ class OffIngestionService {
     }
 
     // 2. CONTROLLO PREVENTIVO CONNETTIVITÀ (Fail-Fast):
-    // Se non c'è rete e non abbiamo il DB offline, blocca subito senza far attendere timeout all'utente.
+    // Se non c'è rete:
+    // a) Se il DB offline è installato, cerca nel DB locale.
+    // b) Se trovato: restituisce ScanResult.offline (NO cache, NO firestore).
+    // c) Se non trovato nel DB locale: restituisce ScanResult.offlineNotFound (volatile).
+    // d) Se il DB non è installato, solleva OfflineWithoutDbException (0 ms).
     final bool isConnected =
         await ConnectivityHelper.hasInternetConnection();
     if (!isConnected) {
+      final bool hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
+      if (hasOfflineDb) {
+        final offlineProduct = await OfflineDbService.searchProduct(barcode);
+        if (offlineProduct != null) {
+          if (settings.autoSaveHistory) {
+            await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
+          }
+          return ScanResult.offline(offlineProduct);
+        } else {
+          final notFoundProduct = OfflineDbService.createOfflineNotFoundProduct(barcode);
+          if (settings.autoSaveHistory) {
+            await HistoryDbService.saveHistoryItem(db, auth, notFoundProduct);
+          }
+          return ScanResult.offlineNotFound(notFoundProduct);
+        }
+      }
       throw const OfflineWithoutDbException();
     }
 
@@ -170,9 +191,19 @@ class OffIngestionService {
     }
 
     // ⚠️ ERRORE DI RETE / TIMEOUT:
-    // Se la rete è assente o non risponde entro il timeout, fallisci subito.
-    // I retry ponderati e il tempo massimo di attesa sono governati a livello di UI/Shell.
-    // NON salvare alcun placeholder orfano in cronologia e NON creare alcun Ghost Product.
+    // Se la rete è assente o non risponde entro il timeout, verifichiamo se abbiamo il DB offline:
+    final bool hasOfflineDbFallback = await OfflineDbService.isDatabaseInstalled();
+    if (hasOfflineDbFallback) {
+      final offlineProduct = await OfflineDbService.searchProduct(barcode);
+      if (offlineProduct != null) {
+        if (settings.autoSaveHistory) {
+          await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
+        }
+        return ScanResult.offline(offlineProduct);
+      }
+    }
+
+    // Nessun DB locale e chiamata fallita: non salvare ghost e rilancia eccezione
     throw const OffNetworkException();
   }
 

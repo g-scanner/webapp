@@ -2,6 +2,7 @@
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/widgets.dart';
+import 'offline_db_tier.dart';
 
 class UserSettings {
   final String? userId;
@@ -12,6 +13,8 @@ class UserSettings {
   final String preferredLanguage;
   final String preferredTheme;
   final List<String> reportedBarcodes;
+  final OfflineDbTier offlineDbTier;
+  final int? offlineDbLastSyncedAt;
 
   static String get defaultSystemLanguage {
     try {
@@ -33,7 +36,35 @@ class UserSettings {
     required this.preferredLanguage,
     this.preferredTheme = 'system',
     this.reportedBarcodes = const [],
+    this.offlineDbTier = OfflineDbTier.none,
+    this.offlineDbLastSyncedAt,
   });
+
+  UserSettings copyWith({
+    String? userId,
+    bool? strictMode,
+    bool? alertLactose,
+    bool? warnAdditives,
+    bool? autoSaveHistory,
+    String? preferredLanguage,
+    String? preferredTheme,
+    List<String>? reportedBarcodes,
+    OfflineDbTier? offlineDbTier,
+    int? offlineDbLastSyncedAt,
+  }) {
+    return UserSettings(
+      userId: userId ?? this.userId,
+      strictMode: strictMode ?? this.strictMode,
+      alertLactose: alertLactose ?? this.alertLactose,
+      warnAdditives: warnAdditives ?? this.warnAdditives,
+      autoSaveHistory: autoSaveHistory ?? this.autoSaveHistory,
+      preferredLanguage: preferredLanguage ?? this.preferredLanguage,
+      preferredTheme: preferredTheme ?? this.preferredTheme,
+      reportedBarcodes: reportedBarcodes ?? this.reportedBarcodes,
+      offlineDbTier: offlineDbTier ?? this.offlineDbTier,
+      offlineDbLastSyncedAt: offlineDbLastSyncedAt ?? this.offlineDbLastSyncedAt,
+    );
+  }
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
     return UserSettings(
@@ -45,6 +76,8 @@ class UserSettings {
       preferredLanguage: json['preferredLanguage'] ?? json['preferred_language'] ?? defaultSystemLanguage,
       preferredTheme: json['preferredTheme'] ?? json['preferred_theme'] ?? 'system',
       reportedBarcodes: List<String>.from(json['reportedBarcodes'] ?? json['reported_barcodes'] ?? []),
+      offlineDbTier: OfflineDbTierExtension.fromKey(json['offlineDbTier'] ?? json['offline_db_tier']),
+      offlineDbLastSyncedAt: json['offlineDbLastSyncedAt'] ?? json['offline_db_last_synced_at'],
     );
   }
 
@@ -58,6 +91,8 @@ class UserSettings {
       'preferredLanguage': preferredLanguage,
       'preferredTheme': preferredTheme,
       'reportedBarcodes': reportedBarcodes,
+      'offlineDbTier': offlineDbTier.key,
+      'offlineDbLastSyncedAt': offlineDbLastSyncedAt,
     };
   }
 }

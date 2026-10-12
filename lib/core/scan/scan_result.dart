@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner -- See LICENSE file in root for terms.
 
 import '../../models/models.dart';
@@ -21,6 +21,12 @@ sealed class ScanResult {
   /// (offline o OFF irraggiungibile).
   const factory ScanResult.stale(Product product) = _ScanResultStale;
 
+  /// Dato proveniente dal database SQLite offline locale.
+  const factory ScanResult.offline(Product product) = _ScanResultOffline;
+
+  /// Prodotto non presente nel catalogo del database offline locale (risultato volatile).
+  const factory ScanResult.offlineNotFound(Product product) = _ScanResultOfflineNotFound;
+
   /// Il prodotto associato al risultato.
   Product get product;
 
@@ -29,6 +35,12 @@ sealed class ScanResult {
 
   /// `true` se il dato e potenzialmente obsoleto (fallback dalla cache locale).
   bool get isStaleResult => this is _ScanResultStale;
+
+  /// `true` se il dato proviene dal database SQLite offline.
+  bool get isOfflineResult => this is _ScanResultOffline;
+
+  /// `true` se il prodotto non è stato trovato nel database offline.
+  bool get isOfflineNotFoundResult => this is _ScanResultOfflineNotFound;
 }
 
 final class _ScanResultFresh extends ScanResult {
@@ -40,6 +52,20 @@ final class _ScanResultFresh extends ScanResult {
 
 final class _ScanResultStale extends ScanResult {
   const _ScanResultStale(this.product);
+
+  @override
+  final Product product;
+}
+
+final class _ScanResultOffline extends ScanResult {
+  const _ScanResultOffline(this.product);
+
+  @override
+  final Product product;
+}
+
+final class _ScanResultOfflineNotFound extends ScanResult {
+  const _ScanResultOfflineNotFound(this.product);
 
   @override
   final Product product;

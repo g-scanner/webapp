@@ -13,6 +13,9 @@ class OffApiClient {
     defaultValue: '',
   );
 
+  @visibleForTesting
+  static http.Client? mockClient;
+
   static Map<String, String> _headers({bool? isWebOverride}) {
     final bool web = isWebOverride ?? kIsWeb;
     if (web) {
@@ -79,8 +82,9 @@ class OffApiClient {
 
     for (int attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        final request = client != null
-            ? client.get(uri, headers: headers)
+        final effectiveClient = client ?? mockClient;
+        final request = effectiveClient != null
+            ? effectiveClient.get(uri, headers: headers)
             : http.get(uri, headers: headers);
         return await request.timeout(effectiveTimeout);
       } catch (e) {

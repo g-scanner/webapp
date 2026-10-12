@@ -8,11 +8,7 @@ import '../services/analyzer_service.dart';
 /// - [superFresh]: Livello A (0 - 7 giorni). Nessuna chiamata di rete, zero check in background.
 /// - [tolerance]: Livello B (8 - 30 giorni). Ritorno immediato con check in background fire-and-forget.
 /// - [hardStale]: Livello C (> 30 giorni, incompleto o ghost > 24h). Check sincrono bloccante.
-enum ProductFreshnessWindow {
-  superFresh,
-  tolerance,
-  hardStale,
-}
+enum ProductFreshnessWindow { superFresh, tolerance, hardStale }
 
 class Product {
   final String barcode;
@@ -24,6 +20,8 @@ class Product {
   final int pendingReportsCount;
   final String lastUpdated;
   final String? fetchedFromOffAt;
+  final bool isFromOfflineDb;
+  final bool isOfflineNotFound;
 
   Product({
     required this.barcode,
@@ -35,6 +33,8 @@ class Product {
     this.pendingReportsCount = 0,
     required this.lastUpdated,
     this.fetchedFromOffAt,
+    this.isFromOfflineDb = false,
+    this.isOfflineNotFound = false,
   });
 
   // Helper getters per estrarre la lingua corrente con fallback intelligente
@@ -99,8 +99,7 @@ class Product {
       return allergensMap[preferredLanguage]!;
     }
     for (final lang in ['it', 'en', 'es', 'fr', 'de']) {
-      if (allergensMap.containsKey(lang) &&
-          allergensMap[lang]!.isNotEmpty) {
+      if (allergensMap.containsKey(lang) && allergensMap[lang]!.isNotEmpty) {
         return allergensMap[lang]!;
       }
     }
@@ -125,8 +124,7 @@ class Product {
     if (allergensMap.isEmpty) return false;
     final bool hasAnyDeclaredAllergen = allergensMap.values.any(
       (list) => list.any(
-        (a) =>
-            a.trim().isNotEmpty && !AnalyzerService.isSafeGlutenClaim(a),
+        (a) => a.trim().isNotEmpty && !AnalyzerService.isSafeGlutenClaim(a),
       ),
     );
     if (hasAnyDeclaredAllergen) return true;
@@ -156,7 +154,8 @@ class Product {
   /// - [ProductFreshnessWindow.tolerance] (25 ore - 7 giorni): OFF potrebbe aver aggiornato i dati.
   /// - [ProductFreshnessWindow.hardStale] (> 7 giorni): Quasi certamente OFF ha dati nuovi.
   ProductFreshnessWindow get freshnessWindow {
-    final dateStr = (fetchedFromOffAt != null && fetchedFromOffAt!.trim().isNotEmpty)
+    final dateStr =
+        (fetchedFromOffAt != null && fetchedFromOffAt!.trim().isNotEmpty)
         ? fetchedFromOffAt!
         : lastUpdated;
     if (dateStr.trim().isEmpty) return ProductFreshnessWindow.hardStale;
@@ -242,7 +241,8 @@ class Product {
       imageUrl: json['image_url'] ?? json['imageUrl'],
       pendingReportsCount:
           json['pending_reports_count'] ?? json['reportCount'] ?? 0,
-      lastUpdated: json['last_updated'] ??
+      lastUpdated:
+          json['last_updated'] ??
           json['lastUpdated'] ??
           DateTime.now().toIso8601String(),
       fetchedFromOffAt: json['fetched_from_off_at'] ?? json['fetchedFromOffAt'],

@@ -1,13 +1,16 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Pure Unit Tests: Off Network Resilience & Anti-Ghost Protection
 
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/core/core.dart';
 import 'package:gscanner/services/database/off_ingestion_service.dart';
+import 'package:gscanner/services/database/offline_db_service.dart';
 import 'package:gscanner/services/database/local_cache_service.dart';
 import 'package:gscanner/services/database/history_db_service.dart';
 import '../mocks/shared_mocks.dart';
@@ -978,6 +981,112 @@ void main() {
       expect(result.isFresh, isFalse);
       expect(result.product.isStale, isTrue);
       expect(result.product.barcode, 'level_c_prod');
+    });
+  });
+
+  group('GROUP 13 – Offline Database Lookup & Data Isolation', () {
+    late Directory tempDir;
+    late String dbPath;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('gscanner_ingestion_offline_');
+      dbPath = '${tempDir.path}/offline_products.db';
+      OfflineDbService.setMockDatabasePath(dbPath);
+    });
+
+    tearDown(() async {
+      await OfflineDbService.close();
+      OfflineDbService.setMockDatabasePath(null);
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    test('Offline scan with installed DB finds product and returns ScanResult.offline without caching', () async {
+      ConnectivityHelper.mockIsConnected = false;
+
+      // Crea DB offline con prodotto
+      final db = await openDatabase(dbPath, version: 1, onCreate: (db, v) async {
+        await db.execute('''
+          CREATE TABLE products (
+            code TEXT PRIMARY KEY,
+            product_name TEXT,
+            brands TEXT,
+            ingredients_text TEXT,
+            allergens_tags TEXT,
+            labels_tags TEXT,
+            traces_tags TEXT,
+            last_modified_t INTEGER
+          );
+        ''');
+      });
+      await db.insert('products', {
+        'code': '800555',
+        'product_name': 'Biscotti Senza Glutine',
+        'brands': 'Galbusera',
+        'ingredients_text': 'Farina di riso, uova',
+        'allergens_tags': '',
+        'labels_tags': 'en:gluten-free',
+        'traces_tags': '',
+        'last_modified_t': 1773000000,
+      });
+      await db.close();
+
+      final result = await OffIngestionService.scanBarcodeClientSide(
+        db: mockDb,
+        auth: mockAuth,
+        barcode: '800555',
+        settings: testSettings,
+      );
+
+      expect(result.isOfflineResult, isTrue);
+      expect(result.product.isFromOfflineDb, isTrue);
+      expect(result.product.isOfflineNotFound, isFalse);
+      expect(result.product.getName('it'), equals('Biscotti Senza Glutine'));
+
+      // DATA ISOLATION: Verifica che NON sia stato salvato nella cache SharedPreferences
+      final cached = await LocalCacheService.getLocalProductByBarcode('800555');
+      expect(cached, isNull);
+
+      // DATA ISOLATION: Verifica che NON sia stato scritto su Firestore
+      verifyNever(() => mockProductDoc.set(any(), any()));
+    });
+
+    test('Offline scan with installed DB when product not found returns ScanResult.offlineNotFound (volatile)', () async {
+      ConnectivityHelper.mockIsConnected = false;
+
+      // Crea DB offline vuoto
+      final db = await openDatabase(dbPath, version: 1, onCreate: (db, v) async {
+        await db.execute('''
+          CREATE TABLE products (
+            code TEXT PRIMARY KEY,
+            product_name TEXT,
+            brands TEXT,
+            ingredients_text TEXT,
+            allergens_tags TEXT,
+            labels_tags TEXT,
+            traces_tags TEXT,
+            last_modified_t INTEGER
+          );
+        ''');
+      });
+      await db.close();
+
+      final result = await OffIngestionService.scanBarcodeClientSide(
+        db: mockDb,
+        auth: mockAuth,
+        barcode: '999888',
+        settings: testSettings,
+      );
+
+      expect(result.isOfflineNotFoundResult, isTrue);
+      expect(result.product.isFromOfflineDb, isTrue);
+      expect(result.product.isOfflineNotFound, isTrue);
+
+      // DATA ISOLATION: Nessuna scrittura persistente
+      final cached = await LocalCacheService.getLocalProductByBarcode('999888');
+      expect(cached, isNull);
+      verifyNever(() => mockProductDoc.set(any(), any()));
     });
   });
 }

@@ -6,6 +6,7 @@ export 'analysis_rules_section.dart';
 export 'appearance_section.dart';
 export 'data_history_section.dart';
 export 'language_section.dart';
+export 'offline_database_section.dart';
 export 'legal_item.dart';
 export 'legal_section.dart';
 export 'section_header.dart';

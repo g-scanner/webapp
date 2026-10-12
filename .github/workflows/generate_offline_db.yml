@@ -1,0 +1,55 @@
+name: Generate Offline SQLite Databases
+
+on:
+  schedule:
+    # Esecuzione settimanale ogni domenica alle 03:00 UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install duckdb
+
+      - name: Download Open Food Facts dump (Streaming)
+        run: |
+          mkdir -p dump_data
+          echo "Download dump delta/completo Open Food Facts..."
+          # Scarica il dump compresso gzip (formato JSONL)
+          curl -L -o dump_data/openfoodfacts-products.jsonl.gz \
+            https://static.openfoodfacts.org/data/openfoodfacts-products.jsonl.gz
+
+      - name: Generate SQLite Databases and Rolling Deltas
+        run: |
+          python tools/offline_db_generator/generate_offline_db.py \
+            --input dump_data/openfoodfacts-products.jsonl.gz \
+            --outdir dist
+
+      - name: Publish to GitHub Releases (ODbL 1.0 Public Release)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG="offline-data"
+          
+          # Crea la release dedicata ai dati con --latest=false per non sovrascrivere la release dell'app
+          gh release view "$RELEASE_TAG" || gh release create "$RELEASE_TAG" \
+            --title "Open Food Facts Offline SQLite Databases (ODbL 1.0)" \
+            --notes "Weekly consolidated offline SQLite databases for G-Scanner. Data provided by Open Food Facts under ODbL 1.0 license." \
+            --latest=false
+          
+          # Carica o sostituisce gli asset del database
+          gh release upload "$RELEASE_TAG" dist/* --clobber

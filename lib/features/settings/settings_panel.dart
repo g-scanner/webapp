@@ -248,7 +248,22 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           const SizedBox(height: 40),
 
-          // 4. Sezione Dati & Cronologia
+          // 4. Sezione Database Offline
+          SectionHeader(
+            icon: Icons.cloud_download_outlined,
+            title: "settings.sectionTitles.offlineDatabase".tr(),
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+
+          OfflineDatabaseSection(
+            settings: widget.settings,
+            onSettingsChange: widget.onSettingsChange,
+          ),
+
+          const SizedBox(height: 40),
+
+          // 5. Sezione Dati & Cronologia
           SectionHeader(
             icon: Icons.data_usage,
             title: "settings.sectionTitles.dataAndHistory".tr(),

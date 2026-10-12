@@ -35,6 +35,14 @@
       "body": "I dati di questo prodotto provengono dalla memoria locale e non vengono aggiornati da oltre 30 giorni. L'aggiornamento automatico avverrà appena il dispositivo sarà connesso a Internet.",
       "caution": "Le ricette e gli stabilimenti possono cambiare nel tempo. Leggi l'etichetta fisica per sicurezza."
     },
+    "offlineWarnings": {
+      "databaseWarningTitle": "COPIA LOCALE OFFLINE",
+      "databaseWarningBody": "I dati di questo prodotto provengono dal database offline salvato sul dispositivo. I dati sono forniti dalla community di Open Food Facts sotto licenza Open Database License (ODbL).",
+      "databaseWarningCaution": "Verifica sempre la confezione fisica. Appena tornerai online, l'app recupererà automaticamente i dati aggiornati.",
+      "notFoundTitle": "PRODOTTO NON PRESENTE NEL DB OFFLINE",
+      "notFoundBody": "Questo codice a barre non è presente nella copia del database offline installata sul dispositivo.",
+      "notFoundAction": "Connettiti a Internet per ricercare il prodotto nel catalogo globale in tempo reale o verifica direttamente l'etichetta fisica."
+    },
     "status": {
       "unknownProductName": "Prodotto Sconosciuto",
       "unknownBrand": "Marca sconosciuta",

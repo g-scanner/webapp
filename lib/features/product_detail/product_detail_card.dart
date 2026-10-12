@@ -89,10 +89,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     if (widget.isStaleDataNotifier != null) {
       return widget.isStaleDataNotifier!.value;
     }
-    // Se è disponibile un productNotifier live, il dato reattivo di currentProduct.isStale
-    // prevale sul bool congelato widget.isStaleData catturato al momento del build della route.
-    // Questo garantisce che il banner sparisca non appena il notifier emette un prodotto fresco.
+    // Se è in corso il caricamento skeleton iniziale (nessun prodotto ancora emesso dal notifier),
+    // non è stale: è semplicemente in fase di fetch.
     if (widget.productNotifier != null) {
+      if (widget.productNotifier!.value == null) return false;
       return currentProduct.isStale;
     }
     return widget.isStaleData || currentProduct.isStale;
@@ -360,8 +360,19 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               const SizedBox(height: 24),
 
               // ── Avviso Dati Cache Stale / Non Verificati Online ───────────
-              if (_isEffectiveStaleData && !showSkeleton) ...[
+              // Si mostra SOLO per prodotti della cache online (SharedPreferences) che sono scaduti (>30gg).
+              // Non deve mai sovrapporsi alla OfflineDatabaseWarningCard.
+              if (_isEffectiveStaleData && !currentProduct.isFromOfflineDb && !showSkeleton) ...[
                 const StaleDataWarningCard(),
+                const SizedBox(height: 24),
+              ],
+
+              // ── Avviso Copia Offline / Prodotto Non Trovato Offline ─────
+              if (currentProduct.isOfflineNotFound && !showSkeleton) ...[
+                const OfflineNotFoundWarningCard(),
+                const SizedBox(height: 24),
+              ] else if (currentProduct.isFromOfflineDb && !showSkeleton) ...[
+                const OfflineDatabaseWarningCard(),
                 const SizedBox(height: 24),
               ],
 
