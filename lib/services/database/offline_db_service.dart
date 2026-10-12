@@ -80,7 +80,8 @@ class OfflineDbService {
     try {
       _database = await openDatabase(
         path,
-        readOnly: false, // Per consentire anche operazioni di ATTACH transazionali
+        readOnly:
+            false, // Per consentire anche operazioni di ATTACH transazionali
       );
       return _database;
     } catch (e) {
@@ -127,15 +128,24 @@ class OfflineDbService {
     // Creazione liste allergeni e tracce
     final allergensList = <String>[];
     if (allergensTags.isNotEmpty) {
-      allergensList.addAll(allergensTags.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+      allergensList.addAll(
+        allergensTags
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
+      );
     }
     if (tracesTags.isNotEmpty) {
-      allergensList.addAll(tracesTags.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+      allergensList.addAll(
+        tracesTags.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty),
+      );
     }
 
     // Integrazione claim da labels
     if (labelsTags.isNotEmpty) {
-      allergensList.addAll(labelsTags.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+      allergensList.addAll(
+        labelsTags.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty),
+      );
     }
 
     return Product(

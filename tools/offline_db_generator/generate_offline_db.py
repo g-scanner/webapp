@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS products (
     traces_tags TEXT,
     last_modified_t INTEGER
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_products_code ON products(code);
 CREATE INDEX IF NOT EXISTS idx_products_last_modified ON products(last_modified_t);
 """
 
@@ -79,16 +78,10 @@ def export_tier(
         allergens_tags, labels_tags, traces_tags, last_modified_t
     )
     SELECT
-        CAST(code AS VARCHAR) AS code,
-        COALESCE(product_name, '') AS product_name,
-        COALESCE(brands, '') AS brands,
-        COALESCE(ingredients_text, '') AS ingredients_text,
-        COALESCE(allergens_tags, '') AS allergens_tags,
-        COALESCE(labels_tags, '') AS labels_tags,
-        COALESCE(traces_tags, '') AS traces_tags,
-        COALESCE(TRY_CAST(last_modified_t AS BIGINT), 0) AS last_modified_t
-    FROM off_stream
-    WHERE {full_where} AND code IS NOT NULL AND TRIM(CAST(code AS VARCHAR)) != '';
+        code, product_name, brands, ingredients_text,
+        allergens_tags, labels_tags, traces_tags, last_modified_t
+    FROM all_products
+    WHERE {full_where};
     """
 
     con.execute(f"ATTACH '{output_sqlite_path}' AS sqlite_db (TYPE SQLITE);")
@@ -113,24 +106,27 @@ def main():
     delta_7d_since = now_epoch - (7 * 86400)
     delta_30d_since = now_epoch - (30 * 86400)
 
-    print(f"[{datetime.now(timezone.utc).isoformat()}] Inizializzazione DuckDB...")
-    con = duckdb.connect()
+    temp_duckdb_path = outdir / "temp_extract.duckdb"
+    if temp_duckdb_path.exists():
+        temp_duckdb_path.unlink()
+
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Inizializzazione DuckDB con storage su disco...")
+    con = duckdb.connect(str(temp_duckdb_path))
     con.execute("INSTALL sqlite; LOAD sqlite;")
     con.execute("SET preserve_insertion_order = false;")
-    con.execute("SET memory_limit = '1500MB';")
 
-    print(f"[{datetime.now(timezone.utc).isoformat()}] Apertura view streaming su {input_path}...")
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Estrazione e normalizzazione da {input_path} (singolo passaggio)...")
     con.execute(f"""
-        CREATE VIEW off_stream AS
+        CREATE TABLE all_products AS
         SELECT
-            code,
-            product_name,
-            brands,
-            ingredients_text,
-            COALESCE(list_to_string(allergens_tags, ','), '') AS allergens_tags,
-            COALESCE(list_to_string(labels_tags, ','), '') AS labels_tags,
-            COALESCE(list_to_string(traces_tags, ','), '') AS traces_tags,
-            last_modified_t
+            CAST(code AS VARCHAR) AS code,
+            COALESCE(product_name, '') AS product_name,
+            COALESCE(brands, '') AS brands,
+            COALESCE(ingredients_text, '') AS ingredients_text,
+            COALESCE(array_to_string(allergens_tags, ','), '') AS allergens_tags,
+            COALESCE(array_to_string(labels_tags, ','), '') AS labels_tags,
+            COALESCE(array_to_string(traces_tags, ','), '') AS traces_tags,
+            COALESCE(TRY_CAST(last_modified_t AS BIGINT), 0) AS last_modified_t
         FROM read_json(
             '{input_path}',
             format = 'newline_delimited',
@@ -145,8 +141,12 @@ def main():
                 'traces_tags': 'VARCHAR[]',
                 'last_modified_t': 'BIGINT'
             }}
-        );
+        )
+        WHERE code IS NOT NULL AND TRIM(CAST(code AS VARCHAR)) != '';
     """)
+
+    count = con.execute("SELECT count(*) FROM all_products;").fetchone()[0]
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Prodotti estratti con successo: {count}")
 
     # Definizione filtri Tier
     filter_tier1 = """
@@ -238,7 +238,11 @@ def main():
     with open(version_file, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
-    print(f"\nGenerazione completata! version.json creato in {version_file}")
+    con.close()
+    if temp_duckdb_path.exists():
+        temp_duckdb_path.unlink()
+
+    print(f"\n[{datetime.now(timezone.utc).isoformat()}] Generazione completata con successo! File manifest creato in {version_file}")
 
 if __name__ == "__main__":
     main()
