@@ -46,7 +46,7 @@ jobs:
           RELEASE_TAG="offline-data"
 
           # Crea la release dedicata ai dati con --latest=false per non sovrascrivere la release dell'app
-          gh release view "$RELEASE_TAG" || gh release create "$RELEASE_TAG" \
+          gh release view "$RELEASE_TAG" 2>/dev/null || gh release create "$RELEASE_TAG" \
             --title "Open Food Facts Offline SQLite Databases (ODbL 1.0)" \
             --notes "Weekly consolidated offline SQLite databases for G-Scanner. Data provided by Open Food Facts under ODbL 1.0 license." \
             --latest=false

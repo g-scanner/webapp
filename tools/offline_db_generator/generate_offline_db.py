@@ -27,20 +27,6 @@ except ImportError:
     print("DuckDB non trovato. Installare con: pip install duckdb", file=sys.stderr)
     sys.exit(1)
 
-SCHEMA_SQL = """
-CREATE TABLE IF NOT EXISTS products (
-    code TEXT PRIMARY KEY,
-    product_name TEXT,
-    brands TEXT,
-    ingredients_text TEXT,
-    allergens_tags TEXT,
-    labels_tags TEXT,
-    traces_tags TEXT,
-    last_modified_t INTEGER
-);
-CREATE INDEX IF NOT EXISTS idx_products_last_modified ON products(last_modified_t);
-"""
-
 def compute_sha256(file_path: Path) -> str:
     sha = hashlib.sha256()
     with open(file_path, "rb") as f:
@@ -63,30 +49,54 @@ def export_tier(
     if output_sqlite_path.exists():
         output_sqlite_path.unlink()
 
-    # Prepara schema in SQLite
+    # Prepara la tabella in SQLite prima del popolamento
     sqlite_conn = sqlite3.connect(output_sqlite_path)
-    sqlite_conn.executescript(SCHEMA_SQL)
+    sqlite_conn.execute("""
+    CREATE TABLE IF NOT EXISTS products (
+        code TEXT PRIMARY KEY,
+        product_name TEXT,
+        brands TEXT,
+        ingredients_text TEXT,
+        allergens_tags TEXT,
+        labels_tags TEXT,
+        traces_tags TEXT,
+        last_modified_t INTEGER
+    );
+    """)
     sqlite_conn.close()
 
     full_where = where_clause
     if time_cutoff is not None:
         full_where = f"({where_clause}) AND last_modified_t >= {time_cutoff}"
 
+    # Utilizziamo INSERT INTO standard (pienamente supportato dal driver SQLite di DuckDB).
+    # Per garantire unicità assoluta della PRIMARY KEY ed evitare conflitti,
+    # deduplichiamo preventivamente via finestra analitica (mantenendo la revisione più recente).
     query = f"""
-    INSERT OR REPLACE INTO sqlite_db.products (
+    INSERT INTO sqlite_db.products (
         code, product_name, brands, ingredients_text,
         allergens_tags, labels_tags, traces_tags, last_modified_t
     )
     SELECT
         code, product_name, brands, ingredients_text,
         allergens_tags, labels_tags, traces_tags, last_modified_t
-    FROM all_products
-    WHERE {full_where};
+    FROM (
+        SELECT *, ROW_NUMBER() OVER (PARTITION BY code ORDER BY last_modified_t DESC) as rn
+        FROM all_products
+        WHERE {full_where}
+    ) sub
+    WHERE rn = 1;
     """
 
-    con.execute(f"ATTACH '{output_sqlite_path}' AS sqlite_db (TYPE SQLITE);")
+    con.execute(f"ATTACH '{output_sqlite_path.as_posix()}' AS sqlite_db (TYPE SQLITE);")
     con.execute(query)
     con.execute("DETACH sqlite_db;")
+
+    # Crea indice secondario direttamente con sqlite3 nativo dopo l'inserimento bulk (massima velocità)
+    sqlite_conn = sqlite3.connect(output_sqlite_path)
+    sqlite_conn.execute("CREATE INDEX IF NOT EXISTS idx_products_last_modified ON products(last_modified_t);")
+    sqlite_conn.execute("PRAGMA optimize;")
+    sqlite_conn.close()
 
 def main():
     parser = argparse.ArgumentParser(description="Generatore DB Offline G-Scanner")
@@ -128,7 +138,7 @@ def main():
             COALESCE(array_to_string(traces_tags, ','), '') AS traces_tags,
             COALESCE(TRY_CAST(last_modified_t AS BIGINT), 0) AS last_modified_t
         FROM read_json(
-            '{input_path}',
+            '{input_path.as_posix()}',
             format = 'newline_delimited',
             ignore_errors = true,
             columns = {{
