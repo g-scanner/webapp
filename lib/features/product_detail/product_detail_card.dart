@@ -34,6 +34,7 @@ class ProductDetailCard extends StatefulWidget {
   final void Function(Product product)? onViewReport;
   final bool isStaleData;
   final ValueNotifier<bool>? isStaleDataNotifier;
+  final ValueNotifier<bool>? isOfflineDbNotifier;
   final Future<void> Function(String barcode)? onRefreshOnline;
 
   const ProductDetailCard({
@@ -58,6 +59,7 @@ class ProductDetailCard extends StatefulWidget {
     this.onViewReport,
     this.isStaleData = false,
     this.isStaleDataNotifier,
+    this.isOfflineDbNotifier,
     this.onRefreshOnline,
   });
 
@@ -108,6 +110,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     widget.reportIdNotifier?.addListener(_onReportIdNotifierChanged);
     widget.isInHistoryNotifier?.addListener(_onIsInHistoryChanged);
     widget.isStaleDataNotifier?.addListener(_onStaleDataNotifierChanged);
+    widget.isOfflineDbNotifier?.addListener(_onOfflineDbNotifierChanged);
 
     // Se la card viene visualizzata in stato stale, avvia il listener/timer
     // che effettua il check appena la connessione a Internet torna disponibile.
@@ -162,6 +165,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     widget.reportIdNotifier?.removeListener(_onReportIdNotifierChanged);
     widget.isInHistoryNotifier?.removeListener(_onIsInHistoryChanged);
     widget.isStaleDataNotifier?.removeListener(_onStaleDataNotifierChanged);
+    widget.isOfflineDbNotifier?.removeListener(_onOfflineDbNotifierChanged);
     _scrollController.dispose();
     super.dispose();
   }
@@ -196,6 +200,19 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       }
       setState(() {});
     }
+  }
+
+  /// `true` se il prodotto corrente proviene dal DB offline locale.
+  /// Legge prima dal notifier reattivo (scansione live), poi dalla flag del Product stesso.
+  bool get _isEffectiveOfflineDb {
+    if (widget.isOfflineDbNotifier != null) {
+      return widget.isOfflineDbNotifier!.value;
+    }
+    return currentProduct.isFromOfflineDb;
+  }
+
+  void _onOfflineDbNotifierChanged() {
+    if (mounted) setState(() {});
   }
 
   String _translateGlutenStatus(GlutenSafetyStatus status) {
@@ -359,20 +376,21 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               ),
               const SizedBox(height: 24),
 
-              // ── Avviso Dati Cache Stale / Non Verificati Online ───────────
-              // Si mostra SOLO per prodotti della cache online (SharedPreferences) che sono scaduti (>30gg).
-              // Non deve mai sovrapporsi alla OfflineDatabaseWarningCard.
-              if (_isEffectiveStaleData && !currentProduct.isFromOfflineDb && !showSkeleton) ...[
-                const StaleDataWarningCard(),
-                const SizedBox(height: 24),
-              ],
-
               // ── Avviso Copia Offline / Prodotto Non Trovato Offline ─────
+              // Viene mostrato come prima cosa in assoluto subito sotto l'header stato globale.
               if (currentProduct.isOfflineNotFound && !showSkeleton) ...[
                 const OfflineNotFoundWarningCard(),
                 const SizedBox(height: 24),
-              ] else if (currentProduct.isFromOfflineDb && !showSkeleton) ...[
+              ] else if (_isEffectiveOfflineDb && !showSkeleton) ...[
                 const OfflineDatabaseWarningCard(),
+                const SizedBox(height: 24),
+              ],
+
+              // ── Avviso Dati Cache Stale / Non Verificati Online ───────────
+              // Si mostra SOLO per prodotti della cache online (SharedPreferences) che sono scaduti (>30gg).
+              // Non deve mai sovrapporsi alla OfflineDatabaseWarningCard.
+              if (_isEffectiveStaleData && !_isEffectiveOfflineDb && !showSkeleton) ...[
+                const StaleDataWarningCard(),
                 const SizedBox(height: 24),
               ],
 

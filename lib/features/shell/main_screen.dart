@@ -11,6 +11,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/analyzer_service.dart';
 import 'package:gscanner/services/db_service.dart';
+import 'package:gscanner/services/database/offline_db_service.dart';
 import 'package:gscanner/core/core.dart';
 
 import 'package:gscanner/features/scanner/camera_module.dart';
@@ -85,6 +86,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _navController.openReportIdNotifiers;
   Map<String, ValueNotifier<bool>> get _openStaleNotifiers =>
       _navController.openStaleNotifiers;
+  Map<String, ValueNotifier<bool>> get _openOfflineDbNotifiers =>
+      _navController.openOfflineDbNotifiers;
 
   @override
   void initState() {
@@ -306,6 +309,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       setState(() {
         products = data;
         for (var barcode in _openProductNotifiers.keys) {
+          final isOfflineActive =
+              _openOfflineDbNotifiers[barcode]?.value ?? false;
+          final currentOpenProduct = _openProductNotifiers[barcode]?.value;
+          if (isOfflineActive || (currentOpenProduct?.isFromOfflineDb ?? false)) {
+            continue;
+          }
           final prod = products.cast<Product?>().firstWhere(
             (p) => p?.barcode == barcode,
             orElse: () => null,
@@ -323,6 +332,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             setState(() {
               products = updated;
               for (var barcode in _openProductNotifiers.keys) {
+                final isOfflineActive =
+                    _openOfflineDbNotifiers[barcode]?.value ?? false;
+                final currentOpenProduct = _openProductNotifiers[barcode]?.value;
+                if (isOfflineActive ||
+                    (currentOpenProduct?.isFromOfflineDb ?? false)) {
+                  continue;
+                }
                 final prod = updated.cast<Product?>().firstWhere(
                   (p) => p?.barcode == barcode,
                   orElse: () => null,
@@ -361,14 +377,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     _cancelledBarcodes.remove(barcode);
 
-    // 0. Fail-fast immediato se offline e prodotto non in cache SQLite:
-    // Se siamo offline e il prodotto non è già memorizzato localmente, abortiamo subito
-    // senza aprire lo skeleton e senza creare elementi orfani in cronologia.
+    // 0. Fail-fast immediato se offline e nessun DB disponibile (né cache locale né DB offline):
+    // Se siamo offline e il prodotto non è già memorizzato localmente e non abbiamo il DB offline installato,
+    // abortiamo subito senza aprire lo skeleton e senza creare elementi orfani in cronologia.
     final localProduct = await LocalCacheService.getLocalProductByBarcode(
       barcode,
     );
     final isConnected = await ConnectivityHelper.hasInternetConnection();
-    if (localProduct == null && !isConnected) {
+    final hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
+    if (localProduct == null && !isConnected && !hasOfflineDb) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('scanner.result.offlineNoDbPrompt'.tr())),
@@ -414,6 +431,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
 
     final isStaleDataNotifier = ValueNotifier<bool>(false);
+    final isOfflineDbNotifier = ValueNotifier<bool>(false);
 
     Future<void>? pushFuture;
 
@@ -437,6 +455,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           reportIdNotifier: reportIdNotifier,
           isInHistoryNotifier: isInHistoryNotifier,
           isStaleDataNotifier: isStaleDataNotifier,
+          isOfflineDbNotifier: isOfflineDbNotifier,
           isLoading: true,
           scannedAt: DateTime.now().toIso8601String(),
           onBack: () => Navigator.pop(context),
@@ -476,6 +495,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (detailClosed && scanFinished) {
         isInHistoryNotifier.dispose();
         isStaleDataNotifier.dispose();
+        isOfflineDbNotifier.dispose();
       }
     }
 
@@ -541,6 +561,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
         if (!detailClosed) {
           isStaleDataNotifier.value = scanResult.isStaleResult;
+          isOfflineDbNotifier.value = scanResult.isOfflineResult || scanResult.isOfflineNotFoundResult;
           isInHistoryNotifier.value = true;
         }
         productNotifier.value = scanResult.product;
@@ -1008,6 +1029,26 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
     staleNotifier.value = match.isStale;
 
+    // Determina se il prodotto proviene dal DB offline locale.
+    // Viene verificato sia il flag del modello che l'eventuale presenza nel DB offline
+    // quando il dispositivo è offline o il prodotto non è stato sincronizzato online.
+    bool isFromOffline = match.isFromOfflineDb;
+    if (!isFromOffline) {
+      final isConnected = await ConnectivityHelper.hasInternetConnection();
+      if (!isConnected && await OfflineDbService.isDatabaseInstalled()) {
+        final offlineCheck = await OfflineDbService.searchProduct(match.barcode);
+        if (offlineCheck != null) {
+          isFromOffline = true;
+        }
+      }
+    }
+
+    final offlineDbNotifier = _openOfflineDbNotifiers.putIfAbsent(
+      match.barcode,
+      () => ValueNotifier<bool>(isFromOffline),
+    );
+    offlineDbNotifier.value = isFromOffline;
+
     final historyItem = history.cast<ScanHistoryItem?>().firstWhere(
       (h) => h?.barcode == match.barcode,
       orElse: () => null,
@@ -1020,6 +1061,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         productNotifier: notifier,
         reportIdNotifier: reportIdNotifier,
         isStaleDataNotifier: staleNotifier,
+        isOfflineDbNotifier: offlineDbNotifier,
         scannedAt: historyItem?.scannedAt,
         onBack: () => Navigator.pop(context),
         onReportSubmit: handleReportSubmit,
@@ -1052,6 +1094,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _openProductNotifiers.remove(match.barcode);
     _openReportIdNotifiers.remove(match.barcode);
     _openStaleNotifiers.remove(match.barcode)?.dispose();
+    _openOfflineDbNotifiers.remove(match.barcode)?.dispose();
 
     if (mounted) {
       setState(() => _navController.setCameraActive(true));
@@ -1096,6 +1139,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
 
     final isStaleDataNotifier = ValueNotifier<bool>(false);
+    final offlineDbNotifier = _openOfflineDbNotifiers.putIfAbsent(
+      barcode,
+      () => ValueNotifier<bool>(false),
+    );
 
     final historyItem = history.cast<ScanHistoryItem?>().firstWhere(
       (h) => h?.barcode == barcode,
@@ -1110,6 +1157,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         reportIdNotifier: reportIdNotifier,
         isInHistoryNotifier: isInHistoryNotifier,
         isStaleDataNotifier: isStaleDataNotifier,
+        isOfflineDbNotifier: offlineDbNotifier,
         isLoading: true,
         scannedAt: historyItem?.scannedAt ?? DateTime.now().toIso8601String(),
         onBack: () => Navigator.pop(context),

@@ -23,7 +23,7 @@ enum OfflineSyncAction {
 /// dei database offline tramite GitHub Releases.
 class OfflineDbSyncService {
   static const String _defaultReleaseBaseUrl =
-      'https://github.com/manuxdev/gscanner/releases/download/offline-data';
+      'https://github.com/g-scanner/webapp/releases/download/offline-data';
 
   static String _baseUrl = _defaultReleaseBaseUrl;
 
