@@ -80,6 +80,24 @@ Future<void> _pumpMainScreen(
   await tester.pump(const Duration(milliseconds: 100));
 }
 
+/// Pompa MyApp con viewport configurato per testare il flusso di sync routing.
+/// L'utente è già autenticato (cold-start), quindi MyApp esegue _resolveForUser
+/// durante l'initState. pumpAndSettle attende il completamento del check async.
+Future<void> _pumpMyAppForSync(
+  WidgetTester tester, {
+  required MockFirebaseAuth auth,
+  Size surfaceSize = const Size(600, 1000),
+}) async {
+  tester.view.physicalSize = surfaceSize;
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  await _pumpMyApp(tester, auth: auth);
+  // Attendere che _resolveForUser() async completi e lo stato si aggiorni.
+  await tester.pumpAndSettle();
+}
+
 Finder _findMainIndexedStack() {
   return find.byWidgetPredicate(
     (w) => w is IndexedStack && w.children.length == 4,
@@ -858,7 +876,7 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('registered_user_123');
 
-        await _pumpMainScreen(tester, auth: mockAuth);
+        await _pumpMyAppForSync(tester, auth: mockAuth);
 
         // SyncDataScreen should be rendered
         expect(find.byType(SyncDataScreen), findsOneWidget);
@@ -896,7 +914,7 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('registered_user_123');
 
-        await _pumpMainScreen(tester, auth: mockAuth);
+        await _pumpMyAppForSync(tester, auth: mockAuth);
         expect(find.byType(SyncDataScreen), findsOneWidget);
 
         final syncScreen = tester.widget<SyncDataScreen>(
@@ -946,7 +964,7 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('registered_user_123');
 
-        await _pumpMainScreen(tester, auth: mockAuth);
+        await _pumpMyAppForSync(tester, auth: mockAuth);
         expect(find.byType(SyncDataScreen), findsOneWidget);
 
         final syncScreen = tester.widget<SyncDataScreen>(
@@ -996,7 +1014,7 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('returning_user_999');
 
-        await _pumpMainScreen(tester, auth: mockAuth);
+        await _pumpMyAppForSync(tester, auth: mockAuth);
 
         // Even though user is returning and settings.userId == user.uid,
         // sync screen MUST be displayed because anonymous data exists!
@@ -1024,7 +1042,7 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('registered_user_456');
 
-        await _pumpMainScreen(tester, auth: mockAuth);
+        await _pumpMyAppForSync(tester, auth: mockAuth);
 
         expect(find.byType(SyncDataScreen), findsOneWidget);
         expect(find.byType(CameraModule), findsNothing);

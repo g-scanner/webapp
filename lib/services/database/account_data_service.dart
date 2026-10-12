@@ -98,6 +98,28 @@ class AccountDataService {
     }
   }
 
+  /// Recupera il riepilogo dei dati anonimi non ancora sincronizzati (se presenti).
+  static Future<AnonymousDataSummary?> getPendingAnonymousSyncData([
+    String? anonUid,
+  ]) async {
+    try {
+      final history = await getLocalUnsyncedHistory(anonUid);
+      final reports = await getLocalUnsyncedReports(anonUid);
+      final hasSettings = await hasAnonymousSettings();
+      if (history.isNotEmpty || reports.isNotEmpty || hasSettings) {
+        return AnonymousDataSummary(
+          history: history,
+          reports: reports,
+          hasSettings: hasSettings,
+        );
+      }
+      return null;
+    } catch (e) {
+      debugPrint("Error checking pending anonymous sync data: $e");
+      return null;
+    }
+  }
+
   /// Migra la cronologia, le segnalazioni e le impostazioni locali anonime su Firestore al momento dell'autenticazione.
   /// Rispetta la scelta granulare dell'utente per ciascuna categoria.
   static Future<void> migrateLocalDataToFirestore(

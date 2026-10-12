@@ -19,7 +19,6 @@ import 'package:gscanner/features/reports/reports_list.dart';
 import 'package:gscanner/features/settings/settings_panel.dart';
 import 'package:gscanner/features/product_detail/product_detail_card.dart';
 import 'package:gscanner/features/reports/report_detail_card.dart';
-import 'package:gscanner/features/sync/sync_data_screen.dart';
 
 import 'controllers/main_navigation_controller.dart';
 import 'widgets/main_custom_bottom_nav.dart';
@@ -61,7 +60,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   List<String> reportedSessionBarcodes = [];
   bool scanningProgress = false;
   String? scanError;
-  bool _isSyncing = false;
 
   /// Scansioni in background: il fetch continua anche se l'utente torna
   /// indietro dalla schermata del prodotto.  Barcode → productNotifier.
@@ -87,9 +85,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _navController.openReportIdNotifiers;
   Map<String, ValueNotifier<bool>> get _openStaleNotifiers =>
       _navController.openStaleNotifiers;
-
-  bool _requiresSyncDecision = false;
-  AnonymousDataSummary _anonDataSummary = const AnonymousDataSummary();
 
   @override
   void initState() {
@@ -171,26 +166,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           }
           // Traccia l'UID anonimo corrente per confronti futuri
           await DbService.trackAnonymousSession(user.uid);
-        } else {
-          // Utente autenticato: raccoglie i dati anonimi per la schermata sincro
-          final anonHistory = await DbService.getLocalUnsyncedHistory();
-          final anonReports = await DbService.getLocalUnsyncedReports();
-          final anonSettings = await DbService.hasAnonymousSettings();
-
-          if (anonHistory.isNotEmpty || anonReports.isNotEmpty || anonSettings) {
-            if (mounted) {
-              setState(() {
-                _anonDataSummary = AnonymousDataSummary(
-                  history: anonHistory,
-                  reports: anonReports,
-                  hasSettings: anonSettings,
-                );
-                _requiresSyncDecision = true;
-              });
-            }
-            return;
-          }
         }
+        // Per utenti autenticati la decisione di sync è già stata gestita
+        // da MyApp a livello di routing, prima del mount di MainScreen.
       }
 
       await _loadAllLocalData();
@@ -198,11 +176,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint("Inizializzazione fallita: $e");
     }
-  }
-
-  Future<void> _loadAllData() async {
-    await _loadAllLocalData();
-    _syncEverythingWithFirestore();
   }
 
   Future<void> _loadAllLocalData() async {
@@ -391,8 +364,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // 0. Fail-fast immediato se offline e prodotto non in cache SQLite:
     // Se siamo offline e il prodotto non è già memorizzato localmente, abortiamo subito
     // senza aprire lo skeleton e senza creare elementi orfani in cronologia.
-    final localProduct =
-        await LocalCacheService.getLocalProductByBarcode(barcode);
+    final localProduct = await LocalCacheService.getLocalProductByBarcode(
+      barcode,
+    );
     final isConnected = await ConnectivityHelper.hasInternetConnection();
     if (localProduct == null && !isConnected) {
       if (mounted) {
@@ -510,14 +484,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       const maxScanDuration = Duration(seconds: 28);
       const retryDelay = Duration(seconds: 4);
       int scanRetries = 0;
-      const maxScanRetries = 2; // 2 retry (3 tentativi totali: iniziale + 2 retry)
+      const maxScanRetries =
+          2; // 2 retry (3 tentativi totali: iniziale + 2 retry)
 
       try {
         ScanResult? scanResult;
 
         while (true) {
           final elapsed = DateTime.now().difference(scanStartTime);
-          if (elapsed >= maxScanDuration || _cancelledBarcodes.contains(barcode)) {
+          if (elapsed >= maxScanDuration ||
+              _cancelledBarcodes.contains(barcode)) {
             throw const OffNetworkException();
           }
 
@@ -679,7 +655,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     try {
       await DbService.deleteHistoryByBarcodeLocal(barcode).timeout(
         const Duration(seconds: 3),
-        onTimeout: () => debugPrint("Firestore history delete timeout (offline)"),
+        onTimeout: () =>
+            debugPrint("Firestore history delete timeout (offline)"),
       );
     } catch (e) {
       debugPrint("Errore rimozione history item fallito: $e");
@@ -701,7 +678,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       );
 
       Product? updatedProduct;
-      if (offResult.status == OffFetchStatus.found && offResult.product != null) {
+      if (offResult.status == OffFetchStatus.found &&
+          offResult.product != null) {
         updatedProduct = offResult.product!;
       } else if (offResult.status == OffFetchStatus.notFound) {
         // Se OFF conferma che non esiste, crea un ghost product fresco
@@ -1002,7 +980,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (!mounted) return;
 
     final userReport = reports.cast<ProductReport?>().firstWhere(
-      (r) => r?.barcode == match.barcode && (userId == null || r?.userId == userId),
+      (r) =>
+          r?.barcode == match.barcode &&
+          (userId == null || r?.userId == userId),
       orElse: () => null,
     );
     final isInHistory = history.any((h) => h.barcode == match.barcode);
@@ -1148,23 +1128,23 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       ),
     );
 
-      _pendingDetailClosers[barcode] = () {
-        if (route.isActive) {
-          route.navigator?.pop();
-        }
-      };
-
-      final Future<void> pushFuture;
-      if (isWideScreen) {
-        pushFuture =
-            _contentNavigatorKey.currentState?.push(route) ?? Future.value();
-      } else {
-        pushFuture = Navigator.push(context, route);
+    _pendingDetailClosers[barcode] = () {
+      if (route.isActive) {
+        route.navigator?.pop();
       }
+    };
 
-      await pushFuture;
-      _pendingDetailClosers.remove(barcode);
-      _openProductNotifiers.remove(barcode);
+    final Future<void> pushFuture;
+    if (isWideScreen) {
+      pushFuture =
+          _contentNavigatorKey.currentState?.push(route) ?? Future.value();
+    } else {
+      pushFuture = Navigator.push(context, route);
+    }
+
+    await pushFuture;
+    _pendingDetailClosers.remove(barcode);
+    _openProductNotifiers.remove(barcode);
     _openReportIdNotifiers.remove(barcode);
     isInHistoryNotifier.dispose();
     isStaleDataNotifier.dispose();
@@ -1178,15 +1158,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isWideScreen = screenWidth > 960;
     final reportOfProduct = reports.cast<ProductReport?>().firstWhere(
-      (r) => r?.barcode == loadedProduct.barcode && (userId == null || r?.userId == userId),
+      (r) =>
+          r?.barcode == loadedProduct.barcode &&
+          (userId == null || r?.userId == userId),
       orElse: () => null,
     );
     final bool isOwn =
         reportedSessionBarcodes.contains(loadedProduct.barcode) ||
         reportOfProduct != null;
     final String comment = reportOfProduct?.comments ?? '';
-    final String rDate =
-        reportOfProduct != null ? reportOfProduct.submittedAt : "";
+    final String rDate = reportOfProduct != null
+        ? reportOfProduct.submittedAt
+        : "";
 
     final origLang = userSettings.preferredLanguage;
     final origAnalysis = AnalyzerService.analyzeGlutenSafety(
@@ -1211,10 +1194,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         reportComment: comment.isNotEmpty ? comment : "Nessun commento",
         reportDate: rDate,
         onVote: (vote) async {
-          await DbService.voteOnReportByBarcode(
-            loadedProduct.barcode,
-            vote,
-          );
+          await DbService.voteOnReportByBarcode(loadedProduct.barcode, vote);
         },
         onInitVote: () async {
           return await DbService.getReportVoteDataByBarcode(
@@ -1326,43 +1306,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (_requiresSyncDecision) {
-      return SyncDataScreen(
-        dataSummary: _anonDataSummary,
-        onDecision: (bool wantToSync, [SyncChoices choices = const SyncChoices()]) async {
-          setState(() {
-            _requiresSyncDecision = false;
-            _isSyncing = true;
-          });
-
-          if (wantToSync) {
-            await DbService.migrateLocalDataToFirestore(
-              userId!,
-              syncHistory: choices.syncHistory,
-              syncReports: choices.syncReports,
-              syncSettings: choices.syncSettings,
-            );
-          } else {
-            await DbService.wipeAnonymousData();
-          }
-
-          await _loadAllData();
-          setState(() {
-            _isSyncing = false;
-          });
-        },
-      );
-    }
-
-    if (_isSyncing) {
-      return Scaffold(
-        backgroundColor: context.colorScheme.surface,
-        body: Center(
-          child: CircularProgressIndicator(color: context.colorScheme.primary),
-        ),
-      );
-    }
-
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isWideScreen = screenWidth > 960;
 

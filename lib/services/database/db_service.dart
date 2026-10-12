@@ -150,6 +150,11 @@ class DbService {
   static Future<bool> hasAnonymousData() =>
       AccountDataService.hasAnonymousData();
 
+  static Future<AnonymousDataSummary?> getPendingAnonymousSyncData([
+    String? anonUid,
+  ]) =>
+      AccountDataService.getPendingAnonymousSyncData(anonUid);
+
   static Future<void> migrateLocalDataToFirestore(
     String newUid, {
     bool syncHistory = true,

@@ -141,6 +141,7 @@ class _CameraModuleState extends State<CameraModule>
     _manualCodeController.dispose();
 
     _retryTimer?.cancel();
+    _stopCamera();
     _controller.dispose();
     super.dispose();
   }
@@ -167,7 +168,19 @@ class _CameraModuleState extends State<CameraModule>
     }
 
     try {
+      if (_controller.value.error != null) {
+        try {
+          await _controller.stop();
+        } catch (_) {}
+      }
       await _controller.start();
+      if (_controller.value.error != null && mounted) {
+        final err = _controller.value.error!;
+        final category = categorizeCameraError(err);
+        if (category == CameraErrorCategory.permissionDenied) {
+          _schedulePermissionRetry();
+        }
+      }
     } catch (e) {
       final errorString = e.toString().toLowerCase();
 

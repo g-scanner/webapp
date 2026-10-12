@@ -7,4 +7,5 @@ export 'product.dart';
 export 'scan_history_item.dart';
 export 'product_report.dart';
 export 'user_settings.dart';
+export 'anonymous_data_summary.dart';
 export '../core/localization/date_formatters.dart';

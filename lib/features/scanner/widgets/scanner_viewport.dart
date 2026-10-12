@@ -107,66 +107,70 @@ class _ScannerViewportState extends State<ScannerViewport> {
                 clipBehavior: Clip.antiAlias,
                 child: AspectRatio(
                   aspectRatio: 16 / 10,
-                  child: hasError
-                      ? _buildInPageErrorOverlay(context, currentError)
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final w = constraints.maxWidth;
-                            final h = constraints.maxHeight;
-                            final double frameW = w * 0.85;
-                            final double frameH = h * 0.65;
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final w = constraints.maxWidth;
+                      final h = constraints.maxHeight;
+                      final double frameW = w * 0.85;
+                      final double frameH = h * 0.65;
 
-                            return Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // 1. Livello inferiore (Camera) con placeholder nero
-                                MobileScanner(
-                                  controller: widget.controller,
-                                  onDetect: widget.onDetect,
-                                  placeholderBuilder: (context) =>
-                                      Container(color: Colors.black),
-                                ),
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // 1. Livello inferiore (Camera) con placeholder nero
+                          MobileScanner(
+                            controller: widget.controller,
+                            onDetect: widget.onDetect,
+                            placeholderBuilder: (context) =>
+                                Container(color: Colors.black),
+                          ),
 
-                                // 2. Overlay Statico (visibile solo quando NON ci sono errori)
-                                CustomPaint(
-                                  size: Size(w, h),
-                                  painter: VignetteBorderPainter(
-                                    frameWidth: frameW,
-                                    frameHeight: frameH,
-                                  ),
-                                ),
-                                Center(
-                                  child: SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        Container(
-                                          width: 2,
-                                          height: 24,
-                                          color: colorScheme.primaryContainer,
-                                        ),
-                                        Container(
-                                          width: 24,
-                                          height: 2,
-                                          color: colorScheme.primaryContainer,
-                                        ),
-                                      ],
+                          // 2. Overlay Statico (visibile solo quando NON ci sono errori)
+                          if (!hasError) ...[
+                            CustomPaint(
+                              size: Size(w, h),
+                              painter: VignetteBorderPainter(
+                                frameWidth: frameW,
+                                frameHeight: frameH,
+                              ),
+                            ),
+                            Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 2,
+                                      height: 24,
+                                      color: colorScheme.primaryContainer,
                                     ),
-                                  ),
+                                    Container(
+                                      width: 24,
+                                      height: 2,
+                                      color: colorScheme.primaryContainer,
+                                    ),
+                                  ],
                                 ),
-                                Center(
-                                  child: SizedBox(
-                                    width: frameW,
-                                    height: frameH,
-                                    child: _buildCorners(colorScheme),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+                              ),
+                            ),
+                            Center(
+                              child: SizedBox(
+                                width: frameW,
+                                height: frameH,
+                                child: _buildCorners(colorScheme),
+                              ),
+                            ),
+                          ],
+
+                          // 3. Overlay di errore a tutto viewport (visibile se ci sono errori)
+                          if (hasError)
+                            _buildInPageErrorOverlay(context, currentError),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -280,7 +284,7 @@ class _ScannerViewportState extends State<ScannerViewport> {
                   foregroundColor: colorScheme.onPrimaryContainer,
                 ),
               ),
-            ] else if (category == CameraErrorCategory.hardwareOrMemory) ...[
+            ] else ...[
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: () async {
