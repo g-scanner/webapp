@@ -74,7 +74,7 @@ def export_tier(
         full_where = f"({where_clause}) AND last_modified_t >= {time_cutoff}"
 
     query = f"""
-    INSERT INTO sqlite_db.products (
+    INSERT OR REPLACE INTO sqlite_db.products (
         code, product_name, brands, ingredients_text,
         allergens_tags, labels_tags, traces_tags, last_modified_t
     )
@@ -127,11 +127,25 @@ def main():
             product_name,
             brands,
             ingredients_text,
-            list_to_string(allergens_tags, ',') AS allergens_tags,
-            list_to_string(labels_tags, ',') AS labels_tags,
-            list_to_string(traces_tags, ',') AS traces_tags,
+            COALESCE(list_to_string(allergens_tags, ','), '') AS allergens_tags,
+            COALESCE(list_to_string(labels_tags, ','), '') AS labels_tags,
+            COALESCE(list_to_string(traces_tags, ','), '') AS traces_tags,
             last_modified_t
-        FROM read_json_auto('{input_path}', format='newline_delimited', ignore_errors=true);
+        FROM read_json(
+            '{input_path}',
+            format = 'newline_delimited',
+            ignore_errors = true,
+            columns = {{
+                'code': 'VARCHAR',
+                'product_name': 'VARCHAR',
+                'brands': 'VARCHAR',
+                'ingredients_text': 'VARCHAR',
+                'allergens_tags': 'VARCHAR[]',
+                'labels_tags': 'VARCHAR[]',
+                'traces_tags': 'VARCHAR[]',
+                'last_modified_t': 'BIGINT'
+            }}
+        );
     """)
 
     # Definizione filtri Tier
