@@ -285,6 +285,94 @@ class OffIngestionService {
     }
   }
 
+  /// Risolve online un prodotto (es. scansionato offline o in attesa di verifica)
+  /// applicando rigorosamente l'architettura a 3 livelli:
+  /// 1. Controlla prima Firestore (`products/{barcode}`)
+  ///    - Se Super Fresco (0 - 7 giorni): usa Firestore senza contattare OFF (zero chiamate di rete a OFF!)
+  ///    - Se in Zona di Tolleranza (8 - 30 giorni): usa Firestore e avvia check background fire-and-forget
+  ///    - Se Hard Stale (> 30 giorni o incompleto): aggiorna da OFF
+  /// 2. Se manca su Firestore: contatta OFF
+  ///    - Se trovato: salva su Firestore e in SQLite
+  ///    - Se notFound su OFF: crea e salva ghost product su Firestore e SQLite
+  /// MAI invoca saveHistoryItem per non duplicare la cronologia.
+  static Future<Product?> resolveProductOnline({
+    required FirebaseFirestore db,
+    required String barcode,
+    required UserSettings settings,
+    void Function(Product freshProduct)? onBackgroundRefreshed,
+  }) async {
+    // 1. FIRESTORE (`products/{barcode}`): verifica se il prodotto esiste già nel DB cloud
+    Product? remoteProduct;
+    try {
+      remoteProduct = await LocalCacheService.getProductByBarcode(db, barcode);
+      if (remoteProduct != null) {
+        // Se il prodotto su Firestore è Hard Stale (>30gg o incompleto), refresh sincrono da OFF:
+        if (remoteProduct.isStale) {
+          final freshResult = await fetchOffProduct(barcode, settings);
+          if (freshResult.status == OffFetchStatus.found &&
+              freshResult.product != null) {
+            final freshProduct = freshResult.product!;
+            await LocalCacheService.saveProductToFirestore(db, freshProduct);
+            await LocalCacheService.upsertLocalProduct(freshProduct);
+            return freshProduct;
+          }
+          // Se OFF non risponde o errore, restituisce il dato Firestore salvato localmente
+          await LocalCacheService.upsertLocalProduct(remoteProduct);
+          return remoteProduct;
+        }
+
+        // Zona di Tolleranza (8 - 30 giorni): restituisce Firestore e lancia refresh in background
+        if (remoteProduct.isInTolerance) {
+          checkAndRefreshOffStaleCache(
+            db: db,
+            product: remoteProduct,
+            settings: settings,
+            onRefreshed: onBackgroundRefreshed,
+          );
+        }
+
+        // Super Fresco (0 - 7 giorni) o Tolleranza: usa Firestore senza attendere OFF
+        await LocalCacheService.upsertLocalProduct(remoteProduct);
+        return remoteProduct;
+      }
+    } catch (e) {
+      debugPrint("Firestore lookup in resolveProductOnline fallito: $e");
+    }
+
+    // 2. Se manca su Firestore, contatta Open Food Facts (Tier 3)
+    try {
+      final offResult = await fetchOffProduct(barcode, settings);
+      if (offResult.status == OffFetchStatus.found &&
+          offResult.product != null) {
+        final offProduct = offResult.product!;
+        await LocalCacheService.saveProductToFirestore(db, offProduct);
+        await LocalCacheService.upsertLocalProduct(offProduct);
+        return offProduct;
+      }
+
+      if (offResult.status == OffFetchStatus.notFound) {
+        final nowIso = DateTime.now().toIso8601String();
+        final ghostProduct = Product(
+          barcode: barcode,
+          nameMap: const {},
+          brandMap: const {},
+          ingredientsMap: const {},
+          allergensMap: const {},
+          pendingReportsCount: 0,
+          lastUpdated: nowIso,
+          fetchedFromOffAt: nowIso,
+        );
+        await LocalCacheService.saveProductToFirestore(db, ghostProduct);
+        await LocalCacheService.upsertLocalProduct(ghostProduct);
+        return ghostProduct;
+      }
+    } catch (e) {
+      debugPrint("OFF fetch in resolveProductOnline fallito: $e");
+    }
+
+    return null;
+  }
+
   static Future<OffFetchResult> fetchOffProduct(
     String barcode,
     UserSettings settings,

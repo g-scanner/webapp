@@ -149,4 +149,20 @@ class LocalCacheService {
       return null;
     }
   }
+
+  /// Salva un prodotto verificato nella collezione globale Firestore `products`.
+  static Future<void> saveProductToFirestore(
+    FirebaseFirestore db,
+    Product product,
+  ) async {
+    try {
+      await db
+          .collection(productsCollection)
+          .doc(product.barcode)
+          .set(product.toJson(), SetOptions(merge: true))
+          .timeout(const Duration(seconds: 3));
+    } catch (e) {
+      debugPrint("Error saving product to Firestore: $e");
+    }
+  }
 }

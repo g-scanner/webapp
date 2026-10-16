@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
+import 'dart:async';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -77,6 +78,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   /// Set dei barcode annullati o falliti per evitare che Future asincroni tardivi salvino dati.
   final Set<String> _cancelledBarcodes = {};
 
+  /// Timer periodico per la verifica automatica in background dei prodotti scansionati offline
+  /// non appena torna la connessione Internet.
+  Timer? _offlineVerificationTimer;
+  bool _isVerifyingOfflineProducts = false;
+
   GlobalKey<NavigatorState> get _contentNavigatorKey =>
       _navController.contentNavigatorKey;
   Map<String, ValueNotifier<Product?>> get _openProductNotifiers =>
@@ -102,6 +108,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _offlineVerificationTimer?.cancel();
+    _offlineVerificationTimer = null;
     WidgetsBinding.instance.removeObserver(this);
     _navController.removeListener(_onNavigationChanged);
     _navController.dispose();
@@ -112,6 +120,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Il ciclo di vita della fotocamera viene ora gestito reattivamente
     // in CameraModule tramite ScannerStateManager.
+    if (state == AppLifecycleState.resumed) {
+      _startOfflineVerificationTimerIfNeeded();
+    }
   }
 
   bool get _shouldEnableKeyboardDismiss {
@@ -195,6 +206,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       setState(() {
         products = localData;
       });
+      _startOfflineVerificationTimerIfNeeded();
     }
   }
 
@@ -248,7 +260,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     DbService.performDeltaSync()
         .then((_) async {
           final updated = await DbService.getLocalProducts();
-          if (mounted) setState(() => products = updated);
+          if (mounted) {
+            setState(() => products = updated);
+            _startOfflineVerificationTimerIfNeeded();
+          }
         })
         .catchError((e) {
           debugPrint("Failed to delta sync products: $e");
@@ -280,6 +295,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               history = remoteData;
               _isHistorySynced = true;
             });
+            _resolveMissingProductsForHistory();
           }
         })
         .catchError((e) {
@@ -324,6 +340,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           }
         }
       });
+      _startOfflineVerificationTimerIfNeeded();
     }
     DbService.performDeltaSync()
         .then((_) async {
@@ -349,6 +366,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 }
               }
             });
+            _startOfflineVerificationTimerIfNeeded();
           }
         })
         .catchError((e) {
@@ -368,6 +386,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       _loadLocalProducts(),
     ]);
     _syncEverythingWithFirestore();
+    _startOfflineVerificationTimerIfNeeded();
+    _resolveMissingProductsForHistory();
   }
 
   Future<bool> handleScanSuccess(String barcode) async {
@@ -569,6 +589,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         productNotifier.value = scanResult.product;
         await _loadLocalHistory();
         _fetchProducts();
+        if (scanResult.product.needsVerification) {
+          _startOfflineVerificationTimerIfNeeded();
+        }
 
         // Se il risultato è stale (dispositivo offline o fallback da cache), avvia un check
         // in background con callback: quando il prodotto viene rinfrescato da OFF,
@@ -691,43 +714,36 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
   }
 
-  /// Effettua il refresh asincrono da Open Food Facts per un prodotto attualmente
-  /// visualizzato e stale, non appena la connessione torna disponibile.
+  /// Effettua il refresh asincrono applicando l'architettura a 3 livelli:
+  /// controlla prima Firestore (`products/{barcode}`) verificandone la freschezza (Super Fresh, Tolleranza, Stale)
+  /// e solo se mancante o stale interroga Open Food Facts.
   Future<void> _refreshProductOnline(String barcode) async {
     try {
-      final offResult = await OffIngestionService.fetchOffProduct(
+      final updatedProduct = await DbService.resolveProductOnline(
         barcode,
         userSettings,
+        onBackgroundRefreshed: (freshProduct) {
+          if (!mounted) return;
+          setState(() {
+            final idx = products.indexWhere((p) => p.barcode == barcode);
+            if (idx != -1) {
+              products[idx] = freshProduct;
+            }
+          });
+          if (_openProductNotifiers.containsKey(barcode)) {
+            _openProductNotifiers[barcode]!.value = freshProduct;
+          }
+        },
       );
 
-      Product? updatedProduct;
-      if (offResult.status == OffFetchStatus.found &&
-          offResult.product != null) {
-        updatedProduct = offResult.product!;
-      } else if (offResult.status == OffFetchStatus.notFound) {
-        // Se OFF conferma che non esiste, crea un ghost product fresco
-        final nowIso = DateTime.now().toIso8601String();
-        updatedProduct = Product(
-          barcode: barcode,
-          nameMap: {},
-          brandMap: {},
-          ingredientsMap: {},
-          allergensMap: {},
-          pendingReportsCount: 0,
-          lastUpdated: nowIso,
-          fetchedFromOffAt: nowIso,
-        );
-      }
-
       if (updatedProduct != null) {
-        await DbService.upsertLocalProduct(updatedProduct);
         if (mounted) {
           setState(() {
             final idx = products.indexWhere((p) => p.barcode == barcode);
             if (idx != -1) {
-              products[idx] = updatedProduct!;
+              products[idx] = updatedProduct;
             } else {
-              products.add(updatedProduct!);
+              products.add(updatedProduct);
             }
           });
         }
@@ -744,6 +760,138 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       }
     } catch (e) {
       debugPrint("Errore durante il refresh online del prodotto: $e");
+    }
+  }
+
+  /// Avvia, se necessario, il timer di polling per verificare i prodotti scansionati
+  /// offline non appena la connessione a Internet viene ripristinata.
+  void _startOfflineVerificationTimerIfNeeded() {
+    final hasPending = products.any((p) => p.needsVerification);
+    if (!hasPending) {
+      _offlineVerificationTimer?.cancel();
+      _offlineVerificationTimer = null;
+      return;
+    }
+
+    if (_offlineVerificationTimer != null &&
+        _offlineVerificationTimer!.isActive) {
+      _verifyPendingOfflineProducts();
+      return;
+    }
+
+    _offlineVerificationTimer?.cancel();
+    _verifyPendingOfflineProducts();
+    _offlineVerificationTimer = Timer.periodic(
+      const Duration(seconds: 4),
+      (_) {
+        if (!mounted) {
+          _offlineVerificationTimer?.cancel();
+          _offlineVerificationTimer = null;
+          return;
+        }
+        final stillPending = products.any((p) => p.needsVerification);
+        if (!stillPending) {
+          _offlineVerificationTimer?.cancel();
+          _offlineVerificationTimer = null;
+          return;
+        }
+        _verifyPendingOfflineProducts();
+      },
+    );
+  }
+
+  /// Esegue la verifica online da Open Food Facts per tutti i prodotti in sospeso (needsVerification: true).
+  /// Aggiorna in-place la cache locale e la lista in memoria, facendo sparire il badge offline.
+  Future<void> _verifyPendingOfflineProducts() async {
+    if (_isVerifyingOfflineProducts || !mounted) return;
+    try {
+      final isOnline = await ConnectivityHelper.hasInternetConnection();
+      if (!isOnline || !mounted) return;
+
+      final unverified = products.where((p) => p.needsVerification).toList();
+      if (unverified.isEmpty) {
+        _offlineVerificationTimer?.cancel();
+        _offlineVerificationTimer = null;
+        return;
+      }
+
+      _isVerifyingOfflineProducts = true;
+      for (final p in unverified) {
+        if (!mounted) break;
+        await _refreshProductOnline(p.barcode);
+      }
+    } catch (e) {
+      debugPrint("Verifica offline prodotti fallita: $e");
+    } finally {
+      if (mounted) {
+        _isVerifyingOfflineProducts = false;
+        final stillPending = products.any((p) => p.needsVerification);
+        if (!stillPending) {
+          _offlineVerificationTimer?.cancel();
+          _offlineVerificationTimer = null;
+        }
+      }
+    }
+  }
+
+  bool _isResolvingHistoryProducts = false;
+
+  /// Risolve automaticamente i prodotti mancanti per tutte le voci di cronologia sincronizzate.
+  /// Cerca prima in cache SQLite, poi su Firestore per recuperare i dati verificati completi.
+  Future<void> _resolveMissingProductsForHistory() async {
+    if (_isResolvingHistoryProducts || !mounted) return;
+    _isResolvingHistoryProducts = true;
+    try {
+      final missingBarcodes = history
+          .map((h) => h.barcode)
+          .where((b) => b.isNotEmpty && !products.any((p) => p.barcode == b))
+          .toSet();
+
+      if (missingBarcodes.isEmpty) return;
+
+      final hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
+
+      final List<Product> newlyFound = [];
+      for (final barcode in missingBarcodes) {
+        if (!mounted) break;
+        // 1. Cerca in SQLite
+        var prod = await DbService.getLocalProductByBarcode(barcode);
+        // 2. Se non presente in SQLite, cerca su Firestore
+        prod ??= await DbService.getProductByBarcode(barcode);
+        // 3. Fallback sul database offline locale se installato
+        if (prod == null && hasOfflineDb) {
+          prod = await OfflineDbService.searchProduct(barcode);
+          if (prod != null) {
+            await DbService.upsertLocalProduct(prod);
+          }
+        }
+        if (prod != null) {
+          newlyFound.add(prod);
+        }
+      }
+
+      if (newlyFound.isNotEmpty && mounted) {
+        setState(() {
+          for (final p in newlyFound) {
+            final idx =
+                products.indexWhere((existing) => existing.barcode == p.barcode);
+            if (idx != -1) {
+              products[idx] = p;
+            } else {
+              products.add(p);
+            }
+          }
+        });
+        if (newlyFound.any((p) => p.needsVerification)) {
+          _startOfflineVerificationTimerIfNeeded();
+        }
+      }
+    } catch (e) {
+      debugPrint("Errore durante la risoluzione dei prodotti di cronologia: $e");
+    } finally {
+      if (mounted) {
+        _isResolvingHistoryProducts = false;
+      }
     }
   }
 
@@ -766,7 +914,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // 3. Se non in memoria, cerca nel database locale SQLite (cache)
     match ??= await DbService.getLocalProductByBarcode(barcode);
 
-    // 4. Se ancora non trovato, cerca nel DB offline se installato
+    // 4. Se ancora non presente localmente, cerca su Firestore
+    match ??= await DbService.getProductByBarcode(barcode);
+
+    // 5. Se ancora non trovato, cerca nel DB offline se installato
     if (match == null && await OfflineDbService.isDatabaseInstalled()) {
       match = await OfflineDbService.searchProduct(barcode);
       if (match != null) {
@@ -774,7 +925,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       }
     }
 
-    // 5. Se ancora non trovato (es. record cronologico di prodotto sconosciuto):
+    // 6. Se ancora non trovato (es. record cronologico di prodotto sconosciuto):
     // Crea un prodotto provvisorio locale contrassegnato con needsVerification: true.
     // MAI inviare a Firestore e MAI invocare saveHistoryItem!
     if (match == null) {
@@ -792,6 +943,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     // 6. Naviga alla schermata di dettaglio del prodotto ESISTENTE
     // (ProductDetailCard gestirà reattivamente il refresh online se e quando la rete è attiva)
+    if (match.needsVerification) {
+      _startOfflineVerificationTimerIfNeeded();
+    }
     _navigateToProduct(match);
   }
 

@@ -49,7 +49,11 @@ class HistoryItemTile extends StatefulWidget {
 class _HistoryItemTileState extends State<HistoryItemTile> {
   bool _isHovered = false;
 
-  Widget _buildStatusTag(BuildContext context, GlutenSafetyStatus status) {
+  Widget _buildStatusTag(
+    BuildContext context,
+    GlutenSafetyStatus status, {
+    bool isCompact = false,
+  }) {
     final colorScheme = context.colorScheme;
     Color bgColor;
     Color textColor;
@@ -81,6 +85,16 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
         label = "history.item.status.unknown".tr();
         icon = Icons.search_off;
         break;
+    }
+
+    if (isCompact) {
+      if (label.contains(' - ')) {
+        label = label.split(' - ').first.trim();
+      } else if (label.contains(' – ')) {
+        label = label.split(' – ').first.trim();
+      } else if (label.contains(' — ')) {
+        label = label.split(' — ').first.trim();
+      }
     }
 
     return Container(
@@ -228,6 +242,12 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
     final cardBg = context.cardBackground;
     final skeletonBg = _skeletonColor(context);
 
+    final bool hasLactosePill = !widget.isPending &&
+        widget.alertLactose &&
+        widget.data.hasLactose;
+    final bool hasOfflinePill = !widget.isPending && widget.data.isOffline;
+    final bool hasOtherPills = hasLactosePill || hasOfflinePill;
+
     Widget cardContent = Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
@@ -244,12 +264,14 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                     if (widget.isPending)
                       _buildSkeletonStatusPill(context)
                     else
-                      _buildStatusTag(context, widget.data.status),
-                    if (!widget.isPending &&
-                        widget.alertLactose &&
-                        widget.data.hasLactose)
+                      _buildStatusTag(
+                        context,
+                        widget.data.status,
+                        isCompact: hasOtherPills,
+                      ),
+                    if (hasLactosePill)
                       _buildLactoseTag(context),
-                    if (!widget.isPending && widget.data.isOffline)
+                    if (hasOfflinePill)
                       _buildOfflineTag(context),
                   ],
                 ),

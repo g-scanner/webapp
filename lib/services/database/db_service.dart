@@ -43,6 +43,21 @@ class DbService {
   static Future<Product?> getProductByBarcode(String barcode) =>
       LocalCacheService.getProductByBarcode(db, barcode);
 
+  static Future<void> saveProductToFirestore(Product product) =>
+      LocalCacheService.saveProductToFirestore(db, product);
+
+  static Future<Product?> resolveProductOnline(
+    String barcode,
+    UserSettings settings, {
+    void Function(Product freshProduct)? onBackgroundRefreshed,
+  }) =>
+      OffIngestionService.resolveProductOnline(
+        db: db,
+        barcode: barcode,
+        settings: settings,
+        onBackgroundRefreshed: onBackgroundRefreshed,
+      );
+
   // ─── PIPELINE DI SCANSIONE ────────────────────────────────────────────────
 
   static Future<ScanResult> scanBarcodeClientSide(

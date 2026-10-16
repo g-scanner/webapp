@@ -12,6 +12,27 @@ import 'package:gscanner/features/product_detail/product_detail_card.dart';
 import 'package:gscanner/core/network/connectivity_helper.dart';
 import '../mocks/shared_mocks.dart';
 
+class _MockStatusAssetLoader extends AssetLoader {
+  const _MockStatusAssetLoader();
+  @override
+  Future<Map<String, dynamic>> load(String path, Locale locale) async {
+    return {
+      'history': {
+        'item': {
+          'status': {
+            'safe': 'Sicuro - non contiene glutine',
+            'unsafe': 'Vietato - contiene glutine',
+            'uncertain': 'Incerto - potrebbe contenere glutine',
+            'unknown': 'Sconosciuto - informazioni insufficienti',
+          },
+          'lactose': 'Lattosio',
+          'offlineScan': 'Scansione offline',
+        },
+      },
+    };
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -232,6 +253,106 @@ void main() {
         expect(find.text('history.item.offlineScan'), findsNothing);
       },
     );
+
+    testWidgets(
+      'truncates status tag text after hyphen when other pills (offline or lactose) are present',
+      (tester) async {
+        final item = ScanHistoryItem(
+          id: 'h_trunc',
+          barcode: '123456',
+          scannedAt: '2026-10-16T12:00:00Z',
+        );
+
+        Widget createCustomTestApp(Widget child) {
+          return EasyLocalization(
+            supportedLocales: const [Locale('it')],
+            path: 'assets/locales',
+            assetLoader: const _MockStatusAssetLoader(),
+            fallbackLocale: const Locale('it'),
+            startLocale: const Locale('it'),
+            useOnlyLangCode: true,
+            child: Builder(
+              builder: (context) {
+                return MaterialApp(
+                  localizationsDelegates: context.localizationDelegates,
+                  supportedLocales: context.supportedLocales,
+                  locale: context.locale,
+                  home: Scaffold(body: child),
+                );
+              },
+            ),
+          );
+        }
+
+        // Caso 1: Solo valutazione glutine (senza altre pillole) -> testo completo
+        await tester.pumpWidget(
+          createCustomTestApp(
+            HistoryItemTile(
+              item: item,
+              data: AnalyzedItemData(
+                productName: 'Biscotti',
+                brand: 'Marca',
+                status: GlutenSafetyStatus.incerto,
+                hasLactose: false,
+                isOffline: false,
+              ),
+              onSelectItem: (_) {},
+              onLongPress: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Incerto - potrebbe contenere glutine'), findsOneWidget);
+
+        // Caso 2: Con pillola offline -> testo compatto troncato dopo il trattino ("Incerto")
+        await tester.pumpWidget(
+          createCustomTestApp(
+            HistoryItemTile(
+              item: item,
+              data: AnalyzedItemData(
+                productName: 'Biscotti',
+                brand: 'Marca',
+                status: GlutenSafetyStatus.incerto,
+                hasLactose: false,
+                isOffline: true,
+              ),
+              onSelectItem: (_) {},
+              onLongPress: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Incerto'), findsOneWidget);
+        expect(find.text('Incerto - potrebbe contenere glutine'), findsNothing);
+        expect(find.text('Scansione offline'), findsOneWidget);
+
+        // Caso 3: Con pillola lattosio -> testo compatto troncato ("Vietato")
+        await tester.pumpWidget(
+          createCustomTestApp(
+            HistoryItemTile(
+              item: item,
+              data: AnalyzedItemData(
+                productName: 'Biscotti',
+                brand: 'Marca',
+                status: GlutenSafetyStatus.nonAdatto,
+                hasLactose: true,
+                isOffline: false,
+              ),
+              alertLactose: true,
+              onSelectItem: (_) {},
+              onLongPress: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Vietato'), findsOneWidget);
+        expect(find.text('Vietato - contiene glutine'), findsNothing);
+        expect(find.text('Lattosio'), findsOneWidget);
+      },
+    );
   });
 
   group('ProductDetailCard Offline Banners & Auto-Refresh Tests', () {
@@ -347,6 +468,76 @@ void main() {
 
         expect(refreshCalled, isTrue);
         expect(refreshedBarcode, equals('1234567890123'));
+      },
+    );
+
+    testWidgets(
+      'offlineScan pill disappears from history when product gets verified',
+      (tester) async {
+        final offlineProduct = Product(
+          barcode: '1234567890123',
+          nameMap: {'it': 'Biscotti Mais'},
+          brandMap: {'it': 'BioBrand'},
+          ingredientsMap: {'it': 'Farina di mais'},
+          allergensMap: {},
+          lastUpdated: '2026-10-16T12:00:00Z',
+          isFromOfflineDb: true,
+          isOfflineNotFound: false,
+          needsVerification: true,
+        );
+
+        final history = [
+          ScanHistoryItem(
+            id: 'h1',
+            barcode: '1234567890123',
+            scannedAt: '2026-10-16T12:00:00Z',
+          ),
+        ];
+
+        final productsNotifier = ValueNotifier<List<Product>>([offlineProduct]);
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: Scaffold(
+              body: ValueListenableBuilder<List<Product>>(
+                valueListenable: productsNotifier,
+                builder: (context, prods, _) => HistoryList(
+                  history: history,
+                  liveProducts: prods,
+                  pendingBarcodes: const {},
+                  onSelectItem: (_) {},
+                  onClearHistory: () async {},
+                  onDeleteHistoryItem: (_) async {},
+                  onRefresh: () async {},
+                  userSettings: testSettings(),
+                  isSynced: true,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('history.item.offlineScan'), findsOneWidget);
+
+        // Simuliamo la verifica avvenuta online (in-place update da background check)
+        final verifiedProduct = Product(
+          barcode: '1234567890123',
+          nameMap: {'it': 'Biscotti Mais Verificati'},
+          brandMap: {'it': 'BioBrand'},
+          ingredientsMap: {'it': 'Farina di mais'},
+          allergensMap: {},
+          lastUpdated: '2026-10-16T12:30:00Z',
+          isFromOfflineDb: false,
+          isOfflineNotFound: false,
+          needsVerification: false,
+        );
+
+        productsNotifier.value = [verifiedProduct];
+        await tester.pumpAndSettle();
+
+        expect(find.text('history.item.offlineScan'), findsNothing);
+        expect(find.text('Biscotti Mais Verificati'), findsOneWidget);
       },
     );
   });
