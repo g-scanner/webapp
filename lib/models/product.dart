@@ -22,6 +22,7 @@ class Product {
   final String? fetchedFromOffAt;
   final bool isFromOfflineDb;
   final bool isOfflineNotFound;
+  final bool needsVerification;
 
   Product({
     required this.barcode,
@@ -35,6 +36,7 @@ class Product {
     this.fetchedFromOffAt,
     this.isFromOfflineDb = false,
     this.isOfflineNotFound = false,
+    this.needsVerification = false,
   });
 
   // Helper getters per estrarre la lingua corrente con fallback intelligente
@@ -246,6 +248,12 @@ class Product {
           json['lastUpdated'] ??
           DateTime.now().toIso8601String(),
       fetchedFromOffAt: json['fetched_from_off_at'] ?? json['fetchedFromOffAt'],
+      isFromOfflineDb:
+          json['is_from_offline_db'] ?? json['isFromOfflineDb'] ?? false,
+      isOfflineNotFound:
+          json['is_offline_not_found'] ?? json['isOfflineNotFound'] ?? false,
+      needsVerification:
+          json['needs_verification'] ?? json['needsVerification'] ?? false,
     );
   }
 
@@ -260,6 +268,9 @@ class Product {
       'pending_reports_count': pendingReportsCount,
       'last_updated': lastUpdated,
       'fetched_from_off_at': fetchedFromOffAt,
+      'is_from_offline_db': isFromOfflineDb,
+      'is_offline_not_found': isOfflineNotFound,
+      'needs_verification': needsVerification,
     };
   }
 }

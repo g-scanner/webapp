@@ -87,12 +87,16 @@ class OffIngestionService {
       if (hasOfflineDb) {
         final offlineProduct = await OfflineDbService.searchProduct(barcode);
         if (offlineProduct != null) {
+          // Salva localmente in SQLite per la cronologia offline (MAI su Firestore)
+          await LocalCacheService.upsertLocalProduct(offlineProduct);
           if (settings.autoSaveHistory) {
             await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
           }
           return ScanResult.offline(offlineProduct);
         } else {
           final notFoundProduct = OfflineDbService.createOfflineNotFoundProduct(barcode);
+          // Salva localmente in SQLite per la cronologia offline (MAI su Firestore)
+          await LocalCacheService.upsertLocalProduct(notFoundProduct);
           if (settings.autoSaveHistory) {
             await HistoryDbService.saveHistoryItem(db, auth, notFoundProduct);
           }
@@ -196,6 +200,8 @@ class OffIngestionService {
     if (hasOfflineDbFallback) {
       final offlineProduct = await OfflineDbService.searchProduct(barcode);
       if (offlineProduct != null) {
+        // Salva localmente in SQLite per la cronologia offline (MAI su Firestore)
+        await LocalCacheService.upsertLocalProduct(offlineProduct);
         if (settings.autoSaveHistory) {
           await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
         }

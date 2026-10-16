@@ -11,7 +11,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/analyzer_service.dart';
 import 'package:gscanner/services/db_service.dart';
-import 'package:gscanner/services/database/offline_db_service.dart';
 import 'package:gscanner/core/core.dart';
 
 import 'package:gscanner/features/scanner/camera_module.dart';
@@ -312,7 +311,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           final isOfflineActive =
               _openOfflineDbNotifiers[barcode]?.value ?? false;
           final currentOpenProduct = _openProductNotifiers[barcode]?.value;
-          if (isOfflineActive || (currentOpenProduct?.isFromOfflineDb ?? false)) {
+          if (isOfflineActive ||
+              (currentOpenProduct?.isFromOfflineDb ?? false)) {
             continue;
           }
           final prod = products.cast<Product?>().firstWhere(
@@ -334,7 +334,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               for (var barcode in _openProductNotifiers.keys) {
                 final isOfflineActive =
                     _openOfflineDbNotifiers[barcode]?.value ?? false;
-                final currentOpenProduct = _openProductNotifiers[barcode]?.value;
+                final currentOpenProduct =
+                    _openProductNotifiers[barcode]?.value;
                 if (isOfflineActive ||
                     (currentOpenProduct?.isFromOfflineDb ?? false)) {
                   continue;
@@ -561,7 +562,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
         if (!detailClosed) {
           isStaleDataNotifier.value = scanResult.isStaleResult;
-          isOfflineDbNotifier.value = scanResult.isOfflineResult || scanResult.isOfflineNotFoundResult;
+          isOfflineDbNotifier.value =
+              scanResult.isOfflineResult || scanResult.isOfflineNotFoundResult;
           isInHistoryNotifier.value = true;
         }
         productNotifier.value = scanResult.product;
@@ -719,17 +721,78 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       if (updatedProduct != null) {
         await DbService.upsertLocalProduct(updatedProduct);
+        if (mounted) {
+          setState(() {
+            final idx = products.indexWhere((p) => p.barcode == barcode);
+            if (idx != -1) {
+              products[idx] = updatedProduct!;
+            } else {
+              products.add(updatedProduct!);
+            }
+          });
+        }
         if (_openProductNotifiers.containsKey(barcode)) {
           _openProductNotifiers[barcode]!.value = updatedProduct;
         }
         if (_openStaleNotifiers.containsKey(barcode)) {
           _openStaleNotifiers[barcode]!.value = false;
         }
+        if (_openOfflineDbNotifiers.containsKey(barcode)) {
+          _openOfflineDbNotifiers[barcode]!.value = false;
+        }
         _fetchProducts();
       }
     } catch (e) {
-      debugPrint("Errore durante il refresh online del prodotto stale: $e");
+      debugPrint("Errore durante il refresh online del prodotto: $e");
     }
+  }
+
+  /// Apre la schermata di dettaglio di un prodotto esistente dalla cronologia o dalle segnalazioni
+  /// SENZA registrare un nuovo evento di scansione (nessuna duplicazione in cronologia!).
+  Future<void> _openHistoryProduct(String barcode) async {
+    // 1. Se è una scansione pendente (ancora in caricamento), naviga
+    // direttamente alla skeleton view con il notifier condiviso.
+    if (_pendingScans.containsKey(barcode)) {
+      _navigateToPendingProduct(barcode);
+      return;
+    }
+
+    // 2. Cerca nella lista in memoria dei prodotti
+    Product? match = products.cast<Product?>().firstWhere(
+      (p) => p?.barcode == barcode,
+      orElse: () => null,
+    );
+
+    // 3. Se non in memoria, cerca nel database locale SQLite (cache)
+    match ??= await DbService.getLocalProductByBarcode(barcode);
+
+    // 4. Se ancora non trovato, cerca nel DB offline se installato
+    if (match == null && await OfflineDbService.isDatabaseInstalled()) {
+      match = await OfflineDbService.searchProduct(barcode);
+      if (match != null) {
+        await DbService.upsertLocalProduct(match);
+      }
+    }
+
+    // 5. Se ancora non trovato (es. record cronologico di prodotto sconosciuto):
+    // Crea un prodotto provvisorio locale contrassegnato con needsVerification: true.
+    // MAI inviare a Firestore e MAI invocare saveHistoryItem!
+    if (match == null) {
+      match = OfflineDbService.createOfflineNotFoundProduct(barcode);
+      await DbService.upsertLocalProduct(match);
+    }
+
+    if (mounted) {
+      setState(() {
+        if (!products.any((p) => p.barcode == barcode)) {
+          products.add(match!);
+        }
+      });
+    }
+
+    // 6. Naviga alla schermata di dettaglio del prodotto ESISTENTE
+    // (ProductDetailCard gestirà reattivamente il refresh online se e quando la rete è attiva)
+    _navigateToProduct(match);
   }
 
   Future<void> handleReportSubmit(
@@ -1036,12 +1099,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (!isFromOffline) {
       final isConnected = await ConnectivityHelper.hasInternetConnection();
       if (!isConnected && await OfflineDbService.isDatabaseInstalled()) {
-        final offlineCheck = await OfflineDbService.searchProduct(match.barcode);
+        final offlineCheck = await OfflineDbService.searchProduct(
+          match.barcode,
+        );
         if (offlineCheck != null) {
           isFromOffline = true;
         }
       }
     }
+
+    if (!mounted) return;
 
     final offlineDbNotifier = _openOfflineDbNotifiers.putIfAbsent(
       match.barcode,
@@ -1291,23 +1358,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           onRefresh: refreshAllData,
           userSettings: userSettings,
           isSynced: _isHistorySynced,
-          onSelectItem: (barcode) {
-            // Se è una scansione pendente (ancora in caricamento), naviga
-            // direttamente alla skeleton view con il notifier condiviso.
-            if (_pendingScans.containsKey(barcode)) {
-              _navigateToPendingProduct(barcode);
-              return;
-            }
-            final match = products.cast<Product?>().firstWhere(
-              (p) => p?.barcode == barcode,
-              orElse: () => null,
-            );
-            if (match != null) {
-              _navigateToProduct(match);
-            } else {
-              handleScanSuccess(barcode);
-            }
-          },
+          onSelectItem: _openHistoryProduct,
           onClearHistory: handleClearHistory,
           onDeleteHistoryItem: handleDeleteHistoryItem,
         ),
@@ -1319,17 +1370,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           userSettings: userSettings,
           userReports: reports,
           onDeleteReport: handleDeleteReport,
-          onSelectItem: (barcode) {
-            final match = products.cast<Product?>().firstWhere(
-              (p) => p?.barcode == barcode,
-              orElse: () => null,
-            );
-            if (match != null) {
-              _navigateToProduct(match);
-            } else {
-              handleScanSuccess(barcode);
-            }
-          },
+          onSelectItem: _openHistoryProduct,
         ),
         SettingsPanel(
           firebaseAuth: _auth,

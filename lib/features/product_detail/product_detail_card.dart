@@ -100,6 +100,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     return widget.isStaleData || currentProduct.isStale;
   }
 
+  bool get _needsOnlineVerification =>
+      currentProduct.needsVerification ||
+      currentProduct.isFromOfflineDb ||
+      currentProduct.isOfflineNotFound;
+
+  bool get _shouldCheckOnline =>
+      (_isEffectiveStaleData || _needsOnlineVerification) &&
+      widget.onRefreshOnline != null;
+
   Timer? _onlineRetryTimer;
   bool _isRefreshingOnline = false;
 
@@ -112,21 +121,21 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     widget.isStaleDataNotifier?.addListener(_onStaleDataNotifierChanged);
     widget.isOfflineDbNotifier?.addListener(_onOfflineDbNotifierChanged);
 
-    // Se la card viene visualizzata in stato stale, avvia il listener/timer
+    // Se la card viene visualizzata in stato stale o offline/unverified, avvia il listener/timer
     // che effettua il check appena la connessione a Internet torna disponibile.
     _initOnlineRefreshTimerIfNeeded();
   }
 
   void _initOnlineRefreshTimerIfNeeded() {
     _onlineRetryTimer?.cancel();
-    if (!_isEffectiveStaleData || widget.onRefreshOnline == null) return;
+    if (!_shouldCheckOnline) return;
 
     // Esegui subito un primo tentativo asincrono rapido
     _checkAndRefreshIfOnline();
 
-    // Se ancora stale, controlla periodicamente ogni 3 secondi se torna online
+    // Se ancora stale o in attesa di verifica, controlla periodicamente ogni 3 secondi se torna online
     _onlineRetryTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!_isEffectiveStaleData || !mounted) {
+      if (!_shouldCheckOnline || !mounted) {
         _onlineRetryTimer?.cancel();
         _onlineRetryTimer = null;
         return;
@@ -136,9 +145,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   Future<void> _checkAndRefreshIfOnline() async {
-    if (_isRefreshingOnline || !mounted || !_isEffectiveStaleData) return;
+    if (_isRefreshingOnline || !mounted || !_shouldCheckOnline) return;
     final isOnline = await ConnectivityHelper.hasInternetConnection();
-    if (!isOnline || !mounted || !_isEffectiveStaleData) return;
+    if (!isOnline || !mounted || !_shouldCheckOnline) return;
 
     _isRefreshingOnline = true;
     try {
@@ -150,7 +159,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     } finally {
       if (mounted) {
         _isRefreshingOnline = false;
-        if (!_isEffectiveStaleData) {
+        if (!_shouldCheckOnline) {
           _onlineRetryTimer?.cancel();
           _onlineRetryTimer = null;
         }
@@ -173,9 +182,11 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   void _onProductNotifierChanged() {
     // Quando il prodotto viene aggiornato (ad es. check online o delta sync),
     // se non è più stale, azzera immediatamente il notifier dello stale data
-    // e cancella il timer di retry.
+    // e cancella il timer di retry se non necessita più verifiche.
     if (widget.isStaleDataNotifier != null && !currentProduct.isStale) {
       widget.isStaleDataNotifier!.value = false;
+    }
+    if (!_shouldCheckOnline) {
       _onlineRetryTimer?.cancel();
       _onlineRetryTimer = null;
     }
@@ -192,7 +203,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   void _onStaleDataNotifierChanged() {
     if (mounted) {
-      if (!_isEffectiveStaleData) {
+      if (!_shouldCheckOnline) {
         _onlineRetryTimer?.cancel();
         _onlineRetryTimer = null;
       } else {

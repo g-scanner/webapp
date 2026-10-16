@@ -102,21 +102,43 @@ class _HistoryListState extends State<HistoryList> {
       orElse: () => null,
     );
 
-    if (product == null || isItemPending) {
+    if (isItemPending) {
       return AnalyzedItemData(
         productName: "history.item.fallbackName".tr(
           namedArgs: {"barcode": item.barcode},
         ),
         brand: "history.item.brandLoading".tr(),
-        status: isItemPending
-            ? GlutenSafetyStatus.incerto
-            : GlutenSafetyStatus.sconosciuto,
+        status: GlutenSafetyStatus.incerto,
         hasLactose: false,
+        isOffline: false,
+      );
+    }
+
+    final bool isOffline = product != null &&
+        (product.isFromOfflineDb ||
+            product.isOfflineNotFound ||
+            product.needsVerification);
+
+    if (product == null || product.isOfflineNotFound) {
+      final name = (product != null &&
+              product.getName(lang).isNotEmpty &&
+              product.getName(lang) != 'product.status.unknownProductName'.tr())
+          ? product.getName(lang)
+          : "history.item.fallbackName".tr(namedArgs: {"barcode": item.barcode});
+      return AnalyzedItemData(
+        productName: name,
+        brand: "product.status.unknownBrand".tr(),
+        status: GlutenSafetyStatus.sconosciuto,
+        hasLactose: false,
+        isOffline: isOffline,
       );
     }
 
     final name = product.getName(lang);
-    final brand = product.getBrand(lang);
+    final rawBrand = product.getBrand(lang);
+    final String brand = (rawBrand.isNotEmpty && rawBrand != '-')
+        ? rawBrand
+        : "product.status.unknownBrand".tr();
     final ingredients = product.getIngredients(lang);
     final allergens = product.getAllergens(lang);
 
@@ -149,9 +171,10 @@ class _HistoryListState extends State<HistoryList> {
 
     return AnalyzedItemData(
       productName: name,
-      brand: brand.isNotEmpty ? brand : "product.status.unknownBrand".tr(),
+      brand: brand,
       status: finalStatus,
       hasLactose: hasLactose,
+      isOffline: isOffline,
     );
   }
 

@@ -375,7 +375,7 @@ void main() {
         find.textContaining('history.item.fallbackName'),
         findsOneWidget,
       );
-      expect(find.text('history.item.brandLoading'), findsOneWidget);
+      expect(find.text('product.status.unknownBrand'), findsOneWidget);
       expect(find.text('history.item.status.unknown'), findsOneWidget);
     });
 

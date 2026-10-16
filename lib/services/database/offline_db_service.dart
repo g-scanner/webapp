@@ -17,6 +17,9 @@ class OfflineDbService {
   /// Restituisce il percorso standard del file SQLite sul disco.
   static Future<String> getDatabasePath() async {
     if (_cachedDbPath != null) return _cachedDbPath!;
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return p.join(Directory.systemTemp.path, 'offline_products_test.db');
+    }
     final appDir = await getApplicationDocumentsDirectory();
     final offlineDir = Directory(p.join(appDir.path, 'offline_db'));
     if (!await offlineDir.exists()) {
@@ -39,8 +42,17 @@ class OfflineDbService {
     _database = db;
   }
 
+  @visibleForTesting
+  static bool? mockIsDatabaseInstalled;
+
   /// Verifica se il file di database SQLite esiste su disco ed è accessibile.
   static Future<bool> isDatabaseInstalled() async {
+    if (mockIsDatabaseInstalled != null) return mockIsDatabaseInstalled!;
+    if (Platform.environment.containsKey('FLUTTER_TEST') &&
+        _cachedDbPath == null &&
+        _database == null) {
+      return false;
+    }
     try {
       final path = await getDatabasePath();
       final file = File(path);
@@ -160,6 +172,7 @@ class OfflineDbService {
       fetchedFromOffAt: DateTime.now().toIso8601String(),
       isFromOfflineDb: true,
       isOfflineNotFound: false,
+      needsVerification: true,
     );
   }
 
@@ -177,6 +190,7 @@ class OfflineDbService {
       fetchedFromOffAt: DateTime.now().toIso8601String(),
       isFromOfflineDb: true,
       isOfflineNotFound: true,
+      needsVerification: true,
     );
   }
 

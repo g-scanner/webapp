@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/dashed_border_container.dart';
 import '../../../models/models.dart';
 
 class AnalyzedItemData {
@@ -12,12 +13,14 @@ class AnalyzedItemData {
   final String brand;
   final GlutenSafetyStatus status;
   final bool hasLactose;
+  final bool isOffline;
 
   AnalyzedItemData({
     required this.productName,
     required this.brand,
     required this.status,
     required this.hasLactose,
+    this.isOffline = false,
   });
 }
 
@@ -186,6 +189,39 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
     );
   }
 
+  Widget _buildOfflineTag(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return DashedBorderContainer(
+      borderColor: colorScheme.error.withValues(alpha: 0.5),
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      borderRadius: 24,
+      strokeWidth: 1.0,
+      dashWidth: 3.5,
+      dashSpace: 2.5,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.cloud_off_outlined,
+            size: 14,
+            color: colorScheme.error,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            "history.item.offlineScan".tr(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.error,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -213,6 +249,8 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                         widget.alertLactose &&
                         widget.data.hasLactose)
                       _buildLactoseTag(context),
+                    if (!widget.isPending && widget.data.isOffline)
+                      _buildOfflineTag(context),
                   ],
                 ),
                 const SizedBox(height: 8),

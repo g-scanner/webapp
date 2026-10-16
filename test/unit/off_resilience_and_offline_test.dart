@@ -1044,9 +1044,11 @@ void main() {
       expect(result.product.isOfflineNotFound, isFalse);
       expect(result.product.getName('it'), equals('Biscotti Senza Glutine'));
 
-      // DATA ISOLATION: Verifica che NON sia stato salvato nella cache SharedPreferences
+      // DATA ISOLATION: Salvato localmente in SQLite con flag needsVerification (MAI su Firestore)
       final cached = await LocalCacheService.getLocalProductByBarcode('800555');
-      expect(cached, isNull);
+      expect(cached, isNotNull);
+      expect(cached!.needsVerification, isTrue);
+      expect(cached.isFromOfflineDb, isTrue);
 
       // DATA ISOLATION: Verifica che NON sia stato scritto su Firestore
       verifyNever(() => mockProductDoc.set(any(), any()));
@@ -1083,9 +1085,11 @@ void main() {
       expect(result.product.isFromOfflineDb, isTrue);
       expect(result.product.isOfflineNotFound, isTrue);
 
-      // DATA ISOLATION: Nessuna scrittura persistente
+      // DATA ISOLATION: Salvato localmente in SQLite con flag needsVerification (MAI su Firestore)
       final cached = await LocalCacheService.getLocalProductByBarcode('999888');
-      expect(cached, isNull);
+      expect(cached, isNotNull);
+      expect(cached!.needsVerification, isTrue);
+      expect(cached.isOfflineNotFound, isTrue);
       verifyNever(() => mockProductDoc.set(any(), any()));
     });
   });
