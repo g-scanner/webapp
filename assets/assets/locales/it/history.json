@@ -27,7 +27,8 @@
       },
       "fallbackName": "Prodotto {barcode}",
       "brandLoading": "Caricamento in corso...",
-      "lactose": "Lattosio"
+      "lactose": "Lattosio",
+      "offlineScan": "Scansione offline"
     }
   }
 }
