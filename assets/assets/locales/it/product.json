@@ -39,8 +39,10 @@
       "databaseWarningTitle": "SCANSIONE OFFLINE",
       "databaseWarningBody": "I dati di questo prodotto provengono dal database offline. L'aggiornamento automatico delle informazioni avverrà appena il dispositivo sarà connesso a Internet.",
       "databaseWarningCaution": "Le ricette e gli stabilimenti possono cambiare nel tempo. Leggi l'etichetta fisica per sicurezza.",
-      "notFoundTitle": "PRODOTTO NON PRESENTE NEL DB OFFLINE",
-      "notFoundBody": "Questo codice a barre non è presente nella copia del database offline installata sul dispositivo.",
+      "notFoundTitle": "PRODOTTO NON TROVATO OFFLINE",
+      "notFoundBody": "Questo codice a barre non è presente nella versione {tier} del database offline.",
+      "notFoundBodyGeneric": "Questo codice a barre non è presente nel database offline installato sul dispositivo.",
+      "notFoundUpgradeHint": "Potrebbe essere presente in una delle versioni più complete.",
       "notFoundAction": "Connettiti a Internet per ricercare il prodotto nel catalogo globale in tempo reale o verifica direttamente l'etichetta fisica."
     },
     "status": {
