@@ -4,16 +4,35 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../models/offline_db_tier.dart';
 import 'section_card.dart';
 
 /// Card di avviso mostrata quando un prodotto non è presente nella copia del database offline
 /// installata sul dispositivo.
 class OfflineNotFoundWarningCard extends StatelessWidget {
-  const OfflineNotFoundWarningCard({super.key});
+  final OfflineDbTier tier;
+
+  const OfflineNotFoundWarningCard({
+    super.key,
+    this.tier = OfflineDbTier.none,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
+
+    final String bodyText;
+    if (tier == OfflineDbTier.none) {
+      bodyText = 'product.offlineWarnings.notFoundBodyGeneric'.tr();
+    } else {
+      bodyText = 'product.offlineWarnings.notFoundBody'.tr(
+        namedArgs: {'tier': tier.label},
+      );
+    }
+
+    final String fullBodyText = tier != OfflineDbTier.tier3
+        ? '$bodyText ${'product.offlineWarnings.notFoundUpgradeHint'.tr()}'
+        : bodyText;
 
     return SectionCard(
       title: 'product.offlineWarnings.notFoundTitle'.tr(),
@@ -23,7 +42,7 @@ class OfflineNotFoundWarningCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'product.offlineWarnings.notFoundBody'.tr(),
+            fullBodyText,
             style: TextStyle(
               fontSize: 14,
               height: 1.4,

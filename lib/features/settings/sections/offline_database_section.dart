@@ -330,16 +330,5 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
     );
   }
 
-  String _getTierLabel(OfflineDbTier tier) {
-    switch (tier) {
-      case OfflineDbTier.none:
-        return 'settings.offlineDatabase.tierNone'.tr();
-      case OfflineDbTier.tier1:
-        return 'settings.offlineDatabase.tier1'.tr();
-      case OfflineDbTier.tier2:
-        return 'settings.offlineDatabase.tier2'.tr();
-      case OfflineDbTier.tier3:
-        return 'settings.offlineDatabase.tier3'.tr();
-    }
-  }
+  String _getTierLabel(OfflineDbTier tier) => tier.label;
 }

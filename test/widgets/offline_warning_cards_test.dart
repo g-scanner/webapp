@@ -6,10 +6,58 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:gscanner/models/models.dart';
 import 'package:gscanner/features/product_detail/widgets/offline_database_warning_card.dart';
 import 'package:gscanner/features/product_detail/widgets/offline_not_found_warning_card.dart';
 import 'package:gscanner/features/product_detail/widgets/section_card.dart';
 import '../mocks/shared_mocks.dart';
+
+class _MockWarningAssetLoader extends AssetLoader {
+  const _MockWarningAssetLoader();
+  @override
+  Future<Map<String, dynamic>> load(String path, Locale locale) async {
+    return {
+      'product': {
+        'offlineWarnings': {
+          'notFoundTitle': 'PRODOTTO NON PRESENTE NEL DB OFFLINE',
+          'notFoundBody': 'Questo codice a barre non è presente nella versione {tier} del database offline.',
+          'notFoundBodyGeneric': 'Questo codice a barre non è presente nella copia del database offline installata sul dispositivo.',
+          'notFoundUpgradeHint': 'Prova a installare una versione più ricca del database offline.',
+          'notFoundAction': 'Connettiti a Internet per ricercare il prodotto nel catalogo globale in tempo reale o verifica direttamente l\'etichetta fisica.',
+        },
+      },
+      'settings': {
+        'offlineDatabase': {
+          'tierNone': 'Disattivato (Solo Online)',
+          'tier1': 'Ultra-Light (Solo Celiachia)',
+          'tier2': 'Standard (Consigliato)',
+          'tier3': 'Completo (Full Catalog)',
+        },
+      },
+    };
+  }
+}
+
+Widget createCustomWarningApp(Widget child) {
+  return EasyLocalization(
+    supportedLocales: const [Locale('it')],
+    path: 'assets/locales',
+    assetLoader: const _MockWarningAssetLoader(),
+    fallbackLocale: const Locale('it'),
+    startLocale: const Locale('it'),
+    useOnlyLangCode: true,
+    child: Builder(
+      builder: (context) {
+        return MaterialApp(
+          localizationsDelegates: context.localizationDelegates,
+          supportedLocales: context.supportedLocales,
+          locale: context.locale,
+          home: Scaffold(body: child),
+        );
+      },
+    ),
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -92,6 +140,54 @@ void main() {
 
       expect(find.byType(OfflineNotFoundWarningCard), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('tier1 displays tier name and upgrade hint', (tester) async {
+      await tester.pumpWidget(
+        createCustomWarningApp(
+          const OfflineNotFoundWarningCard(tier: OfflineDbTier.tier1),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Ultra-Light (Solo Celiachia)'), findsOneWidget);
+      expect(find.textContaining('Prova a installare una versione più ricca del database offline.'), findsOneWidget);
+    });
+
+    testWidgets('tier2 displays tier name and upgrade hint', (tester) async {
+      await tester.pumpWidget(
+        createCustomWarningApp(
+          const OfflineNotFoundWarningCard(tier: OfflineDbTier.tier2),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Standard (Consigliato)'), findsOneWidget);
+      expect(find.textContaining('Prova a installare una versione più ricca del database offline.'), findsOneWidget);
+    });
+
+    testWidgets('tier3 displays tier name but omits upgrade hint', (tester) async {
+      await tester.pumpWidget(
+        createCustomWarningApp(
+          const OfflineNotFoundWarningCard(tier: OfflineDbTier.tier3),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Completo (Full Catalog)'), findsOneWidget);
+      expect(find.textContaining('Prova a installare una versione più ricca del database offline.'), findsNothing);
+    });
+
+    testWidgets('tier none displays generic message and upgrade hint', (tester) async {
+      await tester.pumpWidget(
+        createCustomWarningApp(
+          const OfflineNotFoundWarningCard(tier: OfflineDbTier.none),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('copia del database offline installata sul dispositivo'), findsOneWidget);
+      expect(find.textContaining('Prova a installare una versione più ricca del database offline.'), findsOneWidget);
     });
   });
 }

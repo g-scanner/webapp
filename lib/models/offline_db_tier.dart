@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
+import 'package:easy_localization/easy_localization.dart';
+
 /// Livello di database SQLite scaricabile per la consultazione offline.
 enum OfflineDbTier {
   none,
@@ -20,6 +22,19 @@ extension OfflineDbTierExtension on OfflineDbTier {
         return 'tier2';
       case OfflineDbTier.tier3:
         return 'tier3';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case OfflineDbTier.none:
+        return 'settings.offlineDatabase.tierNone'.tr();
+      case OfflineDbTier.tier1:
+        return 'settings.offlineDatabase.tier1'.tr();
+      case OfflineDbTier.tier2:
+        return 'settings.offlineDatabase.tier2'.tr();
+      case OfflineDbTier.tier3:
+        return 'settings.offlineDatabase.tier3'.tr();
     }
   }
 

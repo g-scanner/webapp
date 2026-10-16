@@ -390,7 +390,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
               // ── Avviso Copia Offline / Prodotto Non Trovato Offline ─────
               // Viene mostrato come prima cosa in assoluto subito sotto l'header stato globale.
               if (currentProduct.isOfflineNotFound && !showSkeleton) ...[
-                const OfflineNotFoundWarningCard(),
+                OfflineNotFoundWarningCard(
+                  tier: widget.userSettings.offlineDbTier,
+                ),
                 const SizedBox(height: 24),
               ] else if (_isEffectiveOfflineDb && !showSkeleton) ...[
                 const OfflineDatabaseWarningCard(),
