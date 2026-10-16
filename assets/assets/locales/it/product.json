@@ -36,7 +36,7 @@
       "caution": "Le ricette e gli stabilimenti possono cambiare nel tempo. Leggi l'etichetta fisica per sicurezza."
     },
     "offlineWarnings": {
-      "databaseWarningTitle": "RICERCA OFFLINE",
+      "databaseWarningTitle": "SCANSIONE OFFLINE",
       "databaseWarningBody": "I dati di questo prodotto provengono dal database offline. L'aggiornamento automatico delle informazioni avverrà appena il dispositivo sarà connesso a Internet.",
       "databaseWarningCaution": "Le ricette e gli stabilimenti possono cambiare nel tempo. Leggi l'etichetta fisica per sicurezza.",
       "notFoundTitle": "PRODOTTO NON PRESENTE NEL DB OFFLINE",
