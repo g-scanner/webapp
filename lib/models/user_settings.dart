@@ -16,6 +16,15 @@ class UserSettings {
   final OfflineDbTier offlineDbTier;
   final int? offlineDbLastSyncedAt;
 
+  /// Restituisce `true` se il database offline è abilitato (tier != none) e l'ultimo sync risale a oltre 30 giorni fa (o mai eseguito).
+  bool get isOfflineDbStale {
+    if (offlineDbTier == OfflineDbTier.none) return false;
+    if (offlineDbLastSyncedAt == null || offlineDbLastSyncedAt! <= 0) return true;
+    final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    const thirtyDaysInSeconds = 30 * 86400;
+    return (nowEpoch - offlineDbLastSyncedAt!) >= thirtyDaysInSeconds;
+  }
+
   static String get defaultSystemLanguage {
     try {
       const supportedLangs = ['it'];

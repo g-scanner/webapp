@@ -395,7 +395,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                 ),
                 const SizedBox(height: 24),
               ] else if (_isEffectiveOfflineDb && !showSkeleton) ...[
-                const OfflineDatabaseWarningCard(),
+                OfflineDatabaseWarningCard(
+                  isDbStale: widget.userSettings.isOfflineDbStale,
+                ),
                 const SizedBox(height: 24),
               ],
 

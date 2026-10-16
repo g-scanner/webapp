@@ -19,6 +19,11 @@ class _MockWarningAssetLoader extends AssetLoader {
     return {
       'product': {
         'offlineWarnings': {
+          'databaseWarningTitle': 'SCANSIONE OFFLINE',
+          'databaseWarningBody': 'I dati di questo prodotto provengono dal database offline. L\'aggiornamento automatico delle informazioni avverrà appena il dispositivo sarà connesso a Internet.',
+          'databaseWarningCaution': 'Le ricette e gli stabilimenti possono cambiare nel tempo. Leggi l\'etichetta fisica per sicurezza.',
+          'databaseStaleWarningTitle': 'DATABASE NON AGGIORNATO',
+          'databaseStaleWarningBody': 'I dati di questo prodotto provengono da un database offline non aggiornato. Aggiorna il database per rendere sicure le tue scansioni offline. L\'aggiornamento automatico delle informazioni avverrà appena il dispositivo sarà connesso a Internet.',
           'notFoundTitle': 'PRODOTTO NON PRESENTE NEL DB OFFLINE',
           'notFoundBody': 'Questo codice a barre non è presente nella versione {tier} del database offline.',
           'notFoundBodyGeneric': 'Questo codice a barre non è presente nella copia del database offline installata sul dispositivo.',
@@ -102,6 +107,35 @@ void main() {
 
       expect(find.byType(OfflineDatabaseWarningCard), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('isDbStale: false shows standard title and body', (tester) async {
+      await tester.pumpWidget(
+        createCustomWarningApp(
+          const OfflineDatabaseWarningCard(isDbStale: false),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('SCANSIONE OFFLINE'), findsOneWidget);
+      expect(find.textContaining('I dati di questo prodotto provengono dal database offline.'), findsOneWidget);
+      expect(find.textContaining('Le ricette e gli stabilimenti possono cambiare nel tempo.'), findsOneWidget);
+      expect(find.byIcon(Icons.cloud_off_outlined), findsOneWidget);
+    });
+
+    testWidgets('isDbStale: true shows DATABASE NON AGGIORNATO, updated body and reused caution', (tester) async {
+      await tester.pumpWidget(
+        createCustomWarningApp(
+          const OfflineDatabaseWarningCard(isDbStale: true),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('DATABASE NON AGGIORNATO'), findsOneWidget);
+      expect(find.textContaining('I dati di questo prodotto provengono da un database offline non aggiornato.'), findsOneWidget);
+      expect(find.textContaining('Aggiorna il database per rendere sicure le tue scansioni offline.'), findsOneWidget);
+      expect(find.textContaining('Le ricette e gli stabilimenti possono cambiare nel tempo.'), findsOneWidget);
+      expect(find.byIcon(Icons.update_disabled_outlined), findsOneWidget);
     });
   });
 

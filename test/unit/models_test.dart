@@ -648,4 +648,69 @@ void main() {
       expect(formatReportDate('corrupt_iso'), 'corrupt_iso');
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 9 – UserSettings isOfflineDbStale getter
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 9 – UserSettings isOfflineDbStale getter', () {
+    test('returns false when offlineDbTier is none regardless of sync timestamp', () {
+      final s1 = UserSettings(
+        strictMode: false,
+        alertLactose: false,
+        warnAdditives: false,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.none,
+        offlineDbLastSyncedAt: null,
+      );
+      expect(s1.isOfflineDbStale, isFalse);
+
+      final s2 = s1.copyWith(offlineDbLastSyncedAt: 100);
+      expect(s2.isOfflineDbStale, isFalse);
+    });
+
+    test('returns true when offlineDbTier != none and offlineDbLastSyncedAt is null or 0', () {
+      final s1 = UserSettings(
+        strictMode: false,
+        alertLactose: false,
+        warnAdditives: false,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.tier1,
+        offlineDbLastSyncedAt: null,
+      );
+      expect(s1.isOfflineDbStale, isTrue);
+
+      final s2 = s1.copyWith(offlineDbLastSyncedAt: 0);
+      expect(s2.isOfflineDbStale, isTrue);
+    });
+
+    test('returns false when offlineDbTier != none and synced less than 30 days ago', () {
+      final recentEpoch = (DateTime.now().millisecondsSinceEpoch ~/ 1000) - (10 * 86400); // 10 days ago
+      final s = UserSettings(
+        strictMode: false,
+        alertLactose: false,
+        warnAdditives: false,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.tier2,
+        offlineDbLastSyncedAt: recentEpoch,
+      );
+      expect(s.isOfflineDbStale, isFalse);
+    });
+
+    test('returns true when offlineDbTier != none and synced more than 30 days ago', () {
+      final oldEpoch = (DateTime.now().millisecondsSinceEpoch ~/ 1000) - (35 * 86400); // 35 days ago
+      final s = UserSettings(
+        strictMode: false,
+        alertLactose: false,
+        warnAdditives: false,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.tier3,
+        offlineDbLastSyncedAt: oldEpoch,
+      );
+      expect(s.isOfflineDbStale, isTrue);
+    });
+  });
 }
