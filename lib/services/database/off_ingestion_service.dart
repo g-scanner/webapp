@@ -63,11 +63,26 @@ class OffIngestionService {
           );
         }
         // Se OFF ha risposto con networkError (es. server down momentaneo):
-        // fallback sul dato in cache locale piuttosto che bloccare l'utente.
+        // procediamo verificando prima il DB offline (se presente) o la cache locale.
       }
 
-      // Fallback finale: siamo offline oppure OFF non era raggiungibile.
-      // Restituiamo ScanResult.stale così la UI può mostrare un avviso appropriato.
+      // Se siamo offline (o OFF non raggiungibile), controlliamo se il DB offline è installato
+      // e contiene informazioni per questo barcode: in tal caso le prediligiamo assolutamente rispetto
+      // a un dato in cache locale obsoleto (>30 giorni)!
+      final bool hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
+      if (hasOfflineDb) {
+        final offlineProduct = await OfflineDbService.searchProduct(barcode);
+        if (offlineProduct != null) {
+          await LocalCacheService.upsertLocalProduct(offlineProduct);
+          if (settings.autoSaveHistory) {
+            await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
+          }
+          return ScanResult.offline(offlineProduct);
+        }
+      }
+
+      // Fallback finale: il prodotto non è presente nel DB offline (o nessun DB installato).
+      // Restituiamo ScanResult.stale con i dati di cache locale e banner di avviso.
       if (settings.autoSaveHistory) {
         await HistoryDbService.saveHistoryItem(db, auth, localProduct);
       }

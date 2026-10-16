@@ -1092,6 +1092,109 @@ void main() {
       expect(cached.isOfflineNotFound, isTrue);
       verifyNever(() => mockProductDoc.set(any(), any()));
     });
+
+    test('Stale product in local cache when offline with offline DB installed prefers offline DB product if present', () async {
+      ConnectivityHelper.mockIsConnected = false;
+
+      // 1. Inserisci prodotto STALE in cache locale
+      final staleDate = DateTime.now().subtract(const Duration(days: 45)).toIso8601String();
+      final staleProduct = Product(
+        barcode: '800777',
+        nameMap: {'it': 'Prodotto Stale Cache'},
+        brandMap: {'it': 'Marca Vecchia'},
+        ingredientsMap: {'it': 'Farina di grano'},
+        allergensMap: {},
+        lastUpdated: staleDate,
+        fetchedFromOffAt: staleDate,
+      );
+      await LocalCacheService.upsertLocalProduct(staleProduct);
+
+      // 2. Inserisci versione aggiornata/censita nel DB offline
+      final db = await openDatabase(dbPath, version: 1, onCreate: (db, v) async {
+        await db.execute('''
+          CREATE TABLE products (
+            code TEXT PRIMARY KEY,
+            product_name TEXT,
+            brands TEXT,
+            ingredients_text TEXT,
+            allergens_tags TEXT,
+            labels_tags TEXT,
+            traces_tags TEXT,
+            last_modified_t INTEGER
+          );
+        ''');
+      });
+      await db.insert('products', {
+        'code': '800777',
+        'product_name': 'Prodotto Da DB Offline',
+        'brands': 'Marca Offline',
+        'ingredients_text': 'Farina di riso',
+        'allergens_tags': '',
+        'labels_tags': 'en:gluten-free',
+        'traces_tags': '',
+        'last_modified_t': 1773000000,
+      });
+      await db.close();
+
+      final result = await OffIngestionService.scanBarcodeClientSide(
+        db: mockDb,
+        auth: mockAuth,
+        barcode: '800777',
+        settings: testSettings,
+      );
+
+      // Predilige il dato dal DB offline!
+      expect(result.isOfflineResult, isTrue);
+      expect(result.isStaleResult, isFalse);
+      expect(result.product.isFromOfflineDb, isTrue);
+      expect(result.product.getName('it'), equals('Prodotto Da DB Offline'));
+    });
+
+    test('Stale product in local cache when offline with offline DB installed falls back to stale cache if not in offline DB', () async {
+      ConnectivityHelper.mockIsConnected = false;
+
+      // 1. Inserisci prodotto STALE in cache locale
+      final staleDate = DateTime.now().subtract(const Duration(days: 45)).toIso8601String();
+      final staleProduct = Product(
+        barcode: '800778',
+        nameMap: {'it': 'Prodotto Stale Solo In Cache'},
+        brandMap: {'it': 'Marca Vecchia'},
+        ingredientsMap: {'it': 'Farina di grano'},
+        allergensMap: {},
+        lastUpdated: staleDate,
+        fetchedFromOffAt: staleDate,
+      );
+      await LocalCacheService.upsertLocalProduct(staleProduct);
+
+      // 2. Crea DB offline che NON contiene questo barcode
+      final db = await openDatabase(dbPath, version: 1, onCreate: (db, v) async {
+        await db.execute('''
+          CREATE TABLE products (
+            code TEXT PRIMARY KEY,
+            product_name TEXT,
+            brands TEXT,
+            ingredients_text TEXT,
+            allergens_tags TEXT,
+            labels_tags TEXT,
+            traces_tags TEXT,
+            last_modified_t INTEGER
+          );
+        ''');
+      });
+      await db.close();
+
+      final result = await OffIngestionService.scanBarcodeClientSide(
+        db: mockDb,
+        auth: mockAuth,
+        barcode: '800778',
+        settings: testSettings,
+      );
+
+      // Non presente nel DB offline -> fallback sul dato in cache locale con avviso stale!
+      expect(result.isStaleResult, isTrue);
+      expect(result.isOfflineResult, isFalse);
+      expect(result.product.getName('it'), equals('Prodotto Stale Solo In Cache'));
+    });
   });
 }
 

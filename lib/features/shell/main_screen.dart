@@ -1237,15 +1237,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     );
     reportIdNotifier.value = userReport?.id;
 
-    // Crea il notifier reattivo per lo stato stale, inizializzato dal valore corrente.
-    // Viene passato al ProductDetailCard così che _onProductNotifierChanged
-    // possa azzerarlo quando il prodotto viene rinfrescato da delta sync o background check.
-    final staleNotifier = _openStaleNotifiers.putIfAbsent(
-      match.barcode,
-      () => ValueNotifier<bool>(match.isStale),
-    );
-    staleNotifier.value = match.isStale;
-
     // Determina se il prodotto proviene dal DB offline locale.
     // Viene verificato sia il flag del modello che l'eventuale presenza nel DB offline
     // quando il dispositivo è offline o il prodotto non è stato sincronizzato online.
@@ -1258,9 +1249,24 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         );
         if (offlineCheck != null) {
           isFromOffline = true;
+          // Se il prodotto in cache locale era stale (>30gg), prediligi il record del DB offline!
+          if (match.isStale) {
+            match = offlineCheck;
+            await DbService.upsertLocalProduct(match);
+            notifier.value = match;
+          }
         }
       }
     }
+
+    // Crea il notifier reattivo per lo stato stale, inizializzato dal valore corrente.
+    // Viene passato al ProductDetailCard così che _onProductNotifierChanged
+    // possa azzerarlo quando il prodotto viene rinfrescato da delta sync o background check.
+    final staleNotifier = _openStaleNotifiers.putIfAbsent(
+      match.barcode,
+      () => ValueNotifier<bool>(match.isStale && !isFromOffline),
+    );
+    staleNotifier.value = match.isStale && !isFromOffline;
 
     if (!mounted) return;
 
