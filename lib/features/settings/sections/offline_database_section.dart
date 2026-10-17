@@ -130,6 +130,7 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
             );
           }
         } else if (progress.step == OfflineSyncStep.error) {
+          debugPrint("OfflineDatabaseSection download error: ${progress.errorMessage}");
           if (mounted) {
             setState(() {
               _downloadingTier = null;

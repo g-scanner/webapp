@@ -27,6 +27,11 @@ class OfflineDbSyncService {
   static const String _defaultReleaseBaseUrl =
       'https://github.com/g-scanner/webapp/releases/download/offline-data';
 
+  static const String _webProxyBaseUrl = String.fromEnvironment(
+    'OFF_PROXY_BASE_URL',
+    defaultValue: 'https://gscanner-off-proxy.g-scanner.workers.dev',
+  );
+
   static String _baseUrl = _defaultReleaseBaseUrl;
   static http.Client? _mockClient;
 
@@ -46,14 +51,32 @@ class OfflineDbSyncService {
     _mockClient = null;
   }
 
+  /// Restituisce l'URL base effettivo, instradando tramite proxy CORS se eseguito su Web.
+  static String getEffectiveBaseUrl() {
+    if (_baseUrl != _defaultReleaseBaseUrl) {
+      return _baseUrl;
+    }
+    if (kIsWeb) {
+      final proxy = _webProxyBaseUrl.trim();
+      if (proxy.isNotEmpty) {
+        final cleanProxy = proxy.endsWith('/')
+            ? proxy.substring(0, proxy.length - 1)
+            : proxy;
+        return '$cleanProxy/offline-data';
+      }
+    }
+    return _baseUrl;
+  }
+
   /// Scarica e analizza il manifest version.json da GitHub Releases.
   static Future<Map<String, dynamic>?> fetchVersionManifest({
     http.Client? client,
   }) async {
     final httpClient = client ?? _mockClient ?? http.Client();
     try {
+      final currentBaseUrl = getEffectiveBaseUrl();
       final response = await httpClient.get(
-        Uri.parse('$_baseUrl/version.json'),
+        Uri.parse('$currentBaseUrl/version.json'),
       );
       if (response.statusCode == 200) {
         return json.decode(response.body) as Map<String, dynamic>;
@@ -143,7 +166,8 @@ class OfflineDbSyncService {
         break;
     }
 
-    final downloadUrl = '$_baseUrl/$fileName';
+    final currentBaseUrl = getEffectiveBaseUrl();
+    final downloadUrl = '$currentBaseUrl/$fileName';
     final targetDbPath = await OfflineDbService.getDatabasePath();
 
     if (kIsWeb) {
