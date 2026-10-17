@@ -1,11 +1,13 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Unit Tests: OfflineDbSyncService
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/database/offline_db_sync_service.dart';
 import 'package:gscanner/services/database/offline_db_service.dart';
 
@@ -204,5 +206,27 @@ void main() {
         expect(await File(patchPath).exists(), isFalse);
       },
     );
+  });
+
+  group('OfflineDbSyncService Web & Gzip Extraction Tests', () {
+    test('decompressGzipBytes decompresses valid gzipped payload accurately', () {
+      final originalString = 'SQLite format 3\u0000Some database bytes for testing';
+      final compressedBytes = gzip.encode(utf8.encode(originalString));
+
+      final decompressedBytes = OfflineDbSyncService.decompressGzipBytes(compressedBytes);
+      final resultString = utf8.decode(decompressedBytes);
+
+      expect(resultString, equals(originalString));
+    });
+
+    test('syncDatabase returns idle for tier none', () async {
+      final events = await OfflineDbSyncService.syncDatabase(
+        tier: OfflineDbTier.none,
+        currentLastSyncedAt: null,
+      ).toList();
+
+      expect(events.length, equals(1));
+      expect(events.first.step, equals(OfflineSyncStep.idle));
+    });
   });
 }

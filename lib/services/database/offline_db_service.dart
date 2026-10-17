@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
-import 'dart:io';
+import 'dart:io' show Platform, Directory, File;
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -14,10 +14,14 @@ class OfflineDbService {
   static Database? _database;
   static String? _cachedDbPath;
 
-  /// Restituisce il percorso standard del file SQLite sul disco.
+  /// Restituisce il percorso standard del file SQLite sul disco o il nome virtuale IndexedDB su Web.
   static Future<String> getDatabasePath() async {
     if (_cachedDbPath != null) return _cachedDbPath!;
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb) {
+      _cachedDbPath = 'offline_products.db';
+      return _cachedDbPath!;
+    }
+    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
       return p.join(Directory.systemTemp.path, 'offline_products_test.db');
     }
     final appDir = await getApplicationDocumentsDirectory();
@@ -45,19 +49,26 @@ class OfflineDbService {
   @visibleForTesting
   static bool? mockIsDatabaseInstalled;
 
-  /// Verifica se il file di database SQLite esiste su disco ed è accessibile.
+  /// Verifica se il file di database SQLite esiste su disco o in IndexedDB ed è accessibile.
   static Future<bool> isDatabaseInstalled() async {
     if (mockIsDatabaseInstalled != null) return mockIsDatabaseInstalled!;
-    if (Platform.environment.containsKey('FLUTTER_TEST') &&
+    if (!kIsWeb &&
+        Platform.environment.containsKey('FLUTTER_TEST') &&
         _cachedDbPath == null &&
         _database == null) {
       return false;
     }
     try {
       final path = await getDatabasePath();
+      if (kIsWeb) {
+        final exists = await databaseFactory.databaseExists(path);
+        if (!exists) return false;
+        final bytes = await databaseFactory.readDatabaseBytes(path);
+        return bytes.length > 1024;
+      }
       final file = File(path);
-      if (!await file.exists()) return false;
-      final length = await file.length();
+      if (!file.existsSync()) return false;
+      final length = file.lengthSync();
       return length > 1024; // Minimo header SQLite
     } catch (e) {
       debugPrint("OfflineDbService.isDatabaseInstalled error: $e");
@@ -65,13 +76,19 @@ class OfflineDbService {
     }
   }
 
-  /// Restituisce la dimensione in byte del database locale su disco.
+  /// Restituisce la dimensione in byte del database locale su disco o in IndexedDB.
   static Future<int> getDatabaseSizeBytes() async {
     try {
       final path = await getDatabasePath();
+      if (kIsWeb) {
+        final exists = await databaseFactory.databaseExists(path);
+        if (!exists) return 0;
+        final bytes = await databaseFactory.readDatabaseBytes(path);
+        return bytes.length;
+      }
       final file = File(path);
-      if (await file.exists()) {
-        return await file.length();
+      if (file.existsSync()) {
+        return file.lengthSync();
       }
       return 0;
     } catch (_) {
@@ -90,10 +107,9 @@ class OfflineDbService {
 
     final path = await getDatabasePath();
     try {
-      _database = await openDatabase(
+      _database = await databaseFactory.openDatabase(
         path,
-        readOnly:
-            false, // Per consentire anche operazioni di ATTACH transazionali
+        options: OpenDatabaseOptions(readOnly: false),
       );
       return _database;
     } catch (e) {
@@ -202,9 +218,15 @@ class OfflineDbService {
         _database = null;
       }
       final path = await getDatabasePath();
-      final file = File(path);
-      if (await file.exists()) {
-        await file.delete();
+      if (kIsWeb) {
+        if (await databaseFactory.databaseExists(path)) {
+          await databaseFactory.deleteDatabase(path);
+        }
+      } else {
+        final file = File(path);
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
       }
     } catch (e) {
       debugPrint("OfflineDbService.deleteDatabaseFile error: $e");

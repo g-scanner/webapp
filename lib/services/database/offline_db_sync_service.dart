@@ -4,6 +4,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
@@ -26,6 +28,7 @@ class OfflineDbSyncService {
       'https://github.com/g-scanner/webapp/releases/download/offline-data';
 
   static String _baseUrl = _defaultReleaseBaseUrl;
+  static http.Client? _mockClient;
 
   @visibleForTesting
   static void setMockBaseUrl(String url) {
@@ -33,15 +36,21 @@ class OfflineDbSyncService {
   }
 
   @visibleForTesting
+  static void setMockClient(http.Client? client) {
+    _mockClient = client;
+  }
+
+  @visibleForTesting
   static void resetBaseUrl() {
     _baseUrl = _defaultReleaseBaseUrl;
+    _mockClient = null;
   }
 
   /// Scarica e analizza il manifest version.json da GitHub Releases.
   static Future<Map<String, dynamic>?> fetchVersionManifest({
     http.Client? client,
   }) async {
-    final httpClient = client ?? http.Client();
+    final httpClient = client ?? _mockClient ?? http.Client();
     try {
       final response = await httpClient.get(
         Uri.parse('$_baseUrl/version.json'),
@@ -54,7 +63,7 @@ class OfflineDbSyncService {
       debugPrint("OfflineDbSyncService.fetchVersionManifest error: $e");
       return null;
     } finally {
-      if (client == null) httpClient.close();
+      if (client == null && _mockClient == null) httpClient.close();
     }
   }
 
@@ -112,12 +121,14 @@ class OfflineDbSyncService {
     }
 
     final bool isInstalled = await OfflineDbService.isDatabaseInstalled();
-    final action = determineSyncAction(
-      isDbInstalled: isInstalled,
-      lastSyncedAt: currentLastSyncedAt,
-      delta7dSince: delta7dSince,
-      delta30dSince: delta30dSince,
-    );
+    final action = kIsWeb
+        ? OfflineSyncAction.fullDownload
+        : determineSyncAction(
+            isDbInstalled: isInstalled,
+            lastSyncedAt: currentLastSyncedAt,
+            delta7dSince: delta7dSince,
+            delta30dSince: delta30dSince,
+          );
 
     String fileName;
     switch (action) {
@@ -134,18 +145,85 @@ class OfflineDbSyncService {
 
     final downloadUrl = '$_baseUrl/$fileName';
     final targetDbPath = await OfflineDbService.getDatabasePath();
+
+    if (kIsWeb) {
+      http.Client? internalClient;
+      try {
+        // 1. DOWNLOAD STREAMING / BYTES (WEB)
+        yield const OfflineSyncProgress(
+          step: OfflineSyncStep.downloading,
+          progress: 0.1,
+        );
+
+        final httpClient = client ?? _mockClient ?? (internalClient = http.Client());
+        final request = http.Request('GET', Uri.parse(downloadUrl));
+        final response = await httpClient.send(request);
+
+        if (response.statusCode != 200) {
+          yield OfflineSyncProgress.error("http_error_${response.statusCode}");
+          return;
+        }
+
+        final totalBytes = response.contentLength ?? 0;
+        var receivedBytes = 0;
+        final bytesBuilder = BytesBuilder();
+
+        await for (final chunk in response.stream) {
+          bytesBuilder.add(chunk);
+          receivedBytes += chunk.length;
+          if (totalBytes > 0) {
+            final downloadProgress = 0.1 + (receivedBytes / totalBytes) * 0.6; // 0.1 -> 0.7
+            yield OfflineSyncProgress(
+              step: OfflineSyncStep.downloading,
+              progress: downloadProgress.clamp(0.1, 0.7),
+            );
+          }
+        }
+
+        // 2. EXTRACTION (DECOMPRESSIONE GZIP IN MEMORIA)
+        yield const OfflineSyncProgress(
+          step: OfflineSyncStep.extracting,
+          progress: 0.75,
+        );
+
+        final compressedBytes = bytesBuilder.takeBytes();
+        final decompressedBytes = decompressGzipBytes(compressedBytes);
+
+        // 3. SOSTITUZIONE ATOMICA IN INDEXEDDB
+        yield const OfflineSyncProgress(
+          step: OfflineSyncStep.merging,
+          progress: 0.85,
+        );
+
+        await OfflineDbService.close();
+        await databaseFactory.writeDatabaseBytes(
+          targetDbPath,
+          Uint8List.fromList(decompressedBytes),
+        );
+
+        yield const OfflineSyncProgress.completed();
+      } catch (e) {
+        debugPrint("OfflineDbSyncService web sync error: $e");
+        yield OfflineSyncProgress.error(e.toString());
+      } finally {
+        internalClient?.close();
+      }
+      return;
+    }
+
     final dir = Directory(p.dirname(targetDbPath));
     final tempGzFile = File(p.join(dir.path, 'download_temp.db.gz'));
     final tempExtractedDb = File(p.join(dir.path, 'temp_extracted.db'));
+    http.Client? internalClient;
 
     try {
-      // 1. DOWNLOAD STREAMING
+      // 1. DOWNLOAD STREAMING (NATIVE)
       yield const OfflineSyncProgress(
         step: OfflineSyncStep.downloading,
         progress: 0.1,
       );
 
-      final httpClient = client ?? http.Client();
+      final httpClient = client ?? _mockClient ?? (internalClient = http.Client());
       final request = http.Request('GET', Uri.parse(downloadUrl));
       final response = await httpClient.send(request);
 
@@ -215,6 +293,7 @@ class OfflineDbSyncService {
       debugPrint("OfflineDbSyncService sync error: $e");
       yield OfflineSyncProgress.error(e.toString());
     } finally {
+      internalClient?.close();
       if (tempGzFile.existsSync()) {
         try {
           tempGzFile.deleteSync();
@@ -226,6 +305,11 @@ class OfflineDbSyncService {
         } catch (_) {}
       }
     }
+  }
+
+  /// Decomprime bytes gzip in memoria (utilizzato su Web e per test).
+  static List<int> decompressGzipBytes(List<int> compressedBytes) {
+    return GZipDecoder().decodeBytes(compressedBytes);
   }
 
   /// Decomprime un file gzip in streaming su un file di destinazione.

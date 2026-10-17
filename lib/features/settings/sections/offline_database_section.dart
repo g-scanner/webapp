@@ -31,6 +31,8 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
   StreamSubscription<OfflineSyncProgress>? _syncSubscription;
   int _dbSizeBytes = 0;
   bool _isLoadingSize = true;
+  bool _isDbInstalled = false;
+  OfflineDbTier? _downloadingTier;
 
   @override
   void initState() {
@@ -46,9 +48,11 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
 
   Future<void> _loadDatabaseSize() async {
     final size = await OfflineDbService.getDatabaseSizeBytes();
+    final installed = await OfflineDbService.isDatabaseInstalled();
     if (mounted) {
       setState(() {
         _dbSizeBytes = size;
+        _isDbInstalled = installed;
         _isLoadingSize = false;
       });
     }
@@ -69,6 +73,7 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
   }
 
   Future<void> _handleTierChange(OfflineDbTier newTier) async {
+    if (_syncProgress.isInProgress) return;
     if (newTier == widget.settings.offlineDbTier) return;
 
     if (newTier == OfflineDbTier.none) {
@@ -79,14 +84,13 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
       return;
     }
 
-    final updated = widget.settings.copyWith(offlineDbTier: newTier);
-    await widget.onSettingsChange(updated);
     _startSync(newTier);
   }
 
   void _startSync(OfflineDbTier tier) {
     _syncSubscription?.cancel();
     setState(() {
+      _downloadingTier = tier;
       _syncProgress = const OfflineSyncProgress(
         step: OfflineSyncStep.checkingVersion,
         progress: 0.05,
@@ -110,6 +114,11 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
             offlineDbLastSyncedAt: nowEpoch,
           );
           await widget.onSettingsChange(updated);
+          if (mounted) {
+            setState(() {
+              _downloadingTier = null;
+            });
+          }
           await _loadDatabaseSize();
 
           if (mounted) {
@@ -121,6 +130,12 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
             );
           }
         } else if (progress.step == OfflineSyncStep.error) {
+          if (mounted) {
+            setState(() {
+              _downloadingTier = null;
+            });
+          }
+          await _loadDatabaseSize();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -134,8 +149,10 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
       onError: (err) {
         if (!mounted) return;
         setState(() {
+          _downloadingTier = null;
           _syncProgress = OfflineSyncProgress.error(err.toString());
         });
+        _loadDatabaseSize();
       },
     );
   }
@@ -177,7 +194,8 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
-    final currentTier = widget.settings.offlineDbTier;
+    final selectedTier = _downloadingTier ?? widget.settings.offlineDbTier;
+    final isPanelVisible = _isDbInstalled || _syncProgress.isInProgress;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -202,9 +220,9 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
           // Dropdown Tier
           SettingsDropdownTile<OfflineDbTier>(
             title: 'settings.offlineDatabase.tierSelectionTitle'.tr(),
-            subtitle: _getTierLabel(currentTier),
+            subtitle: _getTierLabel(selectedTier),
             tooltip: 'settings.offlineDatabase.tierSelectionTitle'.tr(),
-            selectedValue: currentTier,
+            selectedValue: selectedTier,
             options: [
               SettingsDropdownOption(
                 value: OfflineDbTier.none,
@@ -223,10 +241,10 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
                 label: 'settings.offlineDatabase.tier3'.tr(),
               ),
             ],
-            onSelected: _handleTierChange,
+            onSelected: _syncProgress.isInProgress ? (_) {} : _handleTierChange,
           ),
 
-          if (currentTier != OfflineDbTier.none) ...[
+          if (isPanelVisible) ...[
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 8),
@@ -299,9 +317,10 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _syncProgress.isInProgress
+                    onPressed: _syncProgress.isInProgress ||
+                            widget.settings.offlineDbTier == OfflineDbTier.none
                         ? null
-                        : () => _startSync(currentTier),
+                        : () => _startSync(widget.settings.offlineDbTier),
                     icon: const Icon(Icons.sync, size: 18),
                     label: Text('settings.offlineDatabase.syncNow'.tr()),
                   ),
