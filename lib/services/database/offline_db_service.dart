@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
 
@@ -44,6 +45,40 @@ class OfflineDbService {
   @visibleForTesting
   static void setMockDatabase(Database? db) {
     _database = db;
+  }
+
+  static const String installedTierKey = 'locally_installed_offline_db_tier';
+
+  @visibleForTesting
+  static OfflineDbTier? mockInstalledTier;
+
+  /// Restituisce il tier del database offline fisicamente presente su questo dispositivo.
+  static Future<OfflineDbTier?> getInstalledTier() async {
+    if (mockInstalledTier != null) return mockInstalledTier;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tierStr = prefs.getString(installedTierKey);
+      if (tierStr == null) return null;
+      return OfflineDbTier.values.firstWhere(
+        (t) => t.key == tierStr,
+        orElse: () => OfflineDbTier.none,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Salva il tier del database offline installato localmente sul dispositivo.
+  static Future<void> setInstalledTier(OfflineDbTier tier) async {
+    mockInstalledTier = tier;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (tier == OfflineDbTier.none) {
+        await prefs.remove(installedTierKey);
+      } else {
+        await prefs.setString(installedTierKey, tier.key);
+      }
+    } catch (_) {}
   }
 
   @visibleForTesting
@@ -217,6 +252,14 @@ class OfflineDbService {
         await _database!.close();
         _database = null;
       }
+      if (mockIsDatabaseInstalled != null) {
+        mockIsDatabaseInstalled = false;
+      }
+      mockInstalledTier = null;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(installedTierKey);
+      } catch (_) {}
       final path = await getDatabasePath();
       if (kIsWeb) {
         if (await databaseFactory.databaseExists(path)) {

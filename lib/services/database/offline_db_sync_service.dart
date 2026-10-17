@@ -66,11 +66,14 @@ class OfflineDbSyncService {
   }
 
   @visibleForTesting
-  static void resetBaseUrl() {
+  static void resetState() {
     _baseUrl = _defaultReleaseBaseUrl;
     _mockClient = null;
     cancelSync();
   }
+
+  @visibleForTesting
+  static void resetBaseUrl() => resetState();
 
   /// Restituisce l'URL base effettivo, instradando tramite proxy CORS se eseguito su Web.
   static String getEffectiveBaseUrl() {
@@ -139,11 +142,31 @@ class OfflineDbSyncService {
     required Future<void> Function(UserSettings) onSettingsChange,
     http.Client? client,
   }) async {
-    if (settings.offlineDbTier == OfflineDbTier.none) return;
+    if (settings.offlineDbTier == OfflineDbTier.none) {
+      final isInstalled = await OfflineDbService.isDatabaseInstalled();
+      if (isInstalled) {
+        debugPrint(
+          'OfflineDbSyncService: Tier is none in settings. Physically deleting offline DB from device...',
+        );
+        await OfflineDbService.deleteDatabaseFile();
+      }
+      return;
+    }
     if (isSyncing) return;
 
     final isInstalled = await OfflineDbService.isDatabaseInstalled();
-    if (isInstalled) return;
+    final installedTier = await OfflineDbService.getInstalledTier();
+
+    // Se un database è installato ma appartiene a un Tier diverso da quello richiesto:
+    // cancelliamo fisicamente il vecchio DB per scaricare ed installare quello corretto!
+    if (isInstalled && installedTier != null && installedTier != settings.offlineDbTier) {
+      debugPrint(
+        'OfflineDbSyncService: Tier mismatch (installed: ${installedTier.key}, desired: ${settings.offlineDbTier.key}). Deleting old DB...',
+      );
+      await OfflineDbService.deleteDatabaseFile();
+    } else if (isInstalled) {
+      return;
+    }
 
     debugPrint(
       'OfflineDbSyncService: Auto-downloading ${settings.offlineDbTier.key} in background...',
@@ -156,6 +179,7 @@ class OfflineDbSyncService {
       client: client,
     ).listen((progress) async {
       if (progress.step == OfflineSyncStep.completed) {
+        _autoDownloadSubscription = null;
         final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         final updated = settings.copyWith(
           offlineDbTier: settings.offlineDbTier,
@@ -166,6 +190,7 @@ class OfflineDbSyncService {
           'OfflineDbSyncService: Auto-download completed successfully for ${settings.offlineDbTier.key}',
         );
       } else if (progress.step == OfflineSyncStep.error) {
+        _autoDownloadSubscription = null;
         debugPrint(
           'OfflineDbSyncService: Auto-download error: ${progress.errorMessage}',
         );
@@ -234,6 +259,19 @@ class OfflineDbSyncService {
     }
 
     final bool isInstalled = await OfflineDbService.isDatabaseInstalled();
+
+    // Se il database è già installato ed è allineato all'ultima versione del server (non stale),
+    // evitiamo download ridondanti dello stesso database.
+    if (isInstalled &&
+        currentLastSyncedAt != null &&
+        currentLastSyncedAt >= publishedAt) {
+      debugPrint(
+        "OfflineDbSyncService: Database ${tier.key} già installato e aggiornato ($currentLastSyncedAt >= $publishedAt). Download saltato.",
+      );
+      yield const OfflineSyncProgress.completed();
+      return;
+    }
+
     final action = kIsWeb
         ? OfflineSyncAction.fullDownload
         : determineSyncAction(
@@ -314,6 +352,7 @@ class OfflineDbSyncService {
           targetDbPath,
           Uint8List.fromList(decompressedBytes),
         );
+        await OfflineDbService.setInstalledTier(tier);
 
         yield const OfflineSyncProgress.completed();
       } catch (e) {
@@ -401,6 +440,8 @@ class OfflineDbSyncService {
           patchFile: tempExtractedDb,
         );
       }
+
+      await OfflineDbService.setInstalledTier(tier);
 
       yield const OfflineSyncProgress.completed();
     } catch (e) {

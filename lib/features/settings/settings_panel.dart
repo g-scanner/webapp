@@ -88,7 +88,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
     await widget.onSettingsChange(updated);
     // Aggiorna la locale UI in sync con la preferenza
     if (mounted) context.setLocale(Locale(newLang));
-    _triggerToast("Preferenze salvate ed applicate!");
+    _triggerToast("common.status.preferencesSaved".tr());
   }
 
   Future<void> _handleThemeChange(String newTheme) async {
@@ -100,7 +100,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
       preferredTheme: newTheme,
     );
     await widget.onSettingsChange(updated);
-    _triggerToast("Preferenze salvate ed applicate!");
+    _triggerToast("common.status.preferencesSaved".tr());
   }
 
   Future<void> _handleClearHistory() async {

@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/database/offline_db_sync_service.dart';
 import 'package:gscanner/services/database/offline_db_service.dart';
@@ -23,12 +24,19 @@ void main() {
   late String dbPath;
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    OfflineDbSyncService.resetState();
+    OfflineDbService.mockIsDatabaseInstalled = null;
+    OfflineDbService.mockInstalledTier = null;
     tempDir = await Directory.systemTemp.createTemp('gscanner_sync_test_');
     dbPath = p.join(tempDir.path, 'offline_products.db');
     OfflineDbService.setMockDatabasePath(dbPath);
   });
 
   tearDown(() async {
+    OfflineDbSyncService.resetState();
+    OfflineDbService.mockIsDatabaseInstalled = null;
+    OfflineDbService.mockInstalledTier = null;
     await OfflineDbService.close();
     OfflineDbService.setMockDatabasePath(null);
     if (await tempDir.exists()) {
@@ -254,10 +262,12 @@ void main() {
       expect(OfflineDbSyncService.isSyncing, isFalse);
     });
 
-    test('does nothing if database is already installed', () async {
+    test('does nothing if database is already installed and matches tier', () async {
       // create a dummy sqlite file so isDatabaseInstalled is true
       final file = File(dbPath);
       await file.writeAsBytes(List.filled(2048, 1));
+      OfflineDbService.setMockDatabasePath(dbPath);
+      await OfflineDbService.setInstalledTier(OfflineDbTier.tier1);
 
       var called = false;
       final settings = UserSettings(
@@ -276,6 +286,94 @@ void main() {
 
       expect(called, isFalse);
       expect(OfflineDbSyncService.isSyncing, isFalse);
+    });
+
+    test('deletes DB if settings tier is none and DB is installed', () async {
+      final file = File(dbPath);
+      await file.writeAsBytes(List.filled(2048, 1));
+      OfflineDbService.setMockDatabasePath(dbPath);
+      await OfflineDbService.setInstalledTier(OfflineDbTier.tier1);
+      expect(await OfflineDbService.isDatabaseInstalled(), isTrue);
+
+      var called = false;
+      final settings = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.none,
+      );
+
+      await OfflineDbSyncService.autoDownloadIfNeeded(
+        settings: settings,
+        onSettingsChange: (_) async => called = true,
+      );
+
+      expect(called, isFalse);
+      expect(await OfflineDbService.isDatabaseInstalled(), isFalse);
+      expect(await OfflineDbService.getInstalledTier(), isNull);
+    });
+
+    test('deletes old DB on tier mismatch and downloads new tier', () async {
+      final file = File(dbPath);
+      await file.writeAsBytes(List.filled(2048, 1));
+      OfflineDbService.setMockDatabasePath(dbPath);
+      await OfflineDbService.setInstalledTier(OfflineDbTier.tier1);
+      expect(await OfflineDbService.isDatabaseInstalled(), isTrue);
+
+      final manifestJson = json.encode({
+        'version': 1,
+        'published_at': 1773320000,
+        'tiers': {
+          'tier2': {
+            'full': {'file': 'tier2_full.db.gz'},
+          },
+        },
+      });
+
+      final dummyDbBytes = List.filled(2048, 42);
+      final gzippedDbBytes = gzip.encode(dummyDbBytes);
+
+      final mockClient = MockClient((request) async {
+        if (request.url.path.endsWith('version.json')) {
+          return http.Response(manifestJson, 200);
+        }
+        if (request.url.path.endsWith('tier2_full.db.gz')) {
+          return http.Response.bytes(gzippedDbBytes, 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      UserSettings? updatedSettings;
+      final settings = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.tier2,
+        offlineDbLastSyncedAt: null,
+      );
+
+      await OfflineDbSyncService.autoDownloadIfNeeded(
+        settings: settings,
+        client: mockClient,
+        onSettingsChange: (updated) async {
+          updatedSettings = updated;
+        },
+      );
+
+      var attempts = 0;
+      while (updatedSettings == null && attempts < 50) {
+        await Future.delayed(const Duration(milliseconds: 50));
+        attempts++;
+      }
+
+      expect(updatedSettings, isNotNull);
+      expect(updatedSettings!.offlineDbTier, equals(OfflineDbTier.tier2));
+      expect(await File(dbPath).exists(), isTrue);
+      expect(await OfflineDbService.getInstalledTier(), equals(OfflineDbTier.tier2));
     });
 
     test('triggers auto-download and calls onSettingsChange when DB is not installed', () async {
@@ -331,6 +429,61 @@ void main() {
       expect(updatedSettings!.offlineDbTier, equals(OfflineDbTier.tier1));
       expect(updatedSettings!.offlineDbLastSyncedAt, isNotNull);
       expect(await File(dbPath).exists(), isTrue);
+    });
+  });
+
+  group('OfflineDbSyncService Redundant Download Prevention Tests', () {
+    test('syncDatabase skips download if database is already installed and up to date with published version', () async {
+      final dbPath = p.join(tempDir.path, 'offline_products.db');
+      await File(dbPath).writeAsBytes(List.filled(2048, 42));
+      OfflineDbService.setMockDatabasePath(dbPath);
+
+      const publishedAt = 1773320000;
+      final manifestJson = json.encode({
+        'version': 1,
+        'published_at': publishedAt,
+        'tiers': {
+          'tier1': {
+            'full': {'file': 'tier1_full.db.gz'},
+          },
+        },
+      });
+
+      var downloadAttempted = false;
+      final mockClient = MockClient((request) async {
+        if (request.url.path.endsWith('version.json')) {
+          return http.Response(manifestJson, 200);
+        }
+        if (request.url.path.endsWith('.db.gz')) {
+          downloadAttempted = true;
+          return http.Response('Unexpected download', 500);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final progressList = await OfflineDbSyncService.syncDatabase(
+        tier: OfflineDbTier.tier1,
+        currentLastSyncedAt: publishedAt + 100,
+        client: mockClient,
+      ).toList();
+
+      expect(downloadAttempted, isFalse);
+      expect(progressList.last.step, equals(OfflineSyncStep.completed));
+    });
+
+    test('deleteDatabaseFile closes connection, resets mock and deletes physical file', () async {
+      final dbPath = p.join(tempDir.path, 'offline_to_delete.db');
+      await File(dbPath).writeAsBytes(List.filled(2048, 42));
+      OfflineDbService.setMockDatabasePath(dbPath);
+      OfflineDbService.mockIsDatabaseInstalled = true;
+
+      expect(await OfflineDbService.isDatabaseInstalled(), isTrue);
+      expect(File(dbPath).existsSync(), isTrue);
+
+      await OfflineDbService.deleteDatabaseFile();
+
+      expect(OfflineDbService.mockIsDatabaseInstalled, isFalse);
+      expect(File(dbPath).existsSync(), isFalse);
     });
   });
 }

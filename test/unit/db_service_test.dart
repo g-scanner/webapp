@@ -1583,6 +1583,52 @@ void main() {
         expect(merged.offlineDbLastSyncedAt, 1770000000);
       },
     );
+
+    test(
+      'syncSettingsWithFirestore physically deletes local database when remote tier is none',
+      () async {
+        OfflineDbService.mockIsDatabaseInstalled = true;
+        await OfflineDbService.setInstalledTier(OfflineDbTier.tier1);
+        expect(await OfflineDbService.isDatabaseInstalled(), isTrue);
+
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('sync_set_user_none');
+
+        when(() => mockUsersCol.doc('sync_set_user_none')).thenReturn(mockDocRef);
+        when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
+        when(() => mockDocSnap.exists).thenReturn(true);
+
+        final remoteSettings = UserSettings(
+          userId: 'sync_set_user_none',
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          offlineDbTier: OfflineDbTier.none,
+          offlineDbLastSyncedAt: null,
+        );
+        when(() => mockDocSnap.data()).thenReturn(remoteSettings.toJson());
+
+        final localSettings = UserSettings(
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbLastSyncedAt: 1770000000,
+        );
+
+        final merged = await DbService.syncSettingsWithFirestore(localSettings);
+
+        expect(merged.offlineDbTier, OfflineDbTier.none);
+        expect(merged.offlineDbLastSyncedAt, isNull);
+        expect(await OfflineDbService.isDatabaseInstalled(), isFalse);
+        expect(await OfflineDbService.getInstalledTier(), isNull);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

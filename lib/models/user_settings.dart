@@ -49,6 +49,8 @@ class UserSettings {
     this.offlineDbLastSyncedAt,
   });
 
+  static const _unsetSentinel = Object();
+
   UserSettings copyWith({
     String? userId,
     bool? strictMode,
@@ -59,8 +61,12 @@ class UserSettings {
     String? preferredTheme,
     List<String>? reportedBarcodes,
     OfflineDbTier? offlineDbTier,
-    int? offlineDbLastSyncedAt,
+    Object? offlineDbLastSyncedAt = _unsetSentinel,
   }) {
+    final int? resolvedLastSyncedAt = identical(offlineDbLastSyncedAt, _unsetSentinel)
+        ? this.offlineDbLastSyncedAt
+        : (offlineDbLastSyncedAt as int?);
+
     return UserSettings(
       userId: userId ?? this.userId,
       strictMode: strictMode ?? this.strictMode,
@@ -71,7 +77,7 @@ class UserSettings {
       preferredTheme: preferredTheme ?? this.preferredTheme,
       reportedBarcodes: reportedBarcodes ?? this.reportedBarcodes,
       offlineDbTier: offlineDbTier ?? this.offlineDbTier,
-      offlineDbLastSyncedAt: offlineDbLastSyncedAt ?? this.offlineDbLastSyncedAt,
+      offlineDbLastSyncedAt: resolvedLastSyncedAt,
     );
   }
 

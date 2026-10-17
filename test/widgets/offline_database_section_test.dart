@@ -219,5 +219,77 @@ void main() {
         expect(find.text('Errore durante il download del database'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'Selecting the currently installed tier does NOT trigger re-download',
+      (tester) async {
+        OfflineDbService.mockIsDatabaseInstalled = true;
+        var downloadTriggered = false;
+        final mockClient = MockClient((request) async {
+          downloadTriggered = true;
+          return http.Response('Unexpected download', 500);
+        });
+        OfflineDbSyncService.setMockClient(mockClient);
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(
+              tier: OfflineDbTier.tier1,
+              lastSyncedAt: 1773000000,
+            ),
+            onSettingsChange: (_) async {},
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap dropdown and select same Tier 1
+        await tester.tap(find.byType(PopupMenuButton<OfflineDbTier>));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Ultra-Light (Solo Celiachia)').last);
+        await tester.pumpAndSettle();
+
+        expect(downloadTriggered, isFalse);
+      },
+    );
+
+    testWidgets(
+      'Switching tier deletes existing DB file before starting new tier download',
+      (tester) async {
+        OfflineDbService.mockIsDatabaseInstalled = true;
+        OfflineDbSyncService.setMockClient(MockClient((request) async {
+          return http.Response('Server error', 500);
+        }));
+
+        var settingsChanged = false;
+        UserSettings? newSettings;
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(
+              tier: OfflineDbTier.tier1,
+              lastSyncedAt: 1773000000,
+            ),
+            onSettingsChange: (updated) async {
+              settingsChanged = true;
+              newSettings = updated;
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap dropdown and select Tier 2
+        await tester.tap(find.byType(PopupMenuButton<OfflineDbTier>));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Standard (Consigliato)').last);
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        // Database was reset/deleted
+        expect(OfflineDbService.mockIsDatabaseInstalled, isFalse);
+        expect(settingsChanged, isTrue);
+        expect(newSettings?.offlineDbTier, equals(OfflineDbTier.none));
+        expect(newSettings?.offlineDbLastSyncedAt, isNull);
+      },
+    );
   });
 }

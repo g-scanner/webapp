@@ -110,10 +110,29 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
       return;
     }
 
+    // Se un database è già installato e si cambia tier nelle impostazioni,
+    // cancelliamo prima fisicamente il vecchio DB dal dispositivo per non avere mai 2 DB contemporaneamente.
+    if (_isDbInstalled && newTier != widget.settings.offlineDbTier) {
+      await OfflineDbService.deleteDatabaseFile();
+      if (mounted) {
+        setState(() {
+          _isDbInstalled = false;
+          _dbSizeBytes = 0;
+        });
+      }
+      final resetSettings = widget.settings.copyWith(
+        offlineDbTier: OfflineDbTier.none,
+        offlineDbLastSyncedAt: null,
+      );
+      await widget.onSettingsChange(resetSettings);
+      _startSync(newTier, explicitLastSyncedAt: null);
+      return;
+    }
+
     _startSync(newTier);
   }
 
-  void _startSync(OfflineDbTier tier) {
+  void _startSync(OfflineDbTier tier, {int? explicitLastSyncedAt}) {
     _syncSubscription?.cancel();
     setState(() {
       _downloadingTier = tier;
@@ -123,9 +142,11 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
       );
     });
 
+    final effectiveLastSyncedAt = explicitLastSyncedAt ?? widget.settings.offlineDbLastSyncedAt;
+
     _syncSubscription = OfflineDbSyncService.syncDatabase(
       tier: tier,
-      currentLastSyncedAt: widget.settings.offlineDbLastSyncedAt,
+      currentLastSyncedAt: effectiveLastSyncedAt,
     ).listen(
       (progress) async {
         if (!mounted) return;
@@ -134,6 +155,7 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
         });
 
         if (progress.step == OfflineSyncStep.completed) {
+          await OfflineDbService.setInstalledTier(tier);
           final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
           final updated = widget.settings.copyWith(
             offlineDbTier: tier,

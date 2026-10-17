@@ -71,7 +71,8 @@
       "statusUpdateRecommended": "Aggiornamento consigliato",
       "statusStale": "Database obsoleto (>30 giorni)",
       "downloadError": "Errore durante il download del database offline. Riprova più tardi.",
-      "syncSuccess": "Database offline sincronizzato con successo!"
+      "syncSuccess": "Database offline sincronizzato con successo!",
+      "autoSyncSuccess": "Database offline sincronizzato automaticamente con successo!"
     },
     "dataAndHistory": {
       "clearHistoryTitle": "Svuota Cronologia",

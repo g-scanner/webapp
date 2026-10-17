@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
+import 'offline_db_service.dart';
 
 class SettingsDbService {
   static const String settingsKey = 'celiac_settings';
@@ -109,14 +110,23 @@ class SettingsDbService {
         final remoteBarcodes = firestoreSettings.reportedBarcodes;
         final mergedBarcodes = {...localBarcodes, ...remoteBarcodes}.toList();
 
-        final effectiveTier =
-            firestoreSettings.offlineDbTier != OfflineDbTier.none
-                ? firestoreSettings.offlineDbTier
-                : localSettings.offlineDbTier;
+        final bool hasRemoteTier = docSnap.data()!.containsKey('offlineDbTier');
+        final effectiveTier = hasRemoteTier
+            ? firestoreSettings.offlineDbTier
+            : localSettings.offlineDbTier;
 
-        final effectiveLastSyncedAt =
-            firestoreSettings.offlineDbLastSyncedAt ??
-                localSettings.offlineDbLastSyncedAt;
+        final effectiveLastSyncedAt = hasRemoteTier
+            ? firestoreSettings.offlineDbLastSyncedAt
+            : localSettings.offlineDbLastSyncedAt;
+
+        // Se dalle impostazioni sincronizzate il database è stato disattivato (Tier.none),
+        // eliminiamo fisicamente il file del database locale se presente su questo dispositivo.
+        if (effectiveTier == OfflineDbTier.none) {
+          final isInstalled = await OfflineDbService.isDatabaseInstalled();
+          if (isInstalled) {
+            await OfflineDbService.deleteDatabaseFile();
+          }
+        }
 
         final mergedSettings = firestoreSettings.copyWith(
           userId: user.uid,
