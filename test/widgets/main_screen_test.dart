@@ -1050,7 +1050,7 @@ void main() {
     );
 
     testWidgets(
-      'new anonymous user wipes old anonymous data (anonymous → anonymous transition)',
+      'new anonymous user shows SyncDataScreen and discarding wipes old anonymous data',
       (tester) async {
         const oldAnonUid = 'old_anon_firebase_uid';
         final oldHist = ScanHistoryItem(
@@ -1079,10 +1079,18 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(true);
         when(() => mockUser.uid).thenReturn('new_anon_firebase_uid');
 
-        await _pumpMainScreen(tester, auth: mockAuth);
+        await _pumpMyAppForSync(tester, auth: mockAuth);
 
-        // Should NOT show SyncDataScreen (anonymous users skip sync)
+        // Should show SyncDataScreen for anonymous -> anonymous transition
+        expect(find.byType(SyncDataScreen), findsOneWidget);
+
+        final syncScreen = tester.widget<SyncDataScreen>(find.byType(SyncDataScreen));
+        syncScreen.onDecision(false);
+        await tester.pump();
+        await tester.pumpAndSettle();
+
         expect(find.byType(SyncDataScreen), findsNothing);
+        expect(find.byType(CameraModule), findsOneWidget);
 
         // Old data in SQLite should have been wiped
         final oldDbHistory = await const ScanHistoryDao().getHistory(oldAnonUid);
@@ -1093,6 +1101,53 @@ void main() {
 
         // New UID should be tracked
         expect(prefs.getString('last_anonymous_uid'), 'new_anon_firebase_uid');
+      },
+    );
+
+    testWidgets(
+      'new anonymous user merging local data reassigns history to new anonymous UID locally',
+      (tester) async {
+        const oldAnonUid = 'old_anon_firebase_uid';
+        final oldHist = ScanHistoryItem(
+          id: 'hist_old_anon',
+          barcode: '999999',
+          scannedAt: DateTime.now().toIso8601String(),
+        );
+
+        SharedPreferences.setMockInitialValues({
+          'last_anonymous_uid': oldAnonUid,
+          'has_anonymous_settings': true,
+          'celiac_settings': json.encode({
+            'userId': oldAnonUid,
+            'strictMode': true,
+            'alertLactose': false,
+            'warnAdditives': true,
+            'autoSaveHistory': true,
+            'preferredLanguage': 'it',
+            'preferredTheme': 'system',
+          }),
+        });
+        await const ScanHistoryDao().insertHistoryItem(oldAnonUid, oldHist);
+
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn('new_anon_firebase_uid');
+
+        await _pumpMyAppForSync(tester, auth: mockAuth);
+
+        expect(find.byType(SyncDataScreen), findsOneWidget);
+
+        final syncScreen = tester.widget<SyncDataScreen>(find.byType(SyncDataScreen));
+        syncScreen.onDecision(true);
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SyncDataScreen), findsNothing);
+        expect(find.byType(CameraModule), findsOneWidget);
+
+        // History now belongs to new anonymous user
+        final newDbHistory = await const ScanHistoryDao().getHistory('new_anon_firebase_uid');
+        expect(newDbHistory, isNotEmpty);
+        expect(newDbHistory.first.barcode, '999999');
       },
     );
 

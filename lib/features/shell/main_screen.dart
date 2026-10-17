@@ -172,16 +172,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         if (mounted) setState(() => userSettings = settings);
 
         if (user.isAnonymous) {
-          // Se è un NUOVO anonimo (diverso dal precedente), cancella i dati del vecchio
-          final isNew = await DbService.isNewAnonymousSession(user.uid);
-          if (isNew) {
-            await DbService.wipeAnonymousData();
-          }
           // Traccia l'UID anonimo corrente per confronti futuri
+          // (la decisione di sync/wipe è gestita da MyApp prima del mount)
           await DbService.trackAnonymousSession(user.uid);
         }
-        // Per utenti autenticati la decisione di sync è già stata gestita
-        // da MyApp a livello di routing, prima del mount di MainScreen.
       }
 
       await _loadAllLocalData();
@@ -231,14 +225,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         final currentBarcodes = userSettings.reportedBarcodes.toSet();
         if (!currentBarcodes.containsAll(reportBarcodes)) {
           final merged = {...currentBarcodes, ...reportBarcodes}.toList();
-          userSettings = UserSettings(
+          userSettings = userSettings.copyWith(
             userId: userSettings.userId ?? userId,
-            strictMode: userSettings.strictMode,
-            alertLactose: userSettings.alertLactose,
-            warnAdditives: userSettings.warnAdditives,
-            autoSaveHistory: userSettings.autoSaveHistory,
-            preferredLanguage: userSettings.preferredLanguage,
-            preferredTheme: userSettings.preferredTheme,
             reportedBarcodes: merged,
           );
           DbService.saveLocalSettings(userSettings);
@@ -253,7 +241,27 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (mounted) {
       setState(() => userSettings = data);
       context.setLocale(Locale(data.preferredLanguage));
+      _autoDownloadOfflineDbIfNeeded(data);
     }
+  }
+
+  void _autoDownloadOfflineDbIfNeeded(UserSettings currentSettings) {
+    OfflineDbSyncService.autoDownloadIfNeeded(
+      settings: currentSettings,
+      onSettingsChange: (updatedSettings) async {
+        if (mounted) {
+          setState(() => userSettings = updatedSettings);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('settings.offlineDatabase.syncSuccess'.tr()),
+              backgroundColor: context.colorScheme.primary,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        await DbService.saveSettings(updatedSettings);
+      },
+    );
   }
 
   void _syncEverythingWithFirestore() {
@@ -282,7 +290,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     DbService.syncSettingsWithFirestore(userSettings)
         .then((syncedSettings) {
-          if (mounted) setState(() => userSettings = syncedSettings);
+          if (mounted) {
+            setState(() => userSettings = syncedSettings);
+            _autoDownloadOfflineDbIfNeeded(syncedSettings);
+          }
         })
         .catchError((e) {
           debugPrint("Failed to sync settings from Firestore: $e");
@@ -1003,14 +1014,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       setState(() {
         reportedSessionBarcodes.add(barcode);
         if (!userSettings.reportedBarcodes.contains(barcode)) {
-          userSettings = UserSettings(
-            userId: userSettings.userId,
-            strictMode: userSettings.strictMode,
-            alertLactose: userSettings.alertLactose,
-            warnAdditives: userSettings.warnAdditives,
-            autoSaveHistory: userSettings.autoSaveHistory,
-            preferredLanguage: userSettings.preferredLanguage,
-            preferredTheme: userSettings.preferredTheme,
+          userSettings = userSettings.copyWith(
             reportedBarcodes: [...userSettings.reportedBarcodes, barcode],
           );
         }
@@ -1186,14 +1190,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
         final updatedBarcodes = List<String>.from(userSettings.reportedBarcodes)
           ..remove(barcode);
-        userSettings = UserSettings(
+        userSettings = userSettings.copyWith(
           userId: userSettings.userId ?? userId,
-          strictMode: userSettings.strictMode,
-          alertLactose: userSettings.alertLactose,
-          warnAdditives: userSettings.warnAdditives,
-          autoSaveHistory: userSettings.autoSaveHistory,
-          preferredLanguage: userSettings.preferredLanguage,
-          preferredTheme: userSettings.preferredTheme,
           reportedBarcodes: updatedBarcodes,
         );
       });

@@ -7,6 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/database/offline_db_sync_service.dart';
 import 'package:gscanner/services/database/offline_db_service.dart';
@@ -227,6 +230,107 @@ void main() {
 
       expect(events.length, equals(1));
       expect(events.first.step, equals(OfflineSyncStep.idle));
+    });
+  });
+
+  group('OfflineDbSyncService autoDownloadIfNeeded Tests', () {
+    test('does nothing if offlineDbTier is none', () async {
+      var called = false;
+      final settings = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.none,
+      );
+
+      await OfflineDbSyncService.autoDownloadIfNeeded(
+        settings: settings,
+        onSettingsChange: (_) async => called = true,
+      );
+
+      expect(called, isFalse);
+      expect(OfflineDbSyncService.isSyncing, isFalse);
+    });
+
+    test('does nothing if database is already installed', () async {
+      // create a dummy sqlite file so isDatabaseInstalled is true
+      final file = File(dbPath);
+      await file.writeAsBytes(List.filled(2048, 1));
+
+      var called = false;
+      final settings = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.tier1,
+      );
+
+      await OfflineDbSyncService.autoDownloadIfNeeded(
+        settings: settings,
+        onSettingsChange: (_) async => called = true,
+      );
+
+      expect(called, isFalse);
+      expect(OfflineDbSyncService.isSyncing, isFalse);
+    });
+
+    test('triggers auto-download and calls onSettingsChange when DB is not installed', () async {
+      final manifestJson = json.encode({
+        'version': 1,
+        'published_at': 1773320000,
+        'tiers': {
+          'tier1': {
+            'full': {'file': 'tier1_full.db.gz'},
+          },
+        },
+      });
+
+      final dummyDbBytes = List.filled(2048, 42);
+      final gzippedDbBytes = gzip.encode(dummyDbBytes);
+
+      final mockClient = MockClient((request) async {
+        if (request.url.path.endsWith('version.json')) {
+          return http.Response(manifestJson, 200);
+        }
+        if (request.url.path.endsWith('tier1_full.db.gz')) {
+          return http.Response.bytes(gzippedDbBytes, 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      UserSettings? updatedSettings;
+      final settings = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.tier1,
+        offlineDbLastSyncedAt: null,
+      );
+
+      await OfflineDbSyncService.autoDownloadIfNeeded(
+        settings: settings,
+        client: mockClient,
+        onSettingsChange: (updated) async {
+          updatedSettings = updated;
+        },
+      );
+
+      var attempts = 0;
+      while (updatedSettings == null && attempts < 50) {
+        await Future.delayed(const Duration(milliseconds: 50));
+        attempts++;
+      }
+
+      expect(updatedSettings, isNotNull);
+      expect(updatedSettings!.offlineDbTier, equals(OfflineDbTier.tier1));
+      expect(updatedSettings!.offlineDbLastSyncedAt, isNotNull);
+      expect(await File(dbPath).exists(), isTrue);
     });
   });
 }

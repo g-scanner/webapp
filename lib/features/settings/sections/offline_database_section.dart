@@ -37,13 +37,31 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
   @override
   void initState() {
     super.initState();
+    _syncProgress = OfflineDbSyncService.syncProgressNotifier.value;
+    _downloadingTier = OfflineDbSyncService.currentSyncingTier;
+    OfflineDbSyncService.syncProgressNotifier.addListener(_onSyncProgressChanged);
     _loadDatabaseSize();
   }
 
   @override
   void dispose() {
+    OfflineDbSyncService.syncProgressNotifier.removeListener(_onSyncProgressChanged);
     _syncSubscription?.cancel();
     super.dispose();
+  }
+
+  void _onSyncProgressChanged() {
+    if (!mounted) return;
+    final notifierProgress = OfflineDbSyncService.syncProgressNotifier.value;
+    final syncingTier = OfflineDbSyncService.currentSyncingTier;
+    setState(() {
+      _syncProgress = notifierProgress;
+      _downloadingTier = syncingTier;
+    });
+    if (notifierProgress.step == OfflineSyncStep.completed ||
+        notifierProgress.step == OfflineSyncStep.error) {
+      _loadDatabaseSize();
+    }
   }
 
   Future<void> _loadDatabaseSize() async {
@@ -74,12 +92,20 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
 
   Future<void> _handleTierChange(OfflineDbTier newTier) async {
     if (_syncProgress.isInProgress) return;
-    if (newTier == widget.settings.offlineDbTier) return;
+    if (newTier == widget.settings.offlineDbTier && _isDbInstalled) return;
 
     if (newTier == OfflineDbTier.none) {
-      final confirm = await _showDeleteConfirmDialog();
-      if (confirm == true) {
-        await _deleteDatabase();
+      if (_isDbInstalled) {
+        final confirm = await _showDeleteConfirmDialog();
+        if (confirm == true) {
+          await _deleteDatabase();
+        }
+      } else {
+        final updated = widget.settings.copyWith(
+          offlineDbTier: OfflineDbTier.none,
+          offlineDbLastSyncedAt: null,
+        );
+        await widget.onSettingsChange(updated);
       }
       return;
     }

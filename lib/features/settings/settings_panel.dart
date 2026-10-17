@@ -68,15 +68,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
   }
 
   Future<void> _handleToggle(bool value, String key) async {
-    final updated = UserSettings(
-      userId: widget.settings.userId,
+    final updated = widget.settings.copyWith(
       strictMode: key == 'strictMode' ? value : widget.settings.strictMode,
       alertLactose: key == 'alertLactose' ? value : widget.settings.alertLactose,
       warnAdditives: key == 'warnAdditives' ? value : widget.settings.warnAdditives,
-      autoSaveHistory: widget.settings.autoSaveHistory,
-      preferredLanguage: widget.settings.preferredLanguage,
-      preferredTheme: widget.settings.preferredTheme,
-      reportedBarcodes: widget.settings.reportedBarcodes,
     );
     await widget.onSettingsChange(updated);
     _triggerToast("common.status.preferencesSaved".tr());
@@ -87,15 +82,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
       return;
     }
 
-    final updated = UserSettings(
-      userId: widget.settings.userId,
-      strictMode: widget.settings.strictMode,
-      alertLactose: widget.settings.alertLactose,
-      warnAdditives: widget.settings.warnAdditives,
-      autoSaveHistory: widget.settings.autoSaveHistory,
+    final updated = widget.settings.copyWith(
       preferredLanguage: newLang,
-      preferredTheme: widget.settings.preferredTheme,
-      reportedBarcodes: widget.settings.reportedBarcodes,
     );
     await widget.onSettingsChange(updated);
     // Aggiorna la locale UI in sync con la preferenza
@@ -108,15 +96,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
       return;
     }
 
-    final updated = UserSettings(
-      userId: widget.settings.userId,
-      strictMode: widget.settings.strictMode,
-      alertLactose: widget.settings.alertLactose,
-      warnAdditives: widget.settings.warnAdditives,
-      autoSaveHistory: widget.settings.autoSaveHistory,
-      preferredLanguage: widget.settings.preferredLanguage,
+    final updated = widget.settings.copyWith(
       preferredTheme: newTheme,
-      reportedBarcodes: widget.settings.reportedBarcodes,
     );
     await widget.onSettingsChange(updated);
     _triggerToast("Preferenze salvate ed applicate!");

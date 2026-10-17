@@ -52,16 +52,7 @@ class SettingsDbService {
     final user = auth.currentUser;
 
     final effectiveUserId = user?.uid ?? 'anonymous';
-    final effectiveSettings = UserSettings(
-      userId: effectiveUserId,
-      strictMode: settings.strictMode,
-      alertLactose: settings.alertLactose,
-      warnAdditives: settings.warnAdditives,
-      autoSaveHistory: settings.autoSaveHistory,
-      preferredLanguage: settings.preferredLanguage,
-      preferredTheme: settings.preferredTheme,
-      reportedBarcodes: settings.reportedBarcodes,
-    );
+    final effectiveSettings = settings.copyWith(userId: effectiveUserId);
 
     await saveLocalSettings(effectiveSettings);
 
@@ -118,18 +109,34 @@ class SettingsDbService {
         final remoteBarcodes = firestoreSettings.reportedBarcodes;
         final mergedBarcodes = {...localBarcodes, ...remoteBarcodes}.toList();
 
-        final mergedSettings = UserSettings(
+        final effectiveTier =
+            firestoreSettings.offlineDbTier != OfflineDbTier.none
+                ? firestoreSettings.offlineDbTier
+                : localSettings.offlineDbTier;
+
+        final effectiveLastSyncedAt =
+            firestoreSettings.offlineDbLastSyncedAt ??
+                localSettings.offlineDbLastSyncedAt;
+
+        final mergedSettings = firestoreSettings.copyWith(
           userId: user.uid,
-          strictMode: firestoreSettings.strictMode,
-          alertLactose: firestoreSettings.alertLactose,
-          warnAdditives: firestoreSettings.warnAdditives,
-          autoSaveHistory: firestoreSettings.autoSaveHistory,
-          preferredLanguage: firestoreSettings.preferredLanguage,
-          preferredTheme: firestoreSettings.preferredTheme,
           reportedBarcodes: mergedBarcodes,
+          offlineDbTier: effectiveTier,
+          offlineDbLastSyncedAt: effectiveLastSyncedAt,
         );
 
         await saveLocalSettings(mergedSettings);
+
+        if (effectiveTier != firestoreSettings.offlineDbTier ||
+            effectiveLastSyncedAt != firestoreSettings.offlineDbLastSyncedAt) {
+          try {
+            await db
+                .collection("users")
+                .doc(user.uid)
+                .set(mergedSettings.toJson(), SetOptions(merge: true));
+          } catch (_) {}
+        }
+
         return mergedSettings;
       }
     } catch (e) {

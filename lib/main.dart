@@ -125,7 +125,12 @@ class _MyAppState extends State<MyApp> {
   /// poi aggiorna lo stato provocando la transizione di schermata.
   Future<void> _resolveForUser(User user) async {
     AnonymousDataSummary? summary;
-    if (!user.isAnonymous) {
+    if (user.isAnonymous) {
+      final isNewAnon = await DbService.isNewAnonymousSession(user.uid);
+      if (isNewAnon) {
+        summary = await DbService.getPendingAnonymousSyncData();
+      }
+    } else {
       summary = await DbService.getPendingAnonymousSyncData();
     }
     if (mounted) {
@@ -176,14 +181,26 @@ class _MyAppState extends State<MyApp> {
           SyncChoices choices = const SyncChoices(),
         ]) async {
           if (wantToSync) {
-            await DbService.migrateLocalDataToFirestore(
-              resolved.user.uid,
-              syncHistory: choices.syncHistory,
-              syncReports: choices.syncReports,
-              syncSettings: choices.syncSettings,
-            );
+            if (resolved.user.isAnonymous) {
+              await DbService.migrateAnonymousDataToNewAnonymous(
+                resolved.user.uid,
+                syncHistory: choices.syncHistory,
+                syncReports: choices.syncReports,
+                syncSettings: choices.syncSettings,
+              );
+            } else {
+              await DbService.migrateLocalDataToFirestore(
+                resolved.user.uid,
+                syncHistory: choices.syncHistory,
+                syncReports: choices.syncReports,
+                syncSettings: choices.syncSettings,
+              );
+            }
           } else {
             await DbService.wipeAnonymousData();
+          }
+          if (resolved.user.isAnonymous) {
+            await DbService.trackAnonymousSession(resolved.user.uid);
           }
           if (mounted) {
             setState(() {

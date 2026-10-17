@@ -35,6 +35,26 @@ class OfflineDbSyncService {
   static String _baseUrl = _defaultReleaseBaseUrl;
   static http.Client? _mockClient;
 
+  /// Notifier globale dello stato e avanzamento della sincronizzazione offline.
+  static final ValueNotifier<OfflineSyncProgress> syncProgressNotifier =
+      ValueNotifier<OfflineSyncProgress>(const OfflineSyncProgress.idle());
+
+  /// Tier attualmente in fase di sincronizzazione o download.
+  static OfflineDbTier? currentSyncingTier;
+  static StreamSubscription<OfflineSyncProgress>? _autoDownloadSubscription;
+
+  /// Indica se una sincronizzazione del database offline è attualmente in corso.
+  static bool get isSyncing =>
+      currentSyncingTier != null && syncProgressNotifier.value.isInProgress;
+
+  /// Annulla eventuali sincronizzazioni automatiche o manuali in corso.
+  static void cancelSync() {
+    _autoDownloadSubscription?.cancel();
+    _autoDownloadSubscription = null;
+    currentSyncingTier = null;
+    syncProgressNotifier.value = const OfflineSyncProgress.idle();
+  }
+
   @visibleForTesting
   static void setMockBaseUrl(String url) {
     _baseUrl = url;
@@ -49,6 +69,7 @@ class OfflineDbSyncService {
   static void resetBaseUrl() {
     _baseUrl = _defaultReleaseBaseUrl;
     _mockClient = null;
+    cancelSync();
   }
 
   /// Restituisce l'URL base effettivo, instradando tramite proxy CORS se eseguito su Web.
@@ -110,8 +131,77 @@ class OfflineDbSyncService {
     }
   }
 
+  /// Se l'utente ha configurato un Tier diverso da [OfflineDbTier.none], ma il file fisico
+  /// non è ancora installato su questo dispositivo (es. nuovo dispositivo o web cache pulita),
+  /// avvia automaticamente il download in background senza bloccare la UI.
+  static Future<void> autoDownloadIfNeeded({
+    required UserSettings settings,
+    required Future<void> Function(UserSettings) onSettingsChange,
+    http.Client? client,
+  }) async {
+    if (settings.offlineDbTier == OfflineDbTier.none) return;
+    if (isSyncing) return;
+
+    final isInstalled = await OfflineDbService.isDatabaseInstalled();
+    if (isInstalled) return;
+
+    debugPrint(
+      'OfflineDbSyncService: Auto-downloading ${settings.offlineDbTier.key} in background...',
+    );
+
+    _autoDownloadSubscription?.cancel();
+    _autoDownloadSubscription = syncDatabase(
+      tier: settings.offlineDbTier,
+      currentLastSyncedAt: settings.offlineDbLastSyncedAt,
+      client: client,
+    ).listen((progress) async {
+      if (progress.step == OfflineSyncStep.completed) {
+        final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final updated = settings.copyWith(
+          offlineDbTier: settings.offlineDbTier,
+          offlineDbLastSyncedAt: nowEpoch,
+        );
+        await onSettingsChange(updated);
+        debugPrint(
+          'OfflineDbSyncService: Auto-download completed successfully for ${settings.offlineDbTier.key}',
+        );
+      } else if (progress.step == OfflineSyncStep.error) {
+        debugPrint(
+          'OfflineDbSyncService: Auto-download error: ${progress.errorMessage}',
+        );
+      }
+    });
+  }
+
   /// Esegue la sincronizzazione completa con emissione dello stato nello stream progressivo.
+  /// Aggiorna automaticamente [syncProgressNotifier] e [currentSyncingTier] per i listener UI.
   static Stream<OfflineSyncProgress> syncDatabase({
+    required OfflineDbTier tier,
+    required int? currentLastSyncedAt,
+    http.Client? client,
+  }) async* {
+    if (tier == OfflineDbTier.none) {
+      currentSyncingTier = null;
+      syncProgressNotifier.value = const OfflineSyncProgress.idle();
+      yield const OfflineSyncProgress.idle();
+      return;
+    }
+
+    currentSyncingTier = tier;
+    await for (final progress in _syncDatabaseInternal(
+      tier: tier,
+      currentLastSyncedAt: currentLastSyncedAt,
+      client: client,
+    )) {
+      syncProgressNotifier.value = progress;
+      if (!progress.isInProgress) {
+        currentSyncingTier = null;
+      }
+      yield progress;
+    }
+  }
+
+  static Stream<OfflineSyncProgress> _syncDatabaseInternal({
     required OfflineDbTier tier,
     required int? currentLastSyncedAt,
     http.Client? client,

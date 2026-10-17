@@ -184,6 +184,20 @@ class DbService {
         syncSettings: syncSettings,
       );
 
+  static Future<void> migrateAnonymousDataToNewAnonymous(
+    String newAnonUid, {
+    bool syncHistory = true,
+    bool syncReports = true,
+    bool syncSettings = true,
+  }) =>
+      AccountDataService.migrateAnonymousDataToNewAnonymous(
+        db,
+        newAnonUid,
+        syncHistory: syncHistory,
+        syncReports: syncReports,
+        syncSettings: syncSettings,
+      );
+
   static Future<void> wipeAnonymousData() =>
       AccountDataService.wipeAnonymousData();
 
@@ -196,8 +210,13 @@ class DbService {
   static Future<void> wipeAllLocalData() =>
       AccountDataService.wipeAllLocalData(auth);
 
-  static Future<void> wipeCurrentUserLocalData() =>
-      AccountDataService.wipeCurrentUserLocalData(auth);
+  static Future<void> wipeCurrentUserLocalData({
+    bool preserveProductCache = true,
+  }) =>
+      AccountDataService.wipeCurrentUserLocalData(
+        auth,
+        preserveProductCache: preserveProductCache,
+      );
 
   // ─── ACCOUNT DELETION HELPERS ──────────────────────────────────────────────
 

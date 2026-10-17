@@ -903,6 +903,39 @@ void main() {
         verify(() => mockDocRef.set(any(), any())).called(1);
       },
     );
+
+    test(
+      'saveSettings writes offlineDbTier and offlineDbLastSyncedAt locally and syncs to Firestore',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('user_pref');
+
+        when(() => mockUsersCol.doc('user_pref')).thenReturn(mockDocRef);
+
+        final customSettings = UserSettings(
+          strictMode: false,
+          alertLactose: true,
+          warnAdditives: false,
+          autoSaveHistory: true,
+          preferredLanguage: 'en',
+          preferredTheme: 'dark',
+          offlineDbTier: OfflineDbTier.tier2,
+          offlineDbLastSyncedAt: 1770000000,
+        );
+
+        await DbService.saveSettings(customSettings);
+
+        final loaded = await DbService.getLocalSettings();
+        expect(loaded.offlineDbTier, OfflineDbTier.tier2);
+        expect(loaded.offlineDbLastSyncedAt, 1770000000);
+
+        final captured = verify(() => mockDocRef.set(captureAny(), any())).captured;
+        final firestoreMap = captured.first as Map<String, dynamic>;
+        expect(firestoreMap['offlineDbTier'], 'tier2');
+        expect(firestoreMap['offlineDbLastSyncedAt'], 1770000000);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1008,6 +1041,136 @@ void main() {
         expect(prefs.getString('celiac_settings'), isNull);
         expect(prefs.getBool('has_anonymous_settings'), isNull);
         verifyNever(() => mockUsersCol.doc('new_user_123').set(any(), any()));
+      },
+    );
+
+    test(
+      'migrateLocalDataToFirestore with syncSettings: true preserves offlineDbTier and offlineDbLastSyncedAt',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        const anonUid = 'anon_settings_offline';
+        await prefs.setString('last_anonymous_uid', anonUid);
+        final anonSettings = UserSettings(
+          userId: anonUid,
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbLastSyncedAt: 1770000000,
+        );
+        await prefs.setString('celiac_settings', json.encode(anonSettings.toJson()));
+        await prefs.setBool('has_anonymous_settings', true);
+
+        when(() => mockUsersCol.doc('new_user_123')).thenReturn(mockDocRef);
+
+        await DbService.migrateLocalDataToFirestore(
+          'new_user_123',
+          syncHistory: false,
+          syncReports: false,
+          syncSettings: true,
+        );
+
+        final loaded = await DbService.getLocalSettings();
+        expect(loaded.userId, 'new_user_123');
+        expect(loaded.offlineDbTier, OfflineDbTier.tier1);
+        expect(loaded.offlineDbLastSyncedAt, 1770000000);
+
+        final captured = verify(() => mockDocRef.set(captureAny(), any())).captured;
+        final firestoreMap = captured.first as Map<String, dynamic>;
+        expect(firestoreMap['offlineDbTier'], 'tier1');
+        expect(firestoreMap['offlineDbLastSyncedAt'], 1770000000);
+      },
+    );
+
+    test(
+      'migrateAnonymousDataToNewAnonymous reassigns history and settings locally, and synchronizes reports to new anonymous UID on Firestore',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        const oldAnonUid = 'old_anon_123';
+        const newAnonUid = 'new_anon_456';
+        await prefs.setString('last_anonymous_uid', oldAnonUid);
+
+        final fakeHistory = ScanHistoryItem(
+          id: 'h1',
+          barcode: '111',
+          scannedAt: '2026-08-01T00:00:00Z',
+        );
+        final fakeReport = ProductReport(
+          id: 'r1',
+          barcode: '222',
+          productName: 'P',
+          brand: 'B',
+          type: 't',
+          comments: 'c',
+          submittedAt: '2026-08-01T00:00:00Z',
+          status: 'open',
+          userId: oldAnonUid,
+        );
+
+        await historyDao.insertHistoryItem(oldAnonUid, fakeHistory);
+        await reportDao.insertReport(fakeReport);
+
+        final anonSettings = UserSettings(
+          userId: oldAnonUid,
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbLastSyncedAt: 1770000000,
+        );
+        await prefs.setString('celiac_settings', json.encode(anonSettings.toJson()));
+
+        when(() => mockReportsCol.doc(any())).thenReturn(mockDocRef);
+        when(() => mockUsersCol.doc(newAnonUid)).thenReturn(mockDocRef);
+
+        await DbService.migrateAnonymousDataToNewAnonymous(
+          newAnonUid,
+          syncHistory: true,
+          syncReports: true,
+          syncSettings: true,
+        );
+
+        final newHistory = await historyDao.getHistory(newAnonUid);
+        expect(newHistory.length, 1);
+        expect(newHistory.first.barcode, '111');
+
+        final newReports = await reportDao.getUserReports(newAnonUid);
+        expect(newReports.length, 1);
+        expect(newReports.first.barcode, '222');
+
+        final loadedSettings = await DbService.getLocalSettings();
+        expect(loadedSettings.userId, newAnonUid);
+        expect(loadedSettings.offlineDbTier, OfflineDbTier.tier1);
+
+        expect(prefs.getString('last_anonymous_uid'), newAnonUid);
+
+        // Reports and user reportedBarcodes must be synchronized on Firestore
+        verify(() => mockReportsCol.doc('r1')).called(1);
+        verify(() => mockBatch.commit()).called(1);
+        verify(() => mockUsersCol.doc(newAnonUid)).called(1);
+      },
+    );
+
+    test(
+      'wipeCurrentUserLocalData does NOT wipe anonymous data when user is anonymous',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        const anonUid = 'active_anon_user';
+        await prefs.setString('last_anonymous_uid', anonUid);
+        await prefs.setString('celiac_settings', json.encode({'userId': anonUid, 'strictMode': true}));
+
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn(anonUid);
+
+        await DbService.wipeCurrentUserLocalData();
+
+        expect(prefs.getString('last_anonymous_uid'), anonUid);
+        expect(prefs.getString('celiac_settings'), isNotNull);
       },
     );
 
@@ -1380,6 +1543,46 @@ void main() {
         );
       },
     );
+
+    test(
+      'syncSettingsWithFirestore merges remote offlineDbTier and offlineDbLastSyncedAt',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('sync_set_user');
+
+        when(() => mockUsersCol.doc('sync_set_user')).thenReturn(mockDocRef);
+        when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
+        when(() => mockDocSnap.exists).thenReturn(true);
+
+        final remoteSettings = UserSettings(
+          userId: 'sync_set_user',
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          offlineDbTier: OfflineDbTier.tier2,
+          offlineDbLastSyncedAt: 1770000000,
+        );
+        when(() => mockDocSnap.data()).thenReturn(remoteSettings.toJson());
+
+        final localSettings = UserSettings(
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          offlineDbTier: OfflineDbTier.none,
+          offlineDbLastSyncedAt: null,
+        );
+
+        final merged = await DbService.syncSettingsWithFirestore(localSettings);
+
+        expect(merged.offlineDbTier, OfflineDbTier.tier2);
+        expect(merged.offlineDbLastSyncedAt, 1770000000);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1489,16 +1692,51 @@ void main() {
     );
 
     test(
-      'wipeCurrentUserLocalData delegates cleanly to wipeAllLocalData',
+      'wipeCurrentUserLocalData clears user data but preserves local product cache by default',
       () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('user_preserve');
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setStringList('celiac_history', ['{}']);
         await prefs.setString('celiac_settings', '{}');
+
+        final prod = createSampleProduct(barcode: '800PRESERVE');
+        await DbService.saveLocalProducts([prod]);
 
         await DbService.wipeCurrentUserLocalData();
 
         expect(prefs.getStringList('celiac_history'), isNull);
         expect(prefs.getString('celiac_settings'), isNull);
+
+        final products = await DbService.getLocalProducts();
+        expect(products, isNotEmpty);
+        expect(products.first.barcode, '800PRESERVE');
+      },
+    );
+
+    test(
+      'wipeAllLocalData clears everything including product cache',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('user_wipeall');
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList('celiac_history', ['{}']);
+        await prefs.setString('celiac_settings', '{}');
+
+        final prod = createSampleProduct(barcode: '800WIPEALL');
+        await DbService.saveLocalProducts([prod]);
+
+        await DbService.wipeAllLocalData();
+
+        expect(prefs.getStringList('celiac_history'), isNull);
+        expect(prefs.getString('celiac_settings'), isNull);
+
+        final products = await DbService.getLocalProducts();
+        expect(products, isEmpty);
       },
     );
 
