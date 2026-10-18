@@ -679,7 +679,7 @@ void main() {
         warnAdditives: false,
         autoSaveHistory: true,
         preferredLanguage: 'it',
-        offlineDbTier: OfflineDbTier.tier1,
+        offlineDbTier: OfflineDbTier.glutenFree,
         offlineDbLastSyncedAt: null,
       );
       expect(s1.isOfflineDbStale, isTrue);
@@ -696,7 +696,7 @@ void main() {
         warnAdditives: false,
         autoSaveHistory: true,
         preferredLanguage: 'it',
-        offlineDbTier: OfflineDbTier.tier2,
+        offlineDbTier: OfflineDbTier.euroCore,
         offlineDbLastSyncedAt: recentEpoch,
       );
       expect(s.isOfflineDbStale, isFalse);
@@ -710,7 +710,7 @@ void main() {
         warnAdditives: false,
         autoSaveHistory: true,
         preferredLanguage: 'it',
-        offlineDbTier: OfflineDbTier.tier3,
+        offlineDbTier: OfflineDbTier.globalTop,
         offlineDbLastSyncedAt: oldEpoch,
       );
       expect(s.isOfflineDbStale, isTrue);

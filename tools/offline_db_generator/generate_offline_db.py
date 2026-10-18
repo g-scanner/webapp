@@ -4,9 +4,12 @@ G-Scanner Offline Database Generator (DuckDB + SQLite)
 Conformità ODbL 1.0 (Open Food Facts Database)
 
 Estrae i dump compressi di Open Food Facts (JSONL.GZ) in modalità streaming
-a basso consumo di memoria RAM (< 1.5 GB), applica i filtri per i 3 Tier,
-genera database SQLite con indici primari su 'code' e crea pacchetti rolling
-delta (7 giorni, 30 giorni) e completi in formato .db.gz.
+a basso consumo di memoria RAM (< 4 GB) e controllo rigoroso del disco,
+applica i filtri per i 4 Macro-Pacchetti (gluten_free, euro_core, america_core, global_top),
+applica troncamenti di igiene dati (product_name <= 150, brands <= 80, ingredients <= 1000),
+filtra codici a barre standard (8-14 caratteri) ed esclude record vuoti.
+Genera database SQLite ottimizzati con page_size=4096, indici (code, last_modified_t)
+e compattazione VACUUM, creando pacchetti rolling delta (7d, 30d) e full compattati .db.gz.
 """
 
 import os
@@ -40,17 +43,19 @@ def compress_gzip(src_path: Path, dest_path: Path) -> int:
             shutil.copyfileobj(f_in, f_out)
     return dest_path.stat().st_size
 
-def export_tier(
+def export_package(
     con: duckdb.DuckDBPyConnection,
-    where_clause: str,
+    package_name: str,
+    package_query: str,
     output_sqlite_path: Path,
     time_cutoff: int = None
-):
+) -> dict:
     if output_sqlite_path.exists():
         output_sqlite_path.unlink()
 
-    # Prepara la tabella in SQLite prima del popolamento
+    # 1. Prepara lo schema SQLite iniziale con page_size 4096
     sqlite_conn = sqlite3.connect(output_sqlite_path)
+    sqlite_conn.execute("PRAGMA page_size = 4096;")
     sqlite_conn.execute("""
     CREATE TABLE IF NOT EXISTS products (
         code TEXT PRIMARY KEY,
@@ -65,14 +70,14 @@ def export_tier(
     """)
     sqlite_conn.close()
 
-    full_where = where_clause
     if time_cutoff is not None:
-        full_where = f"({where_clause}) AND last_modified_t >= {time_cutoff}"
+        filtered_query = f"SELECT * FROM ({package_query}) base_pkg WHERE last_modified_t >= {time_cutoff}"
+    else:
+        filtered_query = package_query
 
-    # Utilizziamo INSERT INTO standard (pienamente supportato dal driver SQLite di DuckDB).
-    # Per garantire unicità assoluta della PRIMARY KEY ed evitare conflitti,
-    # deduplichiamo preventivamente via finestra analitica (mantenendo la revisione più recente).
-    query = f"""
+    # Inserimento atomico da DuckDB in SQLite con deduplicazione analitica
+    # garantendo che 'code' sia univoco e che rimanga la revisione più recente.
+    insert_query = f"""
     INSERT INTO sqlite_db.products (
         code, product_name, brands, ingredients_text,
         allergens_tags, labels_tags, traces_tags, last_modified_t
@@ -82,26 +87,47 @@ def export_tier(
         allergens_tags, labels_tags, traces_tags, last_modified_t
     FROM (
         SELECT *, ROW_NUMBER() OVER (PARTITION BY code ORDER BY last_modified_t DESC) as rn
-        FROM all_products
-        WHERE {full_where}
+        FROM ({filtered_query}) candidates
     ) sub
     WHERE rn = 1;
     """
 
     con.execute(f"ATTACH '{output_sqlite_path.as_posix()}' AS sqlite_db (TYPE SQLITE);")
-    con.execute(query)
+    con.execute(insert_query)
     con.execute("DETACH sqlite_db;")
 
-    # Crea indice secondario direttamente con sqlite3 nativo dopo l'inserimento bulk (massima velocità)
+    # 2. Ottimizzazione SQLite post-insert: Indici, VACUUM compattazione, PRAGMA optimize
     sqlite_conn = sqlite3.connect(output_sqlite_path)
-    sqlite_conn.execute("CREATE INDEX IF NOT EXISTS idx_products_last_modified ON products(last_modified_t);")
+    sqlite_conn.execute("CREATE INDEX IF NOT EXISTS idx_code ON products(code);")
+    sqlite_conn.execute("CREATE INDEX IF NOT EXISTS idx_last_mod ON products(last_modified_t);")
+    sqlite_conn.execute("PRAGMA page_size = 4096;")
+    sqlite_conn.execute("PRAGMA journal_mode = DELETE;")
+    sqlite_conn.execute("VACUUM;")
     sqlite_conn.execute("PRAGMA optimize;")
+
+    cursor = sqlite_conn.cursor()
+    cursor.execute("SELECT count(*) FROM products;")
+    record_count = cursor.fetchone()[0]
     sqlite_conn.close()
 
+    # 3. Compressione Gzip e cancellazione immediata del file SQLite non compresso
+    gz_path = output_sqlite_path.with_suffix(".db.gz")
+    compressed_size = compress_gzip(output_sqlite_path, gz_path)
+    sha256 = compute_sha256(gz_path)
+    output_sqlite_path.unlink()
+
+    return {
+        "file": gz_path.name,
+        "size_bytes": compressed_size,
+        "sha256": sha256,
+        "record_count": record_count
+    }
+
 def main():
-    parser = argparse.ArgumentParser(description="Generatore DB Offline G-Scanner")
+    parser = argparse.ArgumentParser(description="Generatore DB Offline G-Scanner (4 Macro-Pacchetti)")
     parser.add_argument("--input", required=True, help="Percorso del dump OFF (.jsonl o .jsonl.gz)")
     parser.add_argument("--outdir", default="./dist", help="Directory di output per gli archivi")
+    parser.add_argument("--delete-input", action="store_true", help="Elimina il file dump sorgente subito dopo l'ingestione DuckDB per liberare spazio disco")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -120,22 +146,27 @@ def main():
     if temp_duckdb_path.exists():
         temp_duckdb_path.unlink()
 
-    print(f"[{datetime.now(timezone.utc).isoformat()}] Inizializzazione DuckDB con storage su disco...")
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Inizializzazione DuckDB con limite memoria 4GB e disco temporaneo...")
     con = duckdb.connect(str(temp_duckdb_path))
     con.execute("INSTALL sqlite; LOAD sqlite;")
     con.execute("SET preserve_insertion_order = false;")
+    con.execute("SET max_memory = '4GB';")
+    con.execute("SET threads = 2;")
 
-    print(f"[{datetime.now(timezone.utc).isoformat()}] Estrazione e normalizzazione da {input_path} (singolo passaggio)...")
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Estrazione, filtraggio e igiene dati da {input_path}...")
     con.execute(f"""
         CREATE TABLE all_products AS
         SELECT
-            CAST(code AS VARCHAR) AS code,
-            COALESCE(product_name, '') AS product_name,
-            COALESCE(brands, '') AS brands,
-            COALESCE(ingredients_text, '') AS ingredients_text,
+            TRIM(CAST(code AS VARCHAR)) AS code,
+            SUBSTRING(COALESCE(product_name, ''), 1, 150) AS product_name,
+            SUBSTRING(COALESCE(brands, ''), 1, 80) AS brands,
+            SUBSTRING(COALESCE(ingredients_text, ''), 1, 1000) AS ingredients_text,
             COALESCE(array_to_string(allergens_tags, ','), '') AS allergens_tags,
             COALESCE(array_to_string(labels_tags, ','), '') AS labels_tags,
             COALESCE(array_to_string(traces_tags, ','), '') AS traces_tags,
+            COALESCE(array_to_string(categories_tags, ','), '') AS categories_tags,
+            COALESCE(array_to_string(countries_tags, ','), '') AS countries_tags,
+            COALESCE(TRY_CAST(unique_scans_n AS BIGINT), 0) AS unique_scans_n,
             COALESCE(TRY_CAST(last_modified_t AS BIGINT), 0) AS last_modified_t
         FROM read_json(
             '{input_path.as_posix()}',
@@ -149,100 +180,114 @@ def main():
                 'allergens_tags': 'VARCHAR[]',
                 'labels_tags': 'VARCHAR[]',
                 'traces_tags': 'VARCHAR[]',
-                'last_modified_t': 'BIGINT'
+                'categories_tags': 'VARCHAR[]',
+                'countries_tags': 'VARCHAR[]',
+                'unique_scans_n': 'VARCHAR',
+                'last_modified_t': 'VARCHAR'
             }}
         )
-        WHERE code IS NOT NULL AND TRIM(CAST(code AS VARCHAR)) != '';
+        WHERE code IS NOT NULL
+          AND length(TRIM(CAST(code AS VARCHAR))) BETWEEN 8 AND 14
+          AND (
+              (product_name IS NOT NULL AND TRIM(product_name) != '')
+              OR (ingredients_text IS NOT NULL AND TRIM(ingredients_text) != '')
+          );
     """)
 
-    count = con.execute("SELECT count(*) FROM all_products;").fetchone()[0]
-    print(f"[{datetime.now(timezone.utc).isoformat()}] Prodotti estratti con successo: {count}")
+    total_valid = con.execute("SELECT count(*) FROM all_products;").fetchone()[0]
+    print(f"[{datetime.now(timezone.utc).isoformat()}] Prodotti validi estratti: {total_valid}")
 
-    # Definizione filtri Tier
-    filter_tier1 = """
+    # Pulizia disco preventiva se richiesta: elimina il dump originale da ~2GB
+    if args.delete_input:
+        print(f"[{datetime.now(timezone.utc).isoformat()}] Eliminazione file sorgente {input_path} per liberare spazio su disco runner...")
+        try:
+            input_path.unlink()
+            print(f"[{datetime.now(timezone.utc).isoformat()}] File sorgente eliminato con successo. Spazio disco liberato: ~2 GB.")
+        except Exception as e:
+            print(f"Avviso: impossibile eliminare {input_path}: {e}", file=sys.stderr)
+
+    # Definizione filtri per i 4 Macro-Pacchetti
+    filter_gluten_free = """
         labels_tags ILIKE '%gluten-free%' 
         OR labels_tags ILIKE '%sans-gluten%' 
         OR labels_tags ILIKE '%spiga-sbarrata%' 
         OR labels_tags ILIKE '%senza-glutine%'
+        OR categories_tags ILIKE '%gluten-free%' 
+        OR product_name ILIKE '%senza glutine%' 
+        OR product_name ILIKE '%gluten free%'
     """
 
-    filter_tier2 = f"""
-        ({filter_tier1})
-        OR allergens_tags ILIKE '%gluten%'
-        OR traces_tags ILIKE '%gluten%'
-        OR ingredients_text ILIKE '%glutine%'
-        OR ingredients_text ILIKE '%frumento%'
-        OR ingredients_text ILIKE '%orzo%'
-        OR ingredients_text ILIKE '%segale%'
-        OR ingredients_text ILIKE '%avena%'
+    filter_euro_market = """
+        regexp_matches(LOWER(countries_tags), 'italy|france|germany|spain|united-kingdom')
+        AND ingredients_text != ''
+        AND unique_scans_n >= 1
     """
 
-    filter_tier3 = "1 = 1"
+    filter_america_market = """
+        regexp_matches(LOWER(countries_tags), 'united-states|canada|mexico|argentina|brazil')
+        AND ingredients_text != ''
+        AND unique_scans_n >= 1
+    """
 
-    tiers_config = {
-        "tier1": filter_tier1,
-        "tier2": filter_tier2,
-        "tier3": filter_tier3,
+    packages_config = {
+        "gluten_free": f"""
+            SELECT * FROM all_products
+            WHERE {filter_gluten_free}
+        """,
+        "euro_core": f"""
+            SELECT * FROM all_products
+            WHERE ({filter_gluten_free})
+               OR ({filter_euro_market})
+        """,
+        "america_core": f"""
+            SELECT * FROM all_products
+            WHERE ({filter_gluten_free})
+               OR ({filter_america_market})
+        """,
+        "global_top": f"""
+            SELECT * FROM all_products
+            WHERE ({filter_gluten_free})
+            UNION
+            (SELECT * FROM all_products
+             WHERE ingredients_text != ''
+             ORDER BY unique_scans_n DESC
+             LIMIT 800000)
+        """
     }
 
     manifest = {
-        "version": 1,
+        "version": 2,
         "published_at": now_epoch,
         "delta_7d_since": delta_7d_since,
         "delta_30d_since": delta_30d_since,
-        "tiers": {}
+        "packages": {}
     }
 
-    for tier_name, where_clause in tiers_config.items():
-        print(f"\n--- Generazione {tier_name.upper()} ---")
-        tier_info = {}
+    for pkg_name, query in packages_config.items():
+        print(f"\n=======================================================")
+        print(f"[{datetime.now(timezone.utc).isoformat()}] Generazione pacchetto: {pkg_name.upper()}")
+        print(f"=======================================================")
+        pkg_info = {}
 
-        # 1. Full DB
-        raw_full = outdir / f"{tier_name}_full.db"
-        gz_full = outdir / f"{tier_name}_full.db.gz"
-        print(f"Estrazione {raw_full.name}...")
-        export_tier(con, where_clause, raw_full)
-        print(f"Compressione {gz_full.name}...")
-        size = compress_gzip(raw_full, gz_full)
-        sha = compute_sha256(gz_full)
-        raw_full.unlink()
-        tier_info["full"] = {
-            "file": gz_full.name,
-            "size_bytes": size,
-            "sha256": sha
-        }
+        # 1. Full Package
+        raw_full = outdir / f"{pkg_name}_full.db"
+        print(f"Esportazione Full DB ({raw_full.name})...")
+        pkg_info["full"] = export_package(con, pkg_name, query, raw_full)
+        print(f"-> Full completato: {pkg_info['full']['record_count']} record, {pkg_info['full']['size_bytes']} bytes compressi")
 
         # 2. Delta 7 giorni
-        raw_7d = outdir / f"{tier_name}_delta_7d.db"
-        gz_7d = outdir / f"{tier_name}_delta_7d.db.gz"
-        print(f"Estrazione {raw_7d.name}...")
-        export_tier(con, where_clause, raw_7d, time_cutoff=delta_7d_since)
-        print(f"Compressione {gz_7d.name}...")
-        size_7d = compress_gzip(raw_7d, gz_7d)
-        sha_7d = compute_sha256(gz_7d)
-        raw_7d.unlink()
-        tier_info["delta_7d"] = {
-            "file": gz_7d.name,
-            "size_bytes": size_7d,
-            "sha256": sha_7d
-        }
+        raw_7d = outdir / f"{pkg_name}_delta_7d.db"
+        print(f"Esportazione Delta 7D ({raw_7d.name})...")
+        pkg_info["delta_7d"] = export_package(con, pkg_name, query, raw_7d, time_cutoff=delta_7d_since)
+        print(f"-> Delta 7D completato: {pkg_info['delta_7d']['record_count']} record, {pkg_info['delta_7d']['size_bytes']} bytes compressi")
 
         # 3. Delta 30 giorni
-        raw_30d = outdir / f"{tier_name}_delta_30d.db"
-        gz_30d = outdir / f"{tier_name}_delta_30d.db.gz"
-        print(f"Estrazione {raw_30d.name}...")
-        export_tier(con, where_clause, raw_30d, time_cutoff=delta_30d_since)
-        print(f"Compressione {gz_30d.name}...")
-        size_30d = compress_gzip(raw_30d, gz_30d)
-        sha_30d = compute_sha256(gz_30d)
-        raw_30d.unlink()
-        tier_info["delta_30d"] = {
-            "file": gz_30d.name,
-            "size_bytes": size_30d,
-            "sha256": sha_30d
-        }
+        raw_30d = outdir / f"{pkg_name}_delta_30d.db"
+        print(f"Esportazione Delta 30D ({raw_30d.name})...")
+        pkg_info["delta_30d"] = export_package(con, pkg_name, query, raw_30d, time_cutoff=delta_30d_since)
+        print(f"-> Delta 30D completato: {pkg_info['delta_30d']['record_count']} record, {pkg_info['delta_30d']['size_bytes']} bytes compressi")
 
-        manifest["tiers"][tier_name] = tier_info
+        manifest["packages"][pkg_name] = pkg_info
 
     version_file = outdir / "version.json"
     with open(version_file, "w", encoding="utf-8") as f:
@@ -252,7 +297,10 @@ def main():
     if temp_duckdb_path.exists():
         temp_duckdb_path.unlink()
 
-    print(f"\n[{datetime.now(timezone.utc).isoformat()}] Generazione completata con successo! File manifest creato in {version_file}")
+    print(f"\n[{datetime.now(timezone.utc).isoformat()}] Pipeline completata con successo!")
+    print(f"File manifest generato in: {version_file}")
+    for pkg_name, info in manifest["packages"].items():
+        print(f" - {pkg_name}: full={info['full']['size_bytes']//1024} KB ({info['full']['record_count']} rec), delta_30d={info['delta_30d']['size_bytes']//1024} KB, delta_7d={info['delta_7d']['size_bytes']//1024} KB")
 
 if __name__ == "__main__":
     main()

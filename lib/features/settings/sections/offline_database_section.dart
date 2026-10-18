@@ -275,19 +275,23 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
             options: [
               SettingsDropdownOption(
                 value: OfflineDbTier.none,
-                label: 'settings.offlineDatabase.tierNone'.tr(),
+                label: OfflineDbTier.none.label,
               ),
               SettingsDropdownOption(
-                value: OfflineDbTier.tier1,
-                label: 'settings.offlineDatabase.tier1'.tr(),
+                value: OfflineDbTier.glutenFree,
+                label: OfflineDbTier.glutenFree.label,
               ),
               SettingsDropdownOption(
-                value: OfflineDbTier.tier2,
-                label: 'settings.offlineDatabase.tier2'.tr(),
+                value: OfflineDbTier.euroCore,
+                label: OfflineDbTier.euroCore.label,
               ),
               SettingsDropdownOption(
-                value: OfflineDbTier.tier3,
-                label: 'settings.offlineDatabase.tier3'.tr(),
+                value: OfflineDbTier.americaCore,
+                label: OfflineDbTier.americaCore.label,
+              ),
+              SettingsDropdownOption(
+                value: OfflineDbTier.globalTop,
+                label: OfflineDbTier.globalTop.label,
               ),
             ],
             onSelected: _syncProgress.isInProgress ? (_) {} : _handleTierChange,

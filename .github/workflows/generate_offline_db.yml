@@ -37,7 +37,8 @@ jobs:
         run: |
           python tools/offline_db_generator/generate_offline_db.py \
             --input dump_data/openfoodfacts-products.jsonl.gz \
-            --outdir dist
+            --outdir dist \
+            --delete-input
 
       - name: Publish to GitHub Releases (ODbL 1.0 Public Release)
         env:

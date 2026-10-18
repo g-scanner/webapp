@@ -920,19 +920,19 @@ void main() {
           autoSaveHistory: true,
           preferredLanguage: 'en',
           preferredTheme: 'dark',
-          offlineDbTier: OfflineDbTier.tier2,
+          offlineDbTier: OfflineDbTier.euroCore,
           offlineDbLastSyncedAt: 1770000000,
         );
 
         await DbService.saveSettings(customSettings);
 
         final loaded = await DbService.getLocalSettings();
-        expect(loaded.offlineDbTier, OfflineDbTier.tier2);
+        expect(loaded.offlineDbTier, OfflineDbTier.euroCore);
         expect(loaded.offlineDbLastSyncedAt, 1770000000);
 
         final captured = verify(() => mockDocRef.set(captureAny(), any())).captured;
         final firestoreMap = captured.first as Map<String, dynamic>;
-        expect(firestoreMap['offlineDbTier'], 'tier2');
+        expect(firestoreMap['offlineDbTier'], OfflineDbTier.euroCore.key);
         expect(firestoreMap['offlineDbLastSyncedAt'], 1770000000);
       },
     );
@@ -1057,7 +1057,7 @@ void main() {
           warnAdditives: true,
           autoSaveHistory: true,
           preferredLanguage: 'it',
-          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbTier: OfflineDbTier.glutenFree,
           offlineDbLastSyncedAt: 1770000000,
         );
         await prefs.setString('celiac_settings', json.encode(anonSettings.toJson()));
@@ -1074,12 +1074,12 @@ void main() {
 
         final loaded = await DbService.getLocalSettings();
         expect(loaded.userId, 'new_user_123');
-        expect(loaded.offlineDbTier, OfflineDbTier.tier1);
+        expect(loaded.offlineDbTier, OfflineDbTier.glutenFree);
         expect(loaded.offlineDbLastSyncedAt, 1770000000);
 
         final captured = verify(() => mockDocRef.set(captureAny(), any())).captured;
         final firestoreMap = captured.first as Map<String, dynamic>;
-        expect(firestoreMap['offlineDbTier'], 'tier1');
+        expect(firestoreMap['offlineDbTier'], OfflineDbTier.glutenFree.key);
         expect(firestoreMap['offlineDbLastSyncedAt'], 1770000000);
       },
     );
@@ -1119,7 +1119,7 @@ void main() {
           warnAdditives: true,
           autoSaveHistory: true,
           preferredLanguage: 'it',
-          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbTier: OfflineDbTier.glutenFree,
           offlineDbLastSyncedAt: 1770000000,
         );
         await prefs.setString('celiac_settings', json.encode(anonSettings.toJson()));
@@ -1144,7 +1144,7 @@ void main() {
 
         final loadedSettings = await DbService.getLocalSettings();
         expect(loadedSettings.userId, newAnonUid);
-        expect(loadedSettings.offlineDbTier, OfflineDbTier.tier1);
+        expect(loadedSettings.offlineDbTier, OfflineDbTier.glutenFree);
 
         expect(prefs.getString('last_anonymous_uid'), newAnonUid);
 
@@ -1564,7 +1564,7 @@ void main() {
           warnAdditives: true,
           autoSaveHistory: true,
           preferredLanguage: 'it',
-          offlineDbTier: OfflineDbTier.tier2,
+          offlineDbTier: OfflineDbTier.euroCore,
           offlineDbLastSyncedAt: 1770000000,
           updatedAt: 2000,
         );
@@ -1583,7 +1583,7 @@ void main() {
 
         final merged = await DbService.syncSettingsWithFirestore(localSettings);
 
-        expect(merged.offlineDbTier, OfflineDbTier.tier2);
+        expect(merged.offlineDbTier, OfflineDbTier.euroCore);
         expect(merged.offlineDbLastSyncedAt, 1770000000);
       },
     );
@@ -1592,7 +1592,7 @@ void main() {
       'syncSettingsWithFirestore physically deletes local database when remote tier is none',
       () async {
         OfflineDbService.mockIsDatabaseInstalled = true;
-        await OfflineDbService.setInstalledTier(OfflineDbTier.tier1);
+        await OfflineDbService.setInstalledTier(OfflineDbTier.glutenFree);
         expect(await OfflineDbService.isDatabaseInstalled(), isTrue);
 
         when(() => mockAuth.currentUser).thenReturn(mockUser);
@@ -1622,7 +1622,7 @@ void main() {
           warnAdditives: true,
           autoSaveHistory: true,
           preferredLanguage: 'it',
-          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbTier: OfflineDbTier.glutenFree,
           offlineDbLastSyncedAt: 1770000000,
           updatedAt: 1000,
         );
@@ -1655,7 +1655,7 @@ void main() {
           warnAdditives: true,
           autoSaveHistory: true,
           preferredLanguage: 'it',
-          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbTier: OfflineDbTier.glutenFree,
           reportedBarcodes: ['REMOTE_BARCODE'],
           updatedAt: 5000,
         );
@@ -1668,7 +1668,7 @@ void main() {
           warnAdditives: true,
           autoSaveHistory: true,
           preferredLanguage: 'it',
-          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbTier: OfflineDbTier.glutenFree,
           reportedBarcodes: ['LOCAL_BARCODE'],
           updatedAt: 5000,
         );
@@ -1716,7 +1716,7 @@ void main() {
           autoSaveHistory: false,
           preferredLanguage: 'de',
           preferredTheme: 'dark',
-          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbTier: OfflineDbTier.glutenFree,
           offlineDbLastSyncedAt: 1775000000,
           reportedBarcodes: ['LOCAL_BC'],
           updatedAt: 2000,
@@ -1731,7 +1731,7 @@ void main() {
         expect(merged.autoSaveHistory, isFalse);
         expect(merged.preferredLanguage, 'de');
         expect(merged.preferredTheme, 'dark');
-        expect(merged.offlineDbTier, OfflineDbTier.tier1);
+        expect(merged.offlineDbTier, OfflineDbTier.glutenFree);
         expect(merged.offlineDbLastSyncedAt, 1775000000);
         expect(merged.reportedBarcodes, containsAll(['LOCAL_BC', 'REMOTE_BC']));
 
@@ -1760,7 +1760,7 @@ void main() {
           autoSaveHistory: true,
           preferredLanguage: 'en',
           preferredTheme: 'dark',
-          offlineDbTier: OfflineDbTier.tier2,
+          offlineDbTier: OfflineDbTier.euroCore,
           offlineDbLastSyncedAt: 1775500000,
           reportedBarcodes: ['REMOTE_BC'],
           updatedAt: 3000,
@@ -1790,7 +1790,7 @@ void main() {
         expect(merged.warnAdditives, isFalse);
         expect(merged.preferredLanguage, 'en');
         expect(merged.preferredTheme, 'dark');
-        expect(merged.offlineDbTier, OfflineDbTier.tier2);
+        expect(merged.offlineDbTier, OfflineDbTier.euroCore);
         expect(merged.offlineDbLastSyncedAt, 1775500000);
         expect(merged.reportedBarcodes, containsAll(['LOCAL_BC', 'REMOTE_BC']));
       },

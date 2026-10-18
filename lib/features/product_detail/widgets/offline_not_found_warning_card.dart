@@ -30,7 +30,7 @@ class OfflineNotFoundWarningCard extends StatelessWidget {
       );
     }
 
-    final String fullBodyText = tier != OfflineDbTier.tier3
+    final String fullBodyText = tier != OfflineDbTier.globalTop
         ? '$bodyText ${'product.offlineWarnings.notFoundUpgradeHint'.tr()}'
         : bodyText;
 

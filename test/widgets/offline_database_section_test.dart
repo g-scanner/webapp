@@ -27,9 +27,10 @@ class _MockSectionAssetLoader extends AssetLoader {
           'subtitle': 'Scarica il database dei prodotti per scansionare offline.',
           'tierSelectionTitle': 'Database Offline',
           'tierNone': 'Disattivato (Solo Online)',
-          'tier1': 'Ultra-Light (Solo Celiachia)',
-          'tier2': 'Standard (Consigliato)',
-          'tier3': 'Completo (Full Catalog)',
+          'glutenFree': 'Gluten-Free Globale (~12 MB)',
+          'euroCore': 'Europa Core + Gluten-Free (~65 MB)',
+          'americaCore': 'Americhe Core + Gluten-Free (~55 MB)',
+          'globalTop': 'Global Top Scans (~130 MB)',
           'lastSyncLabel': 'Ultima sincronizzazione',
           'sizeOnDiskLabel': 'Spazio su disco',
           'neverSynced': 'Mai sincronizzato',
@@ -157,7 +158,7 @@ void main() {
         await tester.pumpWidget(
           _buildApp(
             settings: testSettings(
-              tier: OfflineDbTier.tier1,
+              tier: OfflineDbTier.glutenFree,
               lastSyncedAt: 1773000000,
             ),
             onSettingsChange: (_) async {},
@@ -198,11 +199,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Tap dropdown to select Tier 1
+        // Tap dropdown to select Gluten-Free
         await tester.tap(find.byType(PopupMenuButton<OfflineDbTier>));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Ultra-Light (Solo Celiachia)').last);
+        await tester.tap(find.text('Gluten-Free Globale (~12 MB)').last);
         await tester.pump(); // Start sync
         await tester.pump(const Duration(milliseconds: 50));
         await tester.pumpAndSettle();
@@ -234,7 +235,7 @@ void main() {
         await tester.pumpWidget(
           _buildApp(
             settings: testSettings(
-              tier: OfflineDbTier.tier1,
+              tier: OfflineDbTier.glutenFree,
               lastSyncedAt: 1773000000,
             ),
             onSettingsChange: (_) async {},
@@ -242,10 +243,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Tap dropdown and select same Tier 1
+        // Tap dropdown and select same Gluten-Free
         await tester.tap(find.byType(PopupMenuButton<OfflineDbTier>));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Ultra-Light (Solo Celiachia)').last);
+        await tester.tap(find.text('Gluten-Free Globale (~12 MB)').last);
         await tester.pumpAndSettle();
 
         expect(downloadTriggered, isFalse);
@@ -266,7 +267,7 @@ void main() {
         await tester.pumpWidget(
           _buildApp(
             settings: testSettings(
-              tier: OfflineDbTier.tier1,
+              tier: OfflineDbTier.glutenFree,
               lastSyncedAt: 1773000000,
             ),
             onSettingsChange: (updated) async {
@@ -277,10 +278,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Tap dropdown and select Tier 2
+        // Tap dropdown and select Euro Core
         await tester.tap(find.byType(PopupMenuButton<OfflineDbTier>));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Standard (Consigliato)').last);
+        await tester.tap(find.text('Europa Core + Gluten-Free (~65 MB)').last);
         await tester.pump();
         await tester.pumpAndSettle();
 

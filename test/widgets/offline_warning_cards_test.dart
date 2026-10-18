@@ -34,9 +34,10 @@ class _MockWarningAssetLoader extends AssetLoader {
       'settings': {
         'offlineDatabase': {
           'tierNone': 'Disattivato (Solo Online)',
-          'tier1': 'Ultra-Light (Solo Celiachia)',
-          'tier2': 'Standard (Consigliato)',
-          'tier3': 'Completo (Full Catalog)',
+          'glutenFree': 'Gluten-Free Globale (~12 MB)',
+          'euroCore': 'Europa Core + Gluten-Free (~65 MB)',
+          'americaCore': 'Americhe Core + Gluten-Free (~55 MB)',
+          'globalTop': 'Global Top Scans (~130 MB)',
         },
       },
     };
@@ -176,39 +177,39 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('tier1 displays tier name and upgrade hint', (tester) async {
+    testWidgets('glutenFree displays package name and upgrade hint', (tester) async {
       await tester.pumpWidget(
         createCustomWarningApp(
-          const OfflineNotFoundWarningCard(tier: OfflineDbTier.tier1),
+          const OfflineNotFoundWarningCard(tier: OfflineDbTier.glutenFree),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Ultra-Light (Solo Celiachia)'), findsOneWidget);
+      expect(find.textContaining('Gluten-Free Globale (~12 MB)'), findsOneWidget);
       expect(find.textContaining('Prova a installare una versione più ricca del database offline.'), findsOneWidget);
     });
 
-    testWidgets('tier2 displays tier name and upgrade hint', (tester) async {
+    testWidgets('euroCore displays package name and upgrade hint', (tester) async {
       await tester.pumpWidget(
         createCustomWarningApp(
-          const OfflineNotFoundWarningCard(tier: OfflineDbTier.tier2),
+          const OfflineNotFoundWarningCard(tier: OfflineDbTier.euroCore),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Standard (Consigliato)'), findsOneWidget);
+      expect(find.textContaining('Europa Core + Gluten-Free (~65 MB)'), findsOneWidget);
       expect(find.textContaining('Prova a installare una versione più ricca del database offline.'), findsOneWidget);
     });
 
-    testWidgets('tier3 displays tier name but omits upgrade hint', (tester) async {
+    testWidgets('globalTop displays package name but omits upgrade hint', (tester) async {
       await tester.pumpWidget(
         createCustomWarningApp(
-          const OfflineNotFoundWarningCard(tier: OfflineDbTier.tier3),
+          const OfflineNotFoundWarningCard(tier: OfflineDbTier.globalTop),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Completo (Full Catalog)'), findsOneWidget);
+      expect(find.textContaining('Global Top Scans (~130 MB)'), findsOneWidget);
       expect(find.textContaining('Prova a installare una versione più ricca del database offline.'), findsNothing);
     });
 

@@ -267,7 +267,7 @@ void main() {
       final file = File(dbPath);
       await file.writeAsBytes(List.filled(2048, 1));
       OfflineDbService.setMockDatabasePath(dbPath);
-      await OfflineDbService.setInstalledTier(OfflineDbTier.tier1);
+      await OfflineDbService.setInstalledTier(OfflineDbTier.glutenFree);
 
       var called = false;
       final settings = UserSettings(
@@ -276,7 +276,7 @@ void main() {
         warnAdditives: true,
         autoSaveHistory: true,
         preferredLanguage: 'it',
-        offlineDbTier: OfflineDbTier.tier1,
+        offlineDbTier: OfflineDbTier.glutenFree,
       );
 
       await OfflineDbSyncService.autoDownloadIfNeeded(
@@ -292,7 +292,7 @@ void main() {
       final file = File(dbPath);
       await file.writeAsBytes(List.filled(2048, 1));
       OfflineDbService.setMockDatabasePath(dbPath);
-      await OfflineDbService.setInstalledTier(OfflineDbTier.tier1);
+      await OfflineDbService.setInstalledTier(OfflineDbTier.glutenFree);
       expect(await OfflineDbService.isDatabaseInstalled(), isTrue);
 
       var called = false;
@@ -319,15 +319,15 @@ void main() {
       final file = File(dbPath);
       await file.writeAsBytes(List.filled(2048, 1));
       OfflineDbService.setMockDatabasePath(dbPath);
-      await OfflineDbService.setInstalledTier(OfflineDbTier.tier1);
+      await OfflineDbService.setInstalledTier(OfflineDbTier.glutenFree);
       expect(await OfflineDbService.isDatabaseInstalled(), isTrue);
 
       final manifestJson = json.encode({
-        'version': 1,
+        'version': 2,
         'published_at': 1773320000,
-        'tiers': {
-          'tier2': {
-            'full': {'file': 'tier2_full.db.gz'},
+        'packages': {
+          'euro_core': {
+            'full': {'file': 'euro_core_full.db.gz'},
           },
         },
       });
@@ -339,7 +339,7 @@ void main() {
         if (request.url.path.endsWith('version.json')) {
           return http.Response(manifestJson, 200);
         }
-        if (request.url.path.endsWith('tier2_full.db.gz')) {
+        if (request.url.path.endsWith('euro_core_full.db.gz')) {
           return http.Response.bytes(gzippedDbBytes, 200);
         }
         return http.Response('Not found', 404);
@@ -352,7 +352,7 @@ void main() {
         warnAdditives: true,
         autoSaveHistory: true,
         preferredLanguage: 'it',
-        offlineDbTier: OfflineDbTier.tier2,
+        offlineDbTier: OfflineDbTier.euroCore,
         offlineDbLastSyncedAt: null,
       );
 
@@ -371,18 +371,18 @@ void main() {
       }
 
       expect(updatedSettings, isNotNull);
-      expect(updatedSettings!.offlineDbTier, equals(OfflineDbTier.tier2));
+      expect(updatedSettings!.offlineDbTier, equals(OfflineDbTier.euroCore));
       expect(await File(dbPath).exists(), isTrue);
-      expect(await OfflineDbService.getInstalledTier(), equals(OfflineDbTier.tier2));
+      expect(await OfflineDbService.getInstalledTier(), equals(OfflineDbTier.euroCore));
     });
 
     test('triggers auto-download and calls onSettingsChange when DB is not installed', () async {
       final manifestJson = json.encode({
-        'version': 1,
+        'version': 2,
         'published_at': 1773320000,
-        'tiers': {
-          'tier1': {
-            'full': {'file': 'tier1_full.db.gz'},
+        'packages': {
+          'gluten_free': {
+            'full': {'file': 'gluten_free_full.db.gz'},
           },
         },
       });
@@ -394,7 +394,7 @@ void main() {
         if (request.url.path.endsWith('version.json')) {
           return http.Response(manifestJson, 200);
         }
-        if (request.url.path.endsWith('tier1_full.db.gz')) {
+        if (request.url.path.endsWith('gluten_free_full.db.gz')) {
           return http.Response.bytes(gzippedDbBytes, 200);
         }
         return http.Response('Not found', 404);
@@ -407,7 +407,7 @@ void main() {
         warnAdditives: true,
         autoSaveHistory: true,
         preferredLanguage: 'it',
-        offlineDbTier: OfflineDbTier.tier1,
+        offlineDbTier: OfflineDbTier.glutenFree,
         offlineDbLastSyncedAt: null,
       );
 
@@ -426,7 +426,7 @@ void main() {
       }
 
       expect(updatedSettings, isNotNull);
-      expect(updatedSettings!.offlineDbTier, equals(OfflineDbTier.tier1));
+      expect(updatedSettings!.offlineDbTier, equals(OfflineDbTier.glutenFree));
       expect(updatedSettings!.offlineDbLastSyncedAt, isNotNull);
       expect(await File(dbPath).exists(), isTrue);
     });
@@ -440,11 +440,11 @@ void main() {
 
       const publishedAt = 1773320000;
       final manifestJson = json.encode({
-        'version': 1,
+        'version': 2,
         'published_at': publishedAt,
-        'tiers': {
-          'tier1': {
-            'full': {'file': 'tier1_full.db.gz'},
+        'packages': {
+          'gluten_free': {
+            'full': {'file': 'gluten_free_full.db.gz'},
           },
         },
       });
@@ -462,7 +462,7 @@ void main() {
       });
 
       final progressList = await OfflineDbSyncService.syncDatabase(
-        tier: OfflineDbTier.tier1,
+        tier: OfflineDbTier.glutenFree,
         currentLastSyncedAt: publishedAt + 100,
         client: mockClient,
       ).toList();

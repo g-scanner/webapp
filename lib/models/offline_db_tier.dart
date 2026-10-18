@@ -3,12 +3,13 @@
 
 import 'package:easy_localization/easy_localization.dart';
 
-/// Livello di database SQLite scaricabile per la consultazione offline.
+/// Pacchetto di database SQLite scaricabile per la consultazione offline.
 enum OfflineDbTier {
   none,
-  tier1, // Ultra-Light: Solo Celiachia (~20 MB)
-  tier2, // Standard: Celiachia + Cibi mercato (~90 MB)
-  tier3, // Completo: Full Catalog OFF (~350 MB)
+  glutenFree,  // Tutti i prodotti Gluten-Free del MONDO (~10-15 MB)
+  euroCore,    // gluten_free + Consumi quotidiani IT, FR, DE, ES, UK (~60-70 MB)
+  americaCore, // gluten_free + Consumi quotidiani USA, CA, MX, AR, BR (~50-60 MB)
+  globalTop,   // gluten_free + Top 800.000 prodotti più scansionati al mondo (~120-140 MB)
 }
 
 extension OfflineDbTierExtension on OfflineDbTier {
@@ -16,12 +17,14 @@ extension OfflineDbTierExtension on OfflineDbTier {
     switch (this) {
       case OfflineDbTier.none:
         return 'none';
-      case OfflineDbTier.tier1:
-        return 'tier1';
-      case OfflineDbTier.tier2:
-        return 'tier2';
-      case OfflineDbTier.tier3:
-        return 'tier3';
+      case OfflineDbTier.glutenFree:
+        return 'gluten_free';
+      case OfflineDbTier.euroCore:
+        return 'euro_core';
+      case OfflineDbTier.americaCore:
+        return 'america_core';
+      case OfflineDbTier.globalTop:
+        return 'global_top';
     }
   }
 
@@ -29,23 +32,27 @@ extension OfflineDbTierExtension on OfflineDbTier {
     switch (this) {
       case OfflineDbTier.none:
         return 'settings.offlineDatabase.tierNone'.tr();
-      case OfflineDbTier.tier1:
-        return 'settings.offlineDatabase.tier1'.tr();
-      case OfflineDbTier.tier2:
-        return 'settings.offlineDatabase.tier2'.tr();
-      case OfflineDbTier.tier3:
-        return 'settings.offlineDatabase.tier3'.tr();
+      case OfflineDbTier.glutenFree:
+        return 'settings.offlineDatabase.glutenFree'.tr();
+      case OfflineDbTier.euroCore:
+        return 'settings.offlineDatabase.euroCore'.tr();
+      case OfflineDbTier.americaCore:
+        return 'settings.offlineDatabase.americaCore'.tr();
+      case OfflineDbTier.globalTop:
+        return 'settings.offlineDatabase.globalTop'.tr();
     }
   }
 
   static OfflineDbTier fromKey(String? key) {
     switch (key) {
-      case 'tier1':
-        return OfflineDbTier.tier1;
-      case 'tier2':
-        return OfflineDbTier.tier2;
-      case 'tier3':
-        return OfflineDbTier.tier3;
+      case 'gluten_free':
+        return OfflineDbTier.glutenFree;
+      case 'euro_core':
+        return OfflineDbTier.euroCore;
+      case 'america_core':
+        return OfflineDbTier.americaCore;
+      case 'global_top':
+        return OfflineDbTier.globalTop;
       case 'none':
       default:
         return OfflineDbTier.none;

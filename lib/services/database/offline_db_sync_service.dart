@@ -251,10 +251,10 @@ class OfflineDbSyncService {
     final delta7dSince = manifest['delta_7d_since'] as int? ?? (publishedAt - 7 * 86400);
     final delta30dSince = manifest['delta_30d_since'] as int? ?? (publishedAt - 30 * 86400);
 
-    final tiersMap = manifest['tiers'] as Map<String, dynamic>? ?? {};
-    final tierData = tiersMap[tier.key] as Map<String, dynamic>?;
-    if (tierData == null) {
-      yield const OfflineSyncProgress.error("tier_not_found_in_manifest");
+    final packagesMap = manifest['packages'] as Map<String, dynamic>? ?? {};
+    final packageData = packagesMap[tier.key] as Map<String, dynamic>?;
+    if (packageData == null) {
+      yield const OfflineSyncProgress.error("package_not_found_in_manifest");
       return;
     }
 
@@ -284,13 +284,13 @@ class OfflineDbSyncService {
     String fileName;
     switch (action) {
       case OfflineSyncAction.fastDelta7d:
-        fileName = tierData['delta_7d']?['file'] ?? '${tier.key}_delta_7d.db.gz';
+        fileName = packageData['delta_7d']?['file'] ?? '${tier.key}_delta_7d.db.gz';
         break;
       case OfflineSyncAction.extendedDelta30d:
-        fileName = tierData['delta_30d']?['file'] ?? '${tier.key}_delta_30d.db.gz';
+        fileName = packageData['delta_30d']?['file'] ?? '${tier.key}_delta_30d.db.gz';
         break;
       case OfflineSyncAction.fullDownload:
-        fileName = tierData['full']?['file'] ?? '${tier.key}_full.db.gz';
+        fileName = packageData['full']?['file'] ?? '${tier.key}_full.db.gz';
         break;
     }
 
