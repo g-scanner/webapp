@@ -560,19 +560,12 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             );
             break; // Scansione completata con successo!
           } on OfflineWithoutDbException catch (_) {
-            scanRetries++;
-            final currentElapsed = DateTime.now().difference(scanStartTime);
-            if (scanRetries > maxScanRetries ||
-                currentElapsed >= maxScanDuration ||
-                !mounted) {
-              rethrow;
-            }
-            await Future.delayed(retryDelay);
-            final hasNet = await ConnectivityHelper.hasInternetConnection();
-            if (!hasNet) {
-              rethrow;
-            }
+            rethrow;
           } on OffNetworkException catch (_) {
+            final hasNet = await ConnectivityHelper.hasInternetConnection();
+            if (!hasNet) {
+              rethrow;
+            }
             scanRetries++;
             final currentElapsed = DateTime.now().difference(scanStartTime);
             if (scanRetries > maxScanRetries ||
@@ -581,10 +574,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               rethrow;
             }
             await Future.delayed(retryDelay);
-            final hasNet = await ConnectivityHelper.hasInternetConnection();
-            if (!hasNet) {
-              rethrow;
-            }
           } catch (_) {
             rethrow;
           }
@@ -1070,18 +1059,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> handleDeleteHistoryByBarcode(String barcode) async {
+    // 1. Aggiornamento ottimistico immediato in UI (0 ms)
+    if (mounted) {
+      setState(() {
+        history.removeWhere((item) => item.barcode == barcode);
+      });
+    }
+
+    // 2. Persistenza locale SQLite & tombstone + sync remoto asincrono
     try {
       await DbService.deleteHistoryByBarcodeLocal(barcode);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('common.actions.deleteError'.tr()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-      return;
+      debugPrint("Error deleting history by barcode: $e");
     }
     await _loadLocalHistory();
   }
@@ -1101,18 +1090,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       return;
     }
 
+    // 1. Aggiornamento ottimistico immediato in UI (0 ms)
+    if (mounted) {
+      setState(() {
+        history.removeWhere((item) => item.id == id);
+      });
+    }
+
+    // 2. Persistenza locale SQLite & tombstone + sync remoto asincrono
     try {
       await DbService.deleteHistoryItemLocal(id);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('common.actions.deleteError'.tr()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-      return;
+      debugPrint("Error deleting history item: $e");
     }
     await _loadLocalHistory();
   }
@@ -1149,60 +1138,57 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       }
     }
 
-    try {
-      await DbService.deleteReportFromDb(reportId);
-      await DbService.deleteLocalReport(reportId);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('common.actions.deleteError'.tr()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-      return;
-    }
-
-    if (mounted && barcode != null) {
+    // 1. Aggiornamento ottimistico immediato in UI (0 ms)
+    if (mounted) {
       setState(() {
-        reportedSessionBarcodes.remove(barcode);
+        reports.removeWhere((r) => r.id == reportId);
 
-        final pIdx = products.indexWhere((p) => p.barcode == barcode);
-        if (pIdx != -1) {
-          final p = products[pIdx];
-          final updatedProd = Product(
-            barcode: p.barcode,
-            nameMap: p.nameMap,
-            brandMap: p.brandMap,
-            ingredientsMap: p.ingredientsMap,
-            allergensMap: p.allergensMap,
-            imageUrl: p.imageUrl,
-            lastUpdated: p.lastUpdated,
-            pendingReportsCount: (p.pendingReportsCount - 1).clamp(0, 9999),
-            fetchedFromOffAt: p.fetchedFromOffAt,
+        if (barcode != null) {
+          reportedSessionBarcodes.remove(barcode);
+
+          final pIdx = products.indexWhere((p) => p.barcode == barcode);
+          if (pIdx != -1) {
+            final p = products[pIdx];
+            final updatedProd = Product(
+              barcode: p.barcode,
+              nameMap: p.nameMap,
+              brandMap: p.brandMap,
+              ingredientsMap: p.ingredientsMap,
+              allergensMap: p.allergensMap,
+              imageUrl: p.imageUrl,
+              lastUpdated: p.lastUpdated,
+              pendingReportsCount: (p.pendingReportsCount - 1).clamp(0, 9999),
+              fetchedFromOffAt: p.fetchedFromOffAt,
+            );
+            products[pIdx] = updatedProd;
+            DbService.upsertLocalProduct(updatedProd);
+            if (_openProductNotifiers.containsKey(barcode)) {
+              _openProductNotifiers[barcode]!.value = updatedProd;
+            }
+            if (_openReportIdNotifiers.containsKey(barcode)) {
+              _openReportIdNotifiers[barcode]!.value = null;
+            }
+          }
+
+          final updatedBarcodes = List<String>.from(userSettings.reportedBarcodes)
+            ..remove(barcode);
+          userSettings = userSettings.copyWith(
+            userId: userSettings.userId ?? userId,
+            reportedBarcodes: updatedBarcodes,
           );
-          products[pIdx] = updatedProd;
-          DbService.upsertLocalProduct(updatedProd);
-          if (_openProductNotifiers.containsKey(barcode)) {
-            _openProductNotifiers[barcode]!.value = updatedProd;
-          }
-          if (_openReportIdNotifiers.containsKey(barcode)) {
-            _openReportIdNotifiers[barcode]!.value = null;
-          }
         }
-
-        final updatedBarcodes = List<String>.from(userSettings.reportedBarcodes)
-          ..remove(barcode);
-        userSettings = userSettings.copyWith(
-          userId: userSettings.userId ?? userId,
-          reportedBarcodes: updatedBarcodes,
-        );
       });
     }
 
-    DbService.saveLocalSettings(userSettings);
-    DbService.saveSettings(userSettings);
+    // 2. Persistenza locale SQLite & tombstone + sync cloud asincrono
+    try {
+      await DbService.deleteLocalReport(reportId);
+      DbService.deleteReportFromDb(reportId);
+      DbService.saveLocalSettings(userSettings);
+      DbService.saveSettings(userSettings);
+    } catch (e) {
+      debugPrint("Error deleting report: $e");
+    }
     await _loadLocalReports();
   }
 

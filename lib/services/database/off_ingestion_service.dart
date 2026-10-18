@@ -47,8 +47,21 @@ class OffIngestionService {
       }
 
       // 1c. LIVELLO C: HARD STALE (>30 giorni) O INCOMPLETO
-      // Per sicurezza alimentare, se c'è connessione tentiamo un refresh SINCRONO da OFF
-      // prima di restituire il dato potenzialmente obsoleto all'utente.
+      // Se il DB offline è installato e contiene il barcode, lo prediligiamo subito
+      // evitando lentezze da rete debole:
+      final bool hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
+      if (hasOfflineDb) {
+        final offlineProduct = await OfflineDbService.searchProduct(barcode);
+        if (offlineProduct != null) {
+          await LocalCacheService.upsertLocalProduct(offlineProduct);
+          if (settings.autoSaveHistory) {
+            await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
+          }
+          return ScanResult.offline(offlineProduct);
+        }
+      }
+
+      // Se non è nel DB offline (o nessun DB offline), tentiamo un refresh SINCRONO da OFF se c'è connessione:
       final bool isConnected = await ConnectivityHelper.hasInternetConnection();
       if (isConnected) {
         final freshResult = await fetchOffProduct(barcode, settings);
@@ -62,26 +75,10 @@ class OffIngestionService {
             saveToFirestore: true,
           );
         }
-        // Se OFF ha risposto con networkError (es. server down momentaneo):
-        // procediamo verificando prima il DB offline (se presente) o la cache locale.
       }
 
-      // Se siamo offline (o OFF non raggiungibile), controlliamo se il DB offline è installato
-      // e contiene informazioni per questo barcode: in tal caso le prediligiamo assolutamente rispetto
-      // a un dato in cache locale obsoleto (>30 giorni)!
-      final bool hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
-      if (hasOfflineDb) {
-        final offlineProduct = await OfflineDbService.searchProduct(barcode);
-        if (offlineProduct != null) {
-          await LocalCacheService.upsertLocalProduct(offlineProduct);
-          if (settings.autoSaveHistory) {
-            await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
-          }
-          return ScanResult.offline(offlineProduct);
-        }
-      }
-
-      // Fallback finale: il prodotto non è presente nel DB offline (o nessun DB installato).
+      // Fallback finale: il prodotto non è presente nel DB offline (o nessun DB installato),
+      // e la rete è assente o ha fallito.
       // Restituiamo ScanResult.stale con i dati di cache locale e banner di avviso.
       if (settings.autoSaveHistory) {
         await HistoryDbService.saveHistoryItem(db, auth, localProduct);
@@ -89,39 +86,39 @@ class OffIngestionService {
       return ScanResult.stale(localProduct);
     }
 
-    // 2. CONTROLLO PREVENTIVO CONNETTIVITÀ (Fail-Fast):
+    // 2. VERIFICA DB OFFLINE (Priorità Assoluta per Responsività su Rete Debole / Offline):
+    final bool hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
+    if (hasOfflineDb) {
+      final offlineProduct = await OfflineDbService.searchProduct(barcode);
+      if (offlineProduct != null) {
+        await LocalCacheService.upsertLocalProduct(offlineProduct);
+        if (settings.autoSaveHistory) {
+          await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
+        }
+        return ScanResult.offline(offlineProduct);
+      }
+    }
+
+    // 3. CONTROLLO PREVENTIVO CONNETTIVITÀ (Fail-Fast):
     // Se non c'è rete:
-    // a) Se il DB offline è installato, cerca nel DB locale.
-    // b) Se trovato: restituisce ScanResult.offline (NO cache, NO firestore).
-    // c) Se non trovato nel DB locale: restituisce ScanResult.offlineNotFound (volatile).
-    // d) Se il DB non è installato, solleva OfflineWithoutDbException (0 ms).
+    // a) Se il DB offline è installato, il barcode non era presente -> ScanResult.offlineNotFound
+    // b) Se il DB non è installato -> solleva OfflineWithoutDbException (0 ms)
     final bool isConnected =
         await ConnectivityHelper.hasInternetConnection();
     if (!isConnected) {
-      final bool hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
       if (hasOfflineDb) {
-        final offlineProduct = await OfflineDbService.searchProduct(barcode);
-        if (offlineProduct != null) {
-          // Salva localmente in SQLite per la cronologia offline (MAI su Firestore)
-          await LocalCacheService.upsertLocalProduct(offlineProduct);
-          if (settings.autoSaveHistory) {
-            await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
-          }
-          return ScanResult.offline(offlineProduct);
-        } else {
-          final notFoundProduct = OfflineDbService.createOfflineNotFoundProduct(barcode);
-          // Salva localmente in SQLite per la cronologia offline (MAI su Firestore)
-          await LocalCacheService.upsertLocalProduct(notFoundProduct);
-          if (settings.autoSaveHistory) {
-            await HistoryDbService.saveHistoryItem(db, auth, notFoundProduct);
-          }
-          return ScanResult.offlineNotFound(notFoundProduct);
+        final notFoundProduct =
+            OfflineDbService.createOfflineNotFoundProduct(barcode);
+        await LocalCacheService.upsertLocalProduct(notFoundProduct);
+        if (settings.autoSaveHistory) {
+          await HistoryDbService.saveHistoryItem(db, auth, notFoundProduct);
         }
+        return ScanResult.offlineNotFound(notFoundProduct);
       }
       throw const OfflineWithoutDbException();
     }
 
-    // 3. FIRESTORE (`products/{barcode}`): Cerca su Firestore se manca in locale
+    // 4. FIRESTORE (`products/{barcode}`): Cerca su Firestore se manca in locale
     Product? remoteProduct;
     try {
       remoteProduct = await LocalCacheService.getProductByBarcode(db, barcode);
@@ -173,7 +170,7 @@ class OffIngestionService {
       debugPrint("Firestore product lookup failed: $e");
     }
 
-    // 4. PRODOTTO NUOVO (OFF API): Se manca sia in locale che in Firestore, chiama OFF
+    // 5. PRODOTTO NUOVO (OFF API): Se manca sia in locale che in Firestore, chiama OFF
     final offResult = await fetchOffProduct(barcode, settings);
 
     if (offResult.status == OffFetchStatus.found && offResult.product != null) {
@@ -209,19 +206,15 @@ class OffIngestionService {
       );
     }
 
-    // ⚠️ ERRORE DI RETE / TIMEOUT:
-    // Se la rete è assente o non risponde entro il timeout, verifichiamo se abbiamo il DB offline:
-    final bool hasOfflineDbFallback = await OfflineDbService.isDatabaseInstalled();
-    if (hasOfflineDbFallback) {
-      final offlineProduct = await OfflineDbService.searchProduct(barcode);
-      if (offlineProduct != null) {
-        // Salva localmente in SQLite per la cronologia offline (MAI su Firestore)
-        await LocalCacheService.upsertLocalProduct(offlineProduct);
-        if (settings.autoSaveHistory) {
-          await HistoryDbService.saveHistoryItem(db, auth, offlineProduct);
-        }
-        return ScanResult.offline(offlineProduct);
+    // 6. ERRORE DI RETE / TIMEOUT (OFF non risponde / Rete debole):
+    if (hasOfflineDb) {
+      final notFoundProduct =
+          OfflineDbService.createOfflineNotFoundProduct(barcode);
+      await LocalCacheService.upsertLocalProduct(notFoundProduct);
+      if (settings.autoSaveHistory) {
+        await HistoryDbService.saveHistoryItem(db, auth, notFoundProduct);
       }
+      return ScanResult.offlineNotFound(notFoundProduct);
     }
 
     // Nessun DB locale e chiamata fallita: non salvare ghost e rilancia eccezione

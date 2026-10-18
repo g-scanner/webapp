@@ -2188,5 +2188,154 @@ void main() {
       verify(() => mockBatch.commit()).called(1);
     });
   });
+
+  group('GROUP 12 – Tombstones & Optimistic Local-First Deletion', () {
+    test('deleteHistoryItemLocal records tombstone in SharedPreferences', () async {
+      await DbService.deleteHistoryItemLocal('hist_tombstone_item_1');
+
+      final prefs = await SharedPreferences.getInstance();
+      final tombstones = prefs.getStringList('deleted_history_ids_sync_filter');
+      expect(tombstones, isNotNull);
+      expect(tombstones!.contains('hist_tombstone_item_1'), isTrue);
+    });
+
+    test('deleteHistoryByBarcodeLocal records tombstone in SharedPreferences', () async {
+      await DbService.deleteHistoryByBarcodeLocal('800_TOMBSTONE_BARCODE');
+
+      final prefs = await SharedPreferences.getInstance();
+      final tombstones = prefs.getStringList('deleted_barcodes_sync_filter');
+      expect(tombstones, isNotNull);
+      expect(tombstones!.contains('800_TOMBSTONE_BARCODE'), isTrue);
+    });
+
+    test('syncHistoryWithFirestore filters out and deletes remote docs matching tombstones', () async {
+      when(() => mockAuth.currentUser).thenReturn(mockUser);
+      when(() => mockUser.isAnonymous).thenReturn(false);
+      when(() => mockUser.uid).thenReturn('user_tombstone_sync');
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('deleted_history_ids_sync_filter', ['tombstone_id_1']);
+      await prefs.setStringList('deleted_barcodes_sync_filter', ['800_TOMB_BARCODE']);
+
+      final mockUserHistoryCol = MockCollectionReference();
+      final mockHistSnap = MockQuerySnapshot();
+      final mockQuery = MockQuery();
+
+      final docTombstoneId = MockQueryDocumentSnapshot();
+      final docTombstoneBarcode = MockQueryDocumentSnapshot();
+      final docValid = MockQueryDocumentSnapshot();
+
+      final refTombstoneId = MockDocumentReference();
+      final refTombstoneBarcode = MockDocumentReference();
+      final refValid = MockDocumentReference();
+
+      when(() => docTombstoneId.data()).thenReturn({
+        'id': 'tombstone_id_1',
+        'barcode': '800_OTHER_BARCODE',
+        'scannedAt': '2026-10-18T10:00:00Z',
+      });
+      when(() => docTombstoneId.reference).thenReturn(refTombstoneId);
+      when(() => refTombstoneId.delete()).thenAnswer((_) async {});
+
+      when(() => docTombstoneBarcode.data()).thenReturn({
+        'id': 'some_other_id',
+        'barcode': '800_TOMB_BARCODE',
+        'scannedAt': '2026-10-18T11:00:00Z',
+      });
+      when(() => docTombstoneBarcode.reference).thenReturn(refTombstoneBarcode);
+      when(() => refTombstoneBarcode.delete()).thenAnswer((_) async {});
+
+      when(() => docValid.data()).thenReturn({
+        'id': 'valid_id_3',
+        'barcode': '800_VALID_BARCODE',
+        'scannedAt': '2026-10-18T12:00:00Z',
+      });
+      when(() => docValid.reference).thenReturn(refValid);
+
+      when(() => mockDb.collection('users/user_tombstone_sync/history'))
+          .thenReturn(mockUserHistoryCol);
+      when(() => mockUserHistoryCol.orderBy('scannedAt', descending: true))
+          .thenReturn(mockQuery);
+      when(() => mockQuery.limit(100)).thenReturn(mockQuery);
+      when(() => mockQuery.get()).thenAnswer((_) async => mockHistSnap);
+      when(() => mockHistSnap.docs).thenReturn([
+        docTombstoneId,
+        docTombstoneBarcode,
+        docValid,
+      ]);
+
+      final syncedHistory = await DbService.syncHistoryWithFirestore();
+
+      expect(syncedHistory.length, equals(1));
+      expect(syncedHistory.first.id, equals('valid_id_3'));
+      verify(() => refTombstoneId.delete()).called(1);
+      verify(() => refTombstoneBarcode.delete()).called(1);
+      verifyNever(() => refValid.delete());
+    });
+
+    test('deleteLocalReport records tombstone in SharedPreferences', () async {
+      await DbService.deleteLocalReport('rep_tombstone_456');
+
+      final prefs = await SharedPreferences.getInstance();
+      final tombstones = prefs.getStringList('deleted_reports_sync_filter');
+      expect(tombstones, isNotNull);
+      expect(tombstones!.contains('rep_tombstone_456'), isTrue);
+    });
+
+    test('syncReportsWithFirestore filters out and deletes remote reports matching tombstones', () async {
+      when(() => mockAuth.currentUser).thenReturn(mockUser);
+      when(() => mockUser.isAnonymous).thenReturn(false);
+      when(() => mockUser.uid).thenReturn('user_tombstone_reports');
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('deleted_reports_sync_filter', ['rep_tombstone_456']);
+
+      final mockQuery = MockQuery();
+      final mockSnap = MockQuerySnapshot();
+      final docTombstone = MockQueryDocumentSnapshot();
+      final docValid = MockQueryDocumentSnapshot();
+      final refTombstone = MockDocumentReference();
+      final refValid = MockDocumentReference();
+
+      when(() => docTombstone.data()).thenReturn({
+        'id': 'rep_tombstone_456',
+        'barcode': '800_REP_TOMB',
+        'productName': 'Tombstone Report',
+        'brand': 'Brand',
+        'type': 'label_unclear',
+        'comments': 'Comments',
+        'submittedAt': '2026-10-18T10:00:00Z',
+        'status': 'open',
+        'userId': 'user_tombstone_reports',
+      });
+      when(() => docTombstone.reference).thenReturn(refTombstone);
+      when(() => refTombstone.delete()).thenAnswer((_) async {});
+
+      when(() => docValid.data()).thenReturn({
+        'id': 'rep_valid_789',
+        'barcode': '800_REP_VALID',
+        'productName': 'Valid Report',
+        'brand': 'Brand',
+        'type': 'label_unclear',
+        'comments': 'Comments',
+        'submittedAt': '2026-10-18T11:00:00Z',
+        'status': 'open',
+        'userId': 'user_tombstone_reports',
+      });
+      when(() => docValid.reference).thenReturn(refValid);
+
+      when(() => mockReportsCol.where('userId', isEqualTo: 'user_tombstone_reports'))
+          .thenReturn(mockQuery);
+      when(() => mockQuery.get()).thenAnswer((_) async => mockSnap);
+      when(() => mockSnap.docs).thenReturn([docTombstone, docValid]);
+
+      final syncedReports = await DbService.syncReportsWithFirestore();
+
+      expect(syncedReports.length, equals(1));
+      expect(syncedReports.first.id, equals('rep_valid_789'));
+      verify(() => refTombstone.delete()).called(1);
+      verifyNever(() => refValid.delete());
+    });
+  });
 }
 

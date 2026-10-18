@@ -61,11 +61,13 @@ class HistoryDbService {
       await _historyDao.insertHistoryItem(userId, historyItem);
 
       if (user != null && !user.isAnonymous) {
-        await db
+        db
             .collection("users/${user.uid}/history")
             .doc(id)
             .set(historyItem.toJson())
-            .timeout(const Duration(seconds: 3));
+            .catchError((e) {
+          debugPrint("Failed saving history item to Firestore: $e");
+        });
       }
     } catch (e) {
       debugPrint("Failed saving history item to SQLite: $e");
@@ -136,8 +138,10 @@ class HistoryDbService {
     }
     try {
       final prefs = await SharedPreferences.getInstance();
-      final deletedFilter =
+      final deletedBarcodes =
           prefs.getStringList('deleted_barcodes_sync_filter')?.toSet() ?? {};
+      final deletedIds =
+          prefs.getStringList('deleted_history_ids_sync_filter')?.toSet() ?? {};
 
       final snap = await db
           .collection("users/${user.uid}/history")
@@ -149,7 +153,7 @@ class HistoryDbService {
       final List<ScanHistoryItem> remoteHistory = [];
       for (final doc in snap.docs) {
         final item = ScanHistoryItem.fromJson(doc.data());
-        if (deletedFilter.contains(item.barcode)) {
+        if (deletedBarcodes.contains(item.barcode) || deletedIds.contains(item.id)) {
           // Elimina definitivamente la voce fantasma da Firestore
           doc.reference.delete().catchError((_) => null);
         } else {
@@ -180,6 +184,8 @@ class HistoryDbService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(key);
       await prefs.setStringList(key, []);
+      await prefs.remove('deleted_barcodes_sync_filter');
+      await prefs.remove('deleted_history_ids_sync_filter');
 
       if (user != null && !user.isAnonymous) {
         final q = await db
@@ -235,7 +241,7 @@ class HistoryDbService {
           prefs.getStringList('deleted_barcodes_sync_filter') ?? [];
       if (!deletedFilter.contains(barcode)) {
         deletedFilter.add(barcode);
-        if (deletedFilter.length > 50) deletedFilter.removeAt(0);
+        if (deletedFilter.length > 100) deletedFilter.removeAt(0);
         await prefs.setStringList(
           'deleted_barcodes_sync_filter',
           deletedFilter,
@@ -243,20 +249,19 @@ class HistoryDbService {
       }
 
       if (user != null && !user.isAnonymous) {
-        try {
-          final snapshot = await db
-              .collection("users/${user.uid}/history")
-              .where("barcode", isEqualTo: barcode)
-              .get()
-              .timeout(const Duration(seconds: 2));
+        db
+            .collection("users/${user.uid}/history")
+            .where("barcode", isEqualTo: barcode)
+            .get()
+            .then((snapshot) {
           final batch = db.batch();
           for (var doc in snapshot.docs) {
             batch.delete(doc.reference);
           }
-          await batch.commit().timeout(const Duration(seconds: 2));
-        } catch (e) {
+          return batch.commit();
+        }).catchError((e) {
           debugPrint("Firestore delete history warning: $e");
-        }
+        });
       }
     } catch (e) {
       debugPrint("Could not delete history items by barcode: $e");
@@ -287,16 +292,26 @@ class HistoryDbService {
         await prefs.setStringList(key, localHist);
       }
 
+      // Registra nel filtro degli ID cancellati per evitare resurrezione su sync
+      final deletedFilter =
+          prefs.getStringList('deleted_history_ids_sync_filter') ?? [];
+      if (!deletedFilter.contains(id)) {
+        deletedFilter.add(id);
+        if (deletedFilter.length > 100) deletedFilter.removeAt(0);
+        await prefs.setStringList(
+          'deleted_history_ids_sync_filter',
+          deletedFilter,
+        );
+      }
+
       if (user != null && !user.isAnonymous) {
-        try {
-          await db
-              .collection("users/${user.uid}/history")
-              .doc(id)
-              .delete()
-              .timeout(const Duration(seconds: 2));
-        } catch (e) {
+        db
+            .collection("users/${user.uid}/history")
+            .doc(id)
+            .delete()
+            .catchError((e) {
           debugPrint("Firestore delete history item warning: $e");
-        }
+        });
       }
     } catch (e) {
       debugPrint("Could not delete history item: $e");

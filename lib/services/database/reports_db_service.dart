@@ -72,13 +72,26 @@ class ReportsDbService {
       return fetchUserReports(auth);
     }
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final deletedFilter =
+          prefs.getStringList('deleted_reports_sync_filter')?.toSet() ?? {};
+
       final snap = await db
           .collection(reportsCollection)
           .where("userId", isEqualTo: user.uid)
-          .get();
-      final remoteReports = snap.docs
-          .map((d) => ProductReport.fromJson(d.data()))
-          .toList();
+          .get()
+          .timeout(const Duration(seconds: 4));
+
+      final List<ProductReport> remoteReports = [];
+      for (final d in snap.docs) {
+        final report = ProductReport.fromJson(d.data());
+        if (deletedFilter.contains(report.id)) {
+          // Elimina definitivamente la segnalazione fantasma da Firestore
+          d.reference.delete().catchError((_) => null);
+        } else {
+          remoteReports.add(report);
+        }
+      }
 
       remoteReports.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
 
@@ -160,14 +173,17 @@ class ReportsDbService {
   ) async {
     try {
       final reportRef = db.collection(reportsCollection).doc(reportId);
-      final reportSnap = await reportRef.get();
+      final reportSnap = await reportRef.get().timeout(const Duration(seconds: 3));
       if (!reportSnap.exists) return;
 
       final barcode = reportSnap.data()?['barcode'] as String?;
       final nowIso = DateTime.now().toIso8601String();
 
       // Leggi voti del report prima del batch
-      final votesQuery = await reportRef.collection('votes').get();
+      final votesQuery = await reportRef
+          .collection('votes')
+          .get()
+          .timeout(const Duration(seconds: 3));
 
       // ATOMIC WRITE BATCH
       final batch = db.batch();
@@ -197,13 +213,13 @@ class ReportsDbService {
         }, SetOptions(merge: true));
       }
 
-      await batch.commit();
+      await batch.commit().timeout(const Duration(seconds: 3));
     } catch (error) {
-      debugPrint("Could not delete report $error");
+      debugPrint("Could not delete report from Firestore: $error");
     }
   }
 
-  /// Elimina una segnalazione dal database locale SQLite.
+  /// Elimina una segnalazione dal database locale SQLite e registra il tombstone.
   static Future<void> deleteLocalReport(
     FirebaseAuth auth,
     String reportId,
@@ -212,8 +228,18 @@ class ReportsDbService {
       final userId = getUserId(auth);
       await _reportDao.deleteReport(userId, reportId);
 
-      // Supporta pulizia prefs per test che iniettano in SharedPreferences
       final prefs = await SharedPreferences.getInstance();
+
+      // Registra tombstone per evitare che risorga durante la sincronizzazione Firestore
+      final deletedFilter =
+          prefs.getStringList('deleted_reports_sync_filter') ?? [];
+      if (!deletedFilter.contains(reportId)) {
+        deletedFilter.add(reportId);
+        if (deletedFilter.length > 100) deletedFilter.removeAt(0);
+        await prefs.setStringList('deleted_reports_sync_filter', deletedFilter);
+      }
+
+      // Supporta pulizia prefs per test che iniettano in SharedPreferences
       final key = getReportsKey(auth);
       final reportsStr = prefs.getStringList(key) ?? [];
       if (reportsStr.isNotEmpty) {
