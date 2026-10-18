@@ -186,6 +186,10 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     if (widget.isStaleDataNotifier != null && !currentProduct.isStale) {
       widget.isStaleDataNotifier!.value = false;
     }
+    if (widget.isOfflineDbNotifier != null) {
+      widget.isOfflineDbNotifier!.value =
+          currentProduct.isFromOfflineDb || currentProduct.isOfflineNotFound;
+    }
     if (!_shouldCheckOnline) {
       _onlineRetryTimer?.cancel();
       _onlineRetryTimer = null;
@@ -223,7 +227,15 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   void _onOfflineDbNotifierChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      if (!_shouldCheckOnline) {
+        _onlineRetryTimer?.cancel();
+        _onlineRetryTimer = null;
+      } else {
+        _initOnlineRefreshTimerIfNeeded();
+      }
+      setState(() {});
+    }
   }
 
   String _translateGlutenStatus(GlutenSafetyStatus status) {

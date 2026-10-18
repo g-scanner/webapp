@@ -68,6 +68,9 @@ void main() {
     int pendingReportsCount = 0,
     String? imageUrl,
     String? lastUpdated,
+    bool isFromOfflineDb = false,
+    bool isOfflineNotFound = false,
+    bool needsVerification = false,
   }) {
     return Product(
       barcode: barcode,
@@ -85,6 +88,9 @@ void main() {
       imageUrl: imageUrl,
       lastUpdated:
           lastUpdated ?? DateTime.now().toUtc().toIso8601String(),
+      isFromOfflineDb: isFromOfflineDb,
+      isOfflineNotFound: isOfflineNotFound,
+      needsVerification: needsVerification,
     );
   }
 
@@ -106,6 +112,7 @@ void main() {
     bool passViewReportCallback = true,
     bool isStaleData = false,
     ValueNotifier<bool>? isStaleDataNotifier,
+    ValueNotifier<bool>? isOfflineDbNotifier,
     Future<void> Function(String barcode)? onRefreshOnline,
   }) async {
     tester.view.physicalSize = const Size(1080, 2400);
@@ -140,6 +147,7 @@ void main() {
               : null,
           isStaleData: isStaleData,
           isStaleDataNotifier: isStaleDataNotifier,
+          isOfflineDbNotifier: isOfflineDbNotifier,
           onRefreshOnline: onRefreshOnline,
         ),
       ),
@@ -805,6 +813,96 @@ void main() {
         expect(refreshOnlineCalled, isTrue);
         expect(find.text('product.staleData.title'), findsNothing);
         expect(staleNotifier.value, isFalse);
+
+        ConnectivityHelper.mockIsConnected = null;
+      },
+    );
+
+    testWidgets(
+      'Offline Database: automatically disappears and updates data when verified product is received via productNotifier',
+      (WidgetTester tester) async {
+        final offlineProduct = createSampleProduct(
+          nameMap: {'it': 'Prodotto Offline'},
+          isFromOfflineDb: true,
+          needsVerification: true,
+        );
+        final productNotifier = ValueNotifier<Product?>(offlineProduct);
+        final offlineNotifier = ValueNotifier<bool>(true);
+
+        await pumpProductDetailCard(
+          tester,
+          product: offlineProduct,
+          productNotifier: productNotifier,
+          isOfflineDbNotifier: offlineNotifier,
+        );
+
+        // All'inizio è offline -> card avviso offline visibile e nome offline mostrato
+        expect(find.byType(OfflineDatabaseWarningCard), findsOneWidget);
+        expect(find.text('Prodotto Offline'), findsOneWidget);
+        expect(offlineNotifier.value, isTrue);
+
+        // Viene ricevuto il prodotto verificato online
+        final verifiedProduct = createSampleProduct(
+          nameMap: {'it': 'Prodotto Verificato Online'},
+          isFromOfflineDb: false,
+          needsVerification: false,
+        );
+        productNotifier.value = verifiedProduct;
+        await tester.pumpAndSettle();
+
+        // L'avviso offline DEVE sparire, il notifier deve diventare false e il nome aggiornarsi
+        expect(find.byType(OfflineDatabaseWarningCard), findsNothing);
+        expect(offlineNotifier.value, isFalse);
+        expect(find.text('Prodotto Verificato Online'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Offline Database: automatically triggers onRefreshOnline when connectivity is restored',
+      (WidgetTester tester) async {
+        ConnectivityHelper.mockIsConnected = false;
+        final offlineProduct = createSampleProduct(
+          nameMap: {'it': 'Prodotto Offline'},
+          isFromOfflineDb: true,
+          needsVerification: true,
+        );
+        final productNotifier = ValueNotifier<Product?>(offlineProduct);
+        final offlineNotifier = ValueNotifier<bool>(true);
+        bool refreshOnlineCalled = false;
+
+        await pumpProductDetailCard(
+          tester,
+          product: offlineProduct,
+          productNotifier: productNotifier,
+          isOfflineDbNotifier: offlineNotifier,
+          onRefreshOnline: (barcode) async {
+            refreshOnlineCalled = true;
+            final verifiedProduct = createSampleProduct(
+              barcode: barcode,
+              nameMap: {'it': 'Prodotto Verificato Online'},
+              isFromOfflineDb: false,
+              needsVerification: false,
+            );
+            productNotifier.value = verifiedProduct;
+          },
+        );
+
+        // All'inizio è offline -> card visibile, nessuna chiamata
+        expect(find.byType(OfflineDatabaseWarningCard), findsOneWidget);
+        expect(refreshOnlineCalled, isFalse);
+
+        // Torna la connessione
+        ConnectivityHelper.mockIsConnected = true;
+
+        // Avanza il timer di retry (3 secondi)
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pumpAndSettle();
+
+        // Ha invocato onRefreshOnline e la card è sparita con i dati aggiornati
+        expect(refreshOnlineCalled, isTrue);
+        expect(find.byType(OfflineDatabaseWarningCard), findsNothing);
+        expect(offlineNotifier.value, isFalse);
+        expect(find.text('Prodotto Verificato Online'), findsOneWidget);
 
         ConnectivityHelper.mockIsConnected = null;
       },
