@@ -555,6 +555,7 @@ void main() {
         preferredLanguage: 'de',
         preferredTheme: 'dark',
         reportedBarcodes: ['8001', '8002'],
+        updatedAt: 1770001234567,
       );
 
       final jsonMap = settings.toJson();
@@ -564,6 +565,7 @@ void main() {
       expect(jsonMap['preferredLanguage'], 'de');
       expect(jsonMap['preferredTheme'], 'dark');
       expect(jsonMap['reportedBarcodes'], containsAll(['8001', '8002']));
+      expect(jsonMap['updatedAt'], 1770001234567);
 
       final deserialized = UserSettings.fromJson(jsonMap);
       expect(deserialized.userId, 'u_100');
@@ -572,6 +574,7 @@ void main() {
       expect(deserialized.preferredLanguage, 'de');
       expect(deserialized.preferredTheme, 'dark');
       expect(deserialized.reportedBarcodes, containsAll(['8001', '8002']));
+      expect(deserialized.updatedAt, 1770001234567);
     });
 
     test('fromJson applies standard defaults when JSON is empty', () {

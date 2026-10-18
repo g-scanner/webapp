@@ -292,6 +292,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         .then((syncedSettings) {
           if (mounted) {
             setState(() => userSettings = syncedSettings);
+            themeNotifier.value = themeModeFromString(syncedSettings.preferredTheme);
+            if (context.locale.languageCode != syncedSettings.preferredLanguage) {
+              context.setLocale(Locale(syncedSettings.preferredLanguage));
+            }
             _autoDownloadOfflineDbIfNeeded(syncedSettings);
           }
         })

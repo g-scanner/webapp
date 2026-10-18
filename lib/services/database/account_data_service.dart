@@ -210,6 +210,7 @@ class AccountDataService {
         if (localSettings.userId == lastAnonUid) {
           final updatedSettings = localSettings.copyWith(
             userId: newUid,
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
           );
           await SettingsDbService.saveLocalSettings(updatedSettings);
           try {
@@ -269,6 +270,7 @@ class AccountDataService {
         if (localSettings.userId == lastAnonUid) {
           final updatedSettings = localSettings.copyWith(
             userId: newAnonUid,
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
           );
           await SettingsDbService.saveLocalSettings(updatedSettings);
         }

@@ -15,6 +15,7 @@ class UserSettings {
   final List<String> reportedBarcodes;
   final OfflineDbTier offlineDbTier;
   final int? offlineDbLastSyncedAt;
+  final int? updatedAt;
 
   /// Restituisce `true` se il database offline è abilitato (tier != none) e l'ultimo sync risale a oltre 30 giorni fa (o mai eseguito).
   bool get isOfflineDbStale {
@@ -47,6 +48,7 @@ class UserSettings {
     this.reportedBarcodes = const [],
     this.offlineDbTier = OfflineDbTier.none,
     this.offlineDbLastSyncedAt,
+    this.updatedAt,
   });
 
   static const _unsetSentinel = Object();
@@ -62,10 +64,15 @@ class UserSettings {
     List<String>? reportedBarcodes,
     OfflineDbTier? offlineDbTier,
     Object? offlineDbLastSyncedAt = _unsetSentinel,
+    Object? updatedAt = _unsetSentinel,
   }) {
     final int? resolvedLastSyncedAt = identical(offlineDbLastSyncedAt, _unsetSentinel)
         ? this.offlineDbLastSyncedAt
         : (offlineDbLastSyncedAt as int?);
+
+    final int? resolvedUpdatedAt = identical(updatedAt, _unsetSentinel)
+        ? this.updatedAt
+        : (updatedAt as int?);
 
     return UserSettings(
       userId: userId ?? this.userId,
@@ -78,21 +85,23 @@ class UserSettings {
       reportedBarcodes: reportedBarcodes ?? this.reportedBarcodes,
       offlineDbTier: offlineDbTier ?? this.offlineDbTier,
       offlineDbLastSyncedAt: resolvedLastSyncedAt,
+      updatedAt: resolvedUpdatedAt,
     );
   }
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
     return UserSettings(
-      userId: json['userId'] ?? json['user_id'],
-      strictMode: json['strictMode'] ?? json['strict_mode'] ?? true,
-      alertLactose: json['alertLactose'] ?? json['alert_lactose'] ?? false,
-      warnAdditives: json['warnAdditives'] ?? json['warn_additives'] ?? true,
-      autoSaveHistory: json['autoSaveHistory'] ?? json['auto_save_history'] ?? true,
-      preferredLanguage: json['preferredLanguage'] ?? json['preferred_language'] ?? defaultSystemLanguage,
-      preferredTheme: json['preferredTheme'] ?? json['preferred_theme'] ?? 'system',
-      reportedBarcodes: List<String>.from(json['reportedBarcodes'] ?? json['reported_barcodes'] ?? []),
-      offlineDbTier: OfflineDbTierExtension.fromKey(json['offlineDbTier'] ?? json['offline_db_tier']),
-      offlineDbLastSyncedAt: json['offlineDbLastSyncedAt'] ?? json['offline_db_last_synced_at'],
+      userId: json['userId'],
+      strictMode: json['strictMode'] ?? true,
+      alertLactose: json['alertLactose'] ?? false,
+      warnAdditives: json['warnAdditives'] ?? true,
+      autoSaveHistory: json['autoSaveHistory'] ?? true,
+      preferredLanguage: json['preferredLanguage'] ?? defaultSystemLanguage,
+      preferredTheme: json['preferredTheme'] ?? 'system',
+      reportedBarcodes: List<String>.from(json['reportedBarcodes'] ?? const []),
+      offlineDbTier: OfflineDbTierExtension.fromKey(json['offlineDbTier']),
+      offlineDbLastSyncedAt: json['offlineDbLastSyncedAt'],
+      updatedAt: json['updatedAt'],
     );
   }
 
@@ -108,6 +117,7 @@ class UserSettings {
       'reportedBarcodes': reportedBarcodes,
       'offlineDbTier': offlineDbTier.key,
       'offlineDbLastSyncedAt': offlineDbLastSyncedAt,
+      'updatedAt': updatedAt,
     };
   }
 }

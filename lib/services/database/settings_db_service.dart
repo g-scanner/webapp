@@ -35,6 +35,7 @@ class SettingsDbService {
       preferredLanguage: UserSettings.defaultSystemLanguage,
       preferredTheme: 'system',
       reportedBarcodes: prefs.getStringList(reportedBarcodesKey) ?? const [],
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
     await saveLocalSettings(defaultSettings);
     return defaultSettings;
@@ -42,7 +43,10 @@ class SettingsDbService {
 
   static Future<void> saveLocalSettings(UserSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(settingsKey, json.encode(settings.toJson()));
+    final toSave = settings.updatedAt == null
+        ? settings.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch)
+        : settings;
+    await prefs.setString(settingsKey, json.encode(toSave.toJson()));
   }
 
   static Future<void> saveSettings(
@@ -53,7 +57,11 @@ class SettingsDbService {
     final user = auth.currentUser;
 
     final effectiveUserId = user?.uid ?? 'anonymous';
-    final effectiveSettings = settings.copyWith(userId: effectiveUserId);
+    final nowEpoch = DateTime.now().millisecondsSinceEpoch;
+    final effectiveSettings = settings.copyWith(
+      userId: effectiveUserId,
+      updatedAt: nowEpoch,
+    );
 
     await saveLocalSettings(effectiveSettings);
 
@@ -68,7 +76,7 @@ class SettingsDbService {
             .doc(user.uid)
             .set(effectiveSettings.toJson(), SetOptions(merge: true));
       } catch (e) {
-        debugPrint("Failed saving settings to Firestore: $e");
+        debugPrint("Failed saving settings to Firestore (offline or error): $e");
       }
     }
   }
@@ -82,7 +90,7 @@ class SettingsDbService {
       final settingsStr = prefs.getString(settingsKey);
       if (settingsStr != null) {
         final decoded = json.decode(settingsStr) as Map<String, dynamic>;
-        final uid = decoded['userId'] ?? decoded['user_id'];
+        final uid = decoded['userId'];
         if (lastAnonUid != null && lastAnonUid.isNotEmpty && uid == lastAnonUid) {
           return true;
         }
@@ -103,52 +111,82 @@ class SettingsDbService {
 
     try {
       final docSnap = await db.collection("users").doc(user.uid).get();
-      if (docSnap.exists && docSnap.data() != null) {
-        final firestoreSettings = UserSettings.fromJson(docSnap.data()!);
+      if (!docSnap.exists || docSnap.data() == null) {
+        // Se non esiste ancora il documento remoto su Firestore, carichiamo le impostazioni locali
+        try {
+          await db
+              .collection("users")
+              .doc(user.uid)
+              .set(localSettings.toJson(), SetOptions(merge: true));
+        } catch (_) {}
+        return localSettings;
+      }
 
-        final localBarcodes = localSettings.reportedBarcodes;
-        final remoteBarcodes = firestoreSettings.reportedBarcodes;
-        final mergedBarcodes = {...localBarcodes, ...remoteBarcodes}.toList();
+      final firestoreSettings = UserSettings.fromJson(docSnap.data()!);
 
-        final bool hasRemoteTier = docSnap.data()!.containsKey('offlineDbTier');
-        final effectiveTier = hasRemoteTier
-            ? firestoreSettings.offlineDbTier
-            : localSettings.offlineDbTier;
+      final localBarcodes = localSettings.reportedBarcodes;
+      final remoteBarcodes = firestoreSettings.reportedBarcodes;
+      final mergedBarcodes = {...localBarcodes, ...remoteBarcodes}.toList();
 
-        final effectiveLastSyncedAt = hasRemoteTier
-            ? firestoreSettings.offlineDbLastSyncedAt
-            : localSettings.offlineDbLastSyncedAt;
+      final localTimestamp = localSettings.updatedAt ?? 0;
+      final remoteTimestamp = firestoreSettings.updatedAt ?? 0;
 
-        // Se dalle impostazioni sincronizzate il database è stato disattivato (Tier.none),
-        // eliminiamo fisicamente il file del database locale se presente su questo dispositivo.
-        if (effectiveTier == OfflineDbTier.none) {
-          final isInstalled = await OfflineDbService.isDatabaseInstalled();
-          if (isInstalled) {
-            await OfflineDbService.deleteDatabaseFile();
-          }
-        }
+      final UserSettings resolvedSettings;
+      bool shouldPushToFirestore = false;
 
-        final mergedSettings = firestoreSettings.copyWith(
+      if (localTimestamp > remoteTimestamp) {
+        // La modifica locale è più recente (es. modifiche offline o effettuate su questo dispositivo):
+        // manteniamo le impostazioni locali e sincronizziamo verso Firestore.
+        resolvedSettings = localSettings.copyWith(
           userId: user.uid,
           reportedBarcodes: mergedBarcodes,
-          offlineDbTier: effectiveTier,
-          offlineDbLastSyncedAt: effectiveLastSyncedAt,
         );
-
-        await saveLocalSettings(mergedSettings);
-
-        if (effectiveTier != firestoreSettings.offlineDbTier ||
-            effectiveLastSyncedAt != firestoreSettings.offlineDbLastSyncedAt) {
-          try {
-            await db
-                .collection("users")
-                .doc(user.uid)
-                .set(mergedSettings.toJson(), SetOptions(merge: true));
-          } catch (_) {}
+        shouldPushToFirestore = true;
+      } else if (remoteTimestamp > localTimestamp) {
+        // La modifica remota su Firestore è più recente:
+        // adottiamo le impostazioni da Firestore e aggiorniamo la persistenza locale.
+        resolvedSettings = firestoreSettings.copyWith(
+          userId: user.uid,
+          reportedBarcodes: mergedBarcodes,
+        );
+        if (mergedBarcodes.length != remoteBarcodes.length) {
+          shouldPushToFirestore = true;
         }
-
-        return mergedSettings;
+      } else {
+        // Timestamps identici: già allineati nel tempo.
+        // Manteniamo le impostazioni correnti integrando l'eventuale unione dei barcode.
+        resolvedSettings = localSettings.copyWith(
+          userId: user.uid,
+          reportedBarcodes: mergedBarcodes,
+        );
+        if (mergedBarcodes.length != remoteBarcodes.length) {
+          shouldPushToFirestore = true;
+        }
       }
+
+      // Se dalle impostazioni finali il database offline è disattivato (Tier.none),
+      // eliminiamo fisicamente il file del database locale se presente su questo dispositivo.
+      if (resolvedSettings.offlineDbTier == OfflineDbTier.none) {
+        final isInstalled = await OfflineDbService.isDatabaseInstalled();
+        if (isInstalled) {
+          await OfflineDbService.deleteDatabaseFile();
+        }
+      }
+
+      await saveLocalSettings(resolvedSettings);
+
+      if (shouldPushToFirestore) {
+        try {
+          await db
+              .collection("users")
+              .doc(user.uid)
+              .set(resolvedSettings.toJson(), SetOptions(merge: true));
+        } catch (e) {
+          debugPrint("Failed updating Firestore with resolved settings: $e");
+        }
+      }
+
+      return resolvedSettings;
     } catch (e) {
       debugPrint("Failed syncing settings: $e");
     }

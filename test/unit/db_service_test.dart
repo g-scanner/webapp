@@ -1521,6 +1521,7 @@ void main() {
           preferredLanguage: 'en',
           preferredTheme: 'dark',
           reportedBarcodes: ['REMOTE_1', 'SHARED_BARCODE'],
+          updatedAt: 2000,
         );
         when(() => mockDocSnap.data()).thenReturn(remoteSettings.toJson());
 
@@ -1532,11 +1533,12 @@ void main() {
           preferredLanguage: 'it',
           preferredTheme: 'light',
           reportedBarcodes: ['LOCAL_1', 'SHARED_BARCODE'],
+          updatedAt: 1000,
         );
 
         final merged = await DbService.syncSettingsWithFirestore(localSettings);
 
-        expect(merged.strictMode, isFalse); // Remote setting taken
+        expect(merged.strictMode, isFalse); // Remote setting taken because remote is newer
         expect(
           merged.reportedBarcodes,
           containsAll(['LOCAL_1', 'REMOTE_1', 'SHARED_BARCODE']),
@@ -1564,6 +1566,7 @@ void main() {
           preferredLanguage: 'it',
           offlineDbTier: OfflineDbTier.tier2,
           offlineDbLastSyncedAt: 1770000000,
+          updatedAt: 2000,
         );
         when(() => mockDocSnap.data()).thenReturn(remoteSettings.toJson());
 
@@ -1575,6 +1578,7 @@ void main() {
           preferredLanguage: 'it',
           offlineDbTier: OfflineDbTier.none,
           offlineDbLastSyncedAt: null,
+          updatedAt: 1000,
         );
 
         final merged = await DbService.syncSettingsWithFirestore(localSettings);
@@ -1608,6 +1612,7 @@ void main() {
           preferredLanguage: 'it',
           offlineDbTier: OfflineDbTier.none,
           offlineDbLastSyncedAt: null,
+          updatedAt: 2000,
         );
         when(() => mockDocSnap.data()).thenReturn(remoteSettings.toJson());
 
@@ -1619,6 +1624,7 @@ void main() {
           preferredLanguage: 'it',
           offlineDbTier: OfflineDbTier.tier1,
           offlineDbLastSyncedAt: 1770000000,
+          updatedAt: 1000,
         );
 
         final merged = await DbService.syncSettingsWithFirestore(localSettings);
@@ -1627,6 +1633,192 @@ void main() {
         expect(merged.offlineDbLastSyncedAt, isNull);
         expect(await OfflineDbService.isDatabaseInstalled(), isFalse);
         expect(await OfflineDbService.getInstalledTier(), isNull);
+      },
+    );
+
+    test(
+      'syncSettingsWithFirestore preserves local settings and merges barcodes when timestamps are identical',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('sync_identical_user');
+
+        when(() => mockUsersCol.doc('sync_identical_user')).thenReturn(mockDocRef);
+        when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
+        when(() => mockDocSnap.exists).thenReturn(true);
+        when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
+
+        final remoteSettings = UserSettings(
+          userId: 'sync_identical_user',
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          offlineDbTier: OfflineDbTier.tier1,
+          reportedBarcodes: ['REMOTE_BARCODE'],
+          updatedAt: 5000,
+        );
+        when(() => mockDocSnap.data()).thenReturn(remoteSettings.toJson());
+
+        final localSettings = UserSettings(
+          userId: 'sync_identical_user',
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          offlineDbTier: OfflineDbTier.tier1,
+          reportedBarcodes: ['LOCAL_BARCODE'],
+          updatedAt: 5000,
+        );
+
+        final merged = await DbService.syncSettingsWithFirestore(localSettings);
+
+        expect(merged.updatedAt, 5000);
+        expect(merged.reportedBarcodes, containsAll(['LOCAL_BARCODE', 'REMOTE_BARCODE']));
+      },
+    );
+
+    test(
+      'syncSettingsWithFirestore preserves newer local offline settings over older Firestore settings and updates Firestore',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('offline_winner_user');
+
+        when(() => mockUsersCol.doc('offline_winner_user')).thenReturn(mockDocRef);
+        when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
+        when(() => mockDocSnap.exists).thenReturn(true);
+        when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
+
+        final remoteStaleSettings = UserSettings(
+          userId: 'offline_winner_user',
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          preferredTheme: 'light',
+          offlineDbTier: OfflineDbTier.none,
+          offlineDbLastSyncedAt: null,
+          reportedBarcodes: ['REMOTE_BC'],
+          updatedAt: 1000,
+        );
+        when(() => mockDocSnap.data()).thenReturn(remoteStaleSettings.toJson());
+
+        // Modifica locale effettuata offline con timestamp più recente
+        final localFreshSettings = UserSettings(
+          userId: 'offline_winner_user',
+          strictMode: false,
+          alertLactose: true,
+          warnAdditives: false,
+          autoSaveHistory: false,
+          preferredLanguage: 'de',
+          preferredTheme: 'dark',
+          offlineDbTier: OfflineDbTier.tier1,
+          offlineDbLastSyncedAt: 1775000000,
+          reportedBarcodes: ['LOCAL_BC'],
+          updatedAt: 2000,
+        );
+
+        final merged = await DbService.syncSettingsWithFirestore(localFreshSettings);
+
+        // Verifica che le modifiche offline siano state tutte PRESERVATE
+        expect(merged.strictMode, isFalse);
+        expect(merged.alertLactose, isTrue);
+        expect(merged.warnAdditives, isFalse);
+        expect(merged.autoSaveHistory, isFalse);
+        expect(merged.preferredLanguage, 'de');
+        expect(merged.preferredTheme, 'dark');
+        expect(merged.offlineDbTier, OfflineDbTier.tier1);
+        expect(merged.offlineDbLastSyncedAt, 1775000000);
+        expect(merged.reportedBarcodes, containsAll(['LOCAL_BC', 'REMOTE_BC']));
+
+        // Verifica che Firestore sia stato aggiornato con le nuove impostazioni
+        verify(() => mockDocRef.set(any(), any())).called(1);
+      },
+    );
+
+    test(
+      'syncSettingsWithFirestore adopts remote settings when remote is newer than local',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('remote_winner_user');
+
+        when(() => mockUsersCol.doc('remote_winner_user')).thenReturn(mockDocRef);
+        when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
+        when(() => mockDocSnap.exists).thenReturn(true);
+        when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
+
+        final remoteFreshSettings = UserSettings(
+          userId: 'remote_winner_user',
+          strictMode: false,
+          alertLactose: true,
+          warnAdditives: false,
+          autoSaveHistory: true,
+          preferredLanguage: 'en',
+          preferredTheme: 'dark',
+          offlineDbTier: OfflineDbTier.tier2,
+          offlineDbLastSyncedAt: 1775500000,
+          reportedBarcodes: ['REMOTE_BC'],
+          updatedAt: 3000,
+        );
+        when(() => mockDocSnap.data()).thenReturn(remoteFreshSettings.toJson());
+
+        // Modifica locale più vecchia rispetto a quanto modificato sul server
+        final localStaleSettings = UserSettings(
+          userId: 'remote_winner_user',
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: false,
+          preferredLanguage: 'it',
+          preferredTheme: 'light',
+          offlineDbTier: OfflineDbTier.none,
+          offlineDbLastSyncedAt: null,
+          reportedBarcodes: ['LOCAL_BC'],
+          updatedAt: 1500,
+        );
+
+        final merged = await DbService.syncSettingsWithFirestore(localStaleSettings);
+
+        // Verifica che il dato remoto più recente prevalga
+        expect(merged.strictMode, isFalse);
+        expect(merged.alertLactose, isTrue);
+        expect(merged.warnAdditives, isFalse);
+        expect(merged.preferredLanguage, 'en');
+        expect(merged.preferredTheme, 'dark');
+        expect(merged.offlineDbTier, OfflineDbTier.tier2);
+        expect(merged.offlineDbLastSyncedAt, 1775500000);
+        expect(merged.reportedBarcodes, containsAll(['LOCAL_BC', 'REMOTE_BC']));
+      },
+    );
+
+    test(
+      'saveSettings assigns a fresh updatedAt timestamp on save',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('save_ts_user');
+        when(() => mockUsersCol.doc('save_ts_user')).thenReturn(mockDocRef);
+        when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
+
+        final settingsWithoutTimestamp = UserSettings(
+          userId: 'save_ts_user',
+          strictMode: true,
+          alertLactose: false,
+          warnAdditives: true,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+        );
+
+        await DbService.saveSettings(settingsWithoutTimestamp);
+
+        final localSaved = await DbService.getLocalSettings();
+        expect(localSaved.updatedAt, isNotNull);
+        expect(localSaved.updatedAt, greaterThan(0));
       },
     );
   });
