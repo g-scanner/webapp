@@ -34,6 +34,10 @@ dependencies:
   sqflite_common_ffi_web: ^1.1.1
   path_provider: ^2.1.6
   archive: ^4.0.7
+  crypto: ^3.0.3
+  connectivity_plus: ^7.3.2
+  workmanager: ^0.10.10
+  background_downloader: ^9.5.9
 
 dev_dependencies:
   flutter_test:

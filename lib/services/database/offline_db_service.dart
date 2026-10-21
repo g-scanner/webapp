@@ -9,6 +9,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
+import '../../core/network/connectivity_helper.dart';
 
 /// Servizio responsabile dell'interrogazione e gestione del Database SQLite offline locale.
 class OfflineDbService {
@@ -25,12 +26,24 @@ class OfflineDbService {
     if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
       return p.join(Directory.systemTemp.path, 'offline_products_test.db');
     }
-    final appDir = await getApplicationDocumentsDirectory();
+    final appDir = await getApplicationSupportDirectory();
     final offlineDir = Directory(p.join(appDir.path, 'offline_db'));
     if (!await offlineDir.exists()) {
       await offlineDir.create(recursive: true);
     }
-    _cachedDbPath = p.join(offlineDir.path, 'offline_products.db');
+    final targetPath = p.join(offlineDir.path, 'offline_products.db');
+
+    // Migrazione trasparente da getApplicationDocumentsDirectory se presente (per compliance iOS iCloud backup)
+    try {
+      final docDir = await getApplicationDocumentsDirectory();
+      final legacyFile = File(p.join(docDir.path, 'offline_db', 'offline_products.db'));
+      final targetFile = File(targetPath);
+      if (legacyFile.existsSync() && !targetFile.existsSync()) {
+        await legacyFile.rename(targetPath);
+      }
+    } catch (_) {}
+
+    _cachedDbPath = targetPath;
     return _cachedDbPath!;
   }
 
@@ -141,6 +154,10 @@ class OfflineDbService {
     if (!isInstalled) return null;
 
     final path = await getDatabasePath();
+    if (kIsWeb) {
+      // Previene lo svuotamento automatico di Safari dopo 7 giorni di inattività
+      ConnectivityHelper.requestStoragePersistence();
+    }
     try {
       _database = await databaseFactory.openDatabase(
         path,

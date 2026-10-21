@@ -12,6 +12,7 @@ import 'package:http/testing.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gscanner/models/models.dart';
+import 'package:gscanner/core/network/connectivity_helper.dart';
 import 'package:gscanner/services/database/offline_db_sync_service.dart';
 import 'package:gscanner/services/database/offline_db_service.dart';
 
@@ -110,6 +111,17 @@ void main() {
         expect(action, equals(OfflineSyncAction.fullDownload));
       },
     );
+
+    test('State 0 (Up To Date): lastSyncedAt >= publishedAt selects upToDate', () {
+      final action = OfflineDbSyncService.determineSyncAction(
+        isDbInstalled: true,
+        lastSyncedAt: publishedAt,
+        delta7dSince: delta7dSince,
+        delta30dSince: delta30dSince,
+        publishedAt: publishedAt,
+      );
+      expect(action, equals(OfflineSyncAction.upToDate));
+    });
   });
 
   group('OfflineDbSyncService Atomic SQLite ATTACH Merge Tests', () {
@@ -217,6 +229,102 @@ void main() {
         expect(await File(patchPath).exists(), isFalse);
       },
     );
+
+    test('applyPatchDatabaseWeb batch-upserts records correctly into main DB', () async {
+      // 1. Inizializza DB principale con Prodotto A
+      final mainDb = await openDatabase(
+        dbPath,
+        version: 1,
+        onCreate: (db, v) async {
+          await db.execute('''
+        CREATE TABLE products (
+          code TEXT PRIMARY KEY,
+          product_name TEXT,
+          brands TEXT,
+          ingredients_text TEXT,
+          allergens_tags TEXT,
+          labels_tags TEXT,
+          traces_tags TEXT,
+          last_modified_t INTEGER
+        );
+      ''');
+        },
+      );
+
+      await mainDb.insert('products', {
+        'code': '111',
+        'product_name': 'Nome Vecchio A',
+        'brands': 'Marca A',
+        'ingredients_text': 'Ingredienti vecchi',
+        'allergens_tags': '',
+        'labels_tags': '',
+        'traces_tags': '',
+        'last_modified_t': 100,
+      });
+      await mainDb.close();
+
+      // 2. Crea patch DB su file temporaneo per generare i bytes del delta
+      final tempPatchFile = p.join(tempDir.path, 'patch_web_source.db');
+      final patchDb = await openDatabase(
+        tempPatchFile,
+        version: 1,
+        onCreate: (db, v) async {
+          await db.execute('''
+        CREATE TABLE products (
+          code TEXT PRIMARY KEY,
+          product_name TEXT,
+          brands TEXT,
+          ingredients_text TEXT,
+          allergens_tags TEXT,
+          labels_tags TEXT,
+          traces_tags TEXT,
+          last_modified_t INTEGER
+        );
+      ''');
+        },
+      );
+
+      await patchDb.insert('products', {
+        'code': '111',
+        'product_name': 'Nome Aggiornato Web A',
+        'brands': 'Marca A',
+        'ingredients_text': 'Ingredienti Web',
+        'allergens_tags': 'en:gluten',
+        'labels_tags': '',
+        'traces_tags': '',
+        'last_modified_t': 200,
+      });
+      await patchDb.insert('products', {
+        'code': '333',
+        'product_name': 'Prodotto C Web',
+        'brands': 'Marca C',
+        'ingredients_text': 'Ingredienti C',
+        'allergens_tags': '',
+        'labels_tags': 'en:gluten-free',
+        'traces_tags': '',
+        'last_modified_t': 200,
+      });
+      await patchDb.close();
+
+      final patchBytes = await File(tempPatchFile).readAsBytes();
+
+      // 3. Esegui applyPatchDatabaseWeb
+      await OfflineDbSyncService.applyPatchDatabaseWeb(
+        targetDbPath: dbPath,
+        patchBytes: patchBytes,
+      );
+
+      // 4. Verifica che il DB principale contenga i dati aggiornati
+      final checkDb = await openDatabase(dbPath);
+      final results = await checkDb.query('products', orderBy: 'code ASC');
+      await checkDb.close();
+
+      expect(results.length, equals(2));
+      expect(results[0]['code'], equals('111'));
+      expect(results[0]['product_name'], equals('Nome Aggiornato Web A'));
+      expect(results[1]['code'], equals('333'));
+      expect(results[1]['product_name'], equals('Prodotto C Web'));
+    });
   });
 
   group('OfflineDbSyncService Web & Gzip Extraction Tests', () {
@@ -260,6 +368,51 @@ void main() {
 
       expect(called, isFalse);
       expect(OfflineDbSyncService.isSyncing, isFalse);
+    });
+
+    test('does nothing if offlineDbAutoSync is false and not forceCheck', () async {
+      var called = false;
+      final settings = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.glutenFree,
+        offlineDbAutoSync: false,
+      );
+
+      await OfflineDbSyncService.autoDownloadIfNeeded(
+        settings: settings,
+        onSettingsChange: (_) async => called = true,
+      );
+
+      expect(called, isFalse);
+      expect(OfflineDbSyncService.isSyncing, isFalse);
+    });
+
+    test('skips autoDownload if offlineDbWifiOnly is true and connection is mobile', () async {
+      ConnectivityHelper.mockIsWifi = false;
+      var called = false;
+      final settings = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.glutenFree,
+        offlineDbAutoSync: true,
+        offlineDbWifiOnly: true,
+      );
+
+      await OfflineDbSyncService.autoDownloadIfNeeded(
+        settings: settings,
+        onSettingsChange: (_) async => called = true,
+      );
+
+      expect(called, isFalse);
+      expect(OfflineDbSyncService.isSyncing, isFalse);
+      ConnectivityHelper.mockIsWifi = null;
     });
 
     test('does nothing if database is already installed and matches tier', () async {
@@ -484,6 +637,39 @@ void main() {
 
       expect(OfflineDbService.mockIsDatabaseInstalled, isFalse);
       expect(File(dbPath).existsSync(), isFalse);
+    });
+
+    test('syncDatabase yields error sha256_mismatch when checksum does not match manifest', () async {
+      final manifestJson = json.encode({
+        'version': 2,
+        'published_at': 1773320000,
+        'packages': {
+          'gluten_free': {
+            'full': {
+              'file': 'gluten_free_full.db.gz',
+              'sha256': 'expected_real_hash_that_wont_match',
+            },
+          },
+        },
+      });
+
+      final mockClient = MockClient((request) async {
+        if (request.url.path.endsWith('version.json')) {
+          return http.Response(manifestJson, 200);
+        }
+        if (request.url.path.endsWith('.db.gz')) {
+          return http.Response.bytes(List.filled(100, 42), 200);
+        }
+        return http.Response('Not found', 404);
+      });
+
+      final progressList = await OfflineDbSyncService.syncDatabase(
+        tier: OfflineDbTier.glutenFree,
+        currentLastSyncedAt: null,
+        client: mockClient,
+      ).toList();
+
+      expect(progressList.any((p) => p.step == OfflineSyncStep.error && p.errorMessage == 'sha256_mismatch'), isTrue);
     });
   });
 }

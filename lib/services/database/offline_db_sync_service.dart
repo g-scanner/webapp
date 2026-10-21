@@ -6,16 +6,19 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../../models/models.dart';
+import '../../core/network/connectivity_helper.dart';
 import 'offline_db_service.dart';
 
-/// Tipo di sincronizzazione calcolato dal decision engine a 3 stati.
+/// Tipo di sincronizzazione calcolato dal decision engine a 4 stati.
 enum OfflineSyncAction {
+  upToDate,
   fastDelta7d,
   extendedDelta30d,
   fullDownload,
@@ -63,6 +66,27 @@ class OfflineDbSyncService {
   @visibleForTesting
   static void setMockClient(http.Client? client) {
     _mockClient = client;
+  }
+
+  /// Calcola l'epoch (secondi) della Domenica più recente alle ore 04:00 locali.
+  /// Se oggi è Domenica ma prima delle 04:00, ritorna la Domenica precedente.
+  @visibleForTesting
+  static int getMostRecentSundayReleaseEpoch({DateTime? now}) {
+    final localNow = now ?? DateTime.now();
+    // weekday: 1=Mon ... 7=Sun
+    int daysSinceSunday = localNow.weekday % 7; // Sun=0, Mon=1..Sat=6
+    final lastSunday = DateTime(
+      localNow.year,
+      localNow.month,
+      localNow.day - daysSinceSunday,
+      4, // 04:00 locale
+    );
+    // Se siamo Domenica ma prima delle 04:00, arretriamo alla Domenica precedente
+    if (lastSunday.isAfter(localNow)) {
+      final prevSunday = lastSunday.subtract(const Duration(days: 7));
+      return prevSunday.millisecondsSinceEpoch ~/ 1000;
+    }
+    return lastSunday.millisecondsSinceEpoch ~/ 1000;
   }
 
   @visibleForTesting
@@ -114,15 +138,20 @@ class OfflineDbSyncService {
     }
   }
 
-  /// Determina l'azione di sincronizzazione ottimale in base ai timestamp.
+  /// Determina l'azione di sincronizzazione ottimale in base ai timestamp (Decision Engine a 4 Stati).
   static OfflineSyncAction determineSyncAction({
     required bool isDbInstalled,
     required int? lastSyncedAt,
     required int delta7dSince,
     required int delta30dSince,
+    int? publishedAt,
   }) {
-    if (!isDbInstalled || lastSyncedAt == null) {
+    if (!isDbInstalled || lastSyncedAt == null || lastSyncedAt <= 0) {
       return OfflineSyncAction.fullDownload;
+    }
+
+    if (publishedAt != null && lastSyncedAt >= publishedAt) {
+      return OfflineSyncAction.upToDate;
     }
 
     if (lastSyncedAt >= delta7dSince) {
@@ -134,13 +163,16 @@ class OfflineDbSyncService {
     }
   }
 
-  /// Se l'utente ha configurato un Tier diverso da [OfflineDbTier.none], ma il file fisico
-  /// non è ancora installato su questo dispositivo (es. nuovo dispositivo o web cache pulita),
-  /// avvia automaticamente il download in background senza bloccare la UI.
+  /// Verifica se è necessario scaricare o aggiornare il database offline in background.
+  /// Gestisce:
+  /// - Installazione iniziale (full download) se abilitato ma non presente
+  /// - Cambio di tier (elimina vecchio e scarica nuovo)
+  /// - Aggiornamento incrementale automatico (delta 7D o 30D o full) quando viene pubblicata una nuova versione
   static Future<void> autoDownloadIfNeeded({
     required UserSettings settings,
     required Future<void> Function(UserSettings) onSettingsChange,
     http.Client? client,
+    bool forceCheck = false,
   }) async {
     if (settings.offlineDbTier == OfflineDbTier.none) {
       final isInstalled = await OfflineDbService.isDatabaseInstalled();
@@ -152,12 +184,29 @@ class OfflineDbSyncService {
       }
       return;
     }
+
+    // Se l'utente ha disattivato l'aggiornamento automatico:
+    if (!settings.offlineDbAutoSync && !forceCheck) {
+      return;
+    }
+
+    // Se l'utente richiede solo Wi-Fi, controlliamo il tipo di rete:
+    if (settings.offlineDbWifiOnly && !forceCheck) {
+      final isWifi = await ConnectivityHelper.isWifiConnection();
+      if (!isWifi) {
+        debugPrint(
+          'OfflineDbSyncService: Auto-sync skipped because network is mobile and offlineDbWifiOnly is true.',
+        );
+        return;
+      }
+    }
+
     if (isSyncing) return;
 
     final isInstalled = await OfflineDbService.isDatabaseInstalled();
     final installedTier = await OfflineDbService.getInstalledTier();
 
-    // Se un database è installato ma appartiene a un Tier diverso da quello richiesto:
+    // 1. Se un database è installato ma appartiene a un Tier diverso da quello richiesto:
     // cancelliamo fisicamente il vecchio DB per scaricare ed installare quello corretto!
     if (isInstalled && installedTier != null && installedTier != settings.offlineDbTier) {
       debugPrint(
@@ -165,11 +214,23 @@ class OfflineDbSyncService {
       );
       await OfflineDbService.deleteDatabaseFile();
     } else if (isInstalled) {
-      return;
+      // 2. Se è già installato con lo stesso tier:
+      // Gate settimanale — controlla solo al primo avvio dopo Domenica 04:00 locale.
+      // Se l'ultimo sync è più recente del rilascio settimanale, skip totale.
+      if (!forceCheck) {
+        final releaseEpoch = getMostRecentSundayReleaseEpoch();
+        final lastSync = settings.offlineDbLastSyncedAt ?? 0;
+        if (lastSync >= releaseEpoch) {
+          debugPrint(
+            'OfflineDbSyncService: Weekly gate — already synced ($lastSync) after release window ($releaseEpoch). Skipping.',
+          );
+          return;
+        }
+      }
     }
 
     debugPrint(
-      'OfflineDbSyncService: Auto-downloading ${settings.offlineDbTier.key} in background...',
+      'OfflineDbSyncService: Auto-sync checking ${settings.offlineDbTier.key} in background...',
     );
 
     _autoDownloadSubscription?.cancel();
@@ -180,19 +241,27 @@ class OfflineDbSyncService {
     ).listen((progress) async {
       if (progress.step == OfflineSyncStep.completed) {
         _autoDownloadSubscription = null;
-        final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        final updated = settings.copyWith(
-          offlineDbTier: settings.offlineDbTier,
-          offlineDbLastSyncedAt: nowEpoch,
-        );
-        await onSettingsChange(updated);
-        debugPrint(
-          'OfflineDbSyncService: Auto-download completed successfully for ${settings.offlineDbTier.key}',
-        );
+        final manifest = await fetchVersionManifest(client: client);
+        final publishedAt = manifest?['published_at'] as int? ??
+            (DateTime.now().millisecondsSinceEpoch ~/ 1000);
+        if (settings.offlineDbLastSyncedAt != publishedAt) {
+          final updated = settings.copyWith(
+            offlineDbTier: settings.offlineDbTier,
+            offlineDbLastSyncedAt: publishedAt,
+          );
+          await onSettingsChange(updated);
+          debugPrint(
+            'OfflineDbSyncService: Auto-sync updated ${settings.offlineDbTier.key} to version $publishedAt',
+          );
+        } else {
+          debugPrint(
+            'OfflineDbSyncService: Auto-sync checked: ${settings.offlineDbTier.key} is already up-to-date ($publishedAt)',
+          );
+        }
       } else if (progress.step == OfflineSyncStep.error) {
         _autoDownloadSubscription = null;
         debugPrint(
-          'OfflineDbSyncService: Auto-download error: ${progress.errorMessage}',
+          'OfflineDbSyncService: Auto-sync error: ${progress.errorMessage}',
         );
       }
     });
@@ -260,11 +329,15 @@ class OfflineDbSyncService {
 
     final bool isInstalled = await OfflineDbService.isDatabaseInstalled();
 
-    // Se il database è già installato ed è allineato all'ultima versione del server (non stale),
-    // evitiamo download ridondanti dello stesso database.
-    if (isInstalled &&
-        currentLastSyncedAt != null &&
-        currentLastSyncedAt >= publishedAt) {
+    final action = determineSyncAction(
+      isDbInstalled: isInstalled,
+      lastSyncedAt: currentLastSyncedAt,
+      delta7dSince: delta7dSince,
+      delta30dSince: delta30dSince,
+      publishedAt: publishedAt,
+    );
+
+    if (action == OfflineSyncAction.upToDate) {
       debugPrint(
         "OfflineDbSyncService: Database ${tier.key} già installato e aggiornato ($currentLastSyncedAt >= $publishedAt). Download saltato.",
       );
@@ -272,26 +345,24 @@ class OfflineDbSyncService {
       return;
     }
 
-    final action = kIsWeb
-        ? OfflineSyncAction.fullDownload
-        : determineSyncAction(
-            isDbInstalled: isInstalled,
-            lastSyncedAt: currentLastSyncedAt,
-            delta7dSince: delta7dSince,
-            delta30dSince: delta30dSince,
-          );
-
     String fileName;
+    String? expectedSha256;
     switch (action) {
       case OfflineSyncAction.fastDelta7d:
         fileName = packageData['delta_7d']?['file'] ?? '${tier.key}_delta_7d.db.gz';
+        expectedSha256 = packageData['delta_7d']?['sha256'] as String?;
         break;
       case OfflineSyncAction.extendedDelta30d:
         fileName = packageData['delta_30d']?['file'] ?? '${tier.key}_delta_30d.db.gz';
+        expectedSha256 = packageData['delta_30d']?['sha256'] as String?;
         break;
       case OfflineSyncAction.fullDownload:
         fileName = packageData['full']?['file'] ?? '${tier.key}_full.db.gz';
+        expectedSha256 = packageData['full']?['sha256'] as String?;
         break;
+      case OfflineSyncAction.upToDate:
+        yield const OfflineSyncProgress.completed();
+        return;
     }
 
     final currentBaseUrl = getEffectiveBaseUrl();
@@ -339,19 +410,35 @@ class OfflineDbSyncService {
         );
 
         final compressedBytes = bytesBuilder.takeBytes();
+        if (expectedSha256 != null && expectedSha256.isNotEmpty) {
+          final actualSha256 = sha256.convert(compressedBytes).toString();
+          if (actualSha256.toLowerCase() != expectedSha256.toLowerCase()) {
+            yield const OfflineSyncProgress.error("sha256_mismatch");
+            return;
+          }
+        }
         final decompressedBytes = decompressGzipBytes(compressedBytes);
 
-        // 3. SOSTITUZIONE ATOMICA IN INDEXEDDB
+        // 3. MERGING O SOSTITUZIONE ATOMICA (WEB)
         yield const OfflineSyncProgress(
           step: OfflineSyncStep.merging,
           progress: 0.85,
         );
 
-        await OfflineDbService.close();
-        await databaseFactory.writeDatabaseBytes(
-          targetDbPath,
-          Uint8List.fromList(decompressedBytes),
-        );
+        if (action == OfflineSyncAction.fullDownload) {
+          // Sostituzione completa del database IndexedDB
+          await OfflineDbService.close();
+          await databaseFactory.writeDatabaseBytes(
+            targetDbPath,
+            Uint8List.fromList(decompressedBytes),
+          );
+        } else {
+          // Delta update su Web tramite montaggio IndexedDB temporaneo e batch upsert
+          await applyPatchDatabaseWeb(
+            targetDbPath: targetDbPath,
+            patchBytes: Uint8List.fromList(decompressedBytes),
+          );
+        }
         await OfflineDbService.setInstalledTier(tier);
 
         yield const OfflineSyncProgress.completed();
@@ -388,9 +475,18 @@ class OfflineDbSyncService {
       final totalBytes = response.contentLength ?? 0;
       var receivedBytes = 0;
       final sink = tempGzFile.openWrite();
+      Digest? computedDigest;
+      final inputByteConversion = sha256.startChunkedConversion(
+        ChunkedConversionSink<Digest>.withCallback((digests) {
+          if (digests.isNotEmpty) {
+            computedDigest = digests.single;
+          }
+        }),
+      );
 
       await for (final chunk in response.stream) {
         sink.add(chunk);
+        inputByteConversion.add(chunk);
         receivedBytes += chunk.length;
         if (totalBytes > 0) {
           final downloadProgress = 0.1 + (receivedBytes / totalBytes) * 0.6; // 0.1 -> 0.7
@@ -402,6 +498,15 @@ class OfflineDbSyncService {
       }
       await sink.flush();
       await sink.close();
+      inputByteConversion.close();
+
+      if (expectedSha256 != null && expectedSha256.isNotEmpty) {
+        final actualSha256 = computedDigest?.toString() ?? '';
+        if (actualSha256.toLowerCase() != expectedSha256.toLowerCase()) {
+          yield const OfflineSyncProgress.error("sha256_mismatch");
+          return;
+        }
+      }
 
       // 2. EXTRACTION (DECOMPRESSIONE GZIP)
       yield const OfflineSyncProgress(
@@ -480,11 +585,15 @@ class OfflineDbSyncService {
     required String targetDbPath,
     required File patchFile,
   }) async {
+    // Chiudi qualsiasi connessione singleton attiva per rilasciare file lock
+    await OfflineDbService.close();
+
     final Database db = await openDatabase(targetDbPath);
 
     try {
-      // 1. Collega il database temporaneo patch (al di fuori del blocco transaction)
-      await db.execute("ATTACH DATABASE '${patchFile.path}' AS patch;");
+      // 1. Collega il database temporaneo patch (con escape apostrofi per iOS/Windows path)
+      final escapedPath = patchFile.path.replaceAll("'", "''");
+      await db.execute("ATTACH DATABASE '$escapedPath' AS patch;");
 
       // 2. Upsert atomico all'interno della transazione
       try {
@@ -509,6 +618,71 @@ class OfflineDbSyncService {
       if (patchFile.existsSync()) {
         patchFile.deleteSync();
       }
+    }
+  }
+
+  /// Applica una patch SQLite su Web montando temporaneamente i bytes del delta
+  /// nel VFS IndexedDB e inserendo i record aggiornati a blocchi (batch upsert)
+  /// all'interno di una transazione sul database principale.
+  static Future<void> applyPatchDatabaseWeb({
+    required String targetDbPath,
+    required Uint8List patchBytes,
+  }) async {
+    const tempPatchPath = 'gscanner_temp_patch.db';
+
+    // 1. Scrivi i bytes del delta su IndexedDB VFS
+    await databaseFactory.writeDatabaseBytes(tempPatchPath, patchBytes);
+
+    Database? patchDb;
+    Database? mainDb;
+
+    try {
+      await OfflineDbService.close();
+
+      patchDb = await openDatabase(tempPatchPath, readOnly: true);
+      mainDb = await openDatabase(targetDbPath);
+
+      // 2. Leggi i prodotti aggiornati dal patch DB
+      final List<Map<String, Object?>> rows = await patchDb.rawQuery("""
+        SELECT code, product_name, brands, ingredients_text, 
+               allergens_tags, labels_tags, traces_tags, last_modified_t 
+        FROM products;
+      """);
+
+      // 3. Esegui upsert in batch atomico nel database principale
+      const chunkSize = 500;
+      for (var i = 0; i < rows.length; i += chunkSize) {
+        final chunk = rows.sublist(
+          i,
+          (i + chunkSize > rows.length) ? rows.length : i + chunkSize,
+        );
+
+        final batch = mainDb.batch();
+        for (final row in chunk) {
+          batch.rawInsert("""
+            INSERT OR REPLACE INTO products (
+              code, product_name, brands, ingredients_text, 
+              allergens_tags, labels_tags, traces_tags, last_modified_t
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+          """, [
+            row['code'],
+            row['product_name'],
+            row['brands'],
+            row['ingredients_text'],
+            row['allergens_tags'],
+            row['labels_tags'],
+            row['traces_tags'],
+            row['last_modified_t'],
+          ]);
+        }
+        await batch.commit(noResult: true);
+      }
+    } finally {
+      await patchDb?.close();
+      await mainDb?.close();
+      try {
+        await databaseFactory.deleteDatabase(tempPatchPath);
+      } catch (_) {}
     }
   }
 }

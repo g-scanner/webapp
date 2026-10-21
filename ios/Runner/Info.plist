@@ -70,5 +70,15 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>fetch</string>
+			<string>processing</string>
+		</array>
+		<key>BGTaskSchedulerPermittedIdentifiers</key>
+		<array>
+			<string>com.emanueleciotola.gscanner.offlineDbPeriodicSync</string>
+			<string>workmanager.background.task</string>
+		</array>
 	</dict>
 </plist>

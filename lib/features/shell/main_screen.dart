@@ -12,6 +12,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/analyzer_service.dart';
 import 'package:gscanner/services/db_service.dart';
+import 'package:gscanner/services/database/background_sync_manager.dart';
 import 'package:gscanner/core/core.dart';
 
 import 'package:gscanner/features/scanner/camera_module.dart';
@@ -122,6 +123,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // in CameraModule tramite ScannerStateManager.
     if (state == AppLifecycleState.resumed) {
       _startOfflineVerificationTimerIfNeeded();
+      _autoDownloadOfflineDbIfNeeded(userSettings);
     }
   }
 
@@ -242,6 +244,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       setState(() => userSettings = data);
       context.setLocale(Locale(data.preferredLanguage));
       _autoDownloadOfflineDbIfNeeded(data);
+      BackgroundSyncManager.updatePeriodicTaskRegistration(data);
     }
   }
 
@@ -249,15 +252,20 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     OfflineDbSyncService.autoDownloadIfNeeded(
       settings: currentSettings,
       onSettingsChange: (updatedSettings) async {
+        final bool hadActualUpdate =
+            currentSettings.offlineDbLastSyncedAt !=
+            updatedSettings.offlineDbLastSyncedAt;
         if (mounted) {
           setState(() => userSettings = updatedSettings);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('settings.offlineDatabase.autoSyncSuccess'.tr()),
-              backgroundColor: context.colorScheme.primary,
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          if (hadActualUpdate) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('settings.offlineDatabase.autoSyncSuccess'.tr()),
+                backgroundColor: context.colorScheme.primary,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
         }
         await DbService.saveSettings(updatedSettings);
       },
@@ -1555,6 +1563,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             setState(() => userSettings = newSet);
             themeNotifier.value = themeModeFromString(newSet.preferredTheme);
             await DbService.saveSettings(newSet);
+            await BackgroundSyncManager.updatePeriodicTaskRegistration(newSet);
           },
           onResetDB: () async {
             await DbService.wipeHistoryLocal();

@@ -18,6 +18,8 @@ import 'features/sync/sync_data_screen.dart';
 import 'features/auth/auth_screen.dart';
 import 'features/shell/shell.dart';
 
+import 'services/database/background_sync_manager.dart';
+
 // Re-export per garantire compatibilità con test e consumer storici
 export 'features/shell/main_screen.dart';
 
@@ -26,6 +28,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await EasyLocalization.ensureInitialized();
   await AppDatabase.instance.database;
+  await BackgroundSyncManager.initialize();
 
   usePathUrlStrategy();
 

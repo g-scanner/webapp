@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io' show InternetAddress, SocketException;
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 // Import condizionale: su web usa navigator.onLine, su native ritorna sempre true
 // (il check nativo avviene tramite InternetAddress.lookup di dart:io più in basso).
@@ -14,6 +15,9 @@ import '_connectivity_native.dart'
 class ConnectivityHelper {
   @visibleForTesting
   static bool? mockIsConnected;
+
+  @visibleForTesting
+  static bool? mockIsWifi;
 
   /// Verifica se il dispositivo ha accesso alla rete Internet.
   ///
@@ -47,6 +51,30 @@ class ConnectivityHelper {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Verifica se il dispositivo è connesso a una rete non a consumo (Wi-Fi / Ethernet).
+  /// Su Web ritorna sempre true (il browser non espone il tipo di connessione fisica in modo affidabile).
+  static Future<bool> isWifiConnection() async {
+    if (mockIsWifi != null) {
+      return mockIsWifi!;
+    }
+    if (kIsWeb) {
+      return true;
+    }
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      return connectivityResult.contains(ConnectivityResult.wifi) ||
+          connectivityResult.contains(ConnectivityResult.ethernet);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Richiede la persistenza dello storage nel browser (IndexedDB) per evitare l'eviction automatica di Safari.
+  static Future<bool> requestStoragePersistence() async {
+    if (!kIsWeb) return true;
+    return requestWebStoragePersistence();
   }
 }
 

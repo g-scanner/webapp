@@ -2,6 +2,7 @@
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -396,6 +397,101 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
                 ),
               ],
             ),
+
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+
+            // Toggle Aggiornamento Automatico
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'settings.offlineDatabase.autoSyncTitle'.tr(),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'settings.offlineDatabase.autoSyncSubtitle'.tr(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Switch(
+                  value: widget.settings.offlineDbAutoSync,
+                  onChanged: (val) async {
+                    final updated = widget.settings.copyWith(offlineDbAutoSync: val);
+                    await widget.onSettingsChange(updated);
+                  },
+                  activeThumbColor: colorScheme.onPrimary,
+                  activeTrackColor: colorScheme.primary,
+                  inactiveThumbColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  inactiveTrackColor: colorScheme.surfaceContainerHigh,
+                  trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                ),
+              ],
+            ),
+
+            // Toggle Solo Wi-Fi (nascosto su Web)
+            if (!kIsWeb) ...[
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'settings.offlineDatabase.wifiOnlyTitle'.tr(),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'settings.offlineDatabase.wifiOnlySubtitle'.tr(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Switch(
+                    value: widget.settings.offlineDbWifiOnly,
+                    onChanged: (val) async {
+                      final updated = widget.settings.copyWith(offlineDbWifiOnly: val);
+                      await widget.onSettingsChange(updated);
+                    },
+                    activeThumbColor: colorScheme.onPrimary,
+                    activeTrackColor: colorScheme.primary,
+                    inactiveThumbColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    inactiveTrackColor: colorScheme.surfaceContainerHigh,
+                    trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                  ),
+                ],
+              ),
+            ],
           ],
         ],
       ),

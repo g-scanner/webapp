@@ -1,6 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
-
+import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
 /// Controlla navigator.onLine del browser.
@@ -12,5 +10,16 @@ bool isWebNavigatorOnline() {
   } catch (_) {
     // Fallback sicuro: assume connesso se non riusciamo a leggere lo stato.
     return true;
+  }
+}
+
+/// Richiede la persistenza dello storage (IndexedDB) per prevenire l'eviction automatica di Safari/WebKit.
+Future<bool> requestWebStoragePersistence() async {
+  try {
+    final storage = web.window.navigator.storage;
+    final isPersisted = await storage.persist().toDart;
+    return isPersisted.toDart;
+  } catch (_) {
+    return false;
   }
 }

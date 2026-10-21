@@ -15,6 +15,8 @@ class UserSettings {
   final List<String> reportedBarcodes;
   final OfflineDbTier offlineDbTier;
   final int? offlineDbLastSyncedAt;
+  final bool offlineDbAutoSync;
+  final bool offlineDbWifiOnly;
   final int? updatedAt;
 
   /// Restituisce `true` se il database offline è abilitato (tier != none) e l'ultimo sync risale a oltre 30 giorni fa (o mai eseguito).
@@ -48,6 +50,8 @@ class UserSettings {
     this.reportedBarcodes = const [],
     this.offlineDbTier = OfflineDbTier.none,
     this.offlineDbLastSyncedAt,
+    this.offlineDbAutoSync = true,
+    this.offlineDbWifiOnly = true,
     this.updatedAt,
   });
 
@@ -64,6 +68,8 @@ class UserSettings {
     List<String>? reportedBarcodes,
     OfflineDbTier? offlineDbTier,
     Object? offlineDbLastSyncedAt = _unsetSentinel,
+    bool? offlineDbAutoSync,
+    bool? offlineDbWifiOnly,
     Object? updatedAt = _unsetSentinel,
   }) {
     final int? resolvedLastSyncedAt = identical(offlineDbLastSyncedAt, _unsetSentinel)
@@ -85,6 +91,8 @@ class UserSettings {
       reportedBarcodes: reportedBarcodes ?? this.reportedBarcodes,
       offlineDbTier: offlineDbTier ?? this.offlineDbTier,
       offlineDbLastSyncedAt: resolvedLastSyncedAt,
+      offlineDbAutoSync: offlineDbAutoSync ?? this.offlineDbAutoSync,
+      offlineDbWifiOnly: offlineDbWifiOnly ?? this.offlineDbWifiOnly,
       updatedAt: resolvedUpdatedAt,
     );
   }
@@ -101,6 +109,8 @@ class UserSettings {
       reportedBarcodes: List<String>.from(json['reportedBarcodes'] ?? const []),
       offlineDbTier: OfflineDbTierExtension.fromKey(json['offlineDbTier']),
       offlineDbLastSyncedAt: json['offlineDbLastSyncedAt'],
+      offlineDbAutoSync: json['offlineDbAutoSync'] ?? true,
+      offlineDbWifiOnly: json['offlineDbWifiOnly'] ?? true,
       updatedAt: json['updatedAt'],
     );
   }
@@ -117,6 +127,8 @@ class UserSettings {
       'reportedBarcodes': reportedBarcodes,
       'offlineDbTier': offlineDbTier.key,
       'offlineDbLastSyncedAt': offlineDbLastSyncedAt,
+      'offlineDbAutoSync': offlineDbAutoSync,
+      'offlineDbWifiOnly': offlineDbWifiOnly,
       'updatedAt': updatedAt,
     };
   }
