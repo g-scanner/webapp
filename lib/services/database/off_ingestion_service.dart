@@ -421,23 +421,4 @@ class OffIngestionService {
     return const OffFetchResult.networkError();
   }
 
-  /// Metodo legacy mantenuto per piena retrocompatibilità.
-  static Future<Product?> fetchAndParseOffProduct(
-    String barcode,
-    UserSettings settings,
-  ) async {
-    final result = await fetchOffProduct(barcode, settings);
-    return result.product;
-  }
-
-  /// Delega a [OffProductParser.cleanIngredientsText] per retrocompatibilità.
-  static String cleanIngredientsText(String text) =>
-      OffProductParser.cleanIngredientsText(text);
-
-  /// Delega a [OffProductParser.getFirstNonEmptyString] per retrocompatibilità.
-  static String getFirstNonEmptyString(
-    Map<String, dynamic> data,
-    List<String> keys,
-    String defaultValue,
-  ) => OffProductParser.getFirstNonEmptyString(data, keys, defaultValue);
 }

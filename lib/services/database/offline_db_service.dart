@@ -33,16 +33,6 @@ class OfflineDbService {
     }
     final targetPath = p.join(offlineDir.path, 'offline_products.db');
 
-    // Migrazione trasparente da getApplicationDocumentsDirectory se presente (per compliance iOS iCloud backup)
-    try {
-      final docDir = await getApplicationDocumentsDirectory();
-      final legacyFile = File(p.join(docDir.path, 'offline_db', 'offline_products.db'));
-      final targetFile = File(targetPath);
-      if (legacyFile.existsSync() && !targetFile.existsSync()) {
-        await legacyFile.rename(targetPath);
-      }
-    } catch (_) {}
-
     _cachedDbPath = targetPath;
     return _cachedDbPath!;
   }
