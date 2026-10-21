@@ -55,7 +55,8 @@
     },
     "status": {
       "preferencesSaved": "Preferenze salvate ed applicate!",
-      "historyClearedSuccess": "Cronologia svuotata con successo!"
+      "historyClearedSuccess": "Cronologia svuotata con successo!",
+      "productsClearedSuccess": "Cache prodotti svuotata con successo!"
     }
   }
 }
