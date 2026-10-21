@@ -5,7 +5,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart' show SetOptions;
+import 'package:cloud_firestore/cloud_firestore.dart'
+    show SetOptions, FieldValue;
 import 'package:http/http.dart' as http;
 
 import 'package:gscanner/models/models.dart';
@@ -155,6 +156,21 @@ void main() {
       await DbService.saveLastSyncTime(timestamp);
 
       expect(await DbService.getLastSyncTime(), timestamp);
+    });
+
+    test('clearProductCache clears all products and sync metadata', () async {
+      final p1 = createSampleProduct(barcode: '111', name: 'Biscotti');
+      final p2 = createSampleProduct(barcode: '222', name: 'Crackers');
+      await DbService.saveLocalProducts([p1, p2]);
+      await DbService.saveLastSyncTime('2026-08-20T10:00:00Z');
+
+      expect((await DbService.getLocalProducts()).length, 2);
+      expect(await DbService.getLastSyncTime(), isNotNull);
+
+      await DbService.clearProductCache();
+
+      expect(await DbService.getLocalProducts(), isEmpty);
+      expect(await DbService.getLastSyncTime(), isNull);
     });
   });
 
@@ -429,9 +445,15 @@ void main() {
           },
         );
 
-        expect(result.product.nameMap['en'], 'Ciastka'); // Fallback to en map slot
+        expect(
+          result.product.nameMap['en'],
+          'Ciastka',
+        ); // Fallback to en map slot
         expect(result.product.ingredientsMap['en'], 'Maka ryzowa, cukier');
-        expect(result.product.allergensMap['it'], containsAll(['Soia', 'Uova']));
+        expect(
+          result.product.allergensMap['it'],
+          containsAll(['Soia', 'Uova']),
+        );
       },
     );
 
@@ -476,8 +498,14 @@ void main() {
 
         // Gli allergeni non devono contenere "Senza Glutine", solo "Latte"
         expect(result.product.allergensMap['it'], ['Latte']);
-        expect(result.product.allergensMap['it']!.contains('Senza Glutine'), isFalse);
-        expect(result.product.allergensMap['it']!.contains('it:senza-glutine'), isFalse);
+        expect(
+          result.product.allergensMap['it']!.contains('Senza Glutine'),
+          isFalse,
+        );
+        expect(
+          result.product.allergensMap['it']!.contains('it:senza-glutine'),
+          isFalse,
+        );
 
         // La claim è stata inclusa negli ingredienti per garantire la valutazione sicura
         expect(result.product.ingredientsMap['it'], contains('Senza glutine'));
@@ -905,7 +933,7 @@ void main() {
     );
 
     test(
-      'saveSettings writes offlineDbTier and offlineDbLastSyncedAt locally and syncs to Firestore',
+      'saveSettings writes offlineDbTier and offlineDbLastSyncedAt locally and syncs to Firestore when offlineDbCloudSync is true',
       () async {
         when(() => mockAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.isAnonymous).thenReturn(false);
@@ -922,6 +950,7 @@ void main() {
           preferredTheme: 'dark',
           offlineDbTier: OfflineDbTier.euroCore,
           offlineDbLastSyncedAt: 1770000000,
+          offlineDbCloudSync: true,
         );
 
         await DbService.saveSettings(customSettings);
@@ -930,10 +959,52 @@ void main() {
         expect(loaded.offlineDbTier, OfflineDbTier.euroCore);
         expect(loaded.offlineDbLastSyncedAt, 1770000000);
 
-        final captured = verify(() => mockDocRef.set(captureAny(), any())).captured;
+        final captured = verify(
+          () => mockDocRef.set(captureAny(), any()),
+        ).captured;
         final firestoreMap = captured.first as Map<String, dynamic>;
         expect(firestoreMap['offlineDbTier'], OfflineDbTier.euroCore.key);
         expect(firestoreMap['offlineDbLastSyncedAt'], 1770000000);
+      },
+    );
+
+    test(
+      'saveSettings writes offline DB settings locally and deletes from Firestore with FieldValue.delete() when offlineDbCloudSync is false',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('user_pref');
+
+        when(() => mockUsersCol.doc('user_pref')).thenReturn(mockDocRef);
+
+        final customSettings = UserSettings(
+          strictMode: false,
+          alertLactose: true,
+          warnAdditives: false,
+          autoSaveHistory: true,
+          preferredLanguage: 'en',
+          preferredTheme: 'dark',
+          offlineDbTier: OfflineDbTier.euroCore,
+          offlineDbLastSyncedAt: 1770000000,
+          offlineDbCloudSync: false,
+        );
+
+        await DbService.saveSettings(customSettings);
+
+        final loaded = await DbService.getLocalSettings();
+        expect(loaded.offlineDbTier, OfflineDbTier.euroCore);
+        expect(loaded.offlineDbLastSyncedAt, 1770000000);
+        expect(loaded.offlineDbCloudSync, isFalse);
+
+        final captured = verify(
+          () => mockDocRef.set(captureAny(), any()),
+        ).captured;
+        final firestoreMap = captured.first as Map<String, dynamic>;
+        expect(firestoreMap['offlineDbCloudSync'], isFalse);
+        expect(firestoreMap['offlineDbTier'], FieldValue.delete());
+        expect(firestoreMap['offlineDbLastSyncedAt'], FieldValue.delete());
+        expect(firestoreMap['offlineDbAutoSync'], FieldValue.delete());
+        expect(firestoreMap['offlineDbWifiOnly'], FieldValue.delete());
       },
     );
   });
@@ -1059,8 +1130,12 @@ void main() {
           preferredLanguage: 'it',
           offlineDbTier: OfflineDbTier.glutenFree,
           offlineDbLastSyncedAt: 1770000000,
+          offlineDbCloudSync: true,
         );
-        await prefs.setString('celiac_settings', json.encode(anonSettings.toJson()));
+        await prefs.setString(
+          'celiac_settings',
+          json.encode(anonSettings.toJson()),
+        );
         await prefs.setBool('has_anonymous_settings', true);
 
         when(() => mockUsersCol.doc('new_user_123')).thenReturn(mockDocRef);
@@ -1077,7 +1152,9 @@ void main() {
         expect(loaded.offlineDbTier, OfflineDbTier.glutenFree);
         expect(loaded.offlineDbLastSyncedAt, 1770000000);
 
-        final captured = verify(() => mockDocRef.set(captureAny(), any())).captured;
+        final captured = verify(
+          () => mockDocRef.set(captureAny(), any()),
+        ).captured;
         final firestoreMap = captured.first as Map<String, dynamic>;
         expect(firestoreMap['offlineDbTier'], OfflineDbTier.glutenFree.key);
         expect(firestoreMap['offlineDbLastSyncedAt'], 1770000000);
@@ -1122,7 +1199,10 @@ void main() {
           offlineDbTier: OfflineDbTier.glutenFree,
           offlineDbLastSyncedAt: 1770000000,
         );
-        await prefs.setString('celiac_settings', json.encode(anonSettings.toJson()));
+        await prefs.setString(
+          'celiac_settings',
+          json.encode(anonSettings.toJson()),
+        );
 
         when(() => mockReportsCol.doc(any())).thenReturn(mockDocRef);
         when(() => mockUsersCol.doc(newAnonUid)).thenReturn(mockDocRef);
@@ -1161,7 +1241,10 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
         const anonUid = 'active_anon_user';
         await prefs.setString('last_anonymous_uid', anonUid);
-        await prefs.setString('celiac_settings', json.encode({'userId': anonUid, 'strictMode': true}));
+        await prefs.setString(
+          'celiac_settings',
+          json.encode({'userId': anonUid, 'strictMode': true}),
+        );
 
         when(() => mockAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.isAnonymous).thenReturn(true);
@@ -1198,33 +1281,42 @@ void main() {
       expect(prefs.getString('last_anonymous_uid'), 'anon_uid_abc');
     });
 
-    test('isNewAnonymousSession returns false when no previous UID is stored', () async {
-      SharedPreferences.setMockInitialValues({});
+    test(
+      'isNewAnonymousSession returns false when no previous UID is stored',
+      () async {
+        SharedPreferences.setMockInitialValues({});
 
-      final result = await DbService.isNewAnonymousSession('anon_uid_1');
+        final result = await DbService.isNewAnonymousSession('anon_uid_1');
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+      },
+    );
 
-    test('isNewAnonymousSession returns false when UID matches the stored one', () async {
-      SharedPreferences.setMockInitialValues({
-        'last_anonymous_uid': 'anon_uid_1',
-      });
+    test(
+      'isNewAnonymousSession returns false when UID matches the stored one',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'last_anonymous_uid': 'anon_uid_1',
+        });
 
-      final result = await DbService.isNewAnonymousSession('anon_uid_1');
+        final result = await DbService.isNewAnonymousSession('anon_uid_1');
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+      },
+    );
 
-    test('isNewAnonymousSession returns true when UID differs from stored one', () async {
-      SharedPreferences.setMockInitialValues({
-        'last_anonymous_uid': 'anon_uid_OLD',
-      });
+    test(
+      'isNewAnonymousSession returns true when UID differs from stored one',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'last_anonymous_uid': 'anon_uid_OLD',
+        });
 
-      final result = await DbService.isNewAnonymousSession('anon_uid_NEW');
+        final result = await DbService.isNewAnonymousSession('anon_uid_NEW');
 
-      expect(result, isTrue);
-    });
+        expect(result, isTrue);
+      },
+    );
 
     test('wipeAnonymousData clears last_anonymous_uid key', () async {
       final prefs = await SharedPreferences.getInstance();
@@ -1233,7 +1325,11 @@ void main() {
       await prefs.setBool('has_anonymous_settings', true);
       await historyDao.insertHistoryItem(
         anonUid,
-        ScanHistoryItem(id: 'h_w', barcode: '123', scannedAt: '2026-08-01T00:00:00Z'),
+        ScanHistoryItem(
+          id: 'h_w',
+          barcode: '123',
+          scannedAt: '2026-08-01T00:00:00Z',
+        ),
       );
 
       await DbService.wipeAnonymousData();
@@ -1249,7 +1345,11 @@ void main() {
       await prefs.setString('last_anonymous_uid', anonUid);
       await historyDao.insertHistoryItem(
         anonUid,
-        ScanHistoryItem(id: 'h_m', barcode: '999', scannedAt: '2026-08-01T00:00:00Z'),
+        ScanHistoryItem(
+          id: 'h_m',
+          barcode: '999',
+          scannedAt: '2026-08-01T00:00:00Z',
+        ),
       );
 
       final mockUserHistoryCol = MockCollectionReference();
@@ -1538,7 +1638,10 @@ void main() {
 
         final merged = await DbService.syncSettingsWithFirestore(localSettings);
 
-        expect(merged.strictMode, isFalse); // Remote setting taken because remote is newer
+        expect(
+          merged.strictMode,
+          isFalse,
+        ); // Remote setting taken because remote is newer
         expect(
           merged.reportedBarcodes,
           containsAll(['LOCAL_1', 'REMOTE_1', 'SHARED_BARCODE']),
@@ -1566,6 +1669,7 @@ void main() {
           preferredLanguage: 'it',
           offlineDbTier: OfflineDbTier.euroCore,
           offlineDbLastSyncedAt: 1770000000,
+          offlineDbCloudSync: true,
           updatedAt: 2000,
         );
         when(() => mockDocSnap.data()).thenReturn(remoteSettings.toJson());
@@ -1578,6 +1682,7 @@ void main() {
           preferredLanguage: 'it',
           offlineDbTier: OfflineDbTier.none,
           offlineDbLastSyncedAt: null,
+          offlineDbCloudSync: true,
           updatedAt: 1000,
         );
 
@@ -1599,7 +1704,9 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('sync_set_user_none');
 
-        when(() => mockUsersCol.doc('sync_set_user_none')).thenReturn(mockDocRef);
+        when(
+          () => mockUsersCol.doc('sync_set_user_none'),
+        ).thenReturn(mockDocRef);
         when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
         when(() => mockDocSnap.exists).thenReturn(true);
 
@@ -1612,6 +1719,7 @@ void main() {
           preferredLanguage: 'it',
           offlineDbTier: OfflineDbTier.none,
           offlineDbLastSyncedAt: null,
+          offlineDbCloudSync: true,
           updatedAt: 2000,
         );
         when(() => mockDocSnap.data()).thenReturn(remoteSettings.toJson());
@@ -1624,6 +1732,7 @@ void main() {
           preferredLanguage: 'it',
           offlineDbTier: OfflineDbTier.glutenFree,
           offlineDbLastSyncedAt: 1770000000,
+          offlineDbCloudSync: true,
           updatedAt: 1000,
         );
 
@@ -1643,7 +1752,9 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('sync_identical_user');
 
-        when(() => mockUsersCol.doc('sync_identical_user')).thenReturn(mockDocRef);
+        when(
+          () => mockUsersCol.doc('sync_identical_user'),
+        ).thenReturn(mockDocRef);
         when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
         when(() => mockDocSnap.exists).thenReturn(true);
         when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
@@ -1676,7 +1787,10 @@ void main() {
         final merged = await DbService.syncSettingsWithFirestore(localSettings);
 
         expect(merged.updatedAt, 5000);
-        expect(merged.reportedBarcodes, containsAll(['LOCAL_BARCODE', 'REMOTE_BARCODE']));
+        expect(
+          merged.reportedBarcodes,
+          containsAll(['LOCAL_BARCODE', 'REMOTE_BARCODE']),
+        );
       },
     );
 
@@ -1687,7 +1801,9 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('offline_winner_user');
 
-        when(() => mockUsersCol.doc('offline_winner_user')).thenReturn(mockDocRef);
+        when(
+          () => mockUsersCol.doc('offline_winner_user'),
+        ).thenReturn(mockDocRef);
         when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
         when(() => mockDocSnap.exists).thenReturn(true);
         when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
@@ -1702,6 +1818,7 @@ void main() {
           preferredTheme: 'light',
           offlineDbTier: OfflineDbTier.none,
           offlineDbLastSyncedAt: null,
+          offlineDbCloudSync: true,
           reportedBarcodes: ['REMOTE_BC'],
           updatedAt: 1000,
         );
@@ -1718,11 +1835,14 @@ void main() {
           preferredTheme: 'dark',
           offlineDbTier: OfflineDbTier.glutenFree,
           offlineDbLastSyncedAt: 1775000000,
+          offlineDbCloudSync: true,
           reportedBarcodes: ['LOCAL_BC'],
           updatedAt: 2000,
         );
 
-        final merged = await DbService.syncSettingsWithFirestore(localFreshSettings);
+        final merged = await DbService.syncSettingsWithFirestore(
+          localFreshSettings,
+        );
 
         // Verifica che le modifiche offline siano state tutte PRESERVATE
         expect(merged.strictMode, isFalse);
@@ -1747,7 +1867,9 @@ void main() {
         when(() => mockUser.isAnonymous).thenReturn(false);
         when(() => mockUser.uid).thenReturn('remote_winner_user');
 
-        when(() => mockUsersCol.doc('remote_winner_user')).thenReturn(mockDocRef);
+        when(
+          () => mockUsersCol.doc('remote_winner_user'),
+        ).thenReturn(mockDocRef);
         when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
         when(() => mockDocSnap.exists).thenReturn(true);
         when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
@@ -1762,6 +1884,7 @@ void main() {
           preferredTheme: 'dark',
           offlineDbTier: OfflineDbTier.euroCore,
           offlineDbLastSyncedAt: 1775500000,
+          offlineDbCloudSync: true,
           reportedBarcodes: ['REMOTE_BC'],
           updatedAt: 3000,
         );
@@ -1778,11 +1901,14 @@ void main() {
           preferredTheme: 'light',
           offlineDbTier: OfflineDbTier.none,
           offlineDbLastSyncedAt: null,
+          offlineDbCloudSync: true,
           reportedBarcodes: ['LOCAL_BC'],
           updatedAt: 1500,
         );
 
-        final merged = await DbService.syncSettingsWithFirestore(localStaleSettings);
+        final merged = await DbService.syncSettingsWithFirestore(
+          localStaleSettings,
+        );
 
         // Verifica che il dato remoto più recente prevalga
         expect(merged.strictMode, isFalse);
@@ -1796,31 +1922,28 @@ void main() {
       },
     );
 
-    test(
-      'saveSettings assigns a fresh updatedAt timestamp on save',
-      () async {
-        when(() => mockAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.isAnonymous).thenReturn(false);
-        when(() => mockUser.uid).thenReturn('save_ts_user');
-        when(() => mockUsersCol.doc('save_ts_user')).thenReturn(mockDocRef);
-        when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
+    test('saveSettings assigns a fresh updatedAt timestamp on save', () async {
+      when(() => mockAuth.currentUser).thenReturn(mockUser);
+      when(() => mockUser.isAnonymous).thenReturn(false);
+      when(() => mockUser.uid).thenReturn('save_ts_user');
+      when(() => mockUsersCol.doc('save_ts_user')).thenReturn(mockDocRef);
+      when(() => mockDocRef.set(any(), any())).thenAnswer((_) async {});
 
-        final settingsWithoutTimestamp = UserSettings(
-          userId: 'save_ts_user',
-          strictMode: true,
-          alertLactose: false,
-          warnAdditives: true,
-          autoSaveHistory: true,
-          preferredLanguage: 'it',
-        );
+      final settingsWithoutTimestamp = UserSettings(
+        userId: 'save_ts_user',
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+      );
 
-        await DbService.saveSettings(settingsWithoutTimestamp);
+      await DbService.saveSettings(settingsWithoutTimestamp);
 
-        final localSaved = await DbService.getLocalSettings();
-        expect(localSaved.updatedAt, isNotNull);
-        expect(localSaved.updatedAt, greaterThan(0));
-      },
-    );
+      final localSaved = await DbService.getLocalSettings();
+      expect(localSaved.updatedAt, isNotNull);
+      expect(localSaved.updatedAt, greaterThan(0));
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2124,154 +2247,193 @@ void main() {
   // GROUP: Anonymous User Real UID Preservation & Deletion
   // ═══════════════════════════════════════════════════════════════════════════
   group('Anonymous User Real UID Preservation', () {
-    test('ReportsDbService and HistoryDbService getUserId returns real UID for anonymous user', () {
-      when(() => mockUser.uid).thenReturn('anon_uid_456');
-      when(() => mockUser.isAnonymous).thenReturn(true);
-      when(() => mockAuth.currentUser).thenReturn(mockUser);
+    test(
+      'ReportsDbService and HistoryDbService getUserId returns real UID for anonymous user',
+      () {
+        when(() => mockUser.uid).thenReturn('anon_uid_456');
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
 
-      expect(ReportsDbService.getUserId(mockAuth), equals('anon_uid_456'));
-      expect(HistoryDbService.getUserId(mockAuth), equals('anon_uid_456'));
-    });
+        expect(ReportsDbService.getUserId(mockAuth), equals('anon_uid_456'));
+        expect(HistoryDbService.getUserId(mockAuth), equals('anon_uid_456'));
+      },
+    );
 
-    test('ReportsDbService.submitProductReportClientSide sets real UID for anonymous user', () async {
-      when(() => mockUser.uid).thenReturn('anon_uid_456');
-      when(() => mockUser.isAnonymous).thenReturn(true);
-      when(() => mockAuth.currentUser).thenReturn(mockUser);
+    test(
+      'ReportsDbService.submitProductReportClientSide sets real UID for anonymous user',
+      () async {
+        when(() => mockUser.uid).thenReturn('anon_uid_456');
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
 
-      when(() => mockReportsCol.doc(any())).thenReturn(mockDocRef);
-      when(() => mockReportsCol.doc()).thenReturn(mockDocRef);
-      when(() => mockProductsCol.doc('1234567890')).thenReturn(mockDocRef);
-      when(() => mockUsersCol.doc('anon_uid_456')).thenReturn(mockDocRef);
+        when(() => mockReportsCol.doc(any())).thenReturn(mockDocRef);
+        when(() => mockReportsCol.doc()).thenReturn(mockDocRef);
+        when(() => mockProductsCol.doc('1234567890')).thenReturn(mockDocRef);
+        when(() => mockUsersCol.doc('anon_uid_456')).thenReturn(mockDocRef);
 
-      final report = await DbService.submitProductReportClientSide(
-        '1234567890',
-        'Test Prodotto Anon',
-        'Test Brand',
-        {'type': 'label_unclear', 'comments': 'Nota di test'},
-      );
+        final report = await DbService.submitProductReportClientSide(
+          '1234567890',
+          'Test Prodotto Anon',
+          'Test Brand',
+          {'type': 'label_unclear', 'comments': 'Nota di test'},
+        );
 
-      expect(report.userId, equals('anon_uid_456'));
-      verify(() => mockBatch.set<Map<String, dynamic>>(
-        mockDocRef,
-        any(that: predicate<Map<String, dynamic>>((map) => map['userId'] == 'anon_uid_456')),
-      )).called(1);
-    });
+        expect(report.userId, equals('anon_uid_456'));
+        verify(
+          () => mockBatch.set<Map<String, dynamic>>(
+            mockDocRef,
+            any(
+              that: predicate<Map<String, dynamic>>(
+                (map) => map['userId'] == 'anon_uid_456',
+              ),
+            ),
+          ),
+        ).called(1);
+      },
+    );
 
-    test('ReportsDbService.deleteReportFromDb updates reportedBarcodes for anonymous user', () async {
-      when(() => mockUser.uid).thenReturn('anon_uid_456');
-      when(() => mockUser.isAnonymous).thenReturn(true);
-      when(() => mockAuth.currentUser).thenReturn(mockUser);
+    test(
+      'ReportsDbService.deleteReportFromDb updates reportedBarcodes for anonymous user',
+      () async {
+        when(() => mockUser.uid).thenReturn('anon_uid_456');
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
 
-      final mockReportDocRef = MockDocumentReference();
-      final mockReportSnap = MockDocumentSnapshot();
-      final mockVotesCol = MockCollectionReference();
-      final mockVotesSnap = MockQuerySnapshot();
+        final mockReportDocRef = MockDocumentReference();
+        final mockReportSnap = MockDocumentSnapshot();
+        final mockVotesCol = MockCollectionReference();
+        final mockVotesSnap = MockQuerySnapshot();
 
-      when(() => mockReportsCol.doc('rep_del_1')).thenReturn(mockReportDocRef);
-      when(() => mockReportDocRef.get()).thenAnswer((_) async => mockReportSnap);
-      when(() => mockReportSnap.exists).thenReturn(true);
-      when(() => mockReportSnap.data()).thenReturn({
-        'barcode': '1234567890',
-        'userId': 'anon_uid_456',
-      });
-      when(() => mockReportDocRef.collection('votes')).thenReturn(mockVotesCol);
-      when(() => mockVotesCol.get()).thenAnswer((_) async => mockVotesSnap);
-      when(() => mockVotesSnap.docs).thenReturn([]);
+        when(
+          () => mockReportsCol.doc('rep_del_1'),
+        ).thenReturn(mockReportDocRef);
+        when(
+          () => mockReportDocRef.get(),
+        ).thenAnswer((_) async => mockReportSnap);
+        when(() => mockReportSnap.exists).thenReturn(true);
+        when(
+          () => mockReportSnap.data(),
+        ).thenReturn({'barcode': '1234567890', 'userId': 'anon_uid_456'});
+        when(
+          () => mockReportDocRef.collection('votes'),
+        ).thenReturn(mockVotesCol);
+        when(() => mockVotesCol.get()).thenAnswer((_) async => mockVotesSnap);
+        when(() => mockVotesSnap.docs).thenReturn([]);
 
-      when(() => mockProductsCol.doc('1234567890')).thenReturn(mockDocRef);
-      when(() => mockUsersCol.doc('anon_uid_456')).thenReturn(mockDocRef);
+        when(() => mockProductsCol.doc('1234567890')).thenReturn(mockDocRef);
+        when(() => mockUsersCol.doc('anon_uid_456')).thenReturn(mockDocRef);
 
-      await DbService.deleteReportFromDb('rep_del_1');
+        await DbService.deleteReportFromDb('rep_del_1');
 
-      verify(() => mockBatch.delete(mockReportDocRef)).called(1);
-      verify(() => mockBatch.set<Map<String, dynamic>>(any(), any(), any())).called(2);
-      verify(() => mockBatch.commit()).called(1);
-    });
+        verify(() => mockBatch.delete(mockReportDocRef)).called(1);
+        verify(
+          () => mockBatch.set<Map<String, dynamic>>(any(), any(), any()),
+        ).called(2);
+        verify(() => mockBatch.commit()).called(1);
+      },
+    );
   });
 
   group('GROUP 12 – Tombstones & Optimistic Local-First Deletion', () {
-    test('deleteHistoryItemLocal records tombstone in SharedPreferences', () async {
-      await DbService.deleteHistoryItemLocal('hist_tombstone_item_1');
+    test(
+      'deleteHistoryItemLocal records tombstone in SharedPreferences',
+      () async {
+        await DbService.deleteHistoryItemLocal('hist_tombstone_item_1');
 
-      final prefs = await SharedPreferences.getInstance();
-      final tombstones = prefs.getStringList('deleted_history_ids_sync_filter');
-      expect(tombstones, isNotNull);
-      expect(tombstones!.contains('hist_tombstone_item_1'), isTrue);
-    });
+        final prefs = await SharedPreferences.getInstance();
+        final tombstones = prefs.getStringList(
+          'deleted_history_ids_sync_filter',
+        );
+        expect(tombstones, isNotNull);
+        expect(tombstones!.contains('hist_tombstone_item_1'), isTrue);
+      },
+    );
 
-    test('deleteHistoryByBarcodeLocal records tombstone in SharedPreferences', () async {
-      await DbService.deleteHistoryByBarcodeLocal('800_TOMBSTONE_BARCODE');
+    test(
+      'deleteHistoryByBarcodeLocal records tombstone in SharedPreferences',
+      () async {
+        await DbService.deleteHistoryByBarcodeLocal('800_TOMBSTONE_BARCODE');
 
-      final prefs = await SharedPreferences.getInstance();
-      final tombstones = prefs.getStringList('deleted_barcodes_sync_filter');
-      expect(tombstones, isNotNull);
-      expect(tombstones!.contains('800_TOMBSTONE_BARCODE'), isTrue);
-    });
+        final prefs = await SharedPreferences.getInstance();
+        final tombstones = prefs.getStringList('deleted_barcodes_sync_filter');
+        expect(tombstones, isNotNull);
+        expect(tombstones!.contains('800_TOMBSTONE_BARCODE'), isTrue);
+      },
+    );
 
-    test('syncHistoryWithFirestore filters out and deletes remote docs matching tombstones', () async {
-      when(() => mockAuth.currentUser).thenReturn(mockUser);
-      when(() => mockUser.isAnonymous).thenReturn(false);
-      when(() => mockUser.uid).thenReturn('user_tombstone_sync');
+    test(
+      'syncHistoryWithFirestore filters out and deletes remote docs matching tombstones',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('user_tombstone_sync');
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('deleted_history_ids_sync_filter', ['tombstone_id_1']);
-      await prefs.setStringList('deleted_barcodes_sync_filter', ['800_TOMB_BARCODE']);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList('deleted_history_ids_sync_filter', [
+          'tombstone_id_1',
+        ]);
+        await prefs.setStringList('deleted_barcodes_sync_filter', [
+          '800_TOMB_BARCODE',
+        ]);
 
-      final mockUserHistoryCol = MockCollectionReference();
-      final mockHistSnap = MockQuerySnapshot();
-      final mockQuery = MockQuery();
+        final mockUserHistoryCol = MockCollectionReference();
+        final mockHistSnap = MockQuerySnapshot();
+        final mockQuery = MockQuery();
 
-      final docTombstoneId = MockQueryDocumentSnapshot();
-      final docTombstoneBarcode = MockQueryDocumentSnapshot();
-      final docValid = MockQueryDocumentSnapshot();
+        final docTombstoneId = MockQueryDocumentSnapshot();
+        final docTombstoneBarcode = MockQueryDocumentSnapshot();
+        final docValid = MockQueryDocumentSnapshot();
 
-      final refTombstoneId = MockDocumentReference();
-      final refTombstoneBarcode = MockDocumentReference();
-      final refValid = MockDocumentReference();
+        final refTombstoneId = MockDocumentReference();
+        final refTombstoneBarcode = MockDocumentReference();
+        final refValid = MockDocumentReference();
 
-      when(() => docTombstoneId.data()).thenReturn({
-        'id': 'tombstone_id_1',
-        'barcode': '800_OTHER_BARCODE',
-        'scannedAt': '2026-10-18T10:00:00Z',
-      });
-      when(() => docTombstoneId.reference).thenReturn(refTombstoneId);
-      when(() => refTombstoneId.delete()).thenAnswer((_) async {});
+        when(() => docTombstoneId.data()).thenReturn({
+          'id': 'tombstone_id_1',
+          'barcode': '800_OTHER_BARCODE',
+          'scannedAt': '2026-10-18T10:00:00Z',
+        });
+        when(() => docTombstoneId.reference).thenReturn(refTombstoneId);
+        when(() => refTombstoneId.delete()).thenAnswer((_) async {});
 
-      when(() => docTombstoneBarcode.data()).thenReturn({
-        'id': 'some_other_id',
-        'barcode': '800_TOMB_BARCODE',
-        'scannedAt': '2026-10-18T11:00:00Z',
-      });
-      when(() => docTombstoneBarcode.reference).thenReturn(refTombstoneBarcode);
-      when(() => refTombstoneBarcode.delete()).thenAnswer((_) async {});
+        when(() => docTombstoneBarcode.data()).thenReturn({
+          'id': 'some_other_id',
+          'barcode': '800_TOMB_BARCODE',
+          'scannedAt': '2026-10-18T11:00:00Z',
+        });
+        when(
+          () => docTombstoneBarcode.reference,
+        ).thenReturn(refTombstoneBarcode);
+        when(() => refTombstoneBarcode.delete()).thenAnswer((_) async {});
 
-      when(() => docValid.data()).thenReturn({
-        'id': 'valid_id_3',
-        'barcode': '800_VALID_BARCODE',
-        'scannedAt': '2026-10-18T12:00:00Z',
-      });
-      when(() => docValid.reference).thenReturn(refValid);
+        when(() => docValid.data()).thenReturn({
+          'id': 'valid_id_3',
+          'barcode': '800_VALID_BARCODE',
+          'scannedAt': '2026-10-18T12:00:00Z',
+        });
+        when(() => docValid.reference).thenReturn(refValid);
 
-      when(() => mockDb.collection('users/user_tombstone_sync/history'))
-          .thenReturn(mockUserHistoryCol);
-      when(() => mockUserHistoryCol.orderBy('scannedAt', descending: true))
-          .thenReturn(mockQuery);
-      when(() => mockQuery.limit(100)).thenReturn(mockQuery);
-      when(() => mockQuery.get()).thenAnswer((_) async => mockHistSnap);
-      when(() => mockHistSnap.docs).thenReturn([
-        docTombstoneId,
-        docTombstoneBarcode,
-        docValid,
-      ]);
+        when(
+          () => mockDb.collection('users/user_tombstone_sync/history'),
+        ).thenReturn(mockUserHistoryCol);
+        when(
+          () => mockUserHistoryCol.orderBy('scannedAt', descending: true),
+        ).thenReturn(mockQuery);
+        when(() => mockQuery.limit(100)).thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockHistSnap);
+        when(
+          () => mockHistSnap.docs,
+        ).thenReturn([docTombstoneId, docTombstoneBarcode, docValid]);
 
-      final syncedHistory = await DbService.syncHistoryWithFirestore();
+        final syncedHistory = await DbService.syncHistoryWithFirestore();
 
-      expect(syncedHistory.length, equals(1));
-      expect(syncedHistory.first.id, equals('valid_id_3'));
-      verify(() => refTombstoneId.delete()).called(1);
-      verify(() => refTombstoneBarcode.delete()).called(1);
-      verifyNever(() => refValid.delete());
-    });
+        expect(syncedHistory.length, equals(1));
+        expect(syncedHistory.first.id, equals('valid_id_3'));
+        verify(() => refTombstoneId.delete()).called(1);
+        verify(() => refTombstoneBarcode.delete()).called(1);
+        verifyNever(() => refValid.delete());
+      },
+    );
 
     test('deleteLocalReport records tombstone in SharedPreferences', () async {
       await DbService.deleteLocalReport('rep_tombstone_456');
@@ -2282,60 +2444,68 @@ void main() {
       expect(tombstones!.contains('rep_tombstone_456'), isTrue);
     });
 
-    test('syncReportsWithFirestore filters out and deletes remote reports matching tombstones', () async {
-      when(() => mockAuth.currentUser).thenReturn(mockUser);
-      when(() => mockUser.isAnonymous).thenReturn(false);
-      when(() => mockUser.uid).thenReturn('user_tombstone_reports');
+    test(
+      'syncReportsWithFirestore filters out and deletes remote reports matching tombstones',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('user_tombstone_reports');
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('deleted_reports_sync_filter', ['rep_tombstone_456']);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList('deleted_reports_sync_filter', [
+          'rep_tombstone_456',
+        ]);
 
-      final mockQuery = MockQuery();
-      final mockSnap = MockQuerySnapshot();
-      final docTombstone = MockQueryDocumentSnapshot();
-      final docValid = MockQueryDocumentSnapshot();
-      final refTombstone = MockDocumentReference();
-      final refValid = MockDocumentReference();
+        final mockQuery = MockQuery();
+        final mockSnap = MockQuerySnapshot();
+        final docTombstone = MockQueryDocumentSnapshot();
+        final docValid = MockQueryDocumentSnapshot();
+        final refTombstone = MockDocumentReference();
+        final refValid = MockDocumentReference();
 
-      when(() => docTombstone.data()).thenReturn({
-        'id': 'rep_tombstone_456',
-        'barcode': '800_REP_TOMB',
-        'productName': 'Tombstone Report',
-        'brand': 'Brand',
-        'type': 'label_unclear',
-        'comments': 'Comments',
-        'submittedAt': '2026-10-18T10:00:00Z',
-        'status': 'open',
-        'userId': 'user_tombstone_reports',
-      });
-      when(() => docTombstone.reference).thenReturn(refTombstone);
-      when(() => refTombstone.delete()).thenAnswer((_) async {});
+        when(() => docTombstone.data()).thenReturn({
+          'id': 'rep_tombstone_456',
+          'barcode': '800_REP_TOMB',
+          'productName': 'Tombstone Report',
+          'brand': 'Brand',
+          'type': 'label_unclear',
+          'comments': 'Comments',
+          'submittedAt': '2026-10-18T10:00:00Z',
+          'status': 'open',
+          'userId': 'user_tombstone_reports',
+        });
+        when(() => docTombstone.reference).thenReturn(refTombstone);
+        when(() => refTombstone.delete()).thenAnswer((_) async {});
 
-      when(() => docValid.data()).thenReturn({
-        'id': 'rep_valid_789',
-        'barcode': '800_REP_VALID',
-        'productName': 'Valid Report',
-        'brand': 'Brand',
-        'type': 'label_unclear',
-        'comments': 'Comments',
-        'submittedAt': '2026-10-18T11:00:00Z',
-        'status': 'open',
-        'userId': 'user_tombstone_reports',
-      });
-      when(() => docValid.reference).thenReturn(refValid);
+        when(() => docValid.data()).thenReturn({
+          'id': 'rep_valid_789',
+          'barcode': '800_REP_VALID',
+          'productName': 'Valid Report',
+          'brand': 'Brand',
+          'type': 'label_unclear',
+          'comments': 'Comments',
+          'submittedAt': '2026-10-18T11:00:00Z',
+          'status': 'open',
+          'userId': 'user_tombstone_reports',
+        });
+        when(() => docValid.reference).thenReturn(refValid);
 
-      when(() => mockReportsCol.where('userId', isEqualTo: 'user_tombstone_reports'))
-          .thenReturn(mockQuery);
-      when(() => mockQuery.get()).thenAnswer((_) async => mockSnap);
-      when(() => mockSnap.docs).thenReturn([docTombstone, docValid]);
+        when(
+          () => mockReportsCol.where(
+            'userId',
+            isEqualTo: 'user_tombstone_reports',
+          ),
+        ).thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockSnap);
+        when(() => mockSnap.docs).thenReturn([docTombstone, docValid]);
 
-      final syncedReports = await DbService.syncReportsWithFirestore();
+        final syncedReports = await DbService.syncReportsWithFirestore();
 
-      expect(syncedReports.length, equals(1));
-      expect(syncedReports.first.id, equals('rep_valid_789'));
-      verify(() => refTombstone.delete()).called(1);
-      verifyNever(() => refValid.delete());
-    });
+        expect(syncedReports.length, equals(1));
+        expect(syncedReports.first.id, equals('rep_valid_789'));
+        verify(() => refTombstone.delete()).called(1);
+        verifyNever(() => refValid.delete());
+      },
+    );
   });
 }
-

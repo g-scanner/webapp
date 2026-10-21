@@ -17,6 +17,7 @@ class UserSettings {
   final int? offlineDbLastSyncedAt;
   final bool offlineDbAutoSync;
   final bool offlineDbWifiOnly;
+  final bool offlineDbCloudSync;
   final int? updatedAt;
 
   /// Restituisce `true` se il database offline è abilitato (tier != none) e l'ultimo sync risale a oltre 30 giorni fa (o mai eseguito).
@@ -52,6 +53,7 @@ class UserSettings {
     this.offlineDbLastSyncedAt,
     this.offlineDbAutoSync = true,
     this.offlineDbWifiOnly = true,
+    this.offlineDbCloudSync = false,
     this.updatedAt,
   });
 
@@ -70,6 +72,7 @@ class UserSettings {
     Object? offlineDbLastSyncedAt = _unsetSentinel,
     bool? offlineDbAutoSync,
     bool? offlineDbWifiOnly,
+    bool? offlineDbCloudSync,
     Object? updatedAt = _unsetSentinel,
   }) {
     final int? resolvedLastSyncedAt = identical(offlineDbLastSyncedAt, _unsetSentinel)
@@ -93,6 +96,7 @@ class UserSettings {
       offlineDbLastSyncedAt: resolvedLastSyncedAt,
       offlineDbAutoSync: offlineDbAutoSync ?? this.offlineDbAutoSync,
       offlineDbWifiOnly: offlineDbWifiOnly ?? this.offlineDbWifiOnly,
+      offlineDbCloudSync: offlineDbCloudSync ?? this.offlineDbCloudSync,
       updatedAt: resolvedUpdatedAt,
     );
   }
@@ -111,6 +115,7 @@ class UserSettings {
       offlineDbLastSyncedAt: json['offlineDbLastSyncedAt'],
       offlineDbAutoSync: json['offlineDbAutoSync'] ?? true,
       offlineDbWifiOnly: json['offlineDbWifiOnly'] ?? true,
+      offlineDbCloudSync: json['offlineDbCloudSync'] ?? false,
       updatedAt: json['updatedAt'],
     );
   }
@@ -129,6 +134,7 @@ class UserSettings {
       'offlineDbLastSyncedAt': offlineDbLastSyncedAt,
       'offlineDbAutoSync': offlineDbAutoSync,
       'offlineDbWifiOnly': offlineDbWifiOnly,
+      'offlineDbCloudSync': offlineDbCloudSync,
       'updatedAt': updatedAt,
     };
   }

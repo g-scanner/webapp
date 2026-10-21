@@ -15,7 +15,7 @@ import '../../../services/database/offline_db_sync_service.dart';
 /// Sezione impostazioni per la configurazione e sincronizzazione del Database Offline.
 class OfflineDatabaseSection extends StatefulWidget {
   final UserSettings settings;
-  final Future<void> Function(UserSettings) onSettingsChange;
+  final Future<void> Function(UserSettings, {bool isOfflineDbChange}) onSettingsChange;
 
   const OfflineDatabaseSection({
     super.key,
@@ -106,7 +106,7 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
           offlineDbTier: OfflineDbTier.none,
           offlineDbLastSyncedAt: null,
         );
-        await widget.onSettingsChange(updated);
+        await widget.onSettingsChange(updated, isOfflineDbChange: true);
       }
       return;
     }
@@ -125,7 +125,7 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
         offlineDbTier: OfflineDbTier.none,
         offlineDbLastSyncedAt: null,
       );
-      await widget.onSettingsChange(resetSettings);
+      await widget.onSettingsChange(resetSettings, isOfflineDbChange: true);
       _startSync(newTier, explicitLastSyncedAt: null);
       return;
     }
@@ -162,7 +162,7 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
             offlineDbTier: tier,
             offlineDbLastSyncedAt: nowEpoch,
           );
-          await widget.onSettingsChange(updated);
+          await widget.onSettingsChange(updated, isOfflineDbChange: true);
           if (mounted) {
             setState(() {
               _downloadingTier = null;
@@ -213,7 +213,7 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
       offlineDbTier: OfflineDbTier.none,
       offlineDbLastSyncedAt: null,
     );
-    await widget.onSettingsChange(updated);
+    await widget.onSettingsChange(updated, isOfflineDbChange: true);
     await _loadDatabaseSize();
   }
 
@@ -435,7 +435,7 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
                   value: widget.settings.offlineDbAutoSync,
                   onChanged: (val) async {
                     final updated = widget.settings.copyWith(offlineDbAutoSync: val);
-                    await widget.onSettingsChange(updated);
+                    await widget.onSettingsChange(updated, isOfflineDbChange: true);
                   },
                   activeThumbColor: colorScheme.onPrimary,
                   activeTrackColor: colorScheme.primary,
@@ -481,7 +481,7 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
                     value: widget.settings.offlineDbWifiOnly,
                     onChanged: (val) async {
                       final updated = widget.settings.copyWith(offlineDbWifiOnly: val);
-                      await widget.onSettingsChange(updated);
+                      await widget.onSettingsChange(updated, isOfflineDbChange: true);
                     },
                     activeThumbColor: colorScheme.onPrimary,
                     activeTrackColor: colorScheme.primary,
@@ -492,6 +492,51 @@ class _OfflineDatabaseSectionState extends State<OfflineDatabaseSection> {
                 ],
               ),
             ],
+
+            // Toggle Sincronizza su altri dispositivi (Cloud)
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'settings.offlineDatabase.cloudSyncTitle'.tr(),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'settings.offlineDatabase.cloudSyncSubtitle'.tr(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Switch(
+                  value: widget.settings.offlineDbCloudSync,
+                  onChanged: (val) async {
+                    final updated = widget.settings.copyWith(offlineDbCloudSync: val);
+                    await widget.onSettingsChange(updated);
+                  },
+                  activeThumbColor: colorScheme.onPrimary,
+                  activeTrackColor: colorScheme.primary,
+                  inactiveThumbColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  inactiveTrackColor: colorScheme.surfaceContainerHigh,
+                  trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                ),
+              ],
+            ),
           ],
         ],
       ),

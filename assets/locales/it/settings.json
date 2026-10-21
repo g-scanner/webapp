@@ -78,13 +78,20 @@
       "autoSyncTitle": "Aggiornamento Automatico",
       "autoSyncSubtitle": "Sincronizza le patch incrementali periodicamente in background.",
       "wifiOnlyTitle": "Solo con Wi-Fi",
-      "wifiOnlySubtitle": "Scarica gli aggiornamenti solo quando connesso a una rete Wi-Fi."
+      "wifiOnlySubtitle": "Scarica gli aggiornamenti solo quando connesso a una rete Wi-Fi.",
+      "cloudSyncTitle": "Sincronizza su Cloud",
+      "cloudSyncSubtitle": "Condividi le impostazioni del database offline tra tutti i tuoi dispositivi. Se disattivato, ogni dispositivo gestirà il database in modo indipendente."
     },
     "dataAndHistory": {
       "clearHistoryTitle": "Svuota Cronologia",
       "clearHistorySubtitle": "Rimuove in modo permanente la tua cronologia scansioni.",
       "clearHistoryConfirm": "Confermi di voler eliminare tutta la cronologia? Questa azione è irreversibile.",
-      "clearHistoryAction": "Elimina Cronologia"
+      "clearHistoryAction": "Elimina Cronologia",
+      "clearProductsTitle": "Svuota Cache Prodotti",
+      "clearProductsSubtitle": "Libera memoria rimuovendo tutti i prodotti salvati localmente.",
+      "clearProductsConfirm": "Confermi di voler eliminare tutti i prodotti memorizzati nella cache locale? Le scansioni dei prodotti già salvati sono molto più rapide.",
+      "clearProductsAction": "Elimina Prodotti",
+      "clearProductsError": "Errore durante l'eliminazione della cache dei prodotti. Riprova."
     },
     "legalMenu": {
       "termsAndConditionsTitle": "Termini e Condizioni",

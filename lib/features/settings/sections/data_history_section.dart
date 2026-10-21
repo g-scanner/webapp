@@ -5,22 +5,59 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
 
-/// Sezione dati e cronologia con pulsante distruttivo svuota cronologia.
+/// Sezione dati e cronologia con pulsanti distruttivi per svuotare cronologia e cache prodotti.
 class DataHistorySection extends StatelessWidget {
   final bool isClearing;
   final VoidCallback onClearHistoryTap;
+  final bool isClearingProducts;
+  final VoidCallback? onClearProductsTap;
 
   const DataHistorySection({
     super.key,
     required this.isClearing,
     required this.onClearHistoryTap,
+    this.isClearingProducts = false,
+    this.onClearProductsTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _buildActionCard(
+          context: context,
+          isBusy: isClearing,
+          onTap: onClearHistoryTap,
+          icon: Icons.delete_outline,
+          title: "settings.dataAndHistory.clearHistoryTitle".tr(),
+          subtitle: "settings.dataAndHistory.clearHistorySubtitle".tr(),
+        ),
+        if (onClearProductsTap != null) ...[
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            isBusy: isClearingProducts,
+            onTap: onClearProductsTap!,
+            icon: Icons.inventory_2_outlined,
+            title: "settings.dataAndHistory.clearProductsTitle".tr(),
+            subtitle: "settings.dataAndHistory.clearProductsSubtitle".tr(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildActionCard({
+    required BuildContext context,
+    required bool isBusy,
+    required VoidCallback onTap,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
     final colorScheme = context.colorScheme;
     return InkWell(
-      onTap: isClearing ? null : onClearHistoryTap,
+      onTap: isBusy ? null : onTap,
       borderRadius: BorderRadius.circular(24),
       splashColor: colorScheme.error.withValues(alpha: 0.12),
       highlightColor: colorScheme.error.withValues(alpha: 0.08),
@@ -39,7 +76,7 @@ class DataHistorySection extends StatelessWidget {
                 color: colorScheme.errorContainer,
                 shape: BoxShape.circle,
               ),
-              child: isClearing
+              child: isBusy
                   ? SizedBox(
                       width: 20,
                       height: 20,
@@ -49,7 +86,7 @@ class DataHistorySection extends StatelessWidget {
                       ),
                     )
                   : Icon(
-                      Icons.delete_outline,
+                      icon,
                       color: colorScheme.error,
                       size: 20,
                     ),
@@ -60,7 +97,7 @@ class DataHistorySection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "settings.dataAndHistory.clearHistoryTitle".tr(),
+                    title,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -69,7 +106,7 @@ class DataHistorySection extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "settings.dataAndHistory.clearHistorySubtitle".tr(),
+                    subtitle,
                     style: TextStyle(fontSize: 13, color: colorScheme.error),
                   ),
                 ],

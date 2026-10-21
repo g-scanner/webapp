@@ -715,5 +715,40 @@ void main() {
       );
       expect(s.isOfflineDbStale, isTrue);
     });
+
+    test('defaults offlineDbCloudSync to false', () {
+      final s = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+      );
+      expect(s.offlineDbCloudSync, isFalse);
+
+      final fromEmptyJson = UserSettings.fromJson({});
+      expect(fromEmptyJson.offlineDbCloudSync, isFalse);
+    });
+
+    test('serializes and deserializes offlineDbCloudSync correctly', () {
+      final s = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbCloudSync: false,
+      );
+      expect(s.offlineDbCloudSync, isFalse);
+
+      final json = s.toJson();
+      expect(json['offlineDbCloudSync'], isFalse);
+
+      final fromJson = UserSettings.fromJson(json);
+      expect(fromJson.offlineDbCloudSync, isFalse);
+
+      final copy = s.copyWith(offlineDbCloudSync: true);
+      expect(copy.offlineDbCloudSync, isTrue);
+    });
   });
 }

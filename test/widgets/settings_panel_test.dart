@@ -28,6 +28,7 @@ class _Callbacks {
   Future<void> onSettingsChange(UserSettings s) async {}
   Future<void> onResetDB() async {}
   Future<void> onClearHistory() async {}
+  Future<void> onClearProductCache() async {}
 }
 
 class MockCallbacks extends Mock implements _Callbacks {}
@@ -70,9 +71,10 @@ Future<void> _pump(
       child: Scaffold(
         body: SettingsPanel(
           settings: settings ?? _settings(),
-          onSettingsChange: (s) => cb.onSettingsChange(s),
+          onSettingsChange: (s, {bool isOfflineDbChange = false}) => cb.onSettingsChange(s),
           onResetDB: () => cb.onResetDB(),
           onClearHistory: () => cb.onClearHistory(),
+          onClearProductCache: () => cb.onClearProductCache(),
           firebaseAuth: auth,
         ),
       ),
@@ -118,6 +120,7 @@ void main() {
     when(() => cb.onSettingsChange(any())).thenAnswer((_) async {});
     when(() => cb.onResetDB()).thenAnswer((_) async {});
     when(() => cb.onClearHistory()).thenAnswer((_) async {});
+    when(() => cb.onClearProductCache()).thenAnswer((_) async {});
 
     when(() => auth.currentUser).thenReturn(null);
     when(() => auth.signOut()).thenAnswer((_) async {});
@@ -536,6 +539,73 @@ void main() {
 
       verify(() => cb.onClearHistory()).called(1);
     });
+
+    testWidgets('clear product cache button is rendered', (tester) async {
+      await _pump(tester, cb: cb, auth: auth);
+      expect(
+        find.text('settings.dataAndHistory.clearProductsTitle'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('settings.dataAndHistory.clearProductsSubtitle'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'tapping clear product cache button opens confirmation dialog',
+      (tester) async {
+        await _pump(tester, cb: cb, auth: auth);
+
+        await tester.tap(
+          find.text('settings.dataAndHistory.clearProductsTitle').first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('settings.dataAndHistory.clearProductsConfirm'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'cancelling clear product cache dialog does NOT call onClearProductCache',
+      (tester) async {
+        await _pump(tester, cb: cb, auth: auth);
+
+        await tester.tap(
+          find.text('settings.dataAndHistory.clearProductsTitle').first,
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('common.actions.cancel'));
+        await tester.pumpAndSettle();
+
+        verifyNever(() => cb.onClearProductCache());
+      },
+    );
+
+    testWidgets(
+      'confirming clear product cache dialog calls onClearProductCache',
+      (tester) async {
+        await _pump(tester, cb: cb, auth: auth);
+
+        await tester.tap(
+          find.text('settings.dataAndHistory.clearProductsTitle').first,
+        );
+        await tester.pumpAndSettle();
+
+        final allMatches = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('settings.dataAndHistory.clearProductsAction'),
+        );
+        await tester.tap(allMatches.last);
+        await tester.pumpAndSettle();
+
+        verify(() => cb.onClearProductCache()).called(1);
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1184,6 +1254,9 @@ void main() {
         when(() => userWithStaleSession.displayName).thenReturn('Mario Rossi');
         when(() => userWithStaleSession.metadata).thenReturn(staleMetadata);
         when(() => userWithStaleSession.delete()).thenAnswer((_) async {});
+        when(() => userWithStaleSession.providerData).thenReturn([]);
+        when(() => userWithStaleSession.email).thenReturn('test@example.com');
+        when(() => userWithStaleSession.phoneNumber).thenReturn(null);
 
         // auth.currentUser restituisce user con sessione fresca all'apertura,
         // poi user con sessione scaduta quando viene ri-verificata nella conferma.

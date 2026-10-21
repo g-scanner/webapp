@@ -73,6 +73,19 @@ class LocalCacheService {
     }
   }
 
+  /// Svuota completamente la cache locale dei prodotti e resetta i metadati di sync.
+  static Future<void> clearProductCache() async {
+    try {
+      await _productDao.deleteAllProducts();
+      await _syncMetadataDao.clearAll();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(productsKey);
+      await prefs.remove(lastSyncKey);
+    } catch (e) {
+      debugPrint("Error clearing product cache: $e");
+    }
+  }
+
   /// Recupera il timestamp dell'ultima sincronizzazione delta.
   static Future<String?> getLastSyncTime() async {
     try {

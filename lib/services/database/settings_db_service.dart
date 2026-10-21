@@ -49,11 +49,19 @@ class SettingsDbService {
     await prefs.setString(settingsKey, json.encode(toSave.toJson()));
   }
 
+  /// Salva le impostazioni utente localmente e su Firestore.
+  ///
+  /// [isOfflineDbChange]: indica che il salvataggio riguarda esclusivamente
+  /// campi del DB offline (tier, lastSyncedAt, autoSync, wifiOnly).
+  /// Se `true` e `offlineDbCloudSync` è disattivo, viene aggiornato solo il
+  /// timestamp locale senza toccare Firestore: i campi non sincronizzati
+  /// non devono alterare il `updatedAt` remoto.
   static Future<void> saveSettings(
     FirebaseFirestore db,
     FirebaseAuth auth,
-    UserSettings settings,
-  ) async {
+    UserSettings settings, {
+    bool isOfflineDbChange = false,
+  }) async {
     final user = auth.currentUser;
 
     final effectiveUserId = user?.uid ?? 'anonymous';
@@ -70,11 +78,29 @@ class SettingsDbService {
       await prefs.setBool(hasAnonymousSettingsKey, true);
     } else {
       await prefs.remove(hasAnonymousSettingsKey);
+
+      // Se il cambio riguarda solo il DB offline e la sincronizzazione cloud
+      // è disattivata, salviamo solo in locale: non è necessario aggiornare
+      // Firestore né il suo updatedAt per campi che restano su questo dispositivo.
+      if (isOfflineDbChange && !effectiveSettings.offlineDbCloudSync) return;
+
       try {
+        final jsonData = effectiveSettings.toJson();
+        // Se l'utente ha disattivato la sincronizzazione cloud delle impostazioni
+        // DB offline, eliminiamo i campi specifici da Firestore con FieldValue.delete().
+        // In questo modo i dati obsoleti/inutili vengono rimossi da Firebase,
+        // mentre rimangono offlineDbCloudSync (a false), updatedAt e tutte le
+        // impostazioni generali (tema, lingua, ecc.).
+        if (!effectiveSettings.offlineDbCloudSync) {
+          jsonData['offlineDbTier'] = FieldValue.delete();
+          jsonData['offlineDbLastSyncedAt'] = FieldValue.delete();
+          jsonData['offlineDbAutoSync'] = FieldValue.delete();
+          jsonData['offlineDbWifiOnly'] = FieldValue.delete();
+        }
         await db
             .collection("users")
             .doc(user.uid)
-            .set(effectiveSettings.toJson(), SetOptions(merge: true));
+            .set(jsonData, SetOptions(merge: true));
       } catch (e) {
         debugPrint("Failed saving settings to Firestore (offline or error): $e");
       }
@@ -114,10 +140,17 @@ class SettingsDbService {
       if (!docSnap.exists || docSnap.data() == null) {
         // Se non esiste ancora il documento remoto su Firestore, carichiamo le impostazioni locali
         try {
+          final jsonData = localSettings.toJson();
+          if (!localSettings.offlineDbCloudSync) {
+            jsonData.remove('offlineDbTier');
+            jsonData.remove('offlineDbLastSyncedAt');
+            jsonData.remove('offlineDbAutoSync');
+            jsonData.remove('offlineDbWifiOnly');
+          }
           await db
               .collection("users")
               .doc(user.uid)
-              .set(localSettings.toJson(), SetOptions(merge: true));
+              .set(jsonData, SetOptions(merge: true));
         } catch (_) {}
         return localSettings;
       }
@@ -145,10 +178,23 @@ class SettingsDbService {
       } else if (remoteTimestamp > localTimestamp) {
         // La modifica remota su Firestore è più recente:
         // adottiamo le impostazioni da Firestore e aggiorniamo la persistenza locale.
-        resolvedSettings = firestoreSettings.copyWith(
+        var resolved = firestoreSettings.copyWith(
           userId: user.uid,
           reportedBarcodes: mergedBarcodes,
         );
+        // Se la sincronizzazione cloud del DB offline è disattivata (localmente o su Firestore),
+        // è la scelta locale a importare: preserviamo le impostazioni offline DB di questo dispositivo,
+        // mentre il toggle cloudSync stesso viene sincronizzato da Firestore.
+        if (!localSettings.offlineDbCloudSync || !firestoreSettings.offlineDbCloudSync) {
+          resolved = resolved.copyWith(
+            offlineDbTier: localSettings.offlineDbTier,
+            offlineDbLastSyncedAt: localSettings.offlineDbLastSyncedAt,
+            offlineDbAutoSync: localSettings.offlineDbAutoSync,
+            offlineDbWifiOnly: localSettings.offlineDbWifiOnly,
+            offlineDbCloudSync: firestoreSettings.offlineDbCloudSync,
+          );
+        }
+        resolvedSettings = resolved;
         if (mergedBarcodes.length != remoteBarcodes.length) {
           shouldPushToFirestore = true;
         }
@@ -177,10 +223,17 @@ class SettingsDbService {
 
       if (shouldPushToFirestore) {
         try {
+          final jsonData = resolvedSettings.toJson();
+          if (!resolvedSettings.offlineDbCloudSync) {
+            jsonData['offlineDbTier'] = FieldValue.delete();
+            jsonData['offlineDbLastSyncedAt'] = FieldValue.delete();
+            jsonData['offlineDbAutoSync'] = FieldValue.delete();
+            jsonData['offlineDbWifiOnly'] = FieldValue.delete();
+          }
           await db
               .collection("users")
               .doc(user.uid)
-              .set(resolvedSettings.toJson(), SetOptions(merge: true));
+              .set(jsonData, SetOptions(merge: true));
         } catch (e) {
           debugPrint("Failed updating Firestore with resolved settings: $e");
         }

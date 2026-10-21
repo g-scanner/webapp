@@ -55,7 +55,7 @@ class _MockSectionAssetLoader extends AssetLoader {
 
 Widget _buildApp({
   required UserSettings settings,
-  required Future<void> Function(UserSettings) onSettingsChange,
+  required Future<void> Function(UserSettings, {bool isOfflineDbChange}) onSettingsChange,
 }) {
   return EasyLocalization(
     supportedLocales: const [Locale('it')],
@@ -138,7 +138,7 @@ void main() {
         await tester.pumpWidget(
           _buildApp(
             settings: testSettings(tier: OfflineDbTier.none),
-            onSettingsChange: (_) async {},
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
           ),
         );
         await tester.pumpAndSettle();
@@ -161,7 +161,7 @@ void main() {
               tier: OfflineDbTier.glutenFree,
               lastSyncedAt: 1773000000,
             ),
-            onSettingsChange: (_) async {},
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
           ),
         );
         await tester.pumpAndSettle();
@@ -191,7 +191,7 @@ void main() {
         await tester.pumpWidget(
           _buildApp(
             settings: testSettings(tier: OfflineDbTier.none),
-            onSettingsChange: (updated) async {
+            onSettingsChange: (updated, {bool isOfflineDbChange = false}) async {
               settingsChanged = true;
               savedSettings = updated;
             },
@@ -238,7 +238,7 @@ void main() {
               tier: OfflineDbTier.glutenFree,
               lastSyncedAt: 1773000000,
             ),
-            onSettingsChange: (_) async {},
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
           ),
         );
         await tester.pumpAndSettle();
@@ -270,7 +270,7 @@ void main() {
               tier: OfflineDbTier.glutenFree,
               lastSyncedAt: 1773000000,
             ),
-            onSettingsChange: (updated) async {
+            onSettingsChange: (updated, {bool isOfflineDbChange = false}) async {
               settingsChanged = true;
               newSettings = updated;
             },

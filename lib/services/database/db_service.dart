@@ -28,6 +28,9 @@ class DbService {
   static Future<void> saveLocalProducts(List<Product> products) =>
       LocalCacheService.saveLocalProducts(products);
 
+  static Future<void> clearProductCache() =>
+      LocalCacheService.clearProductCache();
+
   static Future<void> upsertLocalProduct(Product product) =>
       LocalCacheService.upsertLocalProduct(product);
 
@@ -137,8 +140,12 @@ class DbService {
   static Future<void> saveLocalSettings(UserSettings settings) =>
       SettingsDbService.saveLocalSettings(settings);
 
-  static Future<void> saveSettings(UserSettings settings) =>
-      SettingsDbService.saveSettings(db, auth, settings);
+  static Future<void> saveSettings(
+    UserSettings settings, {
+    bool isOfflineDbChange = false,
+  }) =>
+      SettingsDbService.saveSettings(db, auth, settings,
+          isOfflineDbChange: isOfflineDbChange);
 
   static Future<UserSettings> syncSettingsWithFirestore(
     UserSettings localSettings,

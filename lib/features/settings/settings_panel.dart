@@ -12,9 +12,10 @@ import 'dialogs/dialogs.dart';
 
 class SettingsPanel extends StatefulWidget {
   final UserSettings settings;
-  final Future<void> Function(UserSettings) onSettingsChange;
+  final Future<void> Function(UserSettings, {bool isOfflineDbChange}) onSettingsChange;
   final Future<void> Function() onResetDB;
   final Future<void> Function() onClearHistory;
+  final Future<void> Function()? onClearProductCache;
   final FirebaseAuth? firebaseAuth;
 
   const SettingsPanel({
@@ -23,6 +24,7 @@ class SettingsPanel extends StatefulWidget {
     required this.onSettingsChange,
     required this.onResetDB,
     required this.onClearHistory,
+    this.onClearProductCache,
     this.firebaseAuth,
   });
 
@@ -33,6 +35,7 @@ class SettingsPanel extends StatefulWidget {
 class _SettingsPanelState extends State<SettingsPanel> {
   FirebaseAuth get _auth => widget.firebaseAuth ?? FirebaseAuth.instance;
   bool _clearing = false;
+  bool _clearingProducts = false;
 
   // Variabile per l'aggiornamento UI istantaneo ("Optimistic Update")
   String? _optimisticDisplayName;
@@ -115,6 +118,22 @@ class _SettingsPanelState extends State<SettingsPanel> {
         // Errore già notificato con SnackBar
       } finally {
         if (mounted) setState(() => _clearing = false);
+      }
+    }
+  }
+
+  Future<void> _handleClearProductCache() async {
+    final confirm = await showClearProductCacheDialog(context);
+
+    if (confirm == true) {
+      setState(() => _clearingProducts = true);
+      try {
+        await widget.onClearProductCache?.call();
+        _triggerToast("common.status.productsClearedSuccess".tr());
+      } catch (_) {
+        // Errore già gestito
+      } finally {
+        if (mounted) setState(() => _clearingProducts = false);
       }
     }
   }
@@ -255,6 +274,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
           DataHistorySection(
             isClearing: _clearing,
             onClearHistoryTap: _handleClearHistory,
+            isClearingProducts: _clearingProducts,
+            onClearProductsTap: _handleClearProductCache,
           ),
 
           const SizedBox(height: 40),

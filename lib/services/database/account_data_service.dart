@@ -214,10 +214,17 @@ class AccountDataService {
           );
           await SettingsDbService.saveLocalSettings(updatedSettings);
           try {
+            final jsonData = updatedSettings.toJson();
+            if (!updatedSettings.offlineDbCloudSync) {
+              jsonData['offlineDbTier'] = FieldValue.delete();
+              jsonData['offlineDbLastSyncedAt'] = FieldValue.delete();
+              jsonData['offlineDbAutoSync'] = FieldValue.delete();
+              jsonData['offlineDbWifiOnly'] = FieldValue.delete();
+            }
             await db
                 .collection("users")
                 .doc(newUid)
-                .set(updatedSettings.toJson(), SetOptions(merge: true));
+                .set(jsonData, SetOptions(merge: true));
           } catch (e) {
             debugPrint("Failed saving migrated settings to Firestore: $e");
           }

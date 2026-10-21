@@ -267,7 +267,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             );
           }
         }
-        await DbService.saveSettings(updatedSettings);
+        await DbService.saveSettings(updatedSettings, isOfflineDbChange: true);
       },
     );
   }
@@ -1154,6 +1154,23 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     await _loadLocalHistory();
   }
 
+  Future<void> handleClearProductCache() async {
+    try {
+      await DbService.clearProductCache();
+      await _fetchProducts();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('settings.dataAndHistory.clearProductsError'.tr()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      rethrow;
+    }
+  }
+
   Future<void> handleDeleteReport(String reportId) async {
     final report = reports.cast<ProductReport?>().firstWhere(
       (r) => r?.id == reportId,
@@ -1559,10 +1576,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         SettingsPanel(
           firebaseAuth: _auth,
           settings: userSettings,
-          onSettingsChange: (newSet) async {
+          onSettingsChange: (newSet, {bool isOfflineDbChange = false}) async {
             setState(() => userSettings = newSet);
             themeNotifier.value = themeModeFromString(newSet.preferredTheme);
-            await DbService.saveSettings(newSet);
+            await DbService.saveSettings(newSet, isOfflineDbChange: isOfflineDbChange);
             await BackgroundSyncManager.updatePeriodicTaskRegistration(newSet);
           },
           onResetDB: () async {
@@ -1573,6 +1590,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             });
           },
           onClearHistory: handleClearHistory,
+          onClearProductCache: handleClearProductCache,
         ),
       ],
     );
