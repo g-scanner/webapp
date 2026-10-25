@@ -64,6 +64,10 @@ class _OfflineDatabaseSheetContentState
   late OfflineDbTier _installedTier;
   late String _previewPack;
 
+  OfflineDbTier _rollbackTier = OfflineDbTier.none;
+  int? _rollbackLastSyncedAt;
+  OfflineDbTier? _downloadingTier;
+
   StreamSubscription<OfflineSyncProgress>? _syncSubscription;
   OfflineSyncProgress _syncProgress = const OfflineSyncProgress(
     step: OfflineSyncStep.idle,
@@ -152,6 +156,10 @@ class _OfflineDatabaseSheetContentState
 
   void _startSync(OfflineDbTier tier, {int? explicitLastSyncedAt}) {
     _syncSubscription?.cancel();
+    _rollbackTier = _installedTier;
+    _rollbackLastSyncedAt = _currentSettings.offlineDbLastSyncedAt;
+    _downloadingTier = tier;
+
     setState(() {
       _syncProgress = const OfflineSyncProgress(
         step: OfflineSyncStep.checkingVersion,
@@ -187,12 +195,14 @@ class _OfflineDatabaseSheetContentState
                 setState(() {
                   _installedTier = tier;
                   _previewPack = tier.key;
+                  _downloadingTier = null;
                 });
                 widget.onDatabaseUpdated?.call();
                 _triggerSnackbar("settings.offlineDb.syncSuccess".tr());
               }
             } else if (progress.step == OfflineSyncStep.error) {
               if (mounted) {
+                await _performRollback();
                 _triggerSnackbar(
                   "settings.offlineDb.downloadError".tr(),
                   isError: true,
@@ -200,17 +210,68 @@ class _OfflineDatabaseSheetContentState
               }
             }
           },
-          onError: (err) {
+          onError: (err) async {
             if (!mounted) return;
-            setState(() {
-              _syncProgress = OfflineSyncProgress.error(err.toString());
-            });
+            await _performRollback();
             _triggerSnackbar(
               "settings.offlineDb.downloadError".tr(),
               isError: true,
             );
           },
         );
+  }
+
+  Future<void> _performRollback() async {
+    _syncSubscription?.cancel();
+    _syncSubscription = null;
+    OfflineDbSyncService.cancelSync();
+
+    if (_rollbackTier == OfflineDbTier.none) {
+      await OfflineDbService.deleteDatabaseFile();
+      await OfflineDbService.setInstalledTier(OfflineDbTier.none);
+      if (_currentSettings.offlineDbTier != OfflineDbTier.none ||
+          _currentSettings.offlineDbLastSyncedAt != null) {
+        final updated = _currentSettings.copyWith(
+          offlineDbTier: OfflineDbTier.none,
+          offlineDbLastSyncedAt: null,
+        );
+        _currentSettings = updated;
+        await widget.onSettingsChange(updated, isOfflineDbChange: true);
+      }
+
+      if (mounted) {
+        setState(() {
+          _installedTier = OfflineDbTier.none;
+          _downloadingTier = null;
+          _syncProgress = const OfflineSyncProgress.idle();
+        });
+        widget.onDatabaseUpdated?.call();
+      }
+    } else {
+      await OfflineDbService.setInstalledTier(_rollbackTier);
+      if (_currentSettings.offlineDbTier != _rollbackTier ||
+          _currentSettings.offlineDbLastSyncedAt != _rollbackLastSyncedAt) {
+        final updated = _currentSettings.copyWith(
+          offlineDbTier: _rollbackTier,
+          offlineDbLastSyncedAt: _rollbackLastSyncedAt,
+        );
+        _currentSettings = updated;
+        await widget.onSettingsChange(updated, isOfflineDbChange: true);
+      }
+
+      if (mounted) {
+        setState(() {
+          _installedTier = _rollbackTier;
+          _downloadingTier = null;
+          _syncProgress = const OfflineSyncProgress.idle();
+        });
+        widget.onDatabaseUpdated?.call();
+      }
+    }
+  }
+
+  Future<void> _cancelSync() async {
+    await _performRollback();
   }
 
   Future<void> _handleUninstallPackage() async {
@@ -279,16 +340,27 @@ class _OfflineDatabaseSheetContentState
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 12),
-              TextButton(
+              const SizedBox(height: 10),
+              OutlinedButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                style: TextButton.styleFrom(
-                  foregroundColor: ctx.colorScheme.onSurfaceVariant,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ctx.colorScheme.onSurface,
+                  side: BorderSide(
+                    color: ctx.colorScheme.outlineVariant.withValues(
+                      alpha: 0.5,
+                    ),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
                 child: Text(
                   "common.actions.cancel".tr(),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -415,16 +487,27 @@ class _OfflineDatabaseSheetContentState
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 12),
-              TextButton(
+              const SizedBox(height: 10),
+              OutlinedButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                style: TextButton.styleFrom(
-                  foregroundColor: ctx.colorScheme.onSurfaceVariant,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ctx.colorScheme.onSurface,
+                  side: BorderSide(
+                    color: ctx.colorScheme.outlineVariant.withValues(
+                      alpha: 0.5,
+                    ),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
                 child: Text(
                   "common.actions.cancel".tr(),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -434,24 +517,7 @@ class _OfflineDatabaseSheetContentState
     );
 
     if (confirm == true) {
-      await OfflineDbService.deleteDatabaseFile();
       final targetTier = _keyToTier(targetKey);
-
-      final updated = _currentSettings.copyWith(
-        offlineDbTier: targetTier,
-        offlineDbLastSyncedAt: null,
-      );
-      _currentSettings = updated;
-      await widget.onSettingsChange(updated, isOfflineDbChange: true);
-
-      if (mounted) {
-        setState(() {
-          _installedTier = targetTier;
-          _previewPack = targetKey;
-        });
-        widget.onDatabaseUpdated?.call();
-      }
-
       _startSync(targetTier, explicitLastSyncedAt: null);
     }
   }
@@ -461,7 +527,11 @@ class _OfflineDatabaseSheetContentState
     Color dotAndTextColor;
     String label;
 
-    if (_installedTier == OfflineDbTier.none) {
+    if (_syncProgress.isInProgress) {
+      bgColor = colorScheme.surfaceContainerHighest;
+      dotAndTextColor = colorScheme.onSurfaceVariant;
+      label = "settings.offlineDb.statusDownloading".tr();
+    } else if (_installedTier == OfflineDbTier.none) {
       bgColor = colorScheme.surfaceContainerHighest;
       dotAndTextColor = colorScheme.onSurfaceVariant;
       label = "settings.offlineDb.statusDisabled".tr();
@@ -516,6 +586,11 @@ class _OfflineDatabaseSheetContentState
   }
 
   String _formatAlignmentDate() {
+    if (_syncProgress.isInProgress &&
+        _downloadingTier != null &&
+        _downloadingTier != _installedTier) {
+      return "settings.offlineDb.neverSynced".tr();
+    }
     if (_installedTier == OfflineDbTier.none) {
       return "settings.offlineDb.disabledHint".tr();
     }
@@ -671,8 +746,12 @@ class _OfflineDatabaseSheetContentState
     final cardBg = context.cardBackground;
     final isSyncing = _syncProgress.isInProgress;
 
-    final String activePackTitle = _installedTier != OfflineDbTier.none
-        ? "settings.offlineDb.packages.${_installedTier.key}.title".tr()
+    final displayTier = (isSyncing && _downloadingTier != null)
+        ? _downloadingTier!
+        : _installedTier;
+
+    final String activePackTitle = displayTier != OfflineDbTier.none
+        ? "settings.offlineDb.packages.${displayTier.key}.title".tr()
         : "settings.offlineDb.noDbInstalled".tr();
 
     return Column(
@@ -761,15 +840,13 @@ class _OfflineDatabaseSheetContentState
                         ),
                       ),
 
-                      // Pulsante "Aggiorna" Compatto
-                      if (_installedTier != OfflineDbTier.none) ...[
+                      // Pulsante "Aggiorna" Compatto (mostrato solo se non è in corso una sincronizzazione)
+                      if (_installedTier != OfflineDbTier.none && !isSyncing) ...[
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
-                          onPressed: isSyncing
-                              ? null
-                              : () {
-                                  _startSync(_installedTier);
-                                },
+                          onPressed: () {
+                            _startSync(_installedTier);
+                          },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: colorScheme.onSurface,
                             side: BorderSide(
@@ -785,16 +862,7 @@ class _OfflineDatabaseSheetContentState
                               borderRadius: BorderRadius.circular(999),
                             ),
                           ),
-                          icon: isSyncing
-                              ? SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: colorScheme.primary,
-                                  ),
-                                )
-                              : const Icon(Icons.refresh_rounded, size: 16),
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
                           label: Text(
                             "settings.offlineDb.updateBtn".tr(),
                             style: const TextStyle(
@@ -805,20 +873,51 @@ class _OfflineDatabaseSheetContentState
                         ),
                       ],
 
+                      // Barra di avanzamento con percentuale e cancellazione (X)
                       if (isSyncing) ...[
                         const SizedBox(height: 16),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: _syncProgress.progress > 0
-                                ? _syncProgress.progress
-                                : null,
-                            backgroundColor: colorScheme.surfaceContainerHigh,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              colorScheme.primary,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(999),
+                                child: LinearProgressIndicator(
+                                  value: _syncProgress.progress > 0
+                                      ? _syncProgress.progress
+                                      : null,
+                                  backgroundColor:
+                                      colorScheme.surfaceContainerHigh,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    colorScheme.primary,
+                                  ),
+                                  minHeight: 6,
+                                ),
+                              ),
                             ),
-                            minHeight: 6,
-                          ),
+                            const SizedBox(width: 10),
+                            Text(
+                              "${(_syncProgress.progress.clamp(0.0, 1.0) * 100).toInt()}%",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              key: const ValueKey('cancelSyncButton'),
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                              onPressed: _cancelSync,
+                              color: colorScheme.onSurfaceVariant,
+                              tooltip: "common.actions.cancel".tr(),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -988,17 +1087,13 @@ class _OfflineDatabaseSheetContentState
                           ),
                           label: Text(
                             "settings.offlineDb.uninstallPackage".tr(),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: colorScheme.error,
                             backgroundColor: colorScheme.errorContainer
                                 .withValues(alpha: 0.3),
-                            side: BorderSide(
-                              color: colorScheme.errorContainer,
-                            ),
+                            side: BorderSide(color: colorScheme.errorContainer),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(999),
@@ -1093,9 +1188,7 @@ class _OfflineDatabaseSheetContentState
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                     side: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(
-                        alpha: 0.3,
-                      ),
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Column(

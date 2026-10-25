@@ -341,7 +341,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         });
   }
 
-  Future<void> _fetchProducts() async {
+  Future<void> _fetchProducts({bool skipRemoteSync = false}) async {
     final data = await DbService.getLocalProducts();
     if (mounted) {
       setState(() {
@@ -371,6 +371,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       });
       _startOfflineVerificationTimerIfNeeded();
     }
+    if (skipRemoteSync) return;
     DbService.performDeltaSync()
         .then((_) async {
           final updated = await DbService.getLocalProducts();
@@ -1157,7 +1158,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   Future<void> handleClearProductCache() async {
     try {
       await DbService.clearProductCache();
-      await _fetchProducts();
+      await _fetchProducts(skipRemoteSync: true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1576,6 +1577,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         SettingsPanel(
           firebaseAuth: _auth,
           settings: userSettings,
+          historyCount: history.length,
           onSettingsChange: (newSet, {bool isOfflineDbChange = false}) async {
             setState(() => userSettings = newSet);
             themeNotifier.value = themeModeFromString(newSet.preferredTheme);

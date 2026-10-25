@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — Widget Tests: OfflineDatabaseSheet
 
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,11 +29,13 @@ class _MockSectionAssetLoader extends AssetLoader {
           'noDbInstalled': 'Nessun Database Installato',
           'installedStatus': 'Installato',
           'disabledStatus': 'Disattivato (Solo Online)',
-          'disabledHint': 'Seleziona e installa un pacchetto per scansionare offline',
+          'disabledHint':
+              'Seleziona e installa un pacchetto per scansionare offline',
           'sheetTitle': 'Database Offline',
           'sheetSubtitle': 'Scarica un archivio locale',
           'statusSynchronized': 'Sincronizzato',
           'statusDisabled': 'Disattivato',
+          'statusDownloading': 'Download in corso',
           'statusSoftStale': 'Aggiornamento consigliato',
           'statusHardStale': 'Obsoleto (>30 gg)',
           'lastSyncPrefix': 'Ultimo aggiornamento:',
@@ -43,23 +46,27 @@ class _MockSectionAssetLoader extends AssetLoader {
           'updateButton': 'Aggiorna',
           'syncing': 'Sincronizzazione...',
           'uninstallPackage': 'Disinstalla Pacchetto',
-          'uninstallConfirmBody': 'Il database offline verrà rimosso dal dispositivo liberando spazio.',
+          'uninstallConfirmBody':
+              'Il database offline verrà rimosso dal dispositivo liberando spazio.',
           'downloadAndActivate': 'Scarica ed attiva {}',
           'downloadConfirmTitle': 'Scarica {name}',
-          'downloadConfirmBody': 'Verrà scaricato il database ({dl}). Spazio richiesto su disco: {disk}.',
+          'downloadConfirmBody':
+              'Verrà scaricato il database ({dl}). Spazio richiesto su disco: {disk}.',
           'selectPackageLabel': 'SELEZIONA PACCHETTO',
           'inUseBadge': 'Attualmente in uso',
           'downloadLabel': 'Download:',
           'diskLabel': 'Spazio su disco:',
           'switchConfirmTitle': 'Passa a {name}',
-          'switchConfirmBody': 'Il pacchetto attuale verrà sostituito scaricando la nuova versione ({dl}). Spazio occupato: {disk}.',
+          'switchConfirmBody':
+              'Il pacchetto attuale verrà sostituito scaricando la nuova versione ({dl}). Spazio occupato: {disk}.',
           'automationAndNetworkLabel': 'AUTOMAZIONE E RETE',
           'wifiOnlyTitle': 'Solo con Wi-Fi',
           'wifiOnlySubtitle': 'Non consumare dati della rete cellulare 4G/5G',
           'autoUpdateTitle': 'Aggiornamento automatico',
           'autoUpdateSubtitle': 'Scarica micro-aggiornamenti settimanali',
           'cloudSyncTitle': 'Sincronizza con il cloud',
-          'cloudSyncSubtitle': 'Salva le preferenze del database offline nel tuo account',
+          'cloudSyncSubtitle':
+              'Salva le preferenze del database offline nel tuo account',
           'downloadError': 'Errore durante il download del database',
           'syncSuccess': 'Database sincronizzato con successo',
           'packages': {
@@ -91,14 +98,8 @@ class _MockSectionAssetLoader extends AssetLoader {
         },
       },
       'common': {
-        'time': {
-          'today': 'Oggi',
-          'yesterday': 'Ieri',
-        },
-        'actions': {
-          'cancel': 'Annulla',
-          'delete': 'Elimina',
-        },
+        'time': {'today': 'Oggi', 'yesterday': 'Ieri'},
+        'actions': {'cancel': 'Annulla', 'delete': 'Elimina'},
       },
     };
   }
@@ -106,7 +107,8 @@ class _MockSectionAssetLoader extends AssetLoader {
 
 Widget _buildApp({
   required UserSettings settings,
-  required Future<void> Function(UserSettings, {bool isOfflineDbChange}) onSettingsChange,
+  required Future<void> Function(UserSettings, {bool isOfflineDbChange})
+  onSettingsChange,
 }) {
   return EasyLocalization(
     supportedLocales: const [Locale('it')],
@@ -164,6 +166,7 @@ void main() {
     await OfflineDbService.close();
     OfflineDbService.setMockDatabasePath(null);
     OfflineDbService.mockIsDatabaseInstalled = null;
+    OfflineDbSyncService.setMockClient(null);
     OfflineDbSyncService.resetBaseUrl();
     if (await tempDir.exists()) {
       await tempDir.delete(recursive: true);
@@ -189,41 +192,47 @@ void main() {
   }
 
   group('OfflineDatabaseSheet Widget Tests', () {
-    testWidgets(
-      'Shows disabled state when DB is not installed',
-      (tester) async {
-        await tester.pumpWidget(
-          _buildApp(
-            settings: testSettings(tier: OfflineDbTier.none),
-            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
-          ),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('Shows disabled state when DB is not installed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildApp(
+          settings: testSettings(tier: OfflineDbTier.none),
+          onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Open Sheet'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Sheet'));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Database Offline'), findsWidgets);
-        expect(find.text('Nessun Database Installato'), findsOneWidget);
-        expect(find.text('Disattivato'), findsOneWidget);
-        expect(find.text('Aggiorna'), findsNothing);
-        // Preview defaults to Europa Core with download button
-        expect(find.text('Scarica ed attiva Europa Core'), findsOneWidget);
+      expect(find.text('Database Offline'), findsWidgets);
+      expect(find.text('Nessun Database Installato'), findsOneWidget);
+      expect(find.text('Disattivato'), findsOneWidget);
+      expect(find.text('Aggiorna'), findsNothing);
+      // Preview defaults to Europa Core with download button
+      expect(find.text('Scarica ed attiva Europa Core'), findsOneWidget);
 
-        final downloadButton = find.text('Scarica ed attiva Europa Core');
-        await tester.ensureVisible(downloadButton);
-        await tester.tap(downloadButton);
-        await tester.pumpAndSettle();
+      final downloadButton = find.text('Scarica ed attiva Europa Core');
+      await tester.ensureVisible(downloadButton);
+      await tester.tap(downloadButton);
+      await tester.pumpAndSettle();
 
-        expect(
-          find.descendant(
-            of: find.byType(AlertDialog),
-            matching: find.text('Scarica Europa Core'),
-          ),
-          findsNWidgets(2),
-        );
-      },
-    );
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Scarica Europa Core'),
+        ),
+        findsNWidgets(2),
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(OutlinedButton),
+        ),
+        findsOneWidget,
+      );
+    });
 
     testWidgets(
       'Automation and network settings remain editable without an installed DB',
@@ -233,9 +242,10 @@ void main() {
         await tester.pumpWidget(
           _buildApp(
             settings: testSettings(tier: OfflineDbTier.none),
-            onSettingsChange: (updated, {bool isOfflineDbChange = false}) async {
-              savedSettings = updated;
-            },
+            onSettingsChange:
+                (updated, {bool isOfflineDbChange = false}) async {
+                  savedSettings = updated;
+                },
           ),
         );
         await tester.pumpAndSettle();
@@ -339,6 +349,110 @@ void main() {
     );
 
     testWidgets(
+      'Shows downloading state, percentage and cancel button (X) when sync is in progress, and allows cancelling',
+      (tester) async {
+        final completer = Completer<http.Response>();
+        final mockClient = MockClient((request) => completer.future);
+        OfflineDbSyncService.setMockClient(mockClient);
+
+        OfflineDbService.mockIsDatabaseInstalled = true;
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(
+              tier: OfflineDbTier.glutenFree,
+              lastSyncedAt: 0,
+            ),
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        // Tap Aggiorna to trigger sync/download
+        await tester.tap(find.text('Aggiorna'));
+        await tester.pump();
+
+        // During sync, status pill should display "Download in corso"
+        expect(find.text('Download in corso'), findsOneWidget);
+        // Percentage is explicitly displayed
+        expect(find.text('5%'), findsOneWidget);
+        // Cancel button (X) is present to the right
+        final cancelBtn = find.byKey(const ValueKey('cancelSyncButton'));
+        expect(cancelBtn, findsOneWidget);
+
+        // Tap cancel button (X)
+        await tester.tap(cancelBtn);
+        await tester.pumpAndSettle();
+
+        // Sync stopped: cancel button and percentage are gone, "Aggiorna" is restored
+        expect(find.byKey(const ValueKey('cancelSyncButton')), findsNothing);
+        expect(find.text('5%'), findsNothing);
+        expect(find.text('Aggiorna'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Cancelling an initial download resets state back to disabled/no database',
+      (tester) async {
+        final completer = Completer<http.Response>();
+        final mockClient = MockClient((request) => completer.future);
+        OfflineDbSyncService.setMockClient(mockClient);
+
+        OfflineDbService.mockIsDatabaseInstalled = false;
+        UserSettings? savedSettings;
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(tier: OfflineDbTier.none),
+            onSettingsChange:
+                (updated, {bool isOfflineDbChange = false}) async {
+                  savedSettings = updated;
+                },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        // Tap download Europa Core
+        final downloadBtn = find.text('Scarica ed attiva Europa Core');
+        await tester.ensureVisible(downloadBtn);
+        await tester.tap(downloadBtn);
+        await tester.pumpAndSettle();
+
+        // Confirm download in dialog
+        final dialogConfirmBtn = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(FilledButton),
+        );
+        await tester.tap(dialogConfirmBtn);
+        await tester.pump();
+
+        // While downloading: "Download in corso", percentage and cancel button visible
+        expect(find.text('Download in corso'), findsOneWidget);
+        final cancelBtn = find.byKey(const ValueKey('cancelSyncButton'));
+        expect(cancelBtn, findsOneWidget);
+
+        // Ensure cancel button is scrolled into view before tapping
+        await tester.ensureVisible(cancelBtn);
+        await tester.pumpAndSettle();
+
+        // Tap cancel button (X)
+        await tester.tap(cancelBtn);
+        await tester.pumpAndSettle();
+
+        // Resets back to disabled and settings were never mutated
+        expect(find.text('Disattivato'), findsOneWidget);
+        expect(find.text('Nessun Database Installato'), findsOneWidget);
+        expect(savedSettings, isNull);
+      },
+    );
+
+    testWidgets(
       'Selecting a different package updates preview card and shows switch button',
       (tester) async {
         OfflineDbService.mockIsDatabaseInstalled = true;
@@ -378,9 +492,10 @@ void main() {
               tier: OfflineDbTier.glutenFree,
               lastSyncedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
             ),
-            onSettingsChange: (updated, {bool isOfflineDbChange = false}) async {
-              savedSettings = updated;
-            },
+            onSettingsChange:
+                (updated, {bool isOfflineDbChange = false}) async {
+                  savedSettings = updated;
+                },
           ),
         );
         await tester.pumpAndSettle();
@@ -398,6 +513,13 @@ void main() {
         // Confirmation dialog appears
         expect(find.byType(AlertDialog), findsOneWidget);
         expect(find.text('Disinstalla Pacchetto'), findsWidgets);
+        expect(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(OutlinedButton),
+          ),
+          findsOneWidget,
+        );
 
         // Tap cancel
         await tester.tap(find.text('Annulla'));
@@ -415,7 +537,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(savedSettings?.offlineDbTier, equals(OfflineDbTier.none));
-        expect(find.text('Database offline rimosso con successo'), findsNothing);
+        expect(
+          find.text('Database offline rimosso con successo'),
+          findsNothing,
+        );
       },
     );
 
@@ -452,16 +577,18 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(settingsChanged, isFalse);
-        expect(find.text('Errore durante il download del database'), findsOneWidget);
+        expect(
+          find.text('Errore durante il download del database'),
+          findsOneWidget,
+        );
       },
     );
 
     testWidgets(
-      'Switching to a package sets the tier on settings when starting download',
+      'Switching to a package does not prematurely mutate settings until download completes',
       (tester) async {
-        final mockClient = MockClient((request) async {
-          return http.Response('dummy', 200);
-        });
+        final completer = Completer<http.Response>();
+        final mockClient = MockClient((request) => completer.future);
         OfflineDbSyncService.setMockClient(mockClient);
 
         OfflineDbService.mockIsDatabaseInstalled = true;
@@ -473,9 +600,10 @@ void main() {
               tier: OfflineDbTier.glutenFree,
               lastSyncedAt: 1773000000,
             ),
-            onSettingsChange: (updated, {bool isOfflineDbChange = false}) async {
-              savedSettings = updated;
-            },
+            onSettingsChange:
+                (updated, {bool isOfflineDbChange = false}) async {
+                  savedSettings = updated;
+                },
           ),
         );
         await tester.pumpAndSettle();
@@ -496,13 +624,6 @@ void main() {
 
         // Dialog shows "Passa a Europa Core" button
         expect(find.byType(AlertDialog), findsOneWidget);
-        expect(
-          find.descendant(
-            of: find.byType(AlertDialog),
-            matching: find.text('Passa a Europa Core'),
-          ),
-          findsNWidgets(2),
-        );
 
         // Confirm switch in dialog
         final dialogConfirmBtn = find.descendant(
@@ -512,8 +633,85 @@ void main() {
         await tester.tap(dialogConfirmBtn);
         await tester.pump();
 
-        // Settings should be updated immediately with euroCore tier when starting download
-        expect(savedSettings?.offlineDbTier, equals(OfflineDbTier.euroCore));
+        // During download: settings have NOT been mutated prematurely to euroCore
+        expect(savedSettings, isNull);
+
+        // Hero card shows the package being downloaded: Europa Core
+        expect(find.text('Europa Core'), findsWidgets);
+        expect(find.text('Download in corso'), findsOneWidget);
+
+        // Cancel switch via (X) button
+        final cancelBtn = find.byKey(const ValueKey('cancelSyncButton'));
+        expect(cancelBtn, findsOneWidget);
+        await tester.ensureVisible(cancelBtn);
+        await tester.pumpAndSettle();
+        await tester.tap(cancelBtn);
+        await tester.pumpAndSettle();
+
+        // Rollback: Hero card rolls back to previous DB (Solo Celiachia)
+        expect(find.text('Solo Celiachia'), findsWidgets);
+        expect(find.text('Download in corso'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'On switch error: rolls back to previous installed package and retains original settings',
+      (tester) async {
+        final mockClient = MockClient((request) async {
+          return http.Response('Server Error', 500);
+        });
+        OfflineDbSyncService.setMockClient(mockClient);
+
+        OfflineDbService.mockIsDatabaseInstalled = true;
+        var settingsChanged = false;
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(
+              tier: OfflineDbTier.glutenFree,
+              lastSyncedAt: 1773000000,
+            ),
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {
+              settingsChanged = true;
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        // Tap Europa Core
+        await tester.tap(find.text('Europa Core'));
+        await tester.pumpAndSettle();
+
+        final switchBtn = find.text('Passa a Europa Core');
+        await tester.ensureVisible(switchBtn);
+        await tester.pumpAndSettle();
+        await tester.tap(switchBtn);
+        await tester.pumpAndSettle();
+
+        // Confirm in dialog
+        final dialogConfirmBtn = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(FilledButton),
+        );
+        await tester.tap(dialogConfirmBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        // Because download failed with error:
+        // 1. Error snackbar is shown
+        expect(
+          find.text('Errore durante il download del database'),
+          findsOneWidget,
+        );
+        // 2. Settings were never changed
+        expect(settingsChanged, isFalse);
+        // 3. UI rolled back to previous package: Solo Celiachia
+        expect(find.text('Solo Celiachia'), findsWidgets);
+        expect(find.text('Download in corso'), findsNothing);
       },
     );
   });

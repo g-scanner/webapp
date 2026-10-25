@@ -7,9 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../models/models.dart';
 import '../../core/theme/theme.dart';
-import '../../services/database/local_cache_service.dart';
 import '../../services/database/history_db_service.dart';
-import '../../services/database/daos/scan_history_dao.dart';
 import 'sections/sections.dart';
 import 'sheets/sheets.dart';
 import 'utils/storage_utils.dart';
@@ -21,6 +19,7 @@ class SettingsPanel extends StatefulWidget {
   final Future<void> Function() onClearHistory;
   final Future<void> Function()? onClearProductCache;
   final FirebaseAuth? firebaseAuth;
+  final int? historyCount;
 
   const SettingsPanel({
     super.key,
@@ -30,6 +29,7 @@ class SettingsPanel extends StatefulWidget {
     required this.onClearHistory,
     this.onClearProductCache,
     this.firebaseAuth,
+    this.historyCount,
   });
 
   @override
@@ -53,23 +53,32 @@ class _SettingsPanelState extends State<SettingsPanel> {
     _loadStorageMetrics();
   }
 
-  Future<void> _loadStorageMetrics() async {
+  @override
+  void didUpdateWidget(SettingsPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.historyCount != widget.historyCount ||
+        oldWidget.settings != widget.settings) {
+      _loadStorageMetrics();
+    }
+  }
+
+  Future<StorageMetrics> _loadStorageMetrics() async {
     try {
-      final userId = widget.settings.userId ?? HistoryDbService.getUserId(_auth);
-      final cCount = await LocalCacheService.getProductsCount();
-      final cSize = await LocalCacheService.getProductsSizeBytes();
-      final hCount = await const ScanHistoryDao().getHistoryCount(userId);
-      final hSize = await const ScanHistoryDao().getHistorySizeBytes(userId);
+      final userId =
+          widget.settings.userId ?? HistoryDbService.getUserId(_auth);
+      final metrics = await fetchStorageMetrics(userId);
       if (mounted) {
         setState(() {
-          _cacheCount = cCount;
-          _cacheSizeBytes = cSize;
-          _historyCount = hCount;
-          _historySizeBytes = hSize;
+          _cacheCount = metrics.cacheCount;
+          _cacheSizeBytes = metrics.cacheSizeBytes;
+          _historyCount = metrics.historyCount;
+          _historySizeBytes = metrics.historySizeBytes;
         });
       }
+      return metrics;
     } catch (e) {
       debugPrint("Error loading storage metrics: $e");
+      return const StorageMetrics();
     }
   }
 
@@ -142,7 +151,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
     try {
       await widget.onClearHistory();
       await _loadStorageMetrics();
-      _triggerToast("common.status.historyClearedSuccess".tr());
     } catch (_) {
       // Errore già notificato con SnackBar
     }
@@ -152,7 +160,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
     try {
       await widget.onClearProductCache?.call();
       await _loadStorageMetrics();
-      _triggerToast("common.status.productsClearedSuccess".tr());
     } catch (_) {
       // Errore già gestito
     }
@@ -289,7 +296,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   ),
                   isFirst: false,
                   isLast: true,
-                  onTap: () {
+                  onTap: () async {
+                    await _loadStorageMetrics();
+                    if (!context.mounted) return;
                     showStorageHistorySheet(
                       context: context,
                       onClearHistory: _handleClearHistory,
@@ -300,6 +309,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                       cacheCount: _cacheCount,
                       historySizeBytes: _historySizeBytes,
                       cacheSizeBytes: _cacheSizeBytes,
+                      onLoadMetrics: _loadStorageMetrics,
                       onStorageUpdated: _loadStorageMetrics,
                     );
                   },

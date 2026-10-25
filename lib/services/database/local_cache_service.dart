@@ -73,14 +73,15 @@ class LocalCacheService {
     }
   }
 
-  /// Svuota completamente la cache locale dei prodotti e resetta i metadati di sync.
+  /// Svuota completamente la cache locale dei prodotti e imposta il timestamp di sync ad adesso
+  /// per evitare che il delta sync riscarichi forzatamente lo snapshot iniziale di 100 prodotti.
   static Future<void> clearProductCache() async {
     try {
       await _productDao.deleteAllProducts();
       await _syncMetadataDao.clearAll();
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(productsKey);
-      await prefs.remove(lastSyncKey);
+      await saveLastSyncTime(DateTime.now().toIso8601String());
     } catch (e) {
       debugPrint("Error clearing product cache: $e");
     }

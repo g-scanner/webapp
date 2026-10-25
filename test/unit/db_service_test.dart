@@ -158,7 +158,7 @@ void main() {
       expect(await DbService.getLastSyncTime(), timestamp);
     });
 
-    test('clearProductCache clears all products and sync metadata', () async {
+    test('clearProductCache clears all products and updates sync time to prevent auto-repopulating', () async {
       final p1 = createSampleProduct(barcode: '111', name: 'Biscotti');
       final p2 = createSampleProduct(barcode: '222', name: 'Crackers');
       await DbService.saveLocalProducts([p1, p2]);
@@ -170,7 +170,7 @@ void main() {
       await DbService.clearProductCache();
 
       expect(await DbService.getLocalProducts(), isEmpty);
-      expect(await DbService.getLastSyncTime(), isNull);
+      expect(await DbService.getLastSyncTime(), isNotNull);
     });
   });
 

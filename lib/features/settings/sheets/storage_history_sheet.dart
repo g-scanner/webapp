@@ -13,16 +13,18 @@ void showStorageHistorySheet({
   required BuildContext context,
   required Future<void> Function() onClearHistory,
   required Future<void> Function()? onClearProductCache,
-  required int historyCount,
-  required int cacheCount,
-  required int historySizeBytes,
-  required int cacheSizeBytes,
+  int historyCount = 0,
+  int cacheCount = 0,
+  int historySizeBytes = 0,
+  int cacheSizeBytes = 0,
+  Future<StorageMetrics> Function()? onLoadMetrics,
   VoidCallback? onStorageUpdated,
 }) {
   int currentHistoryCount = historyCount;
   int currentCacheCount = cacheCount;
   int currentHistoryBytes = historySizeBytes;
   int currentCacheBytes = cacheSizeBytes;
+  bool didInitialLoad = false;
 
   showModalBottomSheet(
     context: context,
@@ -39,6 +41,20 @@ void showStorageHistorySheet({
 
       return StatefulBuilder(
         builder: (BuildContext sheetContext, StateSetter setModalState) {
+          if (!didInitialLoad && onLoadMetrics != null) {
+            didInitialLoad = true;
+            onLoadMetrics().then((metrics) {
+              if (sheetContext.mounted) {
+                setModalState(() {
+                  currentHistoryCount = metrics.historyCount;
+                  currentCacheCount = metrics.cacheCount;
+                  currentHistoryBytes = metrics.historySizeBytes;
+                  currentCacheBytes = metrics.cacheSizeBytes;
+                });
+              }
+            });
+          }
+
           final int totalBytes = currentCacheBytes + currentHistoryBytes;
 
           return Column(
@@ -361,5 +377,7 @@ void showStorageHistorySheet({
         },
       );
     },
-  );
+  ).then((_) {
+    onStorageUpdated?.call();
+  });
 }
