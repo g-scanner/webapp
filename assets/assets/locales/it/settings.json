@@ -55,6 +55,7 @@
       "sheetTitle": "Database Offline",
       "statusSynchronized": "Sincronizzato",
       "statusDisabled": "Disattivato",
+      "statusDownloading": "Download in corso",
       "statusSoftStale": "Aggiornamento consigliato",
       "statusHardStale": "Obsoleto (>30 gg)",
       "lastSyncFormat": "Ultimo aggiornamento: {}",
