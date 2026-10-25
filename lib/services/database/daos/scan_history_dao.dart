@@ -144,6 +144,29 @@ class ScanHistoryDao {
     );
   }
 
+  /// Restituisce il conteggio degli elementi nella cronologia dell'utente.
+  Future<int> getHistoryCount([String? userId]) async {
+    final db = await _db;
+    final String query = userId != null
+        ? 'SELECT COUNT(*) FROM $tableName WHERE user_id = ?'
+        : 'SELECT COUNT(*) FROM $tableName';
+    final count = Sqflite.firstIntValue(
+      await db.rawQuery(query, userId != null ? [userId] : null),
+    );
+    return count ?? 0;
+  }
+
+  /// Restituisce la stima dei byte occupati dalla cronologia su SQLite.
+  Future<int> getHistorySizeBytes([String? userId]) async {
+    final db = await _db;
+    final String query = userId != null
+        ? 'SELECT CAST(TOTAL(LENGTH(data_json) + LENGTH(barcode)) AS INT) as total_size FROM $tableName WHERE user_id = ?'
+        : 'SELECT CAST(TOTAL(LENGTH(data_json) + LENGTH(barcode)) AS INT) as total_size FROM $tableName';
+    final result = await db.rawQuery(query, userId != null ? [userId] : null);
+    if (result.isEmpty) return 0;
+    return (result.first['total_size'] as num?)?.toInt() ?? 0;
+  }
+
   /// Riassegna la cronologia da un UID precedente al nuovo UID al login.
   Future<int> reassignHistory(String fromUid, String toUid) async {
     final db = await _db;

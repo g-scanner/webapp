@@ -126,6 +126,28 @@ class HistoryDbService {
     }
   }
 
+  /// Restituisce il conteggio degli elementi nella cronologia dell'utente corrente.
+  static Future<int> getHistoryCount(FirebaseAuth auth) async {
+    try {
+      final userId = getUserId(auth);
+      return await _historyDao.getHistoryCount(userId);
+    } catch (e) {
+      debugPrint("Failed getting history count from SQLite: $e");
+      return 0;
+    }
+  }
+
+  /// Restituisce la stima dei byte occupati dalla cronologia dell'utente corrente.
+  static Future<int> getHistorySizeBytes(FirebaseAuth auth) async {
+    try {
+      final userId = getUserId(auth);
+      return await _historyDao.getHistorySizeBytes(userId);
+    } catch (e) {
+      debugPrint("Failed getting history size from SQLite: $e");
+      return 0;
+    }
+  }
+
   /// Sincronizza la cronologia locale con Firestore per utenti autenticati.
   /// Filtra ed elimina automaticamente eventuali elementi precedentemente cancellati o annullati.
   static Future<List<ScanHistoryItem>> syncHistoryWithFirestore(

@@ -86,6 +86,26 @@ class LocalCacheService {
     }
   }
 
+  /// Restituisce il numero totale di prodotti in cache locale.
+  static Future<int> getProductsCount() async {
+    try {
+      return await _productDao.getProductsCount();
+    } catch (e) {
+      debugPrint("Error getting products count: $e");
+      return 0;
+    }
+  }
+
+  /// Restituisce la stima dei byte occupati dai prodotti in cache locale.
+  static Future<int> getProductsSizeBytes() async {
+    try {
+      return await _productDao.getProductsSizeBytes();
+    } catch (e) {
+      debugPrint("Error getting products size bytes: $e");
+      return 0;
+    }
+  }
+
   /// Recupera il timestamp dell'ultima sincronizzazione delta.
   static Future<String?> getLastSyncTime() async {
     try {

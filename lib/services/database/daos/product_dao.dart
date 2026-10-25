@@ -113,6 +113,16 @@ class ProductDao {
     return count ?? 0;
   }
 
+  /// Restituisce la stima dei byte occupati dai prodotti in cache locale.
+  Future<int> getProductsSizeBytes() async {
+    final db = await _db;
+    final result = await db.rawQuery(
+      'SELECT CAST(TOTAL(LENGTH(data_json) + LENGTH(barcode)) AS INT) as total_size FROM $tableName',
+    );
+    if (result.isEmpty) return 0;
+    return (result.first['total_size'] as num?)?.toInt() ?? 0;
+  }
+
   /// Elimina record con data `fetched_from_off_at` precedente a [cutoff].
   Future<int> deleteOlderThan(DateTime cutoff) async {
     final db = await _db;

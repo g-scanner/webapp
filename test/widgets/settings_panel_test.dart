@@ -154,7 +154,7 @@ void main() {
       expect(find.text('settings.sectionTitles.appearance'), findsOneWidget);
       expect(find.text('settings.sectionTitles.language'), findsOneWidget);
       expect(
-        find.text('settings.sectionTitles.dataAndHistory'),
+        find.text('settings.sectionTitles.storageAndData'),
         findsOneWidget,
       );
       expect(find.text('settings.sectionTitles.legalInfo'), findsOneWidget);
@@ -486,17 +486,37 @@ void main() {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // GROUP 6 – Clear History flow
+  // GROUP 6 – Storage and Local Data sheet flows
   // ═══════════════════════════════════════════════════════════════════════════
-  group('GROUP 6 – Clear History flow', () {
+  group('GROUP 6 – Storage and Local Data sheet flows', () {
+    testWidgets('tapping local data opens storage sheet and shows actions', (
+      tester,
+    ) async {
+      await _pump(tester, cb: cb, auth: auth);
+
+      await tester.tap(find.text('settings.localData.title'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('settings.dataHistory.sheetTitle'), findsOneWidget);
+      expect(
+        find.text('settings.dataHistory.clearCacheAction'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('settings.dataHistory.clearHistoryAction'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('tapping clear history shows confirmation dialog', (
       tester,
     ) async {
       await _pump(tester, cb: cb, auth: auth);
 
-      await tester.tap(
-        find.text('settings.dataAndHistory.clearHistoryTitle').first,
-      );
+      await tester.tap(find.text('settings.localData.title'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('settings.dataHistory.clearHistoryAction'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsOneWidget);
@@ -511,9 +531,10 @@ void main() {
     ) async {
       await _pump(tester, cb: cb, auth: auth);
 
-      await tester.tap(
-        find.text('settings.dataAndHistory.clearHistoryTitle').first,
-      );
+      await tester.tap(find.text('settings.localData.title'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('settings.dataHistory.clearHistoryAction'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('common.actions.cancel'));
@@ -525,9 +546,10 @@ void main() {
     testWidgets('confirming dialog calls onClearHistory', (tester) async {
       await _pump(tester, cb: cb, auth: auth);
 
-      await tester.tap(
-        find.text('settings.dataAndHistory.clearHistoryTitle').first,
-      );
+      await tester.tap(find.text('settings.localData.title'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('settings.dataHistory.clearHistoryAction'));
       await tester.pumpAndSettle();
 
       final allMatches = find.descendant(
@@ -540,26 +562,15 @@ void main() {
       verify(() => cb.onClearHistory()).called(1);
     });
 
-    testWidgets('clear product cache button is rendered', (tester) async {
-      await _pump(tester, cb: cb, auth: auth);
-      expect(
-        find.text('settings.dataAndHistory.clearProductsTitle'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('settings.dataAndHistory.clearProductsSubtitle'),
-        findsOneWidget,
-      );
-    });
-
     testWidgets(
       'tapping clear product cache button opens confirmation dialog',
       (tester) async {
         await _pump(tester, cb: cb, auth: auth);
 
-        await tester.tap(
-          find.text('settings.dataAndHistory.clearProductsTitle').first,
-        );
+        await tester.tap(find.text('settings.localData.title'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('settings.dataHistory.clearCacheAction'));
         await tester.pumpAndSettle();
 
         expect(
@@ -574,9 +585,10 @@ void main() {
       (tester) async {
         await _pump(tester, cb: cb, auth: auth);
 
-        await tester.tap(
-          find.text('settings.dataAndHistory.clearProductsTitle').first,
-        );
+        await tester.tap(find.text('settings.localData.title'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('settings.dataHistory.clearCacheAction'));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('common.actions.cancel'));
@@ -591,9 +603,10 @@ void main() {
       (tester) async {
         await _pump(tester, cb: cb, auth: auth);
 
-        await tester.tap(
-          find.text('settings.dataAndHistory.clearProductsTitle').first,
-        );
+        await tester.tap(find.text('settings.localData.title'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('settings.dataHistory.clearCacheAction'));
         await tester.pumpAndSettle();
 
         final allMatches = find.descendant(
@@ -606,6 +619,18 @@ void main() {
         verify(() => cb.onClearProductCache()).called(1);
       },
     );
+
+    testWidgets('tapping offline db opens offline database sheet', (
+      tester,
+    ) async {
+      await _pump(tester, cb: cb, auth: auth);
+
+      await tester.tap(find.text('settings.offlineDb.title'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('settings.offlineDb.sheetTitle'), findsOneWidget);
+      expect(find.text('settings.offlineDb.selectPackageLabel'), findsOneWidget);
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1263,9 +1288,9 @@ void main() {
         var callCount = 0;
         when(() => auth.currentUser).thenAnswer((_) {
           callCount++;
-          // Prima chiamata: SettingsPanel legge il currentUser per decidere di mostrare il flow.
-          // Dalla seconda in poi: ri-verifica interna al dialog (sessione scaduta).
-          return callCount <= 3 ? user : userWithStaleSession;
+          // Prime 4 chiamate (build iniziale, rebuild metriche, apertura sheet e check iniziale dialog): user con sessione fresca.
+          // Dalla quinta chiamata in poi (ri-verifica alla conferma): sessione scaduta.
+          return callCount <= 4 ? user : userWithStaleSession;
         });
 
         await _pump(tester, cb: cb, auth: auth);

@@ -32,12 +32,14 @@ class _MockWarningAssetLoader extends AssetLoader {
         },
       },
       'settings': {
-        'offlineDatabase': {
-          'tierNone': 'Disattivato (Solo Online)',
-          'glutenFree': 'Gluten-Free Globale (~12 MB)',
-          'euroCore': 'Europa Core + Gluten-Free (~65 MB)',
-          'americaCore': 'Americhe Core + Gluten-Free (~55 MB)',
-          'globalTop': 'Global Top Scans (~130 MB)',
+        'offlineDb': {
+          'disabledStatus': 'Disattivato (Solo Online)',
+          'packages': {
+            'gluten_free': {'title': 'Gluten-Free Globale (~12 MB)'},
+            'euro_core': {'title': 'Europa Core + Gluten-Free (~65 MB)'},
+            'america_core': {'title': 'Americhe Core + Gluten-Free (~55 MB)'},
+            'global_top': {'title': 'Global Top Scans (~130 MB)'},
+          },
         },
       },
     };

@@ -7,8 +7,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../models/models.dart';
 import '../../core/theme/theme.dart';
+import '../../services/database/local_cache_service.dart';
+import '../../services/database/history_db_service.dart';
+import '../../services/database/daos/scan_history_dao.dart';
 import 'sections/sections.dart';
-import 'dialogs/dialogs.dart';
+import 'sheets/sheets.dart';
+import 'utils/storage_utils.dart';
 
 class SettingsPanel extends StatefulWidget {
   final UserSettings settings;
@@ -34,11 +38,40 @@ class SettingsPanel extends StatefulWidget {
 
 class _SettingsPanelState extends State<SettingsPanel> {
   FirebaseAuth get _auth => widget.firebaseAuth ?? FirebaseAuth.instance;
-  bool _clearing = false;
-  bool _clearingProducts = false;
+
+  int _cacheCount = 0;
+  int _historyCount = 0;
+  int _cacheSizeBytes = 0;
+  int _historySizeBytes = 0;
 
   // Variabile per l'aggiornamento UI istantaneo ("Optimistic Update")
   String? _optimisticDisplayName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStorageMetrics();
+  }
+
+  Future<void> _loadStorageMetrics() async {
+    try {
+      final userId = widget.settings.userId ?? HistoryDbService.getUserId(_auth);
+      final cCount = await LocalCacheService.getProductsCount();
+      final cSize = await LocalCacheService.getProductsSizeBytes();
+      final hCount = await const ScanHistoryDao().getHistoryCount(userId);
+      final hSize = await const ScanHistoryDao().getHistorySizeBytes(userId);
+      if (mounted) {
+        setState(() {
+          _cacheCount = cCount;
+          _cacheSizeBytes = cSize;
+          _historyCount = hCount;
+          _historySizeBytes = hSize;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading storage metrics: $e");
+    }
+  }
 
   void _triggerToast(String msg) {
     if (!mounted) return;
@@ -89,7 +122,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
       preferredLanguage: newLang,
     );
     await widget.onSettingsChange(updated);
-    // Aggiorna la locale UI in sync con la preferenza
     if (mounted) context.setLocale(Locale(newLang));
     _triggerToast("common.status.preferencesSaved".tr());
   }
@@ -107,35 +139,34 @@ class _SettingsPanelState extends State<SettingsPanel> {
   }
 
   Future<void> _handleClearHistory() async {
-    final confirm = await showClearHistoryDialog(context);
-
-    if (confirm == true) {
-      setState(() => _clearing = true);
-      try {
-        await widget.onClearHistory();
-        _triggerToast("common.status.historyClearedSuccess".tr());
-      } catch (_) {
-        // Errore già notificato con SnackBar
-      } finally {
-        if (mounted) setState(() => _clearing = false);
-      }
+    try {
+      await widget.onClearHistory();
+      await _loadStorageMetrics();
+      _triggerToast("common.status.historyClearedSuccess".tr());
+    } catch (_) {
+      // Errore già notificato con SnackBar
     }
   }
 
   Future<void> _handleClearProductCache() async {
-    final confirm = await showClearProductCacheDialog(context);
-
-    if (confirm == true) {
-      setState(() => _clearingProducts = true);
-      try {
-        await widget.onClearProductCache?.call();
-        _triggerToast("common.status.productsClearedSuccess".tr());
-      } catch (_) {
-        // Errore già gestito
-      } finally {
-        if (mounted) setState(() => _clearingProducts = false);
-      }
+    try {
+      await widget.onClearProductCache?.call();
+      await _loadStorageMetrics();
+      _triggerToast("common.status.productsClearedSuccess".tr());
+    } catch (_) {
+      // Errore già gestito
     }
+  }
+
+  String _getOfflineDbSubtitle() {
+    if (widget.settings.offlineDbTier == OfflineDbTier.none) {
+      return "settings.offlineDb.disabledStatus".tr();
+    }
+    final key = widget.settings.offlineDbTier.key;
+    final packName = "settings.offlineDb.packages.$key.title".tr();
+    final packSize = "settings.offlineDb.packages.$key.downloadSize".tr();
+    final installedStatus = "settings.offlineDb.installedStatus".tr();
+    return "$packName • $packSize ($installedStatus)";
   }
 
   @override
@@ -248,34 +279,79 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           const SizedBox(height: 40),
 
-          // 4. Sezione Database Offline
-          SectionHeader(
-            icon: Icons.cloud_download_outlined,
-            title: "settings.sectionTitles.offlineDatabase".tr(),
-            color: colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-
-          OfflineDatabaseSection(
-            settings: widget.settings,
-            onSettingsChange: widget.onSettingsChange,
-          ),
-
-          const SizedBox(height: 40),
-
-          // 5. Sezione Dati & Cronologia
+          // 4. Sezione Principale: Archiviazione & Dati
           SectionHeader(
             icon: Icons.data_usage,
-            title: "settings.sectionTitles.dataAndHistory".tr(),
+            title: "settings.sectionTitles.storageAndData".tr(),
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
 
-          DataHistorySection(
-            isClearing: _clearing,
-            onClearHistoryTap: _handleClearHistory,
-            isClearingProducts: _clearingProducts,
-            onClearProductsTap: _handleClearProductCache,
+          Material(
+            color: cardBg,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+              side: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Column(
+              children: [
+                SettingsNavigationItem(
+                  title: "settings.offlineDb.title".tr(),
+                  subtitle: Text(
+                    _getOfflineDbSubtitle(),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.3,
+                    ),
+                  ),
+                  isFirst: true,
+                  isLast: false,
+                  onTap: () {
+                    showOfflineDatabaseSheet(
+                      context: context,
+                      settings: widget.settings,
+                      onSettingsChange: widget.onSettingsChange,
+                      onDatabaseUpdated: () {
+                        setState(() {});
+                      },
+                    );
+                  },
+                ),
+                SettingsNavigationItem(
+                  title: "settings.localData.title".tr(),
+                  subtitle: Text(
+                    "settings.localData.used".tr(
+                      args: [formatBytes(_cacheSizeBytes + _historySizeBytes)],
+                    ),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.3,
+                    ),
+                  ),
+                  isFirst: false,
+                  isLast: true,
+                  onTap: () {
+                    showStorageHistorySheet(
+                      context: context,
+                      onClearHistory: _handleClearHistory,
+                      onClearProductCache: widget.onClearProductCache != null
+                          ? _handleClearProductCache
+                          : null,
+                      historyCount: _historyCount,
+                      cacheCount: _cacheCount,
+                      historySizeBytes: _historySizeBytes,
+                      cacheSizeBytes: _cacheSizeBytes,
+                      onStorageUpdated: _loadStorageMetrics,
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: 40),

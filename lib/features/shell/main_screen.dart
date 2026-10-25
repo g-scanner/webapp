@@ -260,7 +260,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           if (hadActualUpdate) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('settings.offlineDatabase.autoSyncSuccess'.tr()),
+                content: Text('settings.offlineDb.autoSyncSuccess'.tr()),
                 backgroundColor: context.colorScheme.primary,
                 duration: const Duration(seconds: 3),
               ),

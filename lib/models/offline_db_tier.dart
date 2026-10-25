@@ -31,15 +31,15 @@ extension OfflineDbTierExtension on OfflineDbTier {
   String get label {
     switch (this) {
       case OfflineDbTier.none:
-        return 'settings.offlineDatabase.tierNone'.tr();
+        return 'settings.offlineDb.disabledStatus'.tr();
       case OfflineDbTier.glutenFree:
-        return 'settings.offlineDatabase.glutenFree'.tr();
+        return 'settings.offlineDb.packages.gluten_free.title'.tr();
       case OfflineDbTier.euroCore:
-        return 'settings.offlineDatabase.euroCore'.tr();
+        return 'settings.offlineDb.packages.euro_core.title'.tr();
       case OfflineDbTier.americaCore:
-        return 'settings.offlineDatabase.americaCore'.tr();
+        return 'settings.offlineDb.packages.america_core.title'.tr();
       case OfflineDbTier.globalTop:
-        return 'settings.offlineDatabase.globalTop'.tr();
+        return 'settings.offlineDb.packages.global_top.title'.tr();
     }
   }
 

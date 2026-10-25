@@ -6,7 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
 import '../../licenses/licenses_screen.dart';
 import '../dialogs/legal_content_dialog.dart';
-import 'legal_item.dart';
+import 'settings_navigation_item.dart';
 
 /// Sezione informativa legale M3 (Termini, Privacy Policy, Licenze).
 class LegalSection extends StatelessWidget {
@@ -26,7 +26,7 @@ class LegalSection extends StatelessWidget {
       ),
       child: Column(
         children: [
-          buildLegalItem(
+          SettingsNavigationItem(
             title: "settings.legalMenu.termsAndConditionsTitle".tr(),
             subtitle: Text(
               "settings.legalMenu.termsAndConditionsSubtitle".tr(),
@@ -46,7 +46,7 @@ class LegalSection extends StatelessWidget {
             showTrailingArrow: true,
             isFirst: true,
           ),
-          buildLegalItem(
+          SettingsNavigationItem(
             title: "common.legal.privacyPolicy".tr(),
             subtitle: Text(
               "settings.legalMenu.privacyPolicySubtitle".tr(),
@@ -65,7 +65,7 @@ class LegalSection extends StatelessWidget {
             },
             showTrailingArrow: true,
           ),
-          buildLegalItem(
+          SettingsNavigationItem(
             title: "settings.legalMenu.licensesTitle".tr(),
             subtitle: Text(
               "settings.legalMenu.licensesSubtitle".tr(),

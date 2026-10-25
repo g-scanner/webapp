@@ -1,24 +1,58 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import '../../../core/theme/theme.dart';
 
-/// Singolo elemento testuale/cliccabile nella sezione legale
-/// (stile gemello a _buildToggleItem).
-Widget buildLegalItem({
-  required String title,
-  required Widget subtitle,
-  VoidCallback? onTap,
-  bool isFirst = false,
-  bool showTrailingArrow = true,
-  bool isLast = false,
-}) {
-  final bool hasTrailingArrow = onTap != null && showTrailingArrow;
+/// Elemento di navigazione riutilizzabile all'interno dei container M3 delle impostazioni.
+class SettingsNavigationItem extends StatelessWidget {
+  final String title;
+  final Widget subtitle;
+  final VoidCallback? onTap;
+  final bool isFirst;
+  final bool isLast;
+  final bool showTrailingArrow;
 
-  return Builder(
-    builder: (context) {
-      final colorScheme = context.colorScheme;
-      return InkWell(
+  const SettingsNavigationItem({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+    this.isFirst = false,
+    this.isLast = false,
+    this.showTrailingArrow = true,
+  });
+
+  /// Costruttore di utilità per passare direttamente una stringa come sottotitolo.
+  SettingsNavigationItem.textSubtitle({
+    super.key,
+    required this.title,
+    required String subtitleText,
+    this.onTap,
+    this.isFirst = false,
+    this.isLast = false,
+    this.showTrailingArrow = true,
+    TextStyle? subtitleStyle,
+  }) : subtitle = Builder(
+         builder: (context) => Text(
+           subtitleText,
+           style: subtitleStyle ??
+               TextStyle(
+                 fontSize: 13,
+                 color: Theme.of(context).colorScheme.onSurfaceVariant,
+                 height: 1.3,
+               ),
+         ),
+       );
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final bool hasTrailingArrow = onTap != null && showTrailingArrow;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         onTap: onTap,
         child: Container(
           padding: EdgeInsets.only(
@@ -62,7 +96,7 @@ Widget buildLegalItem({
                       offset: const Offset(8, 0),
                       child: Icon(
                         Icons.chevron_right_rounded,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
                         size: 26,
                       ),
                     ),
@@ -87,7 +121,7 @@ Widget buildLegalItem({
                   ),
                 ),
         ),
-      );
-    },
-  );
+      ),
+    );
+  }
 }

@@ -79,6 +79,16 @@ class DbService {
   static Future<List<ScanHistoryItem>> getHistory() =>
       HistoryDbService.getHistory(auth);
 
+  static Future<int> getHistoryCount() => HistoryDbService.getHistoryCount(auth);
+
+  static Future<int> getHistorySizeBytes() =>
+      HistoryDbService.getHistorySizeBytes(auth);
+
+  static Future<int> getProductsCount() => LocalCacheService.getProductsCount();
+
+  static Future<int> getProductsSizeBytes() =>
+      LocalCacheService.getProductsSizeBytes();
+
   static Future<List<ScanHistoryItem>> getHistoryPaged({
     int offset = 0,
     int limit = 20,
