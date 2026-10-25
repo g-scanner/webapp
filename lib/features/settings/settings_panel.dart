@@ -233,53 +233,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           const SizedBox(height: 40),
 
-          // 2. Opzioni di Visualizzazione: Tema
-          SectionHeader(
-            icon: Icons.palette_outlined,
-            title: "settings.sectionTitles.appearance".tr(),
-            color: colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-            ),
-            child: AppearanceSection(
-              preferredTheme: widget.settings.preferredTheme,
-              onThemeChange: _handleThemeChange,
-            ),
-          ),
-
-          const SizedBox(height: 40),
-
-          // 3. Opzioni di Visualizzazione: Lingua
-          SectionHeader(
-            icon: Icons.translate_outlined,
-            title: "settings.sectionTitles.language".tr(),
-            color: colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-            ),
-            child: LanguageSection(
-              preferredLanguage: widget.settings.preferredLanguage,
-              onLanguageChange: _handleLanguageChange,
-            ),
-          ),
-
-          const SizedBox(height: 40),
-
-          // 4. Sezione Principale: Archiviazione & Dati
+          // 2. Sezione Principale: Archiviazione & Dati
           SectionHeader(
             icon: Icons.data_usage,
             title: "settings.sectionTitles.storageAndData".tr(),
@@ -351,6 +305,52 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   },
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 40),
+
+          // 3. Opzioni di Visualizzazione: Tema
+          SectionHeader(
+            icon: Icons.palette_outlined,
+            title: "settings.sectionTitles.appearance".tr(),
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
+            ),
+            child: AppearanceSection(
+              preferredTheme: widget.settings.preferredTheme,
+              onThemeChange: _handleThemeChange,
+            ),
+          ),
+
+          const SizedBox(height: 40),
+
+          // 4. Opzioni di Visualizzazione: Lingua
+          SectionHeader(
+            icon: Icons.translate_outlined,
+            title: "settings.sectionTitles.language".tr(),
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
+            ),
+            child: LanguageSection(
+              preferredLanguage: widget.settings.preferredLanguage,
+              onLanguageChange: _handleLanguageChange,
             ),
           ),
 

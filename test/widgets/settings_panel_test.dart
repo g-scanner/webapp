@@ -158,6 +158,18 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('settings.sectionTitles.legalInfo'), findsOneWidget);
+
+      final storageTop = tester
+          .getTopLeft(find.text('settings.sectionTitles.storageAndData'))
+          .dy;
+      final appearanceTop = tester
+          .getTopLeft(find.text('settings.sectionTitles.appearance'))
+          .dy;
+      final languageTop = tester
+          .getTopLeft(find.text('settings.sectionTitles.language'))
+          .dy;
+      expect(storageTop, lessThan(appearanceTop));
+      expect(appearanceTop, lessThan(languageTop));
     });
   });
 
@@ -1369,4 +1381,3 @@ void main() {
     );
   });
 }
-
