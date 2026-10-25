@@ -240,7 +240,7 @@ class _OfflineDatabaseSheetContentState
           ),
         ),
         title: Text(
-          "settings.offlineDb.uninstallConfirmTitle".tr(),
+          "settings.offlineDb.uninstallPackage".tr(),
           textAlign: TextAlign.center,
           style: TextStyle(
             color: ctx.colorScheme.onSurface,
@@ -298,21 +298,24 @@ class _OfflineDatabaseSheetContentState
     );
 
     if (confirm == true) {
-      await OfflineDbService.deleteDatabaseFile();
-      await OfflineDbService.setInstalledTier(OfflineDbTier.none);
-      final updated = _currentSettings.copyWith(
-        offlineDbTier: OfflineDbTier.none,
-        offlineDbLastSyncedAt: null,
-      );
-      _currentSettings = updated;
-      await widget.onSettingsChange(updated, isOfflineDbChange: true);
+      try {
+        await OfflineDbService.deleteDatabaseFile();
+        await OfflineDbService.setInstalledTier(OfflineDbTier.none);
+        final updated = _currentSettings.copyWith(
+          offlineDbTier: OfflineDbTier.none,
+          offlineDbLastSyncedAt: null,
+        );
+        _currentSettings = updated;
+        await widget.onSettingsChange(updated, isOfflineDbChange: true);
 
-      if (mounted) {
-        setState(() {
-          _installedTier = OfflineDbTier.none;
-        });
-        widget.onDatabaseUpdated?.call();
-        _triggerSnackbar("settings.offlineDb.uninstallSuccess".tr());
+        if (mounted) {
+          setState(() {
+            _installedTier = OfflineDbTier.none;
+          });
+          widget.onDatabaseUpdated?.call();
+        }
+      } catch (e) {
+        debugPrint("Error uninstalling offline database: $e");
       }
     }
   }
@@ -344,8 +347,12 @@ class _OfflineDatabaseSheetContentState
           );
 
     final String confirmBtnText = isInitialInstall
-        ? "settings.offlineDb.downloadAndActivate".tr(args: [packTitle])
-        : "settings.offlineDb.switchToPackage".tr(args: [packTitle]);
+        ? "settings.offlineDb.downloadConfirmTitle".tr(
+            namedArgs: {'name': packTitle},
+          )
+        : "settings.offlineDb.switchConfirmTitle".tr(
+            namedArgs: {'name': packTitle},
+          );
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -521,9 +528,9 @@ class _OfflineDatabaseSheetContentState
 
     String daysAgo;
     if (diffDays == 0) {
-      daysAgo = "settings.offlineDb.today".tr().toLowerCase();
+      daysAgo = "common.time.today".tr().toLowerCase();
     } else if (diffDays == 1) {
-      daysAgo = "settings.offlineDb.yesterday".tr().toLowerCase();
+      daysAgo = "common.time.yesterday".tr().toLowerCase();
     } else {
       daysAgo = "settings.offlineDb.daysAgo".tr(args: [diffDays.toString()]);
     }
@@ -1041,11 +1048,12 @@ class _OfflineDatabaseSheetContentState
                             ),
                           ),
                           child: Text(
-                            "settings.offlineDb.switchToPackage".tr(
-                              args: [
-                                "settings.offlineDb.packages.$_previewPack.title"
-                                    .tr(),
-                              ],
+                            "settings.offlineDb.switchConfirmTitle".tr(
+                              namedArgs: {
+                                'name':
+                                    "settings.offlineDb.packages.$_previewPack.title"
+                                        .tr(),
+                              },
                             ),
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
@@ -1098,14 +1106,14 @@ class _OfflineDatabaseSheetContentState
                         children: [
                           _buildToggleRow(
                             context: context,
-                            title: "settings.offlineDb.wifiOnlyTitle".tr(),
-                            subtitle: "settings.offlineDb.wifiOnlySubtitle"
+                            title: "settings.offlineDb.autoUpdateTitle".tr(),
+                            subtitle: "settings.offlineDb.autoUpdateSubtitle"
                                 .tr(),
-                            value: _currentSettings.offlineDbWifiOnly,
+                            value: _currentSettings.offlineDbAutoSync,
                             isFirst: true,
                             onChanged: (v) async {
                               final updated = _currentSettings.copyWith(
-                                offlineDbWifiOnly: v,
+                                offlineDbAutoSync: v,
                               );
                               setState(() => _currentSettings = updated);
                               await widget.onSettingsChange(updated);
@@ -1113,13 +1121,13 @@ class _OfflineDatabaseSheetContentState
                           ),
                           _buildToggleRow(
                             context: context,
-                            title: "settings.offlineDb.autoUpdateTitle".tr(),
-                            subtitle: "settings.offlineDb.autoUpdateSubtitle"
+                            title: "settings.offlineDb.wifiOnlyTitle".tr(),
+                            subtitle: "settings.offlineDb.wifiOnlySubtitle"
                                 .tr(),
-                            value: _currentSettings.offlineDbAutoSync,
+                            value: _currentSettings.offlineDbWifiOnly,
                             onChanged: (v) async {
                               final updated = _currentSettings.copyWith(
-                                offlineDbAutoSync: v,
+                                offlineDbWifiOnly: v,
                               );
                               setState(() => _currentSettings = updated);
                               await widget.onSettingsChange(updated);

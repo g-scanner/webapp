@@ -38,16 +38,12 @@ class _MockSectionAssetLoader extends AssetLoader {
           'lastSyncPrefix': 'Ultimo aggiornamento:',
           'lastSyncFormat': 'Ultimo aggiornamento: {}',
           'neverSynced': 'Mai sincronizzato',
-          'today': 'Oggi',
-          'yesterday': 'Ieri',
           'daysAgo': '{} giorni fa',
           'updateBtn': 'Aggiorna',
           'updateButton': 'Aggiorna',
           'syncing': 'Sincronizzazione...',
           'uninstallPackage': 'Disinstalla Pacchetto',
-          'uninstallConfirmTitle': 'Disinstalla Pacchetto',
           'uninstallConfirmBody': 'Il database offline verrà rimosso dal dispositivo liberando spazio.',
-          'uninstallSuccess': 'Database offline rimosso con successo',
           'downloadAndActivate': 'Scarica ed attiva {}',
           'downloadConfirmTitle': 'Scarica {name}',
           'downloadConfirmBody': 'Verrà scaricato il database ({dl}). Spazio richiesto su disco: {disk}.',
@@ -55,7 +51,6 @@ class _MockSectionAssetLoader extends AssetLoader {
           'inUseBadge': 'Attualmente in uso',
           'downloadLabel': 'Download:',
           'diskLabel': 'Spazio su disco:',
-          'switchToPackage': 'Passa a {}',
           'switchConfirmTitle': 'Passa a {name}',
           'switchConfirmBody': 'Il pacchetto attuale verrà sostituito scaricando la nuova versione ({dl}). Spazio occupato: {disk}.',
           'automationAndNetworkLabel': 'AUTOMAZIONE E RETE',
@@ -96,6 +91,10 @@ class _MockSectionAssetLoader extends AssetLoader {
         },
       },
       'common': {
+        'time': {
+          'today': 'Oggi',
+          'yesterday': 'Ieri',
+        },
         'actions': {
           'cancel': 'Annulla',
           'delete': 'Elimina',
@@ -210,6 +209,19 @@ void main() {
         expect(find.text('Aggiorna'), findsNothing);
         // Preview defaults to Europa Core with download button
         expect(find.text('Scarica ed attiva Europa Core'), findsOneWidget);
+
+        final downloadButton = find.text('Scarica ed attiva Europa Core');
+        await tester.ensureVisible(downloadButton);
+        await tester.tap(downloadButton);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.text('Scarica Europa Core'),
+          ),
+          findsNWidgets(2),
+        );
       },
     );
 
@@ -362,6 +374,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(savedSettings?.offlineDbTier, equals(OfflineDbTier.none));
+        expect(find.text('Database offline rimosso con successo'), findsNothing);
       },
     );
 
@@ -442,6 +455,13 @@ void main() {
 
         // Dialog shows "Passa a Europa Core" button
         expect(find.byType(AlertDialog), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.text('Passa a Europa Core'),
+          ),
+          findsNWidgets(2),
+        );
 
         // Confirm switch in dialog
         final dialogConfirmBtn = find.descendant(

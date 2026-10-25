@@ -737,9 +737,12 @@ void main() {
       expect(find.text('Riso Scotti'), findsOneWidget);
       expect(find.text('Pane Frumento'), findsOneWidget);
 
-      await tester.tap(
-        find.byType(PopupMenuButton<GlutenSafetyStatus?>),
+      final filterDropdown = find.byType(PopupMenuButton<GlutenSafetyStatus?>);
+      expect(
+        tester.widget<PopupMenuButton<GlutenSafetyStatus?>>(filterDropdown).tooltip,
+        'history.filters.tooltip',
       );
+      await tester.tap(filterDropdown);
       await tester.pumpAndSettle();
 
       expect(
