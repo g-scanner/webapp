@@ -226,6 +226,47 @@ void main() {
     );
 
     testWidgets(
+      'Automation and network settings remain editable without an installed DB',
+      (tester) async {
+        UserSettings? savedSettings;
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(tier: OfflineDbTier.none),
+            onSettingsChange: (updated, {bool isOfflineDbChange = false}) async {
+              savedSettings = updated;
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        final switches = find.byType(Switch);
+        expect(switches, findsNWidgets(3));
+        for (var i = 0; i < 3; i++) {
+          expect(tester.widget<Switch>(switches.at(i)).onChanged, isNotNull);
+        }
+
+        await tester.ensureVisible(switches.at(0));
+        await tester.tap(switches.at(0));
+        await tester.pumpAndSettle();
+        expect(savedSettings?.offlineDbAutoSync, isFalse);
+
+        await tester.ensureVisible(switches.at(1));
+        await tester.tap(switches.at(1));
+        await tester.pumpAndSettle();
+        expect(savedSettings?.offlineDbWifiOnly, isFalse);
+
+        await tester.ensureVisible(switches.at(2));
+        await tester.tap(switches.at(2));
+        await tester.pumpAndSettle();
+        expect(savedSettings?.offlineDbCloudSync, isTrue);
+      },
+    );
+
+    testWidgets(
       'Shows active package and update button when package is installed',
       (tester) async {
         OfflineDbService.mockIsDatabaseInstalled = true;

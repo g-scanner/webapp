@@ -1087,70 +1087,61 @@ class _OfflineDatabaseSheetContentState
                 ),
                 const SizedBox(height: 16),
 
-                Opacity(
-                  opacity: _installedTier != OfflineDbTier.none ? 1.0 : 0.4,
-                  child: IgnorePointer(
-                    ignoring: _installedTier == OfflineDbTier.none,
-                    child: Material(
-                      color: cardBg,
-                      clipBehavior: Clip.antiAlias,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                        side: BorderSide(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.3,
-                          ),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildToggleRow(
-                            context: context,
-                            title: "settings.offlineDb.autoUpdateTitle".tr(),
-                            subtitle: "settings.offlineDb.autoUpdateSubtitle"
-                                .tr(),
-                            value: _currentSettings.offlineDbAutoSync,
-                            isFirst: true,
-                            onChanged: (v) async {
-                              final updated = _currentSettings.copyWith(
-                                offlineDbAutoSync: v,
-                              );
-                              setState(() => _currentSettings = updated);
-                              await widget.onSettingsChange(updated);
-                            },
-                          ),
-                          _buildToggleRow(
-                            context: context,
-                            title: "settings.offlineDb.wifiOnlyTitle".tr(),
-                            subtitle: "settings.offlineDb.wifiOnlySubtitle"
-                                .tr(),
-                            value: _currentSettings.offlineDbWifiOnly,
-                            onChanged: (v) async {
-                              final updated = _currentSettings.copyWith(
-                                offlineDbWifiOnly: v,
-                              );
-                              setState(() => _currentSettings = updated);
-                              await widget.onSettingsChange(updated);
-                            },
-                          ),
-                          _buildToggleRow(
-                            context: context,
-                            title: "settings.offlineDb.cloudSyncTitle".tr(),
-                            subtitle: "settings.offlineDb.cloudSyncSubtitle"
-                                .tr(),
-                            value: _currentSettings.offlineDbCloudSync,
-                            isLast: true,
-                            onChanged: (v) async {
-                              final updated = _currentSettings.copyWith(
-                                offlineDbCloudSync: v,
-                              );
-                              setState(() => _currentSettings = updated);
-                              await widget.onSettingsChange(updated);
-                            },
-                          ),
-                        ],
+                Material(
+                  color: cardBg,
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    side: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(
+                        alpha: 0.3,
                       ),
                     ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildToggleRow(
+                        context: context,
+                        title: "settings.offlineDb.autoUpdateTitle".tr(),
+                        subtitle: "settings.offlineDb.autoUpdateSubtitle".tr(),
+                        value: _currentSettings.offlineDbAutoSync,
+                        isFirst: true,
+                        onChanged: (v) async {
+                          final updated = _currentSettings.copyWith(
+                            offlineDbAutoSync: v,
+                          );
+                          setState(() => _currentSettings = updated);
+                          await widget.onSettingsChange(updated);
+                        },
+                      ),
+                      _buildToggleRow(
+                        context: context,
+                        title: "settings.offlineDb.wifiOnlyTitle".tr(),
+                        subtitle: "settings.offlineDb.wifiOnlySubtitle".tr(),
+                        value: _currentSettings.offlineDbWifiOnly,
+                        onChanged: (v) async {
+                          final updated = _currentSettings.copyWith(
+                            offlineDbWifiOnly: v,
+                          );
+                          setState(() => _currentSettings = updated);
+                          await widget.onSettingsChange(updated);
+                        },
+                      ),
+                      _buildToggleRow(
+                        context: context,
+                        title: "settings.offlineDb.cloudSyncTitle".tr(),
+                        subtitle: "settings.offlineDb.cloudSyncSubtitle".tr(),
+                        value: _currentSettings.offlineDbCloudSync,
+                        isLast: true,
+                        onChanged: (v) async {
+                          final updated = _currentSettings.copyWith(
+                            offlineDbCloudSync: v,
+                          );
+                          setState(() => _currentSettings = updated);
+                          await widget.onSettingsChange(updated);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
