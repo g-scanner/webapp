@@ -17,6 +17,7 @@ import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/database/offline_db_service.dart';
 import 'package:gscanner/services/database/offline_db_sync_service.dart';
 import 'package:gscanner/features/settings/sheets/offline_database_sheet.dart';
+import 'package:gscanner/core/network/connectivity_helper.dart';
 
 class _MockSectionAssetLoader extends AssetLoader {
   const _MockSectionAssetLoader();
@@ -62,6 +63,14 @@ class _MockSectionAssetLoader extends AssetLoader {
           'automationAndNetworkLabel': 'AUTOMAZIONE E RETE',
           'wifiOnlyTitle': 'Solo con Wi-Fi',
           'wifiOnlySubtitle': 'Non consumare dati della rete cellulare 4G/5G',
+          'mobileProtectionTitle': 'Protezione reti mobili',
+          'mobileProtectionSubtitle': 'Chiedi conferma prima di scaricare o aggiornare per evitare consumi su rete dati.',
+          'networkUsageNotice': "Attenzione: il download comporterà l'utilizzo di traffico dati.",
+          'manualUpdateConfirmTitle': 'Aggiorna database',
+          'manualUpdateConfirmBody': "L'aggiornamento scaricherà i nuovi dati da Internet e potrebbe consumare traffico.",
+          'webWeeklyUpdateTitle': 'Aggiornamento disponibile',
+          'webWeeklyUpdateBody': 'È disponibile la nuova versione settimanale del database offline.',
+          'webWeeklyUpdateCancel': 'Non ora',
           'autoUpdateTitle': 'Aggiornamento automatico',
           'autoUpdateSubtitle': 'Scarica micro-aggiornamenti settimanali',
           'cloudSyncTitle': 'Sincronizza con il cloud',
@@ -160,9 +169,11 @@ void main() {
     tempDir = await Directory.systemTemp.createTemp('gscanner_sheet_test_');
     dbPath = p.join(tempDir.path, 'offline_products.db');
     OfflineDbService.setMockDatabasePath(dbPath);
+    ConnectivityHelper.mockIsWifi = true;
   });
 
   tearDown(() async {
+    ConnectivityHelper.mockIsWifi = null;
     await OfflineDbService.close();
     OfflineDbService.setMockDatabasePath(null);
     OfflineDbService.mockIsDatabaseInstalled = null;
@@ -176,11 +187,13 @@ void main() {
   UserSettings testSettings({
     OfflineDbTier tier = OfflineDbTier.none,
     int? lastSyncedAt,
+    bool wifiOnly = true,
   }) {
     return UserSettings(
       userId: 'test_user',
       offlineDbTier: tier,
       offlineDbLastSyncedAt: lastSyncedAt,
+      offlineDbWifiOnly: wifiOnly,
       strictMode: false,
       alertLactose: false,
       warnAdditives: false,
@@ -262,12 +275,12 @@ void main() {
         await tester.ensureVisible(switches.at(0));
         await tester.tap(switches.at(0));
         await tester.pumpAndSettle();
-        expect(savedSettings?.offlineDbAutoSync, isFalse);
+        expect(savedSettings?.offlineDbWifiOnly, isFalse);
 
         await tester.ensureVisible(switches.at(1));
         await tester.tap(switches.at(1));
         await tester.pumpAndSettle();
-        expect(savedSettings?.offlineDbWifiOnly, isFalse);
+        expect(savedSettings?.offlineDbAutoSync, isFalse);
 
         await tester.ensureVisible(switches.at(2));
         await tester.tap(switches.at(2));
@@ -712,6 +725,193 @@ void main() {
         // 3. UI rolled back to previous package: Solo Celiachia
         expect(find.text('Solo Celiachia'), findsWidgets);
         expect(find.text('Download in corso'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Web: displays "Protezione reti mobili" toggle and shows network usage warnings',
+      (WidgetTester tester) async {
+        OfflineDbSyncService.isWebOverride = true;
+        addTearDown(() => OfflineDbSyncService.isWebOverride = null);
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(
+              tier: OfflineDbTier.glutenFree,
+              lastSyncedAt: 1773000000,
+              wifiOnly: true,
+            ),
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        // 1. On Web, the toggle must be "Protezione reti mobili", NOT "Solo con Wi-Fi"
+        expect(find.text('Protezione reti mobili'), findsOneWidget);
+        expect(find.text('Solo con Wi-Fi'), findsNothing);
+        expect(
+          tester.getTopLeft(find.text('Protezione reti mobili')).dy,
+          lessThan(tester.getTopLeft(find.text('Aggiornamento automatico')).dy),
+        );
+
+        // 2. Tapping "Aggiorna" opens confirmation dialog with data warning on web
+        final updateBtn = find.text('Aggiorna');
+        expect(updateBtn, findsOneWidget);
+        await tester.tap(updateBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text('Aggiorna database'), findsOneWidget);
+        expect(
+          find.text("L'aggiornamento scaricherà i nuovi dati da Internet e potrebbe consumare traffico."),
+          findsOneWidget,
+        );
+
+        // Cancel update
+        final cancelBtn = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Annulla'),
+        );
+        await tester.tap(cancelBtn);
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsNothing);
+
+        // 3. Switching package on web shows data usage notice in dialog
+        await tester.tap(find.text('Europa Core'));
+        await tester.pumpAndSettle();
+
+        final switchBtn = find.text('Passa a Europa Core');
+        await tester.ensureVisible(switchBtn);
+        await tester.tap(switchBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(
+          find.textContaining("Attenzione: il download comporterà l'utilizzo di traffico dati."),
+          findsOneWidget,
+        );
+
+        // Dismiss
+        final dismissBtn = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Annulla'),
+        );
+        await tester.tap(dismissBtn);
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Native: Solo WiFi active warns on mobile connection but not on WiFi',
+      (WidgetTester tester) async {
+        OfflineDbSyncService.isWebOverride = false;
+        addTearDown(() {
+          OfflineDbSyncService.isWebOverride = null;
+          ConnectivityHelper.mockIsWifi = null;
+        });
+
+        // --- Case A: On Mobile Data (isWifi = false) ---
+        ConnectivityHelper.mockIsWifi = false;
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(
+              tier: OfflineDbTier.glutenFree,
+              lastSyncedAt: 1773000000,
+              wifiOnly: true,
+            ),
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        // 1. Label is "Solo con Wi-Fi" on native
+        expect(find.text('Solo con Wi-Fi'), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.text('Solo con Wi-Fi')).dy,
+          lessThan(tester.getTopLeft(find.text('Aggiornamento automatico')).dy),
+        );
+
+        // 2. On mobile data, tapping "Aggiorna" opens confirmation dialog
+        final updateBtn = find.text('Aggiorna');
+        await tester.tap(updateBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text('Aggiorna database'), findsOneWidget);
+
+        // Cancel
+        await tester.tap(find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Annulla'),
+        ));
+        await tester.pumpAndSettle();
+
+        // 3. On mobile data, package switch includes warning notice
+        await tester.tap(find.text('Europa Core'));
+        await tester.pumpAndSettle();
+
+        final switchBtn = find.text('Passa a Europa Core');
+        await tester.ensureVisible(switchBtn);
+        await tester.tap(switchBtn);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining("Attenzione: il download comporterà l'utilizzo di traffico dati."),
+          findsOneWidget,
+        );
+        await tester.tap(find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Annulla'),
+        ));
+        await tester.pumpAndSettle();
+
+        // Close sheet
+        Navigator.pop(tester.element(find.text('Database Offline').first));
+        await tester.pumpAndSettle();
+
+        // --- Case B: On Wi-Fi (isWifi = true) ---
+        ConnectivityHelper.mockIsWifi = true;
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(
+              tier: OfflineDbTier.glutenFree,
+              lastSyncedAt: 1773000000,
+              wifiOnly: true,
+            ),
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        // 4. On Wi-Fi, package switch does NOT have the warning notice
+        await tester.tap(find.text('Europa Core'));
+        await tester.pumpAndSettle();
+
+        final switchBtnWifi = find.text('Passa a Europa Core');
+        await tester.ensureVisible(switchBtnWifi);
+        await tester.tap(switchBtnWifi);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining("Attenzione: il download comporterà l'utilizzo di traffico dati."),
+          findsNothing,
+        );
+        await tester.tap(find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Annulla'),
+        ));
+        await tester.pumpAndSettle();
       },
     );
   });

@@ -443,8 +443,12 @@ void main() {
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       final now = DateTime.now();
-      final todayIso =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}T10:30:00Z';
+      final todayIso = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        12,
+      ).toUtc().toIso8601String();
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
@@ -458,9 +462,9 @@ void main() {
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final iso =
-          '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}T08:00:00Z';
+      final now = DateTime.now();
+      final yesterday = DateTime(now.year, now.month, now.day - 1, 12);
+      final iso = yesterday.toUtc().toIso8601String();
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
@@ -1108,9 +1112,9 @@ void main() {
     testWidgets(
       'Firestore submittedAt used for date display over widget.reportDate',
       (tester) async {
-        final yesterday = DateTime.now().subtract(const Duration(days: 1));
-        final yesterdayIso =
-            '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}T09:00:00Z';
+        final now = DateTime.now();
+        final yesterday = DateTime(now.year, now.month, now.day - 1, 12);
+        final yesterdayIso = yesterday.toUtc().toIso8601String();
 
         _stubFirestoreWithReport(mockFirestore, {
           'id': 'report_123',

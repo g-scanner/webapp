@@ -249,6 +249,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   void _autoDownloadOfflineDbIfNeeded(UserSettings currentSettings) {
+    if (OfflineDbSyncService.isWeb && currentSettings.offlineDbWifiOnly) {
+      _checkWebWeeklyUpdatePrompt(currentSettings);
+      return;
+    }
+
     OfflineDbSyncService.autoDownloadIfNeeded(
       settings: currentSettings,
       onSettingsChange: (updatedSettings) async {
@@ -270,6 +275,136 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         await DbService.saveSettings(updatedSettings, isOfflineDbChange: true);
       },
     );
+  }
+
+  Future<void> _checkWebWeeklyUpdatePrompt(UserSettings currentSettings) async {
+    final isAvailable = await OfflineDbSyncService.isWeeklyUpdateAvailable(currentSettings);
+    if (!isAvailable) return;
+
+    final isOnline = await ConnectivityHelper.hasInternetConnection();
+    if (!isOnline) return;
+
+    if (!mounted) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (OfflineDbSyncService.isSyncing) return;
+
+      final shouldUpdate = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: ctx.cardBackground,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          icon: Center(
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: ctx.colorScheme.primary.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_download_rounded,
+                color: ctx.colorScheme.primary,
+                size: 28,
+              ),
+            ),
+          ),
+          title: Text(
+            "settings.offlineDb.webWeeklyUpdateTitle".tr(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: ctx.colorScheme.onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            "settings.offlineDb.webWeeklyUpdateBody".tr(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: ctx.colorScheme.onSurfaceVariant,
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          actions: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ctx.colorScheme.primary,
+                    foregroundColor: ctx.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: Text(
+                    "settings.offlineDb.updateBtn".tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ctx.colorScheme.onSurface,
+                    side: BorderSide(
+                      color: ctx.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: Text(
+                    "settings.offlineDb.webWeeklyUpdateCancel".tr(),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      if (shouldUpdate == true && mounted) {
+        OfflineDbSyncService.autoDownloadIfNeeded(
+          settings: currentSettings,
+          forceCheck: true,
+          onSettingsChange: (updatedSettings) async {
+            final bool hadActualUpdate =
+                currentSettings.offlineDbLastSyncedAt !=
+                updatedSettings.offlineDbLastSyncedAt;
+            if (mounted) {
+              setState(() => userSettings = updatedSettings);
+              if (hadActualUpdate) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('settings.offlineDb.autoSyncSuccess'.tr()),
+                    backgroundColor: context.colorScheme.primary,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
+            await DbService.saveSettings(updatedSettings, isOfflineDbChange: true);
+          },
+        );
+      }
+    });
   }
 
   void _syncEverythingWithFirestore() {

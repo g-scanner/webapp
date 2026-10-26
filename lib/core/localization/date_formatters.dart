@@ -8,7 +8,7 @@ String formatRelativeDate(String isoDate) {
     final parsed = DateTime.parse(isoDate).toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
     final targetDate = DateTime(parsed.year, parsed.month, parsed.day);
 
     final hour = parsed.hour.toString().padLeft(2, '0');
@@ -45,7 +45,7 @@ String formatScanDate(String isoDate) {
     final parsed = DateTime.parse(isoDate).toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
     final targetDate = DateTime(parsed.year, parsed.month, parsed.day);
 
     final hour = parsed.hour.toString().padLeft(2, '0');
@@ -86,7 +86,7 @@ String formatReportDate(String isoDate) {
     final parsed = DateTime.parse(isoDate).toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
     final targetDate = DateTime(parsed.year, parsed.month, parsed.day);
 
     final hour = parsed.hour.toString().padLeft(2, '0');

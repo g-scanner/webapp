@@ -38,6 +38,12 @@ class OfflineDbSyncService {
   static String _baseUrl = _defaultReleaseBaseUrl;
   static http.Client? _mockClient;
 
+  @visibleForTesting
+  static bool? isWebOverride;
+
+  /// Restituisce `true` se l'ambiente di esecuzione è il Web (o mockato come tale per i test).
+  static bool get isWeb => isWebOverride ?? kIsWeb;
+
   /// Notifier globale dello stato e avanzamento della sincronizzazione offline.
   static final ValueNotifier<OfflineSyncProgress> syncProgressNotifier =
       ValueNotifier<OfflineSyncProgress>(const OfflineSyncProgress.idle());
@@ -93,7 +99,26 @@ class OfflineDbSyncService {
   static void resetState() {
     _baseUrl = _defaultReleaseBaseUrl;
     _mockClient = null;
+    isWebOverride = null;
     cancelSync();
+  }
+
+  /// Restituisce `true` se il database offline è abilitato, installato,
+  /// con aggiornamento automatico attivo e il timestamp dell'ultimo sync
+  /// è precedente al rilascio settimanale più recente (Domenica 04:00).
+  static Future<bool> isWeeklyUpdateAvailable(
+    UserSettings settings, {
+    int? mockReleaseEpoch,
+  }) async {
+    if (settings.offlineDbTier == OfflineDbTier.none) return false;
+    if (!settings.offlineDbAutoSync) return false;
+
+    final isInstalled = await OfflineDbService.isDatabaseInstalled();
+    if (!isInstalled) return false;
+
+    final releaseEpoch = mockReleaseEpoch ?? getMostRecentSundayReleaseEpoch();
+    final lastSync = settings.offlineDbLastSyncedAt ?? 0;
+    return lastSync < releaseEpoch;
   }
 
   @visibleForTesting
@@ -190,8 +215,14 @@ class OfflineDbSyncService {
       return;
     }
 
-    // Se l'utente richiede solo Wi-Fi, controlliamo il tipo di rete:
+    // Se l'utente richiede solo Wi-Fi (mobile) o protezione reti mobili (web), controlliamo:
     if (settings.offlineDbWifiOnly && !forceCheck) {
+      if (isWeb) {
+        debugPrint(
+          'OfflineDbSyncService: Auto-sync skipped on web because offlineDbWifiOnly is true.',
+        );
+        return;
+      }
       final isWifi = await ConnectivityHelper.isWifiConnection();
       if (!isWifi) {
         debugPrint(

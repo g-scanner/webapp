@@ -8,6 +8,7 @@ import '../../../core/theme/theme.dart';
 import '../../../models/models.dart';
 import '../../../services/database/offline_db_service.dart';
 import '../../../services/database/offline_db_sync_service.dart';
+import '../../../core/network/connectivity_helper.dart';
 
 /// Mostra il Modal Bottom Sheet "Database Offline" in puro stile M3.
 void showOfflineDatabaseSheet({
@@ -410,13 +411,18 @@ class _OfflineDatabaseSheetContentState
             namedArgs: {'name': packTitle},
           );
 
-    final String dialogBody = isInitialInstall
+    final String baseBody = isInitialInstall
         ? "settings.offlineDb.downloadConfirmBody".tr(
             namedArgs: {'dl': packDl, 'disk': packDisk},
           )
         : "settings.offlineDb.switchConfirmBody".tr(
             namedArgs: {'dl': packDl, 'disk': packDisk},
           );
+
+    final showWarning = await _shouldShowMobileDataWarning();
+    final String dialogBody = showWarning
+        ? "$baseBody\n\n${"settings.offlineDb.networkUsageNotice".tr()}"
+        : baseBody;
 
     final String confirmBtnText = isInitialInstall
         ? "settings.offlineDb.downloadConfirmTitle".tr(
@@ -425,6 +431,8 @@ class _OfflineDatabaseSheetContentState
         : "settings.offlineDb.switchConfirmTitle".tr(
             namedArgs: {'name': packTitle},
           );
+
+    if (!mounted) return;
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -520,6 +528,115 @@ class _OfflineDatabaseSheetContentState
       final targetTier = _keyToTier(targetKey);
       _startSync(targetTier, explicitLastSyncedAt: null);
     }
+  }
+
+  /// Restituisce `true` se l'utente ha attiva l'opzione "Solo Wi-Fi" (o "Protezione reti mobili" su Web)
+  /// e si trova attualmente su rete mobile (o su Web dove il tipo di rete non è rilevabile).
+  Future<bool> _shouldShowMobileDataWarning() async {
+    if (!_currentSettings.offlineDbWifiOnly) return false;
+    if (OfflineDbSyncService.isWeb) return true;
+    final isWifi = await ConnectivityHelper.isWifiConnection();
+    return !isWifi;
+  }
+
+  Future<void> _handleManualUpdate() async {
+    final showWarning = await _shouldShowMobileDataWarning();
+    if (showWarning) {
+      if (!mounted) return;
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: ctx.cardBackground,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          icon: Center(
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: ctx.colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.refresh_rounded,
+                color: ctx.colorScheme.onPrimaryContainer,
+                size: 28,
+              ),
+            ),
+          ),
+          title: Text(
+            "settings.offlineDb.manualUpdateConfirmTitle".tr(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: ctx.colorScheme.onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            "settings.offlineDb.manualUpdateConfirmBody".tr(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: ctx.colorScheme.onSurfaceVariant,
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          actions: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ctx.colorScheme.primary,
+                    foregroundColor: ctx.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: Text(
+                    "settings.offlineDb.updateBtn".tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ctx.colorScheme.onSurface,
+                    side: BorderSide(
+                      color: ctx.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: Text(
+                    "common.actions.cancel".tr(),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+    }
+
+    _startSync(_installedTier);
   }
 
   Widget _buildStatusPill(ColorScheme colorScheme) {
@@ -845,7 +962,7 @@ class _OfflineDatabaseSheetContentState
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
                           onPressed: () {
-                            _startSync(_installedTier);
+                            _handleManualUpdate();
                           },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: colorScheme.onSurface,
@@ -1195,26 +1312,30 @@ class _OfflineDatabaseSheetContentState
                     children: [
                       _buildToggleRow(
                         context: context,
-                        title: "settings.offlineDb.autoUpdateTitle".tr(),
-                        subtitle: "settings.offlineDb.autoUpdateSubtitle".tr(),
-                        value: _currentSettings.offlineDbAutoSync,
-                        isFirst: true,
-                        onChanged: (v) async {
-                          final updated = _currentSettings.copyWith(
-                            offlineDbAutoSync: v,
-                          );
-                          setState(() => _currentSettings = updated);
-                          await widget.onSettingsChange(updated);
-                        },
-                      ),
-                      _buildToggleRow(
-                        context: context,
-                        title: "settings.offlineDb.wifiOnlyTitle".tr(),
-                        subtitle: "settings.offlineDb.wifiOnlySubtitle".tr(),
+                        title: OfflineDbSyncService.isWeb
+                            ? "settings.offlineDb.mobileProtectionTitle".tr()
+                            : "settings.offlineDb.wifiOnlyTitle".tr(),
+                        subtitle: OfflineDbSyncService.isWeb
+                            ? "settings.offlineDb.mobileProtectionSubtitle".tr()
+                            : "settings.offlineDb.wifiOnlySubtitle".tr(),
                         value: _currentSettings.offlineDbWifiOnly,
                         onChanged: (v) async {
                           final updated = _currentSettings.copyWith(
                             offlineDbWifiOnly: v,
+                          );
+                          setState(() => _currentSettings = updated);
+                          await widget.onSettingsChange(updated);
+                        },
+                        isFirst: true,
+                      ),
+                      _buildToggleRow(
+                        context: context,
+                        title: "settings.offlineDb.autoUpdateTitle".tr(),
+                        subtitle: "settings.offlineDb.autoUpdateSubtitle".tr(),
+                        value: _currentSettings.offlineDbAutoSync,
+                        onChanged: (v) async {
+                          final updated = _currentSettings.copyWith(
+                            offlineDbAutoSync: v,
                           );
                           setState(() => _currentSettings = updated);
                           await widget.onSettingsChange(updated);

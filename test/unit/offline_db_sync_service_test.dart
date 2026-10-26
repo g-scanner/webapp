@@ -415,6 +415,94 @@ void main() {
       ConnectivityHelper.mockIsWifi = null;
     });
 
+    test('skips autoDownload on web if offlineDbWifiOnly is true and not forceCheck', () async {
+      OfflineDbSyncService.isWebOverride = true;
+      var called = false;
+      final settings = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.glutenFree,
+        offlineDbAutoSync: true,
+        offlineDbWifiOnly: true,
+      );
+
+      await OfflineDbSyncService.autoDownloadIfNeeded(
+        settings: settings,
+        onSettingsChange: (_) async => called = true,
+      );
+
+      expect(called, isFalse);
+      expect(OfflineDbSyncService.isSyncing, isFalse);
+      OfflineDbSyncService.isWebOverride = null;
+    });
+
+    test('isWeeklyUpdateAvailable evaluates conditions correctly', () async {
+      // 1. Tier none -> false
+      final sNone = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.none,
+      );
+      expect(await OfflineDbSyncService.isWeeklyUpdateAvailable(sNone), isFalse);
+
+      // 2. AutoSync false -> false
+      final sNoAuto = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.glutenFree,
+        offlineDbAutoSync: false,
+      );
+      expect(await OfflineDbSyncService.isWeeklyUpdateAvailable(sNoAuto), isFalse);
+
+      // 3. Not installed -> false
+      final sInstalled = UserSettings(
+        strictMode: true,
+        alertLactose: false,
+        warnAdditives: true,
+        autoSaveHistory: true,
+        preferredLanguage: 'it',
+        offlineDbTier: OfflineDbTier.glutenFree,
+        offlineDbAutoSync: true,
+        offlineDbLastSyncedAt: 1000,
+      );
+      expect(await OfflineDbSyncService.isWeeklyUpdateAvailable(sInstalled), isFalse);
+
+      // Install dummy DB
+      final file = File(dbPath);
+      await file.writeAsBytes(List.filled(2048, 1));
+      OfflineDbService.setMockDatabasePath(dbPath);
+
+      // 4. lastSync >= releaseEpoch -> false (already updated this week)
+      const releaseEpoch = 2000;
+      final sUpdated = sInstalled.copyWith(offlineDbLastSyncedAt: 2005);
+      expect(
+        await OfflineDbSyncService.isWeeklyUpdateAvailable(
+          sUpdated,
+          mockReleaseEpoch: releaseEpoch,
+        ),
+        isFalse,
+      );
+
+      // 5. lastSync < releaseEpoch -> true (update available!)
+      final sOutdated = sInstalled.copyWith(offlineDbLastSyncedAt: 1500);
+      expect(
+        await OfflineDbSyncService.isWeeklyUpdateAvailable(
+          sOutdated,
+          mockReleaseEpoch: releaseEpoch,
+        ),
+        isTrue,
+      );
+    });
+
     test('does nothing if database is already installed and matches tier', () async {
       // create a dummy sqlite file so isDatabaseInstalled is true
       final file = File(dbPath);
