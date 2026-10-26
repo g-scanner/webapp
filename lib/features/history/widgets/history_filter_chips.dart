@@ -81,6 +81,7 @@ class HistoryFilterChips extends StatelessWidget {
       tooltip: "history.filters.tooltip".tr(),
       selectedValue: filter,
       onSelected: onChanged,
+      constraints: const BoxConstraints(minWidth: 110, maxWidth: 150),
       options: statuses.map((status) {
         return AppPillFilterOption<GlutenSafetyStatus?>(
           value: status,

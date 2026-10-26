@@ -18,6 +18,7 @@ class SettingsPanel extends StatefulWidget {
   final Future<void> Function() onResetDB;
   final Future<void> Function() onClearHistory;
   final Future<void> Function()? onClearProductCache;
+  final Future<void> Function()? onRefresh;
   final FirebaseAuth? firebaseAuth;
   final int? historyCount;
 
@@ -28,6 +29,7 @@ class SettingsPanel extends StatefulWidget {
     required this.onResetDB,
     required this.onClearHistory,
     this.onClearProductCache,
+    this.onRefresh,
     this.firebaseAuth,
     this.historyCount,
   });
@@ -181,11 +183,22 @@ class _SettingsPanelState extends State<SettingsPanel> {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([
+          _loadStorageMetrics(),
+          if (widget.onRefresh != null) widget.onRefresh!(),
+        ]);
+      },
+      color: colorScheme.primary,
+      backgroundColor: cardBg,
+      displacement: 15.0,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           Text(
             "settings.title".tr(),
             style: TextStyle(
@@ -378,6 +391,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
           const SizedBox(height: 40),
         ],
+      ),
       ),
     );
   }

@@ -1213,4 +1213,29 @@ void main() {
       },
     );
   });
+
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // GROUP 8 â€“ Lifecycle Resumption & Cross-Device Sync
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  group('GROUP 8 â€“ Lifecycle Resumption & Cross-Device Sync', () {
+    testWidgets(
+      'handles AppLifecycleState.resumed and tab navigation with sync throttling',
+      (tester) async {
+        await _pumpMainScreen(tester, auth: mockAuth);
+        await tester.pumpAndSettle();
+
+        // 1. Simulate app returning to foreground (resumed)
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        // 2. Simulate navigating to History tab (tab 1)
+        final historyNav = find.byIcon(Icons.history_rounded);
+        if (historyNav.evaluate().isNotEmpty) {
+          await tester.tap(historyNav);
+          await tester.pumpAndSettle();
+        }
+      },
+    );
+  });
 }

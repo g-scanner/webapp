@@ -117,6 +117,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  DateTime? _lastResumeSyncTime;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Il ciclo di vita della fotocamera viene ora gestito reattivamente
@@ -124,6 +126,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _startOfflineVerificationTimerIfNeeded();
       _autoDownloadOfflineDbIfNeeded(userSettings);
+      _syncOnResumeIfNeeded();
+    }
+  }
+
+  /// Esegue la sincronizzazione silenziosa con Firestore al ritorno in primo piano
+  /// o al cambio tab, con throttling per evitare chiamate ridondanti ravvicinate.
+  void _syncOnResumeIfNeeded({Duration cooldown = const Duration(seconds: 10)}) {
+    final now = DateTime.now();
+    if (_lastResumeSyncTime == null ||
+        now.difference(_lastResumeSyncTime!) > cooldown) {
+      _lastResumeSyncTime = now;
+      _syncEverythingWithFirestore();
     }
   }
 
@@ -1671,6 +1685,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void _onTabSelected(int index) {
     _navController.selectTab(index);
+    if (index != 0) {
+      _syncOnResumeIfNeeded(cooldown: const Duration(seconds: 15));
+    }
   }
 
   Widget _buildBody() {
@@ -1728,6 +1745,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           },
           onClearHistory: handleClearHistory,
           onClearProductCache: handleClearProductCache,
+          onRefresh: refreshAllData,
         ),
       ],
     );

@@ -271,7 +271,6 @@ class _HistoryListState extends State<HistoryList> {
             Row(
               children: [
                 Expanded(
-                  flex: 5,
                   child: HistorySearchBar(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
@@ -288,12 +287,9 @@ class _HistoryListState extends State<HistoryList> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Flexible(
-                  flex: 2,
-                  child: HistoryFilterChips(
-                    filter: _filter,
-                    onChanged: (val) => setState(() => _filter = val),
-                  ),
+                HistoryFilterChips(
+                  filter: _filter,
+                  onChanged: (val) => setState(() => _filter = val),
                 ),
               ],
             ),
