@@ -1007,6 +1007,44 @@ void main() {
         expect(firestoreMap['offlineDbWifiOnly'], FieldValue.delete());
       },
     );
+
+    test(
+      'saveSettings with isOfflineDbChange=true and offlineDbCloudSync=false does not touch Firestore and preserves updatedAt',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('user_offline_only');
+        when(() => mockUsersCol.doc('user_offline_only')).thenReturn(mockDocRef);
+
+        const initialUpdatedAt = 1700000000;
+        final customSettings = UserSettings(
+          strictMode: false,
+          alertLactose: true,
+          warnAdditives: false,
+          autoSaveHistory: true,
+          preferredLanguage: 'it',
+          preferredTheme: 'system',
+          offlineDbTier: OfflineDbTier.glutenFree,
+          offlineDbLastSyncedAt: 1770000000,
+          offlineDbWifiOnly: false,
+          offlineDbAutoSync: true,
+          offlineDbCloudSync: false,
+          updatedAt: initialUpdatedAt,
+        );
+
+        await DbService.saveSettings(customSettings, isOfflineDbChange: true);
+
+        final loaded = await DbService.getLocalSettings();
+        expect(loaded.offlineDbWifiOnly, isFalse);
+        expect(loaded.offlineDbAutoSync, isTrue);
+        expect(loaded.offlineDbCloudSync, isFalse);
+        // Preserves original updatedAt timestamp!
+        expect(loaded.updatedAt, initialUpdatedAt);
+
+        // Firestore set MUST NOT be called!
+        verifyNever(() => mockDocRef.set(any(), any()));
+      },
+    );
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

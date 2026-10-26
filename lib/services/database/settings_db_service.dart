@@ -53,9 +53,10 @@ class SettingsDbService {
   ///
   /// [isOfflineDbChange]: indica che il salvataggio riguarda esclusivamente
   /// campi del DB offline (tier, lastSyncedAt, autoSync, wifiOnly).
-  /// Se `true` e `offlineDbCloudSync` è disattivo, viene aggiornato solo il
-  /// timestamp locale senza toccare Firestore: i campi non sincronizzati
-  /// non devono alterare il `updatedAt` remoto.
+  /// Se `true` e `offlineDbCloudSync` è disattivo, le impostazioni vengono
+  /// salvate solo in locale preservando l'originale `updatedAt`, senza toccare
+  /// Firestore: i campi non sincronizzati non devono alterare né il timestamp
+  /// remoto né quello locale (evitando che una sync successiva li propaghi).
   static Future<void> saveSettings(
     FirebaseFirestore db,
     FirebaseAuth auth,
@@ -66,9 +67,12 @@ class SettingsDbService {
 
     final effectiveUserId = user?.uid ?? 'anonymous';
     final nowEpoch = DateTime.now().millisecondsSinceEpoch;
+    final isLocalOnlyOfflineChange =
+        isOfflineDbChange && !settings.offlineDbCloudSync;
+
     final effectiveSettings = settings.copyWith(
       userId: effectiveUserId,
-      updatedAt: nowEpoch,
+      updatedAt: isLocalOnlyOfflineChange ? settings.updatedAt : nowEpoch,
     );
 
     await saveLocalSettings(effectiveSettings);
@@ -82,7 +86,7 @@ class SettingsDbService {
       // Se il cambio riguarda solo il DB offline e la sincronizzazione cloud
       // è disattivata, salviamo solo in locale: non è necessario aggiornare
       // Firestore né il suo updatedAt per campi che restano su questo dispositivo.
-      if (isOfflineDbChange && !effectiveSettings.offlineDbCloudSync) return;
+      if (isLocalOnlyOfflineChange) return;
 
       try {
         final jsonData = effectiveSettings.toJson();

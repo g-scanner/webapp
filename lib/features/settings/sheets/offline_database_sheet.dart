@@ -1324,7 +1324,10 @@ class _OfflineDatabaseSheetContentState
                             offlineDbWifiOnly: v,
                           );
                           setState(() => _currentSettings = updated);
-                          await widget.onSettingsChange(updated);
+                          await widget.onSettingsChange(
+                            updated,
+                            isOfflineDbChange: true,
+                          );
                         },
                         isFirst: true,
                       ),
@@ -1338,7 +1341,10 @@ class _OfflineDatabaseSheetContentState
                             offlineDbAutoSync: v,
                           );
                           setState(() => _currentSettings = updated);
-                          await widget.onSettingsChange(updated);
+                          await widget.onSettingsChange(
+                            updated,
+                            isOfflineDbChange: true,
+                          );
                         },
                       ),
                       _buildToggleRow(
