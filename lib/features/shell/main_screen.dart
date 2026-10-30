@@ -277,12 +277,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         if (mounted) {
           setState(() => userSettings = updatedSettings);
           if (hadActualUpdate) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('settings.offlineDb.autoSyncSuccess'.tr()),
-                backgroundColor: context.colorScheme.primary,
-                duration: const Duration(seconds: 3),
-              ),
+            showAppSnackBar(
+              context,
+              'settings.offlineDb.autoSyncSuccess'.tr(),
             );
           }
         }
@@ -405,12 +402,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             if (mounted) {
               setState(() => userSettings = updatedSettings);
               if (hadActualUpdate) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('settings.offlineDb.autoSyncSuccess'.tr()),
-                    backgroundColor: context.colorScheme.primary,
-                    duration: const Duration(seconds: 3),
-                  ),
+                showAppSnackBar(
+                  context,
+                  'settings.offlineDb.autoSyncSuccess'.tr(),
                 );
               }
             }
@@ -1292,11 +1286,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await DbService.wipeHistoryLocal();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('common.actions.deleteHistoryError'.tr()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        showAppSnackBar(
+          context,
+          'common.actions.deleteHistoryError'.tr(),
+          isError: true,
         );
       }
       rethrow;
@@ -1310,11 +1303,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await _fetchProducts(skipRemoteSync: true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('settings.dataAndHistory.clearProductsError'.tr()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        showAppSnackBar(
+          context,
+          'settings.dataAndHistory.clearProductsError'.tr(),
+          isError: true,
         );
       }
       rethrow;

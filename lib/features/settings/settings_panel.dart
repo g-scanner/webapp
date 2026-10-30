@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../models/models.dart';
 import '../../core/theme/theme.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/database/history_db_service.dart';
 import 'sections/sections.dart';
 import 'sheets/sheets.dart';
@@ -86,31 +87,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
   void _triggerToast(String msg) {
     if (!mounted) return;
-    final colorScheme = context.colorScheme;
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: colorScheme.inverseSurface,
-        content: Row(
-          children: [
-            Icon(Icons.info_outline, color: colorScheme.onInverseSurface),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                msg,
-                style: TextStyle(
-                  color: colorScheme.onInverseSurface,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
-      ),
+    showAppSnackBar(
+      context,
+      msg,
+      icon: Icons.info_outline,
+      duration: const Duration(seconds: 2),
     );
   }
 

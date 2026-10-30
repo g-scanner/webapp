@@ -8,5 +8,6 @@ export 'app_pill_filter_dropdown.dart';
 export 'app_popup_menu_item.dart';
 export 'app_radio_popup_menu_item.dart';
 export 'app_search_bar.dart';
+export 'app_snackbar.dart';
 export 'dashed_border_container.dart';
 export 'settings_dropdown_tile.dart';

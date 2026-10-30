@@ -9,6 +9,7 @@ import '../../../models/models.dart';
 import '../../../services/database/offline_db_service.dart';
 import '../../../services/database/offline_db_sync_service.dart';
 import '../../../core/network/connectivity_helper.dart';
+import '../../../core/widgets/widgets.dart';
 
 /// Mostra il Modal Bottom Sheet "Database Offline" in puro stile M3.
 void showOfflineDatabaseSheet({
@@ -134,25 +135,7 @@ class _OfflineDatabaseSheetContentState
 
   void _triggerSnackbar(String message, {bool isError = false}) {
     if (!mounted) return;
-    final colorScheme = context.colorScheme;
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: isError
-            ? colorScheme.error
-            : colorScheme.inverseSurface,
-        content: Text(
-          message,
-          style: TextStyle(
-            color: isError ? colorScheme.onError : colorScheme.onInverseSurface,
-          ),
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    showAppSnackBar(context, message, isError: isError);
   }
 
   void _startSync(OfflineDbTier tier, {int? explicitLastSyncedAt}) {
