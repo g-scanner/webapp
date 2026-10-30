@@ -1,9 +1,10 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../models/models.dart';
 import 'product_header_section.dart';
 
@@ -31,33 +32,28 @@ class SafetyStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
 
-    Color heroBgColor;
-    Color heroTextColor;
+    final variant = AppStatusPill.variantForStatus(effectiveStatus);
+    final colors = AppStatusPill.colorsForVariant(variant, colorScheme);
+    final heroBgColor = colors.bg;
+    final heroTextColor = colors.text;
+
     String statusBigText;
     IconData statusIcon;
 
     switch (effectiveStatus) {
       case GlutenSafetyStatus.adatto:
-        heroBgColor = colorScheme.primaryContainer.withValues(alpha: 0.15);
-        heroTextColor = colorScheme.primary;
         statusBigText = "product.status.safe".tr().toUpperCase();
         statusIcon = Icons.check_circle;
         break;
       case GlutenSafetyStatus.nonAdatto:
-        heroBgColor = colorScheme.errorContainer.withValues(alpha: 0.15);
-        heroTextColor = colorScheme.error;
         statusBigText = "product.status.unsafe".tr().toUpperCase();
         statusIcon = Icons.cancel;
         break;
       case GlutenSafetyStatus.incerto:
-        heroBgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
-        heroTextColor = colorScheme.tertiary;
         statusBigText = "product.status.uncertain".tr().toUpperCase();
         statusIcon = Icons.warning;
         break;
       case GlutenSafetyStatus.sconosciuto:
-        heroBgColor = colorScheme.surfaceContainerHighest;
-        heroTextColor = colorScheme.onSurfaceVariant;
         statusBigText = "product.status.unknown".tr().toUpperCase();
         statusIcon = Icons.help;
         break;
@@ -99,7 +95,8 @@ class SafetyStatusCard extends StatelessWidget {
             showScanDate: showScanDate,
             scannedAt: scannedAt,
             lastUpdated: lastUpdated,
-            accentColor: heroTextColor,
+            pillBgColor: heroBgColor,
+            pillTextColor: heroTextColor,
           ),
         ],
       ),

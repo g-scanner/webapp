@@ -13,7 +13,8 @@ class ProductHeaderSection extends StatelessWidget {
   final bool showScanDate;
   final String? scannedAt;
   final String? lastUpdated;
-  final Color accentColor;
+  final Color pillBgColor;
+  final Color pillTextColor;
 
   const ProductHeaderSection({
     super.key,
@@ -23,7 +24,8 @@ class ProductHeaderSection extends StatelessWidget {
     this.showScanDate = true,
     this.scannedAt,
     this.lastUpdated,
-    required this.accentColor,
+    required this.pillBgColor,
+    required this.pillTextColor,
   });
 
   @override
@@ -61,20 +63,20 @@ class ProductHeaderSection extends StatelessWidget {
             vertical: 4,
           ),
           decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
+            color: pillBgColor,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.qr_code, size: 16, color: accentColor),
+              Icon(Icons.qr_code, size: 16, color: pillTextColor),
               const SizedBox(width: 8),
               SelectableText(
                 barcode,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: accentColor,
+                  color: pillTextColor,
                 ),
               ),
             ],

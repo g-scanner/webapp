@@ -1,7 +1,8 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: G-Scanner - See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
+import '../../models/models.dart';
 
 /// Varianti di colore predefinite per [AppStatusPill.preset].
 ///
@@ -61,6 +62,60 @@ class AppStatusPill extends StatelessWidget {
     this.icon,
   });
 
+  // ---------------------------------------------------------------------------
+  // Helper statici — source of truth per colori e mapping status
+  // ---------------------------------------------------------------------------
+
+  /// Mappa un [GlutenSafetyStatus] alla variante colore corrispondente.
+  static AppStatusPillVariant variantForStatus(GlutenSafetyStatus status) {
+    switch (status) {
+      case GlutenSafetyStatus.adatto:
+        return AppStatusPillVariant.primary;
+      case GlutenSafetyStatus.nonAdatto:
+        return AppStatusPillVariant.error;
+      case GlutenSafetyStatus.incerto:
+        return AppStatusPillVariant.tertiary;
+      case GlutenSafetyStatus.sconosciuto:
+        return AppStatusPillVariant.neutral;
+    }
+  }
+
+  /// Restituisce `bg` e `text` color per una [variant] dato un [colorScheme].
+  ///
+  /// Unica source of truth per tutti i widget che devono usare i colori
+  /// delle varianti senza costruire una pillola (es. BentoStats, SafetyStatusCard).
+  static ({Color bg, Color text}) colorsForVariant(
+    AppStatusPillVariant variant,
+    ColorScheme colorScheme,
+  ) {
+    switch (variant) {
+      case AppStatusPillVariant.primary:
+        return (
+          bg: colorScheme.primaryContainer.withValues(alpha: 0.15),
+          text: colorScheme.primary,
+        );
+      case AppStatusPillVariant.error:
+        return (
+          bg: colorScheme.errorContainer.withValues(alpha: 0.5),
+          text: colorScheme.error,
+        );
+      case AppStatusPillVariant.tertiary:
+        return (
+          bg: colorScheme.tertiaryContainer.withValues(alpha: 0.1),
+          text: colorScheme.tertiary,
+        );
+      case AppStatusPillVariant.neutral:
+        return (
+          bg: colorScheme.surfaceContainerHighest,
+          text: colorScheme.onSurfaceVariant,
+        );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Costruttore con variante predefinita
+  // ---------------------------------------------------------------------------
+
   /// Costruttore con variante predefinita — risolve i colori dal [ColorScheme].
   static Widget preset({
     Key? key,
@@ -71,33 +126,21 @@ class AppStatusPill extends StatelessWidget {
     return Builder(
       key: key,
       builder: (context) {
-        final cs = Theme.of(context).colorScheme;
-        final Color bg;
-        final Color text;
-        switch (variant) {
-          case AppStatusPillVariant.primary:
-            bg = cs.primaryContainer.withValues(alpha: 0.15);
-            text = cs.primary;
-          case AppStatusPillVariant.error:
-            bg = cs.errorContainer.withValues(alpha: 0.15);
-            text = cs.error;
-          case AppStatusPillVariant.tertiary:
-            bg = cs.tertiaryContainer.withValues(alpha: 0.15);
-            text = cs.tertiary;
-          case AppStatusPillVariant.neutral:
-            bg = cs.surfaceContainerHighest;
-            text = cs.onSurfaceVariant;
-        }
+        final colors = colorsForVariant(variant, Theme.of(context).colorScheme);
         return AppStatusPill(
           key: key,
           label: label,
-          bgColor: bg,
-          textColor: text,
+          bgColor: colors.bg,
+          textColor: colors.text,
           icon: icon,
         );
       },
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {

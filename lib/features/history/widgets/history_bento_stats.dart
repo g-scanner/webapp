@@ -1,10 +1,12 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../models/models.dart';
 
 class HistoryBentoStats extends StatelessWidget {
   final int safeCount;
@@ -24,6 +26,19 @@ class HistoryBentoStats extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
 
+    final safeColors = AppStatusPill.colorsForVariant(
+      AppStatusPill.variantForStatus(GlutenSafetyStatus.adatto),
+      colorScheme,
+    );
+    final uncertainColors = AppStatusPill.colorsForVariant(
+      AppStatusPill.variantForStatus(GlutenSafetyStatus.incerto),
+      colorScheme,
+    );
+    final dangerColors = AppStatusPill.colorsForVariant(
+      AppStatusPill.variantForStatus(GlutenSafetyStatus.nonAdatto),
+      colorScheme,
+    );
+
     return Skeletonizer(
       enabled: showSkeleton,
       child: Row(
@@ -31,21 +46,24 @@ class HistoryBentoStats extends StatelessWidget {
           _buildStatBox(
             count: safeCount.toString(),
             label: "history.filters.safe".tr(),
-            color: colorScheme.primary,
+            bgColor: safeColors.bg,
+            textColor: safeColors.text,
             icon: Icons.check_circle,
           ),
           const SizedBox(width: 12),
           _buildStatBox(
             count: uncertainCount.toString(),
             label: "history.filters.uncertain".tr(),
-            color: colorScheme.tertiary,
+            bgColor: uncertainColors.bg,
+            textColor: uncertainColors.text,
             icon: Icons.warning_rounded,
           ),
           const SizedBox(width: 12),
           _buildStatBox(
             count: dangerCount.toString(),
             label: "history.filters.unsafe".tr(),
-            color: colorScheme.error,
+            bgColor: dangerColors.bg,
+            textColor: dangerColors.text,
             icon: Icons.cancel,
           ),
         ],
@@ -56,26 +74,27 @@ class HistoryBentoStats extends StatelessWidget {
   Widget _buildStatBox({
     required String count,
     required String label,
-    required Color color,
+    required Color bgColor,
+    required Color textColor,
     required IconData icon,
   }) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: bgColor,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 28),
+            Icon(icon, color: textColor, size: 28),
             const SizedBox(height: 8),
             Text(
               count,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: textColor,
                 height: 1.1,
               ),
             ),
@@ -84,7 +103,7 @@ class HistoryBentoStats extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: color.withValues(alpha: 0.9),
+                color: textColor,
               ),
             ),
           ],
