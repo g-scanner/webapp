@@ -71,7 +71,8 @@ Future<void> _pump(
       child: Scaffold(
         body: SettingsPanel(
           settings: settings ?? _settings(),
-          onSettingsChange: (s, {bool isOfflineDbChange = false}) => cb.onSettingsChange(s),
+          onSettingsChange: (s, {bool isOfflineDbChange = false}) =>
+              cb.onSettingsChange(s),
           onResetDB: () => cb.onResetDB(),
           onClearHistory: () => cb.onClearHistory(),
           onClearProductCache: () => cb.onClearProductCache(),
@@ -344,8 +345,14 @@ void main() {
 
     testWidgets('section toggle titles are visible', (tester) async {
       await _pump(tester, cb: cb, auth: auth);
-      expect(find.text('settings.analysisRules.warnAdditivesTitle'), findsOneWidget);
-      expect(find.text('settings.analysisRules.strictFilterTitle'), findsOneWidget);
+      expect(
+        find.text('settings.analysisRules.warnAdditivesTitle'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('settings.analysisRules.strictFilterTitle'),
+        findsOneWidget,
+      );
       expect(
         find.text('settings.analysisRules.lactoseIntoleranceTitle'),
         findsOneWidget,
@@ -641,7 +648,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('settings.offlineDb.sheetTitle'), findsOneWidget);
-      expect(find.text('settings.offlineDb.selectPackageLabel'), findsOneWidget);
+      expect(
+        find.text('settings.offlineDb.selectPackageLabel'),
+        findsOneWidget,
+      );
     });
   });
 
@@ -655,10 +665,7 @@ void main() {
         find.text('settings.legalMenu.termsAndConditionsTitle'),
         findsOneWidget,
       );
-      expect(
-        find.text('common.legal.privacyPolicy'),
-        findsOneWidget,
-      );
+      expect(find.text('common.legal.privacyPolicy'), findsOneWidget);
       expect(find.text('settings.legalMenu.licensesTitle'), findsOneWidget);
     });
 
@@ -1282,9 +1289,9 @@ void main() {
         // ...ma quando il codice ri-verifica auth.currentUser?.metadata.lastSignInTime
         // al momento della conferma, la sessione risulta scaduta (> 5 minuti fa).
         final staleMetadata = MockUserMetadata();
-        when(() => staleMetadata.lastSignInTime).thenReturn(
-          DateTime.now().subtract(const Duration(minutes: 6)),
-        );
+        when(
+          () => staleMetadata.lastSignInTime,
+        ).thenReturn(DateTime.now().subtract(const Duration(minutes: 6)));
         final userWithStaleSession = MockUser();
         when(() => userWithStaleSession.uid).thenReturn('test_uid_123');
         when(() => userWithStaleSession.isAnonymous).thenReturn(false);
@@ -1356,7 +1363,10 @@ void main() {
 
         // Verify initial display name is present in MenuView inside bottom sheet
         final menuView = find.byKey(const ValueKey("MenuView"));
-        expect(find.descendant(of: menuView, matching: find.text('Mario Rossi')), findsOneWidget);
+        expect(
+          find.descendant(of: menuView, matching: find.text('Mario Rossi')),
+          findsOneWidget,
+        );
 
         // Tap Edit Name button
         await tester.tap(find.text('settings.account.editName'));
@@ -1373,8 +1383,14 @@ void main() {
         await tester.pumpAndSettle();
 
         // The MenuView should immediately reflect the new name before closing the sheet
-        expect(find.descendant(of: menuView, matching: find.text('Luigi Verdi')), findsOneWidget);
-        expect(find.descendant(of: menuView, matching: find.text('Mario Rossi')), findsNothing);
+        expect(
+          find.descendant(of: menuView, matching: find.text('Luigi Verdi')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: menuView, matching: find.text('Mario Rossi')),
+          findsNothing,
+        );
 
         verify(() => user.updateDisplayName('Luigi Verdi')).called(1);
       },

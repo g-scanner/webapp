@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/foundation.dart';
@@ -159,6 +159,57 @@ class _SettingsPanelState extends State<SettingsPanel> {
     return "$packName • $packSize ($installedStatus)";
   }
 
+  Widget? _buildOfflineDbTitleBadge(BuildContext context) {
+    if (widget.settings.offlineDbTier == OfflineDbTier.none) {
+      return null;
+    }
+
+    final lastSync = widget.settings.offlineDbLastSyncedAt;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color bgColor;
+    Color textColor;
+    String label;
+
+    if (lastSync == null || lastSync <= 0) {
+      bgColor = colorScheme.errorContainer.withValues(alpha: 0.3);
+      textColor = colorScheme.error;
+      label = "settings.offlineDb.statusHardStale".tr();
+    } else {
+      final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final diffDays = (nowSec - lastSync) ~/ 86400;
+
+      if (diffDays <= 7) {
+        return null;
+      } else if (diffDays <= 30) {
+        bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.3);
+        textColor = colorScheme.tertiary;
+        label = "settings.offlineDb.statusSoftStale".tr();
+      } else {
+        bgColor = colorScheme.errorContainer.withValues(alpha: 0.3);
+        textColor = colorScheme.error;
+        label = "settings.offlineDb.statusHardStale".tr();
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -255,6 +306,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
               children: [
                 SettingsNavigationItem(
                   title: "settings.offlineDb.title".tr(),
+                  titleBadge: _buildOfflineDbTitleBadge(context),
+                  description: "settings.offlineDb.cardDescription".tr(),
                   subtitle: Text(
                     _getOfflineDbSubtitle(),
                     style: TextStyle(
@@ -278,6 +331,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 ),
                 SettingsNavigationItem(
                   title: "settings.localData.title".tr(),
+                  description: "settings.localData.cardDescription".tr(),
                   subtitle: Text(
                     "settings.localData.used".tr(
                       args: [formatBytes(_cacheSizeBytes + _historySizeBytes)],

@@ -38,9 +38,9 @@
     },
     "uiOptions": {
       "appThemeTitle": "Tema dell'app",
-      "appThemeSubtitle": "Scegli tra chiaro, scuro o tema di sistema",
+      "appThemeSubtitle": "Scegli tra chiaro, scuro o tema di sistema.",
       "preferredLanguageTitle": "Lingua preferita",
-      "preferredLanguageSubtitle": "Usata dall'interfaccia quando possibile",
+      "preferredLanguageSubtitle": "Usata dall'interfaccia quando possibile.",
       "tooltips": {
         "theme": "Scegli tema",
         "language": "Scegli lingua"
@@ -48,8 +48,9 @@
     },
     "offlineDb": {
       "title": "Database Offline",
+      "cardDescription": "Gestisci le scansioni senza accesso a internet.",
       "noDbInstalled": "Nessun Database Installato",
-      "installedStatus": "Installato",
+      "installedStatus": "occupati",
       "disabledStatus": "Disattivato (Solo Online)",
       "disabledHint": "Seleziona e installa un pacchetto per scansionare offline",
       "sheetTitle": "Database Offline",
@@ -85,7 +86,7 @@
       "webWeeklyUpdateBody": "È disponibile una nuova versione del database offline. Se navighi tramite rete mobile a consumo potrebbero essere applicati costi. Desideri procedere?",
       "webWeeklyUpdateCancel": "Non ora",
       "autoUpdateTitle": "Aggiornamento automatico",
-      "autoUpdateSubtitle": "Mantieni aggiornato il database offline in maniera automatica",
+      "autoUpdateSubtitle": "Mantieni aggiornato il database offline in maniera automatica.",
       "cloudSyncTitle": "Sincronizzazione account",
       "cloudSyncSubtitle": "Sincronizza le preferenze del database offline tra i tuoi dispositivi.",
       "downloadError": "Errore durante il download del database offline. Riprova più tardi.",
@@ -120,7 +121,8 @@
     },
     "localData": {
       "title": "Dati Locali",
-      "used": "{} in uso"
+      "cardDescription": "Gestisci prodotti salvati e cronologia scansioni.",
+      "used": "{} attualmente in uso."
     },
     "dataHistory": {
       "sheetTitle": "Memoria e Cronologia",

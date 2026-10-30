@@ -7,6 +7,8 @@ import '../../../core/theme/theme.dart';
 /// Elemento di navigazione riutilizzabile all'interno dei container M3 delle impostazioni.
 class SettingsNavigationItem extends StatelessWidget {
   final String title;
+  final Widget? titleBadge;
+  final String? description;
   final Widget subtitle;
   final VoidCallback? onTap;
   final bool isFirst;
@@ -16,6 +18,8 @@ class SettingsNavigationItem extends StatelessWidget {
   const SettingsNavigationItem({
     super.key,
     required this.title,
+    this.titleBadge,
+    this.description,
     required this.subtitle,
     this.onTap,
     this.isFirst = false,
@@ -27,6 +31,8 @@ class SettingsNavigationItem extends StatelessWidget {
   SettingsNavigationItem.textSubtitle({
     super.key,
     required this.title,
+    this.titleBadge,
+    this.description,
     required String subtitleText,
     this.onTap,
     this.isFirst = false,
@@ -78,15 +84,36 @@ class SettingsNavigationItem extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurface,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              if (titleBadge != null) ...[
+                                const SizedBox(width: 8),
+                                titleBadge!,
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 6),
+                          if (description != null)
+                            Text(
+                              description!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colorScheme.onSurfaceVariant,
+                                height: 1.3,
+                              ),
+                            ),
                           subtitle,
                         ],
                       ),
@@ -107,15 +134,36 @@ class SettingsNavigationItem extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurface,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          if (titleBadge != null) ...[
+                            const SizedBox(width: 8),
+                            titleBadge!,
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 6),
+                      if (description != null)
+                        Text(
+                          description!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.3,
+                          ),
+                        ),
                       subtitle,
                     ],
                   ),
