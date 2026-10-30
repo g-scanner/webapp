@@ -120,7 +120,7 @@
     },
     "localData": {
       "title": "Dati Locali",
-      "used": "{} usati"
+      "used": "{} in uso"
     },
     "dataHistory": {
       "sheetTitle": "Memoria e Cronologia",

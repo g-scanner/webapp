@@ -11,6 +11,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 import '../../core/theme/theme.dart';
 import '../../core/utils/utils.dart';
+import '../../core/widgets/widgets.dart';
 import '../../services/db_service.dart';
 import 'widgets/widgets.dart';
 
@@ -261,24 +262,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red.shade800,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    showAppSnackBar(context, message, isError: true);
   }
 
   void _showInfo(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: context.colorScheme.inverseSurface,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    showAppSnackBar(context, message);
   }
 
   @override

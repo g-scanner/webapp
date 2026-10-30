@@ -10,6 +10,7 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:gscanner/features/auth/auth_screen.dart';
+import 'package:gscanner/core/widgets/widgets.dart';
 import 'package:gscanner/services/db_service.dart';
 import '../mocks/shared_mocks.dart';
 
@@ -153,7 +154,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         verify(() => mockAuth.signInAnonymously()).called(1);
-        expect(find.byType(SnackBar), findsNothing);
+        expect(find.byType(AppSnackBarWidget), findsNothing);
       },
     );
 
@@ -173,7 +174,7 @@ void main() {
         await tester.tap(guestBtn);
         await tester.pumpAndSettle();
 
-        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.byType(AppSnackBarWidget), findsOneWidget);
         expect(find.text('Anonymous auth disabled'), findsOneWidget);
         // Il CircularProgressIndicator deve scomparire al termine dell'errore
         expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -193,7 +194,7 @@ void main() {
         await tester.tap(guestBtn);
         await tester.pumpAndSettle();
 
-        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.byType(AppSnackBarWidget), findsOneWidget);
         expect(find.text('auth.errors.genericError'), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
       },
@@ -255,7 +256,7 @@ void main() {
         await tester.tap(googleBtn);
         await tester.pumpAndSettle();
 
-        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.byType(AppSnackBarWidget), findsOneWidget);
         expect(find.text('auth.errors.googleCancelled'), findsOneWidget);
       },
     );
@@ -286,7 +287,7 @@ void main() {
         await tester.tap(googleBtn);
         await tester.pumpAndSettle();
 
-        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.byType(AppSnackBarWidget), findsOneWidget);
         expect(find.text('auth.errors.firebaseError'), findsOneWidget);
       },
     );
@@ -309,7 +310,7 @@ void main() {
         await tester.tap(googleBtn);
         await tester.pumpAndSettle();
 
-        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.byType(AppSnackBarWidget), findsOneWidget);
         expect(find.text('auth.errors.googleCancelledShort'), findsOneWidget);
       },
     );
@@ -333,7 +334,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(AppSnackBarWidget), findsOneWidget);
       expect(find.text('auth.errors.googleSignInError'), findsOneWidget);
     });
 
@@ -358,7 +359,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(AppSnackBarWidget), findsOneWidget);
       expect(find.text('auth.errors.facebookCancelled'), findsOneWidget);
     });
 
@@ -379,7 +380,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(AppSnackBarWidget), findsOneWidget);
       expect(find.text('auth.errors.facebookError'), findsOneWidget);
     });
 
@@ -493,7 +494,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pump(const Duration(milliseconds: 50));
 
-        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.byType(AppSnackBarWidget), findsOneWidget);
         expect(
           find.text('auth.errors.facebookCancelledOrInProgress'),
           findsOneWidget,
@@ -528,7 +529,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pump(const Duration(milliseconds: 50));
 
-        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.byType(AppSnackBarWidget), findsOneWidget);
         expect(find.text('auth.errors.firebaseError'), findsOneWidget);
       },
     );
@@ -547,7 +548,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(AppSnackBarWidget), findsOneWidget);
       expect(find.text('auth.errors.facebookSignInError'), findsOneWidget);
     });
   });

@@ -587,8 +587,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     final hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
     if (localProduct == null && !isConnected && !hasOfflineDb) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('scanner.result.offlineNoDbPrompt'.tr())),
+        showAppSnackBar(
+          context,
+          'scanner.result.offlineNoDbPrompt'.tr(),
         );
       }
       return false;
@@ -854,19 +855,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     // 3. Mostra la notifica di fallimento
     if (mounted) {
-      final messenger = ScaffoldMessenger.maybeOf(context);
-      if (messenger != null) {
-        messenger.clearSnackBars();
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              closer != null
-                  ? localizationKey.tr()
-                  : 'scanner.result.backgroundScanFailed'.tr(),
-            ),
-          ),
-        );
-      }
+      showAppSnackBar(
+        context,
+        closer != null
+            ? localizationKey.tr()
+            : 'scanner.result.backgroundScanFailed'.tr(),
+        isError: true,
+      );
     }
 
     // 4. AGGIORNA SUBITO LA UI: la card skeleton scompare all'istante
