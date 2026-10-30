@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'dart:async';
@@ -623,66 +623,38 @@ class _OfflineDatabaseSheetContentState
   }
 
   Widget _buildStatusPill(ColorScheme colorScheme) {
-    Color bgColor;
-    Color dotAndTextColor;
+    AppStatusPillVariant variant;
     String label;
 
     if (_syncProgress.isInProgress) {
-      bgColor = colorScheme.surfaceContainerHighest;
-      dotAndTextColor = colorScheme.onSurfaceVariant;
+      variant = AppStatusPillVariant.neutral;
       label = "settings.offlineDb.statusDownloading".tr();
     } else if (_installedTier == OfflineDbTier.none) {
-      bgColor = colorScheme.surfaceContainerHighest;
-      dotAndTextColor = colorScheme.onSurfaceVariant;
+      variant = AppStatusPillVariant.neutral;
       label = "settings.offlineDb.statusDisabled".tr();
     } else {
       final lastSync = _currentSettings.offlineDbLastSyncedAt;
       if (lastSync == null || lastSync <= 0) {
-        bgColor = colorScheme.errorContainer.withValues(alpha: 0.3);
-        dotAndTextColor = colorScheme.error;
+        variant = AppStatusPillVariant.error;
         label = "settings.offlineDb.statusHardStale".tr();
       } else {
         final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         final diffDays = (nowSec - lastSync) ~/ 86400;
 
         if (diffDays <= 7) {
-          bgColor = Colors.green.withValues(alpha: 0.18);
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          dotAndTextColor = isDark
-              ? Colors.green.shade400
-              : Colors.green.shade700;
+          variant = AppStatusPillVariant.primary;
           label = "settings.offlineDb.statusSynchronized".tr();
         } else if (diffDays <= 30) {
-          bgColor = Colors.amber.withValues(alpha: 0.2);
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          dotAndTextColor = isDark
-              ? Colors.amber.shade400
-              : Colors.amber.shade900;
+          variant = AppStatusPillVariant.tertiary;
           label = "settings.offlineDb.statusSoftStale".tr();
         } else {
-          bgColor = colorScheme.errorContainer.withValues(alpha: 0.3);
-          dotAndTextColor = colorScheme.error;
+          variant = AppStatusPillVariant.error;
           label = "settings.offlineDb.statusHardStale".tr();
         }
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: dotAndTextColor,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
+    return AppStatusPill.preset(variant: variant, label: label);
   }
 
   String _formatAlignmentDate() {
@@ -941,7 +913,8 @@ class _OfflineDatabaseSheetContentState
                       ),
 
                       // Pulsante "Aggiorna" Compatto (mostrato solo se non è in corso una sincronizzazione)
-                      if (_installedTier != OfflineDbTier.none && !isSyncing) ...[
+                      if (_installedTier != OfflineDbTier.none &&
+                          !isSyncing) ...[
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
                           onPressed: () {

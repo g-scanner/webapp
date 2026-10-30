@@ -165,15 +165,12 @@ class _SettingsPanelState extends State<SettingsPanel> {
     }
 
     final lastSync = widget.settings.offlineDbLastSyncedAt;
-    final colorScheme = Theme.of(context).colorScheme;
 
-    Color bgColor;
-    Color textColor;
+    AppStatusPillVariant variant;
     String label;
 
     if (lastSync == null || lastSync <= 0) {
-      bgColor = colorScheme.errorContainer.withValues(alpha: 0.3);
-      textColor = colorScheme.error;
+      variant = AppStatusPillVariant.error;
       label = "settings.offlineDb.statusHardStale".tr();
     } else {
       final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -182,32 +179,15 @@ class _SettingsPanelState extends State<SettingsPanel> {
       if (diffDays <= 7) {
         return null;
       } else if (diffDays <= 30) {
-        bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.3);
-        textColor = colorScheme.tertiary;
+        variant = AppStatusPillVariant.tertiary;
         label = "settings.offlineDb.statusSoftStale".tr();
       } else {
-        bgColor = colorScheme.errorContainer.withValues(alpha: 0.3);
-        textColor = colorScheme.error;
+        variant = AppStatusPillVariant.error;
         label = "settings.offlineDb.statusHardStale".tr();
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: textColor,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
+    return AppStatusPill.preset(variant: variant, label: label);
   }
 
   @override

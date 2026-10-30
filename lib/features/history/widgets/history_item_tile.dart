@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../core/theme/theme.dart';
-import '../../../core/widgets/dashed_border_container.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../models/models.dart';
 
 class AnalyzedItemData {
@@ -54,34 +54,28 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
     GlutenSafetyStatus status, {
     bool isCompact = false,
   }) {
-    final colorScheme = context.colorScheme;
-    Color bgColor;
-    Color textColor;
+    AppStatusPillVariant variant;
     String label;
     IconData icon;
 
     switch (status) {
       case GlutenSafetyStatus.adatto:
-        bgColor = colorScheme.primaryContainer.withValues(alpha: 0.15);
-        textColor = colorScheme.primary;
+        variant = AppStatusPillVariant.primary;
         label = "history.item.status.safe".tr();
         icon = Icons.check_circle_outline;
         break;
       case GlutenSafetyStatus.nonAdatto:
-        bgColor = colorScheme.errorContainer.withValues(alpha: 0.15);
-        textColor = colorScheme.error;
+        variant = AppStatusPillVariant.error;
         label = "history.item.status.unsafe".tr();
         icon = Icons.cancel_outlined;
         break;
       case GlutenSafetyStatus.incerto:
-        bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
-        textColor = colorScheme.tertiary;
+        variant = AppStatusPillVariant.tertiary;
         label = "history.item.status.uncertain".tr();
         icon = Icons.help_outline;
         break;
       case GlutenSafetyStatus.sconosciuto:
-        bgColor = colorScheme.surfaceContainerHighest;
-        textColor = colorScheme.onSurfaceVariant;
+        variant = AppStatusPillVariant.neutral;
         label = "history.item.status.unknown".tr();
         icon = Icons.search_off;
         break;
@@ -97,32 +91,10 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: textColor),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: textColor,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return AppStatusPill.preset(
+      variant: variant,
+      label: label,
+      icon: icon,
     );
   }
 

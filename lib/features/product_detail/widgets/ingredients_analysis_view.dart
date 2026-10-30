@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../models/models.dart';
 import 'section_card.dart';
 
@@ -46,25 +47,21 @@ class IngredientsAnalysisView extends StatelessWidget {
               final bool showTopDivider =
                   displayedIngredients.trim().isNotEmpty || index > 0;
 
-              Color pillBg;
-              Color pillText;
+              AppStatusPillVariant pillVariant;
               String pillLabel;
 
               switch (item.dangerLevel) {
                 case "danger":
-                  pillBg = colorScheme.errorContainer.withValues(alpha: 0.2);
-                  pillText = colorScheme.error;
+                  pillVariant = AppStatusPillVariant.error;
                   pillLabel = "product.ingredients.dangerBadge".tr();
                   break;
                 case "warning":
-                  pillBg = colorScheme.tertiaryContainer.withValues(alpha: 0.2);
-                  pillText = colorScheme.tertiary;
+                  pillVariant = AppStatusPillVariant.tertiary;
                   pillLabel = "product.ingredients.warningBadge".tr();
                   break;
                 case "safe":
                 default:
-                  pillBg = colorScheme.primaryContainer.withValues(alpha: 0.2);
-                  pillText = colorScheme.primary;
+                  pillVariant = AppStatusPillVariant.primary;
                   pillLabel = "product.ingredients.safeBadge".tr();
                   break;
               }
@@ -99,23 +96,9 @@ class IngredientsAnalysisView extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: pillBg,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Text(
-                            pillLabel,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: pillText,
-                            ),
-                          ),
+                        AppStatusPill.preset(
+                          variant: pillVariant,
+                          label: pillLabel,
                         ),
                       ],
                     ),
