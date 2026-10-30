@@ -110,7 +110,7 @@ class SettingsDropdownTile<T> extends StatelessWidget {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
+                    color: colorScheme.dropdownPillBg,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Row(

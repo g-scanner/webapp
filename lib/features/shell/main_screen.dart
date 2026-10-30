@@ -314,7 +314,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: ctx.colorScheme.primary.withValues(alpha: 0.10),
+                color: ctx.colorScheme.iconCirclePrimaryBg,
                 shape: BoxShape.circle,
               ),
               child: Icon(

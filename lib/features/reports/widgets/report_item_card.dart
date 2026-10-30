@@ -152,7 +152,7 @@ class ReportItemCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                color: colorScheme.tertiary.withValues(alpha: 0.04),
+                color: colorScheme.ctaTertiaryBg,
                 border: Border(
                   top: BorderSide(
                     color: colorScheme.outlineVariant.withValues(alpha: 0.2),

@@ -242,7 +242,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
       width: 80,
       height: 80,
       decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.10),
+        color: colorScheme.iconCirclePrimaryBg,
         shape: BoxShape.circle,
       ),
       child: Icon(
@@ -386,7 +386,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: checked
-              ? colorScheme.primaryContainer.withValues(alpha: 0.08)
+              ? colorScheme.selectedItemBg
               : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -403,7 +403,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
               height: 40,
               decoration: BoxDecoration(
                 color: checked
-                    ? colorScheme.primary.withValues(alpha: 0.12)
+                    ? colorScheme.iconCirclePrimaryBg
                     : colorScheme.onSurfaceVariant.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),

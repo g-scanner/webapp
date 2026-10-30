@@ -103,7 +103,7 @@ class SocialAuthButtons extends StatelessWidget {
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           style: TextButton.styleFrom(
-            foregroundColor: context.colorScheme.primary,
+            foregroundColor: context.colorScheme.anonymousEntryFg,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
         ),

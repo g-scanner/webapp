@@ -23,7 +23,7 @@ Future<bool> _showReauthDialog(BuildContext context, FirebaseAuth auth) async {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.10),
+            color: colorScheme.iconCirclePrimaryBg,
             shape: BoxShape.circle,
           ),
           child: Icon(

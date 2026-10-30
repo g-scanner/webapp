@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
+import '../theme/app_theme.dart';
 
 /// Varianti di colore predefinite per [AppStatusPill.preset].
 ///
@@ -90,25 +91,31 @@ class AppStatusPill extends StatelessWidget {
   ) {
     switch (variant) {
       case AppStatusPillVariant.primary:
-        return (
-          bg: colorScheme.primaryContainer.withValues(alpha: 0.15),
-          text: colorScheme.primary,
-        );
+        return (bg: colorScheme.statusPrimaryBg, text: colorScheme.statusPrimaryText);
       case AppStatusPillVariant.error:
-        return (
-          bg: colorScheme.errorContainer.withValues(alpha: 0.5),
-          text: colorScheme.error,
-        );
+        return (bg: colorScheme.statusErrorBg, text: colorScheme.statusErrorText);
       case AppStatusPillVariant.tertiary:
-        return (
-          bg: colorScheme.tertiaryContainer.withValues(alpha: 0.1),
-          text: colorScheme.tertiary,
-        );
+        return (bg: colorScheme.statusTertiaryBg, text: colorScheme.statusTertiaryText);
       case AppStatusPillVariant.neutral:
-        return (
-          bg: colorScheme.surfaceContainerHighest,
-          text: colorScheme.onSurfaceVariant,
-        );
+        return (bg: colorScheme.statusNeutralBg, text: colorScheme.statusNeutralText);
+    }
+  }
+
+  /// Sfondo del cerchio icona per una [variant] — usa i token `iconCircle*Bg`
+  /// di [AppColorTokens]. Utile per la hero icon circle in SafetyStatusCard.
+  static Color iconCircleBgForVariant(
+    AppStatusPillVariant variant,
+    ColorScheme colorScheme,
+  ) {
+    switch (variant) {
+      case AppStatusPillVariant.primary:
+        return colorScheme.iconCirclePrimaryBg;
+      case AppStatusPillVariant.error:
+        return colorScheme.iconCircleErrorBg;
+      case AppStatusPillVariant.tertiary:
+        return colorScheme.iconCircleTertiaryBg;
+      case AppStatusPillVariant.neutral:
+        return colorScheme.statusNeutralBg;
     }
   }
 

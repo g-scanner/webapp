@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
@@ -71,7 +71,7 @@ class SafetyStatusCard extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: heroTextColor.withValues(alpha: 0.1),
+              color: AppStatusPill.iconCircleBgForVariant(variant, colorScheme),
               shape: BoxShape.circle,
             ),
             child: Icon(statusIcon, color: heroTextColor, size: 48),
@@ -164,7 +164,7 @@ class GlutenEvaluationCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             decoration: BoxDecoration(
-              color: colorScheme.tertiary.withValues(alpha: 0.04),
+              color: colorScheme.ctaTertiaryBg,
               border: Border(
                 top: BorderSide(
                   color: colorScheme.outlineVariant.withValues(alpha: 0.2),

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'dart:async';
@@ -770,7 +770,7 @@ class _OfflineDatabaseSheetContentState
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? colorScheme.primary.withValues(alpha: 0.08)
+              ? colorScheme.selectedItemBg
               : cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -1076,9 +1076,7 @@ class _OfflineDatabaseSheetContentState
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.15,
-                                ),
+                                color: colorScheme.statusPrimaryBg,
                                 borderRadius: BorderRadius.circular(24),
                               ),
                               child: Text(

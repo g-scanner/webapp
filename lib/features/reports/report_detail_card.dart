@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
@@ -213,10 +213,6 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   ) {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
-    final tertiaryColors = AppStatusPill.colorsForVariant(
-      AppStatusPillVariant.tertiary,
-      colorScheme,
-    );
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -275,7 +271,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: tertiaryColors.bg,
+                color: colorScheme.statusTertiaryBg,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
@@ -284,12 +280,12 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: tertiaryColors.text.withValues(alpha: 0.1),
+                      color: colorScheme.iconCircleTertiaryBg,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.warning,
-                      color: tertiaryColors.text,
+                      color: colorScheme.statusTertiaryText,
                       size: 48,
                     ),
                   ),
@@ -321,7 +317,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: tertiaryColors.bg,
+                      color: colorScheme.statusTertiaryBg,
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: Row(
@@ -330,7 +326,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         Icon(
                           Icons.qr_code,
                           size: 16,
-                          color: tertiaryColors.text,
+                          color: colorScheme.statusTertiaryText,
                         ),
                         const SizedBox(width: 8),
                         SelectableText(
@@ -338,7 +334,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: tertiaryColors.text,
+                            color: colorScheme.statusTertiaryText,
                           ),
                         ),
                       ],

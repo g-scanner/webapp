@@ -152,7 +152,7 @@ class AccountSection extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: colorScheme.primary.withValues(alpha: 0.1),
+          color: colorScheme.iconCirclePrimaryBg,
           shape: BoxShape.circle,
         ),
         child: Icon(Icons.person, color: colorScheme.primary, size: size * 0.5),
@@ -174,7 +174,7 @@ class AccountSection extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.10),
+              color: colorScheme.iconCirclePrimaryBg,
               shape: BoxShape.circle,
             ),
             child: Icon(

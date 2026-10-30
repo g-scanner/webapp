@@ -103,9 +103,7 @@ class _LegalConsentDialogState extends State<LegalConsentDialog> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: context.colorScheme.primary.withValues(
-                        alpha: 0.10,
-                      ),
+                      color: context.colorScheme.iconCirclePrimaryBg,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(

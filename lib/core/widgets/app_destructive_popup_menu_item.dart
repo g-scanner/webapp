@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'app_popup_menu_item.dart';
+import '../theme/app_theme.dart';
 
 /// Voce di menu popup distruttiva (es. elimina) con icona evidenziata
 /// in un bollino circolare e stile coordinato a colorScheme.error.
@@ -27,7 +28,7 @@ class AppDestructivePopupMenuItem<T> extends AppPopupMenuItem<T> {
                  width: 32,
                  height: 32,
                  decoration: BoxDecoration(
-                   color: colorScheme.error.withValues(alpha: 0.10),
+                   color: colorScheme.iconCircleErrorBg,
                    shape: BoxShape.circle,
                  ),
                  child: Icon(icon, color: colorScheme.error, size: 18),

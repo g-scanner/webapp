@@ -89,7 +89,7 @@ void showSubmitReportBottomSheet({
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: colorScheme.error.withValues(alpha: 0.1),
+                            color: colorScheme.iconCircleErrorBg,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -186,7 +186,7 @@ void showSubmitReportBottomSheet({
                                 vertical: 14,
                               ),
                               decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest,
+                                color: colorScheme.dropdownPillBg,
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Row(

@@ -16,7 +16,7 @@ class ScannerErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.error.withValues(alpha: 0.08),
+        color: colorScheme.iconCircleErrorBg,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: colorScheme.error.withValues(alpha: 0.2)),
       ),

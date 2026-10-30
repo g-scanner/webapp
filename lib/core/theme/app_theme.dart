@@ -65,9 +65,7 @@ final ThemeData lightTheme = ThemeData(
     surfaceTintColor: Colors.transparent,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(20),
-      side: BorderSide(
-        color: lightOutline.withValues(alpha: 0.4),
-      ),
+      side: BorderSide(color: lightOutline.withValues(alpha: 0.4)),
     ),
   ),
 );
@@ -130,9 +128,7 @@ final ThemeData darkTheme = ThemeData(
     surfaceTintColor: Colors.transparent,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(20),
-      side: BorderSide(
-        color: darkOutline.withValues(alpha: 0.4),
-      ),
+      side: BorderSide(color: darkOutline.withValues(alpha: 0.4)),
     ),
   ),
 );
@@ -169,4 +165,60 @@ String themeModeToString(ThemeMode mode) {
     default:
       return 'system';
   }
+}
+
+// ─── Semantic colour tokens ───────────────────────────────────────────────────
+//
+// Unica fonte di verità per tutti i colori semantici dell'app.
+// Ogni widget deve usare questi getter invece di calcolare i colori inline.
+//
+// Varianti stato glutine
+//   statusPrimaryBg / statusPrimaryText  → adatto / sicuro / primario
+//   statusErrorBg  / statusErrorText     → non adatto / errore
+//   statusTertiaryBg / statusTertiaryText → incerto / segnalazione / warning
+//   statusNeutralBg / statusNeutralText  → sconosciuto / neutro
+//
+// Cerchi icona
+//   iconCirclePrimaryBg  → sfondo cerchio icona per azioni primarie / info
+//   iconCircleErrorBg    → sfondo cerchio icona per azioni distruttive
+//   iconCircleTertiaryBg → sfondo cerchio icona per warning / segnalazioni
+//
+// Sfondo CTA bar (footer colorato nelle card)
+//   ctaTertiaryBg → sfondo barra CTA segnalazioni / incerto
+//
+// Sfondo elementi selezionati (selettori, chip selezionata)
+//   selectedItemBg → sfondo leggero quando un elemento è selezionato/attivo
+//
+extension AppColorTokens on ColorScheme {
+  // ── Stato glutine ──────────────────────────────────────────────────────────
+  Color get statusPrimaryBg => Colors.pink.withValues(alpha: 0.15);
+  Color get statusPrimaryText => primary;
+
+  Color get statusErrorBg => Colors.pink.withValues(alpha: 0.5);
+  Color get statusErrorText => error;
+
+  Color get statusTertiaryBg => Colors.pink.withValues(alpha: 0.1);
+  Color get statusTertiaryText => tertiary;
+
+  Color get statusNeutralBg => surfaceContainerHighest;
+  Color get statusNeutralText => onSurfaceVariant;
+
+  // ── Cerchi icona ──────────────────────────────────────────────────────────
+  Color get iconCirclePrimaryBg => Colors.pink.withValues(alpha: 0.15);
+  Color get iconCircleErrorBg => Colors.pink.withValues(alpha: 0.5);
+  Color get iconCircleTertiaryBg => Colors.pink.withValues(alpha: 0.1);
+
+  // ── CTA bar ───────────────────────────────────────────────────────────────
+  Color get ctaTertiaryBg => Colors.pink.withValues(alpha: 0.1);
+
+  // ── Elementi selezionati ──────────────────────────────────────────────────
+  Color get selectedItemBg => Colors.pink.withValues(alpha: 0.08);
+
+  // ── Pillola selettore popup (tema, lingua, motivo, …) ─────────────────────
+  //   Sfondo neutro della pillola che apre un PopupMenuButton di scelta.
+  Color get dropdownPillBg => surfaceContainerHighest;
+
+  // ── Accesso anonimo ────────────────────────────────────────────────────────
+  //   Colore del bottone "Entra senza autenticazione" nella schermata di login.
+  Color get anonymousEntryFg => primary;
 }
