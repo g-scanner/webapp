@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
@@ -165,36 +165,35 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   }
 
   // Helper per ottenere colori/icone in base allo stato
-  Map<String, dynamic> _getStatusData(
+  ({Color bg, Color text, IconData icon, String label}) _getStatusData(
     GlutenSafetyStatus status,
     ColorScheme colorScheme,
   ) {
+    final colors = AppStatusPill.colorsForVariant(
+      AppStatusPill.variantForStatus(status),
+      colorScheme,
+    );
+    String label;
+    IconData icon;
     switch (status) {
       case GlutenSafetyStatus.adatto:
-        return {
-          "text": "product.status.safe".tr().toUpperCase(),
-          "color": colorScheme.primary,
-          "icon": Icons.check_circle,
-        };
+        label = "product.status.safe".tr().toUpperCase();
+        icon = Icons.check_circle;
+        break;
       case GlutenSafetyStatus.nonAdatto:
-        return {
-          "text": "product.status.unsafe".tr().toUpperCase(),
-          "color": colorScheme.error,
-          "icon": Icons.cancel,
-        };
+        label = "product.status.unsafe".tr().toUpperCase();
+        icon = Icons.cancel;
+        break;
       case GlutenSafetyStatus.incerto:
-        return {
-          "text": "product.status.uncertain".tr().toUpperCase(),
-          "color": colorScheme.tertiary,
-          "icon": Icons.warning,
-        };
-      default:
-        return {
-          "text": "product.status.unknown".tr().toUpperCase(),
-          "color": colorScheme.outlineVariant,
-          "icon": Icons.help,
-        };
+        label = "product.status.uncertain".tr().toUpperCase();
+        icon = Icons.warning;
+        break;
+      case GlutenSafetyStatus.sconosciuto:
+        label = "product.status.unknown".tr().toUpperCase();
+        icon = Icons.help;
+        break;
     }
+    return (bg: colors.bg, text: colors.text, icon: icon, label: label);
   }
 
   @override
@@ -210,10 +209,14 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
   Widget _buildContent(
     BuildContext context,
-    Map<String, dynamic> oldStatusData,
+    ({Color bg, Color text, IconData icon, String label}) oldStatusData,
   ) {
     final colorScheme = context.colorScheme;
     final cardBg = context.cardBackground;
+    final tertiaryColors = AppStatusPill.colorsForVariant(
+      AppStatusPillVariant.tertiary,
+      colorScheme,
+    );
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -272,7 +275,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+                color: tertiaryColors.bg,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
@@ -281,12 +284,12 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: colorScheme.tertiary.withValues(alpha: 0.1),
+                      color: tertiaryColors.text.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.warning,
-                      color: colorScheme.tertiary,
+                      color: tertiaryColors.text,
                       size: 48,
                     ),
                   ),
@@ -318,7 +321,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.tertiary.withValues(alpha: 0.1),
+                      color: tertiaryColors.bg,
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: Row(
@@ -327,7 +330,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         Icon(
                           Icons.qr_code,
                           size: 16,
-                          color: colorScheme.tertiary,
+                          color: tertiaryColors.text,
                         ),
                         const SizedBox(width: 8),
                         SelectableText(
@@ -335,7 +338,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: colorScheme.tertiary,
+                            color: tertiaryColors.text,
                           ),
                         ),
                       ],
@@ -488,8 +491,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
               child: Row(
                 children: [
                   Icon(
-                    oldStatusData["icon"],
-                    color: oldStatusData["color"],
+                    oldStatusData.icon,
+                    color: oldStatusData.text,
                     size: 28,
                   ),
                   const SizedBox(width: 12),
@@ -497,11 +500,11 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        oldStatusData["text"],
+                        oldStatusData.label,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: oldStatusData["color"],
+                          color: oldStatusData.text,
                         ),
                       ),
                       const SizedBox(height: 2),

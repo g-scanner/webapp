@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/foundation.dart';
@@ -109,17 +109,25 @@ class ReportsFilterHeader extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colorScheme.tertiary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.pending_actions,
-                      size: 20,
-                      color: colorScheme.tertiary,
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final tc = AppStatusPill.colorsForVariant(
+                        AppStatusPillVariant.tertiary,
+                        colorScheme,
+                      );
+                      return Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: tc.bg,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.pending_actions,
+                          size: 20,
+                          color: tc.text,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 12),
                   Text(

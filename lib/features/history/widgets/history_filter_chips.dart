@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
@@ -17,39 +17,21 @@ class HistoryFilterChips extends StatelessWidget {
     required this.onChanged,
   });
 
-  Color _getFilterColorFor(BuildContext context, GlutenSafetyStatus? status) {
-    final colorScheme = context.colorScheme;
-    switch (status) {
-      case GlutenSafetyStatus.adatto:
-        return colorScheme.primary.withValues(alpha: 0.12);
-      case GlutenSafetyStatus.incerto:
-        return colorScheme.tertiary.withValues(alpha: 0.12);
-      case GlutenSafetyStatus.nonAdatto:
-        return colorScheme.error.withValues(alpha: 0.12);
-      case GlutenSafetyStatus.sconosciuto:
-        return colorScheme.outlineVariant.withValues(alpha: 0.2);
-      default:
-        return colorScheme.surfaceContainerHighest;
-    }
-  }
-
-  Color _getFilterTextColorFor(
+  ({Color bg, Color text}) _getFilterColorsFor(
     BuildContext context,
     GlutenSafetyStatus? status,
   ) {
     final colorScheme = context.colorScheme;
-    switch (status) {
-      case GlutenSafetyStatus.adatto:
-        return colorScheme.primary;
-      case GlutenSafetyStatus.incerto:
-        return colorScheme.tertiary;
-      case GlutenSafetyStatus.nonAdatto:
-        return colorScheme.error;
-      case GlutenSafetyStatus.sconosciuto:
-        return colorScheme.onSurfaceVariant;
-      default:
-        return colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
+    if (status == null) {
+      return (
+        bg: colorScheme.surfaceContainerHighest,
+        text: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+      );
     }
+    return AppStatusPill.colorsForVariant(
+      AppStatusPill.variantForStatus(status),
+      colorScheme,
+    );
   }
 
   String _getFilterLabel(GlutenSafetyStatus? status) {
@@ -83,11 +65,12 @@ class HistoryFilterChips extends StatelessWidget {
       onSelected: onChanged,
       constraints: const BoxConstraints(minWidth: 110, maxWidth: 150),
       options: statuses.map((status) {
+        final colors = _getFilterColorsFor(context, status);
         return AppPillFilterOption<GlutenSafetyStatus?>(
           value: status,
           label: _getFilterLabel(status),
-          color: _getFilterColorFor(context, status),
-          textColor: _getFilterTextColorFor(context, status),
+          color: colors.bg,
+          textColor: colors.text,
         );
       }).toList(),
     );
