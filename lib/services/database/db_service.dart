@@ -147,6 +147,9 @@ class DbService {
   static Future<UserSettings> getLocalSettings() =>
       SettingsDbService.getLocalSettings();
 
+  static Stream<UserSettings> get settingsStream =>
+      SettingsDbService.settingsStream;
+
   static Future<void> saveLocalSettings(UserSettings settings) =>
       SettingsDbService.saveLocalSettings(settings);
 

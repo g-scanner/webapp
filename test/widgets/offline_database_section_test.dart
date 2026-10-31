@@ -15,6 +15,7 @@ import 'package:http/testing.dart';
 
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/services/database/offline_db_service.dart';
+import 'package:gscanner/services/database/settings_db_service.dart';
 import 'package:gscanner/services/database/offline_db_sync_service.dart';
 import 'package:gscanner/features/settings/sheets/offline_database_sheet.dart';
 import 'package:gscanner/core/network/connectivity_helper.dart';
@@ -358,6 +359,41 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Obsoleto (>30 gg)'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Dynamically updates status pill to synchronized (green) when automatic sync completes in background',
+      (tester) async {
+        OfflineDbService.mockIsDatabaseInstalled = true;
+        final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final initialSettings = testSettings(
+          tier: OfflineDbTier.glutenFree,
+          lastSyncedAt: nowSec - (15 * 86400),
+        );
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: initialSettings,
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {},
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Aggiornamento consigliato'), findsOneWidget);
+        expect(find.text('Sincronizzato'), findsNothing);
+
+        final updatedSettings = initialSettings.copyWith(
+          offlineDbLastSyncedAt: nowSec,
+        );
+        await SettingsDbService.saveLocalSettings(updatedSettings);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Sincronizzato'), findsOneWidget);
+        expect(find.text('Aggiornamento consigliato'), findsNothing);
       },
     );
 

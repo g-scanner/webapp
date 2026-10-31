@@ -83,6 +83,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   /// non appena torna la connessione Internet.
   Timer? _offlineVerificationTimer;
   bool _isVerifyingOfflineProducts = false;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _wasOffline = false;
 
   GlobalKey<NavigatorState> get _contentNavigatorKey =>
       _navController.contentNavigatorKey;
@@ -100,6 +102,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _navController.addListener(_onNavigationChanged);
+    _initConnectivityListener();
     _initApp();
   }
 
@@ -109,12 +112,49 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _connectivitySubscription?.cancel();
     _offlineVerificationTimer?.cancel();
     _offlineVerificationTimer = null;
     WidgetsBinding.instance.removeObserver(this);
     _navController.removeListener(_onNavigationChanged);
     _navController.dispose();
     super.dispose();
+  }
+
+  void _initConnectivityListener() {
+    _connectivitySubscription =
+        ConnectivityHelper.onConnectivityChanged.listen((results) async {
+      final isNone = results.isEmpty ||
+          (results.length == 1 && results.first == ConnectivityResult.none);
+      if (isNone) {
+        _wasOffline = true;
+        return;
+      }
+
+      if (_wasOffline) {
+        _wasOffline = false;
+        final isOnline = await ConnectivityHelper.hasInternetConnection();
+        if (!mounted) return;
+        if (isOnline) {
+          _onNetworkRestored();
+        } else {
+          _wasOffline = true;
+        }
+      }
+    });
+  }
+
+  Future<void> _onNetworkRestored() async {
+    debugPrint(
+      "MainScreen: Riconnessione Internet rilevata. Avvio riallineamento...",
+    );
+    _startOfflineVerificationTimerIfNeeded();
+    final latestSettings = await DbService.getLocalSettings();
+    if (mounted) {
+      setState(() => userSettings = latestSettings);
+    }
+    _autoDownloadOfflineDbIfNeeded(latestSettings);
+    _syncOnResumeIfNeeded(cooldown: Duration.zero);
   }
 
   DateTime? _lastResumeSyncTime;
@@ -1718,10 +1758,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           settings: userSettings,
           historyCount: history.length,
           onSettingsChange: (newSet, {bool isOfflineDbChange = false}) async {
+            final bool autoSyncTurnedOn =
+                !userSettings.offlineDbAutoSync && newSet.offlineDbAutoSync;
             setState(() => userSettings = newSet);
             themeNotifier.value = themeModeFromString(newSet.preferredTheme);
             await DbService.saveSettings(newSet, isOfflineDbChange: isOfflineDbChange);
             await BackgroundSyncManager.updatePeriodicTaskRegistration(newSet);
+            if (autoSyncTurnedOn && newSet.offlineDbTier != OfflineDbTier.none) {
+              _autoDownloadOfflineDbIfNeeded(newSet);
+            }
           },
           onResetDB: () async {
             await DbService.wipeHistoryLocal();

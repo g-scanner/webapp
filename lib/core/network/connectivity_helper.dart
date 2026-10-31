@@ -6,6 +6,8 @@ import 'dart:io' show InternetAddress, SocketException;
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+export 'package:connectivity_plus/connectivity_plus.dart' show ConnectivityResult;
+
 // Import condizionale: su web usa navigator.onLine, su native ritorna sempre true
 // (il check nativo avviene tramite InternetAddress.lookup di dart:io più in basso).
 import '_connectivity_native.dart'
@@ -18,6 +20,17 @@ class ConnectivityHelper {
 
   @visibleForTesting
   static bool? mockIsWifi;
+
+  @visibleForTesting
+  static Stream<List<ConnectivityResult>>? mockConnectivityStream;
+
+  /// Stream che notifica le variazioni dello stato di connettività di rete.
+  static Stream<List<ConnectivityResult>> get onConnectivityChanged {
+    if (mockConnectivityStream != null) {
+      return mockConnectivityStream!;
+    }
+    return Connectivity().onConnectivityChanged;
+  }
 
   /// Verifica se il dispositivo ha accesso alla rete Internet.
   ///

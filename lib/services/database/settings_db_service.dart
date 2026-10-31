@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,6 +16,13 @@ class SettingsDbService {
   static const String reportedBarcodesKey = 'celiac_reported_barcodes';
   static const String termsAcceptedKey = 'gscanner_terms_accepted';
   static const String hasAnonymousSettingsKey = 'has_anonymous_settings';
+
+  static final StreamController<UserSettings> _settingsUpdateController =
+      StreamController<UserSettings>.broadcast();
+
+  /// Stream che notifica ogni aggiornamento salvato in locale di [UserSettings].
+  static Stream<UserSettings> get settingsStream =>
+      _settingsUpdateController.stream;
 
   static Future<UserSettings> getLocalSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -47,6 +55,9 @@ class SettingsDbService {
         ? settings.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch)
         : settings;
     await prefs.setString(settingsKey, json.encode(toSave.toJson()));
+    if (!_settingsUpdateController.isClosed) {
+      _settingsUpdateController.add(toSave);
+    }
   }
 
   /// Salva le impostazioni utente localmente e su Firestore.

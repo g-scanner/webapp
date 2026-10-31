@@ -7,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
 import '../../../models/models.dart';
 import '../../../services/database/offline_db_service.dart';
+import '../../../services/database/settings_db_service.dart';
 import '../../../services/database/offline_db_sync_service.dart';
 import '../../../core/network/connectivity_helper.dart';
 import '../../../core/widgets/widgets.dart';
@@ -71,6 +72,7 @@ class _OfflineDatabaseSheetContentState
   OfflineDbTier? _downloadingTier;
 
   StreamSubscription<OfflineSyncProgress>? _syncSubscription;
+  StreamSubscription<UserSettings>? _settingsSubscription;
   OfflineSyncProgress _syncProgress = const OfflineSyncProgress(
     step: OfflineSyncStep.idle,
     progress: 0.0,
@@ -95,12 +97,69 @@ class _OfflineDatabaseSheetContentState
   void initState() {
     super.initState();
     _initStateInternal();
+
+    _settingsSubscription = SettingsDbService.settingsStream.listen((newSettings) {
+      if (!mounted) return;
+      setState(() {
+        _currentSettings = newSettings;
+        _installedTier = newSettings.offlineDbTier;
+        if (_previewPack.isEmpty || _previewPack == 'euro_core') {
+          _previewPack = _installedTier != OfflineDbTier.none
+              ? _installedTier.key
+              : _getDefaultTierKey();
+        }
+      });
+      widget.onDatabaseUpdated?.call();
+    });
+
+    OfflineDbSyncService.syncProgressNotifier.addListener(_onGlobalSyncProgress);
+    final currentProgress = OfflineDbSyncService.syncProgressNotifier.value;
+    if (currentProgress.isInProgress && _syncSubscription == null) {
+      _syncProgress = currentProgress;
+      _downloadingTier = OfflineDbSyncService.currentSyncingTier;
+    }
   }
 
   @override
   void dispose() {
+    OfflineDbSyncService.syncProgressNotifier.removeListener(_onGlobalSyncProgress);
+    _settingsSubscription?.cancel();
     _syncSubscription?.cancel();
     super.dispose();
+  }
+
+  void _onGlobalSyncProgress() {
+    if (!mounted) return;
+    final progress = OfflineDbSyncService.syncProgressNotifier.value;
+    if (_syncSubscription != null) return;
+
+    setState(() {
+      _syncProgress = progress;
+      if (progress.isInProgress) {
+        _downloadingTier = OfflineDbSyncService.currentSyncingTier;
+      } else {
+        _downloadingTier = null;
+      }
+    });
+
+    if (progress.step == OfflineSyncStep.completed) {
+      _reloadStateFromStorage();
+    }
+  }
+
+  Future<void> _reloadStateFromStorage() async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    final latest = await SettingsDbService.getLocalSettings();
+    final installed = await OfflineDbService.getInstalledTier() ?? OfflineDbTier.none;
+    if (!mounted) return;
+    setState(() {
+      _currentSettings = latest;
+      _installedTier = installed;
+      if (_installedTier != OfflineDbTier.none) {
+        _previewPack = _installedTier.key;
+      }
+    });
+    widget.onDatabaseUpdated?.call();
   }
 
   OfflineDbTier _keyToTier(String key) {
@@ -180,6 +239,8 @@ class _OfflineDatabaseSheetContentState
                   _installedTier = tier;
                   _previewPack = tier.key;
                   _downloadingTier = null;
+                  _syncSubscription?.cancel();
+                  _syncSubscription = null;
                 });
                 widget.onDatabaseUpdated?.call();
                 _triggerSnackbar("settings.offlineDb.syncSuccess".tr());

@@ -191,28 +191,28 @@ String themeModeToString(ThemeMode mode) {
 //
 extension AppColorTokens on ColorScheme {
   // ── Stato glutine ──────────────────────────────────────────────────────────
-  Color get statusPrimaryBg => Colors.pink.withValues(alpha: 0.15);
+  Color get statusPrimaryBg => primaryContainer.withValues(alpha: 0.15);
   Color get statusPrimaryText => primary;
 
-  Color get statusErrorBg => Colors.pink.withValues(alpha: 0.5);
+  Color get statusErrorBg => errorContainer.withValues(alpha: 0.5);
   Color get statusErrorText => error;
 
-  Color get statusTertiaryBg => Colors.pink.withValues(alpha: 0.1);
+  Color get statusTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
   Color get statusTertiaryText => tertiary;
 
   Color get statusNeutralBg => surfaceContainerHighest;
   Color get statusNeutralText => onSurfaceVariant;
 
   // ── Cerchi icona ──────────────────────────────────────────────────────────
-  Color get iconCirclePrimaryBg => Colors.pink.withValues(alpha: 0.15);
-  Color get iconCircleErrorBg => Colors.pink.withValues(alpha: 0.5);
-  Color get iconCircleTertiaryBg => Colors.pink.withValues(alpha: 0.1);
+  Color get iconCirclePrimaryBg => primaryContainer.withValues(alpha: 0.15);
+  Color get iconCircleErrorBg => errorContainer.withValues(alpha: 0.5);
+  Color get iconCircleTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
 
   // ── CTA bar ───────────────────────────────────────────────────────────────
-  Color get ctaTertiaryBg => Colors.pink.withValues(alpha: 0.1);
+  Color get ctaTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
 
   // ── Elementi selezionati ──────────────────────────────────────────────────
-  Color get selectedItemBg => Colors.pink.withValues(alpha: 0.08);
+  Color get selectedItemBg => primaryContainer.withValues(alpha: 0.08);
 
   // ── Pillola selettore popup (tema, lingua, motivo, …) ─────────────────────
   //   Sfondo neutro della pillola che apre un PopupMenuButton di scelta.

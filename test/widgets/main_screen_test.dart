@@ -1237,5 +1237,32 @@ void main() {
         }
       },
     );
+
+    testWidgets(
+      'triggers network restored actions when connection transitions from offline to online',
+      (tester) async {
+        final streamController = StreamController<List<ConnectivityResult>>.broadcast();
+        ConnectivityHelper.mockConnectivityStream = streamController.stream;
+        ConnectivityHelper.mockIsConnected = false;
+        addTearDown(() {
+          ConnectivityHelper.mockConnectivityStream = null;
+          ConnectivityHelper.mockIsConnected = null;
+          streamController.close();
+        });
+
+        await _pumpMainScreen(tester, auth: mockAuth);
+        await tester.pumpAndSettle();
+
+        // 1. Simula transizione a offline
+        streamController.add([ConnectivityResult.none]);
+        await tester.pump();
+
+        // 2. Simula ripristino connessione Wi-Fi con Internet disponibile
+        ConnectivityHelper.mockIsConnected = true;
+        streamController.add([ConnectivityResult.wifi]);
+        await tester.pump();
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }
