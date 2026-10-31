@@ -30864,7 +30864,8 @@ b1F:function b1F(a,b){this.a=a
 this.b=b},
 b1G:function b1G(a){this.a=a},
 b30(a,b,c,d,e){var s=null,r=a.fy,q=r.S(0.12),p=r.S(0.08),o=r.S(0.06),n=A.a9(12),m=a.id
-m=(m==null?r:m).S(0.5)
+if(m==null)m=r
+m=m.S(a.a===B.y?0.2:0.5)
 return new A.DU(q,p,o,d,s,!0,48,B.ai,s,s,s,A.ao(s,A.bf(A.b([A.ao(s,A.b3(b,r,s,s,18),B.f,s,s,new A.at(m,s,s,s,s,s,B.ac),s,32,s,s,s,s,32),B.bB,A.ce(A.R(c,s,1,B.a8,s,A.W(s,s,r,s,s,s,s,s,s,s,s,14,s,s,B.L,s,s,!0,s,s,s,s,s,s,s,s),s,s),1)],t.p),B.q,B.i,B.o,0),B.f,s,s,new A.at(s,s,s,n,s,s,B.x),s,s,s,B.T3,s,s,s),s,e.i("DU<0>"))},
 DU:function DU(a,b,c,d,e,f,g,h,i,j,k,l,m,n){var _=this
 _.ay=a
@@ -31017,7 +31018,8 @@ tI(a,b){var s,r
 switch(a.a){case 0:s=b.d
 return new A.t1((s==null?b.b:s).S(0.15),b.b)
 case 1:s=b.id
-return new A.t1((s==null?b.fy:s).S(0.5),b.fy)
+if(s==null)s=b.fy
+return new A.t1(s.S(b.a===B.y?0.2:0.5),b.fy)
 case 2:s=b.cy
 if(s==null){s=b.CW
 if(s==null)s=b.y}s=s.S(0.1)
@@ -31031,7 +31033,8 @@ blC(a,b){var s
 switch(a.a){case 0:s=b.d
 return(s==null?b.b:s).S(0.15)
 case 1:s=b.id
-return(s==null?b.fy:s).S(0.5)
+if(s==null)s=b.fy
+return s.S(b.a===B.y?0.2:0.5)
 case 2:s=b.cy
 if(s==null){s=b.CW
 if(s==null)s=b.y}return s.S(0.1)
@@ -32680,37 +32683,37 @@ a3=(a0||a2)&&!h&&a.length===0
 a4=!1
 if(s.length<5){q=!m
 a4=q}a5=A.b([],t.Mf)
-if(!c3&&c7>0){a6=B.cY
-a7=""}else if(m){a7=A.r("product.analysis.safe",b5,b5)
+if(m){a6=A.r("product.analysis.safe",b5,b5)
 a5.push(new A.he(A.r("product.analysis.glutenFreeIngredient",b5,b5),"safe",A.r("product.analysis.glutenFreeReason",b5,b5)))
 if(b)a5.push(new A.he(A.r("product.analysis.safeTraceIngredient",b5,b5),b6,A.r("product.analysis.safeTraceReason",b5,b5)))
-a6=B.fu}else{q=l.length===0
+a7=B.fu}else{q=l.length===0
 p=!0
 if(q)p=b&&c8
-if(p){a7=!q?A.r("product.analysis.notSuitable",b5,b5):A.r("product.analysis.strictFilterBlocked",b5,b5)
+if(p){a6=!q?A.r("product.analysis.notSuitable",b5,b5):A.r("product.analysis.strictFilterBlocked",b5,b5)
 for(q=l.length,k=0;k<l.length;l.length===q||(0,A.D)(l),++k){a8=l[k]
 p=$.oe
 p=(p==null?$.oe=A.Y3():p).IM("product.analysis.glutenSource",b5,b5,b5)
 a5.push(new A.he(a8,b7,p))}if(b&&c8)a5.push(new A.he("Tracce",b7,A.r("product.analysis.contaminationBlocked",b5,b5)))
-a6=B.fv}else if(a4){a7=A.r("product.analysis.unknown",b5,b5)
+a7=B.fv}else if(a4){a6=A.r("product.analysis.unknown",b5,b5)
 a5.push(new A.he(A.r("product.analysis.missingDataIngredient",b5,b5),b6,A.r("product.analysis.missingDataReason",b5,b5)))
-a6=B.ia}else if(a3){a7=A.r("product.analysis.naturallySafe",b5,b5)
+a7=B.ia}else if(a3){a6=A.r("product.analysis.naturallySafe",b5,b5)
 a5.push(new A.he(A.r("product.analysis.naturalSafeIngredient",b5,b5),"safe",A.r("product.analysis.naturalSafeReason",b5,b5)))
-a6=B.fu}else{a7=A.r("product.analysis.uncertainNoLabel",b5,b5)
-if(b&&!c8){a7=A.r("product.analysis.uncertainTraces",b5,b5)
+a7=B.fu}else{a6=A.r("product.analysis.uncertainNoLabel",b5,b5)
+if(b&&!c8){a6=A.r("product.analysis.uncertainTraces",b5,b5)
 a5.push(new A.he("Tracce",b6,A.r("product.analysis.traceWarningReason",b5,b5)))}if(h)a5.push(new A.he(A.r("product.analysis.maltIngredient",b5,b5),b6,A.r("product.analysis.maltReason",b5,b5)))
 for(q=a.length,k=0;k<a.length;a.length===q||(0,A.D)(a),++k){a9=a[k]
 p=$.oe
 p=(p==null?$.oe=A.Y3():p).IM("product.analysis.uncertainIngredientReason",b5,b5,b5)
-a5.push(new A.he(a9,b6,p))}a6=B.cY}}b0=B.GC.ge6().dC(0,new A.ai0(c6))?c6:"en"
+a5.push(new A.he(a9,b6,p))}a7=B.cY}}if(!c3&&c7>0){a7=B.cY
+a6=""}b0=B.GC.ge6().dC(0,new A.ai0(c6))?c6:"en"
 b1=A.b8B(c0,c6)
-if(a6===B.fv&&!B.b.dC(b1,new A.ai1())&&!c8){b2=B.Gr.h(0,b0)
+if(a7===B.fv&&!B.b.dC(b1,new A.ai1())&&!c8){b2=B.Gr.h(0,b0)
 if(b2==null)b2="Glutine"
 B.b.E(b1,b2)}if(b9){b3=A.b4k(b8,c0)
 for(q=b3.length,k=0;k<b3.length;b3.length===q||(0,A.D)(b3),++k){b4=b3[k]
 if(!B.b.dC(a5,new A.ai2(b4))){p=$.oe
 p=(p==null?$.oe=A.Y3():p).IM("product.analysis.lactoseDetected",b5,b5,b5)
-a5.push(new A.he(b4,b7,p))}}}return new A.ahV(a6,a7,b1,a5)},
+a5.push(new A.he(b4,b7,p))}}}return new A.ahV(a7,a6,b1,a5)},
 ahW:function ahW(a){this.a=a},
 ahX:function ahX(a){this.a=a},
 ahY:function ahY(a){this.a=a},
@@ -112109,7 +112112,8 @@ r=o.rx
 return new A.Ta(A.azj(l,A.ao(p,A.b3(B.vb,r==null?o.k3:r,p,p,20),B.f,p,p,new A.at(s,p,p,p,p,p,B.ac),p,40,p,p,p,p,40),B.ar,n,p,6,q.c,B.H1,q.d,p,m,new A.aT(k,new A.aJ(j,1,B.t,-1)),B.v,q.e,q.$ti.c),p)}}
 A.b1H.prototype={
 $1(a){var s,r,q,p,o,n,m=this,l=null,k=A.u(a).ax,j=A.u(a).ax.a===B.y?B.R:B.k,i=A.a9(28),h=k.id
-h=(h==null?k.fy:h).S(0.5)
+if(h==null)h=k.fy
+h=h.S(k.a===B.y?0.2:0.5)
 s=k.k1
 if(s==null)s=k.go
 h=A.ch(A.ao(l,A.b3(m.b,s,l,l,28),B.f,l,l,new A.at(h,l,l,l,l,l,B.ac),l,56,l,l,l,l,56),l,l)
@@ -113571,13 +113575,15 @@ r=p.rx
 return A.ao(q,A.R(a,q,q,q,q,A.W(q,q,r==null?p.k3:r,q,q,q,q,q,q,q,q,12,q,q,B.E,q,q,!0,q,q,q,q,q,q,q,q),q,q),B.f,q,q,new A.at(o,q,q,s,q,q,B.x),q,q,q,B.em,q,q,q)},
 $S:649}
 A.Xm.prototype={
-J(a){var s=this,r=null,q=A.u(a).ax,p=A.r("product.ingredients.title",r,r),o=t.p,n=A.b([],o),m=s.c
-if(B.c.bf(m).length!==0){o=A.b([A.R(m,r,r,r,r,A.W(r,r,q.k3,r,r,r,r,r,r,r,r,14,r,r,r,r,1.5,!0,r,r,r,r,r,r,r,r),r,r)],o)
-if(s.d.length!==0)o.push(B.aF)
-B.b.M(n,o)}o=s.d
-if(o.length!==0){m=t.l7
-o=A.Y(new A.lb(o,A.a1(o).i("lb<1>")).geK().h1(0,new A.arX(s,q),m),m)
-B.b.M(n,o)}return A.Ao(r,A.aM(n,B.ad,r,B.i,B.o),B.Uz,!1,!1,p)}}
+J(a){var s,r,q=this,p=null,o=A.u(a).ax,n=A.r("product.ingredients.title",p,p),m=t.p,l=A.b([],m),k=q.c,j=B.c.bf(k).length===0
+if(j&&q.d.length===0){s=A.r("product.analysis.missingDataReason",p,p)
+r=o.rx
+l.push(A.R(s,p,p,p,p,A.W(p,p,r==null?o.k3:r,p,p,p,p,p,p,p,p,14,p,p,p,p,1.4,!0,p,p,p,p,p,p,p,p),p,p))}if(!j){m=A.b([A.R(k,p,p,p,p,A.W(p,p,o.k3,p,p,p,p,p,p,p,p,14,p,p,p,p,1.5,!0,p,p,p,p,p,p,p,p),p,p)],m)
+if(q.d.length!==0)m.push(B.aF)
+B.b.M(l,m)}m=q.d
+if(m.length!==0){k=t.l7
+m=A.Y(new A.lb(m,A.a1(m).i("lb<1>")).geK().h1(0,new A.arX(q,o),k),k)
+B.b.M(l,m)}return A.Ao(p,A.aM(l,B.ad,p,B.i,B.o),B.Uz,!1,!1,n)}}
 A.arX.prototype={
 $1(a){var s,r,q,p,o,n,m,l,k,j,i=null,h=a.b,g=B.c.bf(this.a.c).length!==0||a.a>0
 switch(h.b){case"danger":s=A.r("product.ingredients.dangerBadge",i,i)
@@ -113797,7 +113803,8 @@ $2(a4,a5){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c=this,b=null,a=c.b,a0=A.u(a).ax,a
 if(a3==null){a3=a0.p
 if(a3==null)a3=a0.k3}a3=A.ch(A.ao(b,b,B.f,b,b,new A.at(a3.S(0.4),b,b,A.a9(4),b,b,B.x),b,4,B.SU,b,b,b,32),b,b)
 s=a0.id
-s=(s==null?a0.fy:s).S(0.5)
+if(s==null)s=a0.fy
+s=s.S(a0.a===B.y?0.2:0.5)
 r=a0.fy
 q=a0.k3
 p=t.p
