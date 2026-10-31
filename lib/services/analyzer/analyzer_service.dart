@@ -209,13 +209,8 @@ class AnalyzerService {
     String reason;
     List<IngredientAnalyzed> ingredientsAnalyzed = [];
 
-    // CASO 1: SEGNALAZIONI (Vince su tutto se non si richiede ignoreReports)
-    if (!ignoreReports && reportCount > 0) {
-      status = GlutenSafetyStatus.incerto;
-      reason = "";
-    }
-    // CASO 2: BOLLINO UFFICIALE (Se c'è bollino, è <20ppm per legge)
-    else if (hasGlutenFreeBollino || hasGlutenFreeTextClaim) {
+    // CASO 1: BOLLINO UFFICIALE (Se c'è bollino, è <20ppm per legge)
+    if (hasGlutenFreeBollino || hasGlutenFreeTextClaim) {
       status = GlutenSafetyStatus.adatto;
       reason = "product.analysis.safe".tr();
       ingredientsAnalyzed.add(
@@ -225,7 +220,6 @@ class AnalyzerService {
           reason: "product.analysis.glutenFreeReason".tr(),
         ),
       );
-
 
       if (hasAnyTrace) {
         ingredientsAnalyzed.add(
@@ -237,7 +231,7 @@ class AnalyzerService {
         );
       }
     }
-    // CASO 3: ROSSO (Pericolo certo o Tracce con Filtro Rigido Attivo)
+    // CASO 2: ROSSO (Pericolo certo o Tracce con Filtro Rigido Attivo)
     else if (foundDanger.isNotEmpty ||
         hasOffGlutenAllergen ||
         (hasAnyTrace && strictMode)) {
@@ -268,7 +262,7 @@ class AnalyzerService {
         );
       }
     }
-    // CASO 4: GRIGIO
+    // CASO 3: GRIGIO (Dati insufficienti / assenti)
     else if (hasNoInfo) {
       status = GlutenSafetyStatus.sconosciuto;
       reason = "product.analysis.unknown".tr();
@@ -280,7 +274,7 @@ class AnalyzerService {
         ),
       );
     }
-    // CASO 5: VERDE (Naturalmente Sicuro)
+    // CASO 4: VERDE (Naturalmente Sicuro)
     else if (isNaturallySafe) {
       status = GlutenSafetyStatus.adatto;
       reason = "product.analysis.naturallySafe".tr();
@@ -292,7 +286,7 @@ class AnalyzerService {
         ),
       );
     }
-    // CASO 6: GIALLO (Fallback)
+    // CASO 5: GIALLO (Fallback)
     else {
       status = GlutenSafetyStatus.incerto;
       reason = "product.analysis.uncertainNoLabel".tr();
@@ -325,6 +319,14 @@ class AnalyzerService {
           ),
         );
       }
+    }
+
+    // Se ci sono segnalazioni della community e non sono ignorate,
+    // lo status complessivo del prodotto passa a incerto, ma gli ingredienti
+    // analizzati (inclusa l'eventuale assenza dati) rimangono valorizzati!
+    if (!ignoreReports && reportCount > 0) {
+      status = GlutenSafetyStatus.incerto;
+      reason = "";
     }
 
     // Lingua target: preferita, con fallback a italiano

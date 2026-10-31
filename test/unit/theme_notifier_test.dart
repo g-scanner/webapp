@@ -85,6 +85,25 @@ void main() {
       expect(darkTheme.scaffoldBackgroundColor, darkSurface);
       expect(darkTheme.cardColor, const Color(0xFF1E1E22));
     });
+
+    test('red backgrounds use lower opacity in dark theme', () {
+      expect(
+        lightTheme.colorScheme.statusErrorBg,
+        lightTheme.colorScheme.errorContainer.withValues(alpha: 0.5),
+      );
+      expect(
+        darkTheme.colorScheme.statusErrorBg,
+        darkTheme.colorScheme.errorContainer.withValues(alpha: 0.2),
+      );
+      expect(
+        lightTheme.colorScheme.iconCircleErrorBg,
+        lightTheme.colorScheme.errorContainer.withValues(alpha: 0.5),
+      );
+      expect(
+        darkTheme.colorScheme.iconCircleErrorBg,
+        darkTheme.colorScheme.errorContainer.withValues(alpha: 0.2),
+      );
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

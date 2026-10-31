@@ -907,5 +907,33 @@ void main() {
         ConnectivityHelper.mockIsConnected = null;
       },
     );
+
+    testWidgets(
+      'Ingredients analysis: shows missing data warning when product without ingredients is reported',
+      (WidgetTester tester) async {
+        final productWithoutIngredients = createSampleProduct(
+          nameMap: {'it': 'Prodotto Senza Dati'},
+          ingredientsMap: {'it': ''},
+          allergensMap: {},
+          pendingReportsCount: 2,
+        );
+
+        await pumpProductDetailCard(
+          tester,
+          product: productWithoutIngredients,
+        );
+
+        // Verifica che la sezione ingredienti non sia vuota ma mostri l'avviso di dati assenti
+        expect(find.byType(IngredientsAnalysisView), findsOneWidget);
+        expect(
+          find.text('product.analysis.missingDataIngredient'.tr()),
+          findsOneWidget,
+        );
+        expect(
+          find.text('product.analysis.missingDataReason'.tr()),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

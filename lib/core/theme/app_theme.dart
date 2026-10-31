@@ -194,7 +194,9 @@ extension AppColorTokens on ColorScheme {
   Color get statusPrimaryBg => primaryContainer.withValues(alpha: 0.15);
   Color get statusPrimaryText => primary;
 
-  Color get statusErrorBg => errorContainer.withValues(alpha: 0.5);
+  Color get statusErrorBg => errorContainer.withValues(
+        alpha: brightness == Brightness.dark ? 0.2 : 0.5,
+      );
   Color get statusErrorText => error;
 
   Color get statusTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
@@ -205,7 +207,9 @@ extension AppColorTokens on ColorScheme {
 
   // ── Cerchi icona ──────────────────────────────────────────────────────────
   Color get iconCirclePrimaryBg => primaryContainer.withValues(alpha: 0.15);
-  Color get iconCircleErrorBg => errorContainer.withValues(alpha: 0.5);
+  Color get iconCircleErrorBg => errorContainer.withValues(
+        alpha: brightness == Brightness.dark ? 0.2 : 0.5,
+      );
   Color get iconCircleTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
 
   // ── CTA bar ───────────────────────────────────────────────────────────────

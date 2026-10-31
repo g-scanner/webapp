@@ -766,6 +766,48 @@ void main() {
 
       expect(res.status, GlutenSafetyStatus.adatto);
     });
+
+    test('preserves missing data warning in ingredientsAnalyzed when reported product has no ingredients', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Prodotto Senza Ingredienti',
+        brand: 'Brand',
+        ingredients: '',
+        allergensList: [],
+        reportCount: 2,
+        categoriesTags: [],
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(res.ingredientsAnalyzed, isNotEmpty);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) =>
+              i.ingredient == 'product.analysis.missingDataIngredient'.tr() &&
+              i.dangerLevel == 'warning',
+        ),
+        isTrue,
+      );
+    });
+
+    test('preserves danger ingredients in ingredientsAnalyzed even when product is reported', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Pane al Grano',
+        brand: 'Brand',
+        ingredients: 'Farina di grano, acqua, lievito',
+        allergensList: [],
+        reportCount: 1,
+        categoriesTags: [],
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(res.ingredientsAnalyzed, isNotEmpty);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.dangerLevel == 'danger',
+        ),
+        isTrue,
+      );
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

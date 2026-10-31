@@ -28,6 +28,16 @@ class IngredientsAnalysisView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (displayedIngredients.trim().isEmpty &&
+              displayedIngredientsAnalyzed.isEmpty)
+            Text(
+              "product.analysis.missingDataReason".tr(),
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
           if (displayedIngredients.trim().isNotEmpty) ...[
             Text(
               displayedIngredients,
