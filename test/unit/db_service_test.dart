@@ -2535,4 +2535,198 @@ void main() {
       },
     );
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 13 – Local-First Offline Sync & Bidirectional Merge
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 13 – Local-First Offline Sync & Bidirectional Merge', () {
+    test(
+      'syncHistoryWithFirestore uploads pending offline scans and merges with remote history',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('user_offline_history');
+
+        final mockUserHistoryCol = MockCollectionReference();
+        final mockQuery = MockQuery();
+        final mockSnap = MockQuerySnapshot();
+        final mockRemoteDoc = MockQueryDocumentSnapshot();
+
+        when(
+          () => mockDb.collection('users/user_offline_history/history'),
+        ).thenReturn(mockUserHistoryCol);
+        when(
+          () => mockUserHistoryCol.orderBy('scannedAt', descending: true),
+        ).thenReturn(mockQuery);
+        when(() => mockQuery.limit(100)).thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockSnap);
+
+        // Remote item on Firestore
+        final remoteItem = ScanHistoryItem(
+          id: 'rem_hist_1',
+          barcode: '800_REMOTE',
+          scannedAt: '2026-10-18T10:00:00Z',
+        );
+        when(() => mockRemoteDoc.data()).thenReturn(remoteItem.toJson());
+        when(() => mockSnap.docs).thenReturn([mockRemoteDoc]);
+
+        // Simula scansione salvata offline in SQLite
+        final offlineItem = ScanHistoryItem(
+          id: 'offline_scan_1',
+          barcode: '800_OFFLINE',
+          scannedAt: '2026-10-18T11:00:00Z',
+        );
+        final historyDao = const ScanHistoryDao();
+        await historyDao.insertHistoryItem('user_offline_history', offlineItem);
+
+        // Registra offline scan come pending
+        await HistoryDbService.markHistoryPending(
+          'user_offline_history',
+          'offline_scan_1',
+        );
+
+        when(() => mockUserHistoryCol.doc('offline_scan_1')).thenReturn(mockDocRef);
+
+        final synced = await DbService.syncHistoryWithFirestore();
+
+        // Dovrebbe contenere sia l'elemento remoto sia l'elemento offline caricato
+        expect(synced.length, 2);
+        expect(synced.map((e) => e.barcode), containsAll(['800_REMOTE', '800_OFFLINE']));
+
+        // Verifica che il batch.set sia stato chiamato per l'elemento offline
+        verify(() => mockBatch.set(mockDocRef, offlineItem.toJson())).called(1);
+
+        // Verifica che l'ID sia stato rimosso dai pendenti dopo il caricamento
+        final pending = await HistoryDbService.getPendingHistoryIds('user_offline_history');
+        expect(pending, isEmpty);
+      },
+    );
+
+    test(
+      'syncReportsWithFirestore uploads pending offline reports and updates Firestore',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('user_offline_reports');
+
+        final mockQuery = MockQuery();
+        final mockSnap = MockQuerySnapshot();
+        final mockRemoteDoc = MockQueryDocumentSnapshot();
+
+        when(
+          () => mockReportsCol.where('userId', isEqualTo: 'user_offline_reports'),
+        ).thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockSnap);
+
+        final remoteReport = ProductReport(
+          id: 'rep_rem_1',
+          barcode: '800_REM_PROD',
+          productName: 'Remote Prod',
+          brand: 'Brand',
+          type: 'gluten_detected',
+          comments: 'Contains wheat',
+          submittedAt: '2026-10-18T09:00:00Z',
+          status: 'open',
+          userId: 'user_offline_reports',
+        );
+        when(() => mockRemoteDoc.data()).thenReturn(remoteReport.toJson());
+        when(() => mockSnap.docs).thenReturn([mockRemoteDoc]);
+
+        // Simula report salvato offline in SQLite
+        final offlineReport = ProductReport(
+          id: 'rep_off_1',
+          barcode: '800_OFF_PROD',
+          productName: 'Offline Prod',
+          brand: 'Brand',
+          type: 'label_unclear',
+          comments: 'No ingredients label',
+          submittedAt: '2026-10-18T10:00:00Z',
+          status: 'open',
+          userId: 'user_offline_reports',
+        );
+        final reportDao = const ProductReportDao();
+        await reportDao.insertReport(offlineReport);
+
+        // Registra offline report come pending
+        await ReportsDbService.markReportPending(
+          'user_offline_reports',
+          'rep_off_1',
+        );
+
+        when(() => mockReportsCol.doc('rep_off_1')).thenReturn(mockDocRef);
+        when(() => mockProductsCol.doc('800_OFF_PROD')).thenReturn(mockDocRef);
+        when(() => mockUsersCol.doc('user_offline_reports')).thenReturn(mockDocRef);
+
+        final synced = await DbService.syncReportsWithFirestore();
+
+        expect(synced.length, 2);
+        expect(synced.map((e) => e.barcode), containsAll(['800_REM_PROD', '800_OFF_PROD']));
+
+        verify(() => mockBatch.set(mockDocRef, offlineReport.toJson(), any())).called(1);
+
+        final pending = await ReportsDbService.getPendingReportsIds('user_offline_reports');
+        expect(pending, isEmpty);
+      },
+    );
+
+    test(
+      'migrateLocalDataToFirestore marks uncommitted history and reports as pending when network throws',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(null);
+
+        final prefs = await SharedPreferences.getInstance();
+        const anonUid = 'anon_offline_migration';
+        const newUid = 'registered_offline_target';
+        await prefs.setString(AccountDataService.lastAnonymousUidKey, anonUid);
+
+        final historyDao = const ScanHistoryDao();
+        final reportDao = const ProductReportDao();
+
+        final hist = ScanHistoryItem(
+          id: 'hist_to_migrate',
+          barcode: '800_MIGRATE',
+          scannedAt: '2026-10-18T12:00:00Z',
+        );
+        await historyDao.insertHistoryItem(anonUid, hist);
+
+        final rep = ProductReport(
+          id: 'rep_to_migrate',
+          barcode: '800_MIGRATE',
+          productName: 'Migrate Prod',
+          brand: 'Brand',
+          type: 'gluten_detected',
+          comments: 'Comments',
+          submittedAt: '2026-10-18T12:00:00Z',
+          status: 'open',
+          userId: anonUid,
+        );
+        await reportDao.insertReport(rep);
+
+        // Simula commit di rete che fallisce (es. offline)
+        final mockUserHistoryCol = MockCollectionReference();
+        when(() => mockDb.collection('users/$newUid/history')).thenReturn(mockUserHistoryCol);
+        when(() => mockUserHistoryCol.doc(any())).thenReturn(mockDocRef);
+        when(() => mockReportsCol.doc(any())).thenReturn(mockDocRef);
+        when(() => mockBatch.commit()).thenThrow(Exception('Network timeout'));
+
+        await DbService.migrateLocalDataToFirestore(newUid);
+
+        // 1. Dati riassegnati localmente a newUid (Local-First immediato)
+        final migratedHist = await historyDao.getHistory(newUid);
+        expect(migratedHist.length, 1);
+        expect(migratedHist.first.id, 'hist_to_migrate');
+
+        final migratedReports = await reportDao.getUserReports(newUid);
+        expect(migratedReports.length, 1);
+        expect(migratedReports.first.id, 'rep_to_migrate');
+
+        // 2. Elementi marcati come pending per newUid per essere caricati al ritorno online
+        final pendingHist = await HistoryDbService.getPendingHistoryIds(newUid);
+        expect(pendingHist, contains('hist_to_migrate'));
+
+        final pendingRep = await ReportsDbService.getPendingReportsIds(newUid);
+        expect(pendingRep, contains('rep_to_migrate'));
+      },
+    );
+  });
 }

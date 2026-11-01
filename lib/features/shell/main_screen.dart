@@ -1167,18 +1167,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     String barcode,
     Map<String, dynamic> reportData,
   ) async {
-    final isOnline = await ConnectivityHelper.hasInternetConnection();
-    if (!isOnline) {
-      if (mounted) {
-        showAppSnackBar(
-          context,
-          'product.reportSheet.networkError'.tr(),
-          isError: true,
-        );
-      }
-      throw Exception('network_error');
-    }
-
     try {
       final lang = userSettings.preferredLanguage;
       final product = products.firstWhere(

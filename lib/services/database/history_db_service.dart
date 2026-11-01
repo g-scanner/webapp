@@ -33,6 +33,38 @@ class HistoryDbService {
     return 'celiac_history';
   }
 
+  static const String pendingHistoryPrefix = 'pending_history_ids_';
+
+  /// Restituisce la chiave SharedPreferences per gli ID di cronologia in attesa di sync.
+  static String getPendingHistoryKey(String uid) => '$pendingHistoryPrefix$uid';
+
+  /// Recupera gli ID delle voci di cronologia salvate localmente e non ancora sincronizzate su Firestore.
+  static Future<List<String>> getPendingHistoryIds(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(getPendingHistoryKey(uid)) ?? [];
+  }
+
+  /// Contrassegna una voce di cronologia come pendente (creata offline o non ancora sincronizzata).
+  static Future<void> markHistoryPending(String uid, String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = getPendingHistoryKey(uid);
+    final current = prefs.getStringList(key) ?? [];
+    if (!current.contains(id)) {
+      await prefs.setStringList(key, [...current, id]);
+    }
+  }
+
+  /// Rimuove gli ID specificati dalla lista dei pendenti (sincronizzati con successo o eliminati).
+  static Future<void> markHistorySynced(String uid, List<String> ids) async {
+    if (ids.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final key = getPendingHistoryKey(uid);
+    final current = prefs.getStringList(key) ?? [];
+    final idSet = ids.toSet();
+    final updated = current.where((id) => !idSet.contains(id)).toList();
+    await prefs.setStringList(key, updated);
+  }
+
   /// Salva una nuova voce di cronologia nel database locale SQLite e, se autenticato, su Firestore.
   static Future<void> saveHistoryItem(
     FirebaseFirestore db,
@@ -61,13 +93,20 @@ class HistoryDbService {
       await _historyDao.insertHistoryItem(userId, historyItem);
 
       if (user != null && !user.isAnonymous) {
-        db
-            .collection("users/${user.uid}/history")
-            .doc(id)
-            .set(historyItem.toJson())
-            .catchError((e) {
-          debugPrint("Failed saving history item to Firestore: $e");
-        });
+        await markHistoryPending(user.uid, id);
+        try {
+          db
+              .collection("users/${user.uid}/history")
+              .doc(id)
+              .set(historyItem.toJson())
+              .then((_) async {
+            await markHistorySynced(user.uid, [id]);
+          }).catchError((e) {
+            debugPrint("Failed saving history item to Firestore: $e");
+          });
+        } catch (e) {
+          debugPrint("Failed initiating history save to Firestore: $e");
+        }
       }
     } catch (e) {
       debugPrint("Failed saving history item to SQLite: $e");
@@ -149,7 +188,8 @@ class HistoryDbService {
   }
 
   /// Sincronizza la cronologia locale con Firestore per utenti autenticati.
-  /// Filtra ed elimina automaticamente eventuali elementi precedentemente cancellati o annullati.
+  /// Esegue un merge bidirezionale Push-then-Pull: carica le scansioni locali effettuate offline
+  /// e scarica le ultime scansioni remote, filtrando i tombstone ed evitando resurrezioni.
   static Future<List<ScanHistoryItem>> syncHistoryWithFirestore(
     FirebaseFirestore db,
     FirebaseAuth auth,
@@ -169,6 +209,7 @@ class HistoryDbService {
           debugPrint("Failed wiping Firestore history on reconnect: $e");
         });
         await _historyDao.wipeHistory(user.uid);
+        await prefs.remove(getPendingHistoryKey(user.uid));
         return [];
       }
 
@@ -185,6 +226,7 @@ class HistoryDbService {
           .timeout(const Duration(seconds: 4));
 
       final List<ScanHistoryItem> remoteHistory = [];
+      final Set<String> remoteDocIds = {};
       for (final doc in snap.docs) {
         final item = ScanHistoryItem.fromJson(doc.data());
         if (deletedBarcodes.contains(item.barcode) || deletedIds.contains(item.id)) {
@@ -192,8 +234,51 @@ class HistoryDbService {
           doc.reference.delete().catchError((_) => null);
         } else {
           remoteHistory.add(item);
+          remoteDocIds.add(item.id);
         }
       }
+
+      // ── Gestione elementi locali salvati offline (Pending Sync) ──
+      final pendingIds = (await getPendingHistoryIds(user.uid)).toSet();
+      final alreadySynced = pendingIds.intersection(remoteDocIds);
+      if (alreadySynced.isNotEmpty) {
+        await markHistorySynced(user.uid, alreadySynced.toList());
+        pendingIds.removeAll(alreadySynced);
+      }
+
+      if (pendingIds.isNotEmpty) {
+        final localHistory = await _historyDao.getHistory(user.uid);
+        final itemsToUpload = localHistory
+            .where((item) =>
+                pendingIds.contains(item.id) &&
+                !deletedBarcodes.contains(item.barcode) &&
+                !deletedIds.contains(item.id))
+            .toList();
+
+        if (itemsToUpload.isNotEmpty) {
+          try {
+            final batch = db.batch();
+            final historyRefBase = db.collection("users/${user.uid}/history");
+            for (final item in itemsToUpload) {
+              final docRef = historyRefBase.doc(item.id);
+              batch.set(docRef, item.toJson());
+            }
+            await batch.commit().timeout(const Duration(seconds: 4));
+            final uploadedIds = itemsToUpload.map((e) => e.id).toList();
+            await markHistorySynced(user.uid, uploadedIds);
+            for (final item in itemsToUpload) {
+              remoteHistory.add(item);
+            }
+          } catch (e) {
+            debugPrint("Failed uploading pending local history to Firestore: $e");
+            for (final item in itemsToUpload) {
+              remoteHistory.add(item);
+            }
+          }
+        }
+      }
+
+      remoteHistory.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
 
       await _historyDao.setHistory(user.uid, remoteHistory);
       return remoteHistory;
@@ -243,6 +328,7 @@ class HistoryDbService {
       await prefs.setStringList(key, []);
       await prefs.remove('deleted_barcodes_sync_filter');
       await prefs.remove('deleted_history_ids_sync_filter');
+      await prefs.remove(getPendingHistoryKey(userId));
 
       if (user != null && !user.isAnonymous) {
         await prefs.setBool('history_wipe_pending', true);
@@ -269,6 +355,11 @@ class HistoryDbService {
     final key = getHistoryKey(auth);
 
     try {
+      if (user != null && !user.isAnonymous) {
+        final items = await _historyDao.getHistoryByBarcode(userId, barcode);
+        await markHistorySynced(user.uid, items.map((e) => e.id).toList());
+      }
+
       await _historyDao.deleteHistoryByBarcode(userId, barcode);
 
       final prefs = await SharedPreferences.getInstance();
@@ -325,6 +416,10 @@ class HistoryDbService {
     final key = getHistoryKey(auth);
 
     try {
+      if (user != null && !user.isAnonymous) {
+        await markHistorySynced(user.uid, [id]);
+      }
+
       await _historyDao.deleteHistoryItem(userId, id);
 
       final prefs = await SharedPreferences.getInstance();

@@ -9,7 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/models.dart';
 import 'daos/scan_history_dao.dart';
 import 'daos/product_report_dao.dart';
-import 'reports_db_service.dart' show reportsCollection;
+import 'history_db_service.dart';
+import 'reports_db_service.dart';
 import 'settings_db_service.dart';
 import 'offline_db_sync_service.dart';
 
@@ -125,6 +126,15 @@ class AccountDataService {
   ) async {
     final localReports = await _reportDao.getUserReports(fromUid);
     if (localReports.isNotEmpty) {
+      // 1. Riassegna SUBITO in SQLite per garantire disponibilità locale
+      await _reportDao.reassignReports(fromUid, toUid);
+
+      // 2. Traccia gli ID come pendenti per il nuovo utente
+      final newReportIds = localReports.map((e) => e.id).toList();
+      for (final id in newReportIds) {
+        await ReportsDbService.markReportPending(toUid, id);
+      }
+
       try {
         final reportsBatch = db.batch();
         for (final report in localReports) {
@@ -139,11 +149,11 @@ class AccountDataService {
           rMap['userId'] = toUid;
           reportsBatch.set(docRef, rMap, SetOptions(merge: true));
         }
-        await reportsBatch.commit();
+        await reportsBatch.commit().timeout(const Duration(seconds: 3));
+        await ReportsDbService.markReportsSynced(toUid, newReportIds);
       } catch (e) {
         debugPrint("Failed committing reports batch to Firestore: $e");
       }
-      await _reportDao.reassignReports(fromUid, toUid);
     }
 
     final reportedBarcodes = await _reportDao.getReportedBarcodes(toUid);
@@ -151,7 +161,7 @@ class AccountDataService {
       try {
         await db.collection("users").doc(toUid).set({
           'reportedBarcodes': FieldValue.arrayUnion(reportedBarcodes),
-        }, SetOptions(merge: true));
+        }, SetOptions(merge: true)).timeout(const Duration(seconds: 3));
       } catch (e) {
         debugPrint("Failed merging reported barcodes to Firestore: $e");
       }
@@ -176,6 +186,15 @@ class AccountDataService {
       if (syncHistory) {
         final localHistory = await _historyDao.getHistory(lastAnonUid);
         if (localHistory.isNotEmpty) {
+          // 1. Riassegna SUBITO in SQLite per garantire disponibilità locale
+          await _historyDao.reassignHistory(lastAnonUid, newUid);
+
+          // 2. Traccia gli ID come pendenti per il nuovo utente
+          final newHistoryIds = localHistory.map((e) => e.id).toList();
+          for (final id in newHistoryIds) {
+            await HistoryDbService.markHistoryPending(newUid, id);
+          }
+
           try {
             final historyBatch = db.batch();
             final historyRefBase = db.collection("users/$newUid/history");
@@ -186,11 +205,11 @@ class AccountDataService {
               );
               historyBatch.set(docRef, item.toJson());
             }
-            await historyBatch.commit();
+            await historyBatch.commit().timeout(const Duration(seconds: 3));
+            await HistoryDbService.markHistorySynced(newUid, newHistoryIds);
           } catch (e) {
             debugPrint("Failed committing history batch to Firestore: $e");
           }
-          await _historyDao.reassignHistory(lastAnonUid, newUid);
         }
       }
 
@@ -219,7 +238,8 @@ class AccountDataService {
             await db
                 .collection("users")
                 .doc(newUid)
-                .set(jsonData, SetOptions(merge: true));
+                .set(jsonData, SetOptions(merge: true))
+                .timeout(const Duration(seconds: 3));
           } catch (e) {
             debugPrint("Failed saving migrated settings to Firestore: $e");
           }
@@ -305,6 +325,8 @@ class AccountDataService {
         if (currentSettings.userId == lastUid) {
           await prefs.remove(SettingsDbService.settingsKey);
         }
+        await prefs.remove(HistoryDbService.getPendingHistoryKey(lastUid));
+        await prefs.remove(ReportsDbService.getPendingReportsKey(lastUid));
       }
 
       await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
@@ -341,6 +363,8 @@ class AccountDataService {
         await prefs.remove('celiac_history_$targetUid');
         await prefs.remove('celiac_reports_$targetUid');
         await prefs.remove(SettingsDbService.settingsKey);
+        await prefs.remove(HistoryDbService.getPendingHistoryKey(targetUid));
+        await prefs.remove(ReportsDbService.getPendingReportsKey(targetUid));
       }
 
       // Svuota chiavi generiche

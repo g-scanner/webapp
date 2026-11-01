@@ -1265,20 +1265,18 @@ void main() {
       },
     );
     testWidgets(
-      'handleReportSubmit shows network error snackbar and throws when offline',
+      'handleReportSubmit succeeds offline saving report locally and queuing sync',
       (tester) async {
         ConnectivityHelper.mockIsConnected = false;
         addTearDown(() => ConnectivityHelper.mockIsConnected = null);
         await _pumpMainScreen(tester, auth: mockAuth);
         await tester.pumpAndSettle();
         final dynamic mainState = tester.state(find.byType(MainScreen));
-        await expectLater(
-          mainState.handleReportSubmit('800123', {'type': 'outdated'}),
-          throwsA(isA<Exception>()),
-        );
+        await mainState.handleReportSubmit('800123', {'type': 'outdated'});
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.text('product.reportSheet.networkError'.tr()), findsOneWidget);
+        final localReports = await DbService.fetchUserReports();
+        expect(localReports.any((r) => r.barcode == '800123'), isTrue);
       },
     );
 

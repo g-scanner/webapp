@@ -36,6 +36,21 @@ class ScanHistoryDao {
     return rows.map(_fromMap).toList();
   }
 
+  /// Recupera tutte le voci di cronologia per uno specifico barcode.
+  Future<List<ScanHistoryItem>> getHistoryByBarcode(
+    String userId,
+    String barcode,
+  ) async {
+    final db = await _db;
+    final rows = await db.query(
+      tableName,
+      where: 'user_id = ? AND barcode = ?',
+      whereArgs: [userId, barcode],
+      orderBy: 'scanned_at DESC',
+    );
+    return rows.map(_fromMap).toList();
+  }
+
   /// Paginazione efficiente a livello di database (zero spreco di RAM).
   Future<List<ScanHistoryItem>> getHistoryPaged(
     String userId, {

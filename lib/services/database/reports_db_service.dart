@@ -36,6 +36,38 @@ class ReportsDbService {
     return 'celiac_reports';
   }
 
+  static const String pendingReportsPrefix = 'pending_reports_ids_';
+
+  /// Restituisce la chiave SharedPreferences per gli ID delle segnalazioni in attesa di sync.
+  static String getPendingReportsKey(String uid) => '$pendingReportsPrefix$uid';
+
+  /// Recupera gli ID delle segnalazioni salvate localmente e non ancora sincronizzate su Firestore.
+  static Future<List<String>> getPendingReportsIds(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(getPendingReportsKey(uid)) ?? [];
+  }
+
+  /// Contrassegna una segnalazione come pendente (creata offline o non ancora sincronizzata).
+  static Future<void> markReportPending(String uid, String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = getPendingReportsKey(uid);
+    final current = prefs.getStringList(key) ?? [];
+    if (!current.contains(id)) {
+      await prefs.setStringList(key, [...current, id]);
+    }
+  }
+
+  /// Rimuove gli ID specificati dalla lista delle segnalazioni pendenti.
+  static Future<void> markReportsSynced(String uid, List<String> ids) async {
+    if (ids.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final key = getPendingReportsKey(uid);
+    final current = prefs.getStringList(key) ?? [];
+    final idSet = ids.toSet();
+    final updated = current.where((id) => !idSet.contains(id)).toList();
+    await prefs.setStringList(key, updated);
+  }
+
   /// Recupera le segnalazioni locali dell'utente (cronologia segnalazioni).
   static Future<List<ProductReport>> fetchUserReports(FirebaseAuth auth) async {
     try {
@@ -63,6 +95,8 @@ class ReportsDbService {
   }
 
   /// Sincronizza le segnalazioni con Firestore e aggiorna la cache locale SQLite.
+  /// Esegue un merge bidirezionale Push-then-Pull: carica le segnalazioni locali create offline
+  /// e scarica quelle remote, filtrando i tombstone ed evitando resurrezioni.
   static Future<List<ProductReport>> syncReportsWithFirestore(
     FirebaseFirestore db,
     FirebaseAuth auth,
@@ -83,6 +117,7 @@ class ReportsDbService {
           .timeout(const Duration(seconds: 4));
 
       final List<ProductReport> remoteReports = [];
+      final Set<String> remoteDocIds = {};
       for (final d in snap.docs) {
         final report = ProductReport.fromJson(d.data());
         if (deletedFilter.contains(report.id)) {
@@ -90,6 +125,57 @@ class ReportsDbService {
           d.reference.delete().catchError((_) => null);
         } else {
           remoteReports.add(report);
+          remoteDocIds.add(report.id);
+        }
+      }
+
+      // ── Gestione segnalazioni locali salvate offline (Pending Sync) ──
+      final pendingIds = (await getPendingReportsIds(user.uid)).toSet();
+      final alreadySynced = pendingIds.intersection(remoteDocIds);
+      if (alreadySynced.isNotEmpty) {
+        await markReportsSynced(user.uid, alreadySynced.toList());
+        pendingIds.removeAll(alreadySynced);
+      }
+
+      if (pendingIds.isNotEmpty) {
+        final localReports = await _reportDao.getUserReports(user.uid);
+        final reportsToUpload = localReports
+            .where((r) => pendingIds.contains(r.id) && !deletedFilter.contains(r.id))
+            .toList();
+
+        if (reportsToUpload.isNotEmpty) {
+          try {
+            final batch = db.batch();
+            for (final rep in reportsToUpload) {
+              final docRef = db.collection(reportsCollection).doc(rep.id);
+              batch.set(docRef, rep.toJson(), SetOptions(merge: true));
+
+              final prodRef = db.collection(productsCollection).doc(rep.barcode);
+              batch.set(prodRef, {
+                'pending_reports_count': FieldValue.increment(1),
+                'last_updated': rep.submittedAt,
+              }, SetOptions(merge: true));
+            }
+
+            final userRef = db.collection("users").doc(user.uid);
+            batch.set(userRef, {
+              'reportedBarcodes': FieldValue.arrayUnion(
+                reportsToUpload.map((r) => r.barcode).toList(),
+              ),
+            }, SetOptions(merge: true));
+
+            await batch.commit().timeout(const Duration(seconds: 4));
+            final uploadedIds = reportsToUpload.map((r) => r.id).toList();
+            await markReportsSynced(user.uid, uploadedIds);
+            for (final rep in reportsToUpload) {
+              remoteReports.add(rep);
+            }
+          } catch (e) {
+            debugPrint("Failed uploading pending local reports to Firestore: $e");
+            for (final rep in reportsToUpload) {
+              remoteReports.add(rep);
+            }
+          }
         }
       }
 
@@ -134,6 +220,7 @@ class ReportsDbService {
 
       // Persistenza locale SQLite immediata
       await _reportDao.insertReport(finalReport);
+      await markReportPending(userId, reportId);
 
       // ATOMIC WRITE BATCH SU FIRESTORE
       final batch = db.batch();
@@ -157,7 +244,12 @@ class ReportsDbService {
         }, SetOptions(merge: true));
       }
 
-      await batch.commit().timeout(const Duration(seconds: 5));
+      try {
+        await batch.commit().timeout(const Duration(seconds: 4));
+        await markReportsSynced(userId, [reportId]);
+      } catch (commitError) {
+        debugPrint("Firestore batch commit failed/timed out, queued locally: $commitError");
+      }
 
       return finalReport;
     } catch (error) {
@@ -165,6 +257,7 @@ class ReportsDbService {
       if (reportId != null) {
         try {
           await _reportDao.deleteReport(userId, reportId);
+          await markReportsSynced(userId, [reportId]);
         } catch (_) {}
       }
       rethrow;
@@ -233,6 +326,7 @@ class ReportsDbService {
     try {
       final userId = getUserId(auth);
       await _reportDao.deleteReport(userId, reportId);
+      await markReportsSynced(userId, [reportId]);
 
       final prefs = await SharedPreferences.getInstance();
 

@@ -36,6 +36,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
   late bool _syncHistory;
   late bool _syncReports;
   late bool _syncSettings;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -144,6 +145,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
     );
 
     if (result == true) {
+      setState(() => _isProcessing = true);
       widget.onDecision(false);
     }
   }
@@ -479,15 +481,18 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
           width: double.infinity,
           height: 56,
           child: FilledButton.icon(
-            onPressed: hasSelection
-                ? () => widget.onDecision(
+            onPressed: hasSelection && !_isProcessing
+                ? () {
+                    setState(() => _isProcessing = true);
+                    widget.onDecision(
                       true,
                       SyncChoices(
                         syncHistory: _syncHistory,
                         syncReports: _syncReports,
                         syncSettings: _syncSettings,
                       ),
-                    )
+                    );
+                  }
                 : null,
             style: FilledButton.styleFrom(
               backgroundColor: colorScheme.primary,
@@ -521,7 +526,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
           width: double.infinity,
           height: 48,
           child: TextButton.icon(
-            onPressed: _showDiscardConfirmation,
+            onPressed: !_isProcessing ? _showDiscardConfirmation : null,
             style: TextButton.styleFrom(
               foregroundColor: colorScheme.error,
               shape: RoundedRectangleBorder(
