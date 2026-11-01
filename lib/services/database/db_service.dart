@@ -227,15 +227,12 @@ class DbService {
   static Future<void> trackAnonymousSession(String anonUid) =>
       AccountDataService.trackAnonymousSession(anonUid);
 
-  static Future<void> wipeAllLocalData() =>
-      AccountDataService.wipeAllLocalData(auth);
-
   static Future<void> wipeCurrentUserLocalData({
-    bool preserveProductCache = true,
+    String? explicitUserId,
   }) =>
       AccountDataService.wipeCurrentUserLocalData(
         auth,
-        preserveProductCache: preserveProductCache,
+        explicitUserId: explicitUserId,
       );
 
   // ─── ACCOUNT DELETION HELPERS ──────────────────────────────────────────────

@@ -181,7 +181,7 @@ void main() {
     });
 
     testWidgets(
-      'summary card is hidden when there are no reported products and synced',
+      'summary card is visible with zero count when there are no reported products and synced',
       (tester) async {
         await _pumpReportsList(
           tester,
@@ -192,8 +192,9 @@ void main() {
           isSynced: true,
         );
 
-        expect(find.text('report.list.item.activeBadge'), findsNothing);
-        expect(find.byIcon(Icons.pending_actions), findsNothing);
+        expect(find.text('report.list.item.activeBadge'), findsOneWidget);
+        expect(find.text('0'), findsOneWidget);
+        expect(find.byIcon(Icons.pending_actions), findsOneWidget);
       },
     );
 

@@ -1167,6 +1167,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     String barcode,
     Map<String, dynamic> reportData,
   ) async {
+    final isOnline = await ConnectivityHelper.hasInternetConnection();
+    if (!isOnline) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'product.reportSheet.networkError'.tr(),
+          isError: true,
+        );
+      }
+      throw Exception('network_error');
+    }
+
     try {
       final lang = userSettings.preferredLanguage;
       final product = products.firstWhere(
@@ -1179,6 +1191,13 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           allergensMap: const {'it': <String>[]},
           lastUpdated: '',
         ),
+      );
+
+      final newReport = await DbService.submitProductReportClientSide(
+        barcode,
+        product.getName(lang),
+        product.getBrand(lang),
+        reportData,
       );
 
       final pIdx = products.indexWhere((p) => p.barcode == barcode);
@@ -1223,13 +1242,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         }
       });
 
-      final newReport = await DbService.submitProductReportClientSide(
-        barcode,
-        product.getName(lang),
-        product.getBrand(lang),
-        reportData,
-      );
-
       if (_openReportIdNotifiers.containsKey(barcode)) {
         _openReportIdNotifiers[barcode]!.value = newReport.id;
       }
@@ -1238,9 +1250,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await Future.wait([_loadLocalReports(), _fetchProducts()]);
     } catch (e) {
       debugPrint("Segnalazione fallita: $e");
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'product.reportSheet.networkError'.tr(),
+          isError: true,
+        );
+      }
+      rethrow;
     }
   }
-
   Future<void> handleProductUpdate(Product updatedProduct) async {
     try {
       final finalProduct = Product(
@@ -1317,17 +1336,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> handleClearHistory() async {
+    // 1. Aggiornamento ottimistico immediato in UI (0 ms)
+    if (mounted) {
+      setState(() {
+        history.clear();
+      });
+    }
+
+    // 2. Persistenza locale SQLite & tombstone + sync remoto asincrono
     try {
       await DbService.wipeHistoryLocal();
     } catch (e) {
-      if (mounted) {
-        showAppSnackBar(
-          context,
-          'common.actions.deleteHistoryError'.tr(),
-          isError: true,
-        );
-      }
-      rethrow;
+      debugPrint("Error clearing history: $e");
     }
     await _loadLocalHistory();
   }

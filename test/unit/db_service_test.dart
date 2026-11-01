@@ -739,6 +739,7 @@ void main() {
         await prefs.setStringList('celiac_history_user_123', ['{}']);
 
         await DbService.wipeHistoryLocal();
+        await Future<void>.delayed(Duration.zero);
 
         expect(await DbService.getHistory(), isEmpty);
         verify(() => mockBatch.delete(mockDocRef)).called(1);
@@ -1295,20 +1296,6 @@ void main() {
       },
     );
 
-    test('wipeAllLocalData removes all SharedPreferences keys', () async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('celiac_history', ['{}']);
-      await prefs.setStringList('celiac_reports', ['{}']);
-      await prefs.setString('celiac_settings', '{}');
-      await prefs.setString('last_anonymous_uid', 'anon_old');
-
-      await DbService.wipeAllLocalData();
-
-      expect(prefs.getStringList('celiac_history'), isNull);
-      expect(prefs.getStringList('celiac_reports'), isNull);
-      expect(prefs.getString('celiac_settings'), isNull);
-      expect(prefs.getString('last_anonymous_uid'), isNull);
-    });
 
     test('trackAnonymousSession stores the UID in SharedPreferences', () async {
       final prefs = await SharedPreferences.getInstance();
@@ -2091,7 +2078,7 @@ void main() {
     );
 
     test(
-      'wipeCurrentUserLocalData clears user data but preserves local product cache by default',
+      'wipeCurrentUserLocalData clears user data but preserves local product cache',
       () async {
         when(() => mockAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.isAnonymous).thenReturn(false);
@@ -2116,26 +2103,27 @@ void main() {
     );
 
     test(
-      'wipeAllLocalData clears everything including product cache',
+      'wipeCurrentUserLocalData works with explicitUserId when currentUser is null',
       () async {
-        when(() => mockAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.isAnonymous).thenReturn(false);
-        when(() => mockUser.uid).thenReturn('user_wipeall');
+        when(() => mockAuth.currentUser).thenReturn(null);
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setStringList('celiac_history', ['{}']);
         await prefs.setString('celiac_settings', '{}');
 
-        final prod = createSampleProduct(barcode: '800WIPEALL');
+        final prod = createSampleProduct(barcode: '800EXPLICIT');
         await DbService.saveLocalProducts([prod]);
 
-        await DbService.wipeAllLocalData();
+        await DbService.wipeCurrentUserLocalData(
+          explicitUserId: 'user_explicit',
+        );
 
         expect(prefs.getStringList('celiac_history'), isNull);
         expect(prefs.getString('celiac_settings'), isNull);
 
         final products = await DbService.getLocalProducts();
-        expect(products, isEmpty);
+        expect(products, isNotEmpty);
+        expect(products.first.barcode, '800EXPLICIT');
       },
     );
 
@@ -2226,6 +2214,7 @@ void main() {
         when(() => mockHistSnap.docs).thenReturn(docs);
 
         await DbService.wipeHistoryLocal();
+        await Future<void>.delayed(Duration.zero);
 
         // 900 docs / 450 chunk = 2 batch commits
         verify(() => mockBatch.commit()).called(2);

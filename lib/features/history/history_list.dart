@@ -257,15 +257,13 @@ class _HistoryListState extends State<HistoryList> {
             const SizedBox(height: 24),
 
             // ── Bento Grid (Statistiche In-Memory) ─────────────────────
-            if (widget.history.isNotEmpty || showSkeleton) ...[
-              HistoryBentoStats(
-                safeCount: safeCount,
-                uncertainCount: uncertainCount,
-                dangerCount: dangerCount,
-                showSkeleton: showSkeleton,
-              ),
-              const SizedBox(height: 24),
-            ],
+            HistoryBentoStats(
+              safeCount: safeCount,
+              uncertainCount: uncertainCount,
+              dangerCount: dangerCount,
+              showSkeleton: showSkeleton,
+            ),
+            const SizedBox(height: 24),
 
             // ── Ricerca e Filtri ────────────────────────────────────────
             Row(

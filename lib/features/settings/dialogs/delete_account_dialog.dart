@@ -223,7 +223,7 @@ Future<void> showDeleteAccountFlow({
                               DbService.deleteUserSettings(uid),
                               DbService.deleteUserHistory(uid),
                               DbService.anonymizeUserReports(uid),
-                              DbService.wipeCurrentUserLocalData(),
+                              DbService.wipeCurrentUserLocalData(explicitUserId: uid),
                             ]);
 
                             if (dialogCtx.mounted) {

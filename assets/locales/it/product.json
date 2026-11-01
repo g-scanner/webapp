@@ -90,7 +90,8 @@
       "detailsLabel": "Dettagli (Opzionale)",
       "detailsHint": "Es: La confezione dice \"Senza Glutine\", ma l'app segnala il prodotto come Vietato.",
       "submit": "Invia segnalazione",
-      "goToReport": "Vai alla segnalazione"
+      "goToReport": "Vai alla segnalazione",
+      "networkError": "Connessione debole o assente. Impossibile inviare la segnalazione."
     },
     "header": {
       "scanDate": {

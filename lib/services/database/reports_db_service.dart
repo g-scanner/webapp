@@ -115,8 +115,9 @@ class ReportsDbService {
     final user = auth.currentUser;
     final userId = getUserId(auth);
 
+    String? reportId;
     try {
-      final reportId = db.collection(reportsCollection).doc().id;
+      reportId = db.collection(reportsCollection).doc().id;
       final nowIso = DateTime.now().toIso8601String();
 
       final finalReport = ProductReport(
@@ -156,11 +157,16 @@ class ReportsDbService {
         }, SetOptions(merge: true));
       }
 
-      await batch.commit();
+      await batch.commit().timeout(const Duration(seconds: 5));
 
       return finalReport;
     } catch (error) {
       debugPrint("Error submit report: $error");
+      if (reportId != null) {
+        try {
+          await _reportDao.deleteReport(userId, reportId);
+        } catch (_) {}
+      }
       rethrow;
     }
   }

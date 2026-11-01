@@ -1264,5 +1264,46 @@ void main() {
         await tester.pumpAndSettle();
       },
     );
+    testWidgets(
+      'handleReportSubmit shows network error snackbar and throws when offline',
+      (tester) async {
+        ConnectivityHelper.mockIsConnected = false;
+        addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+        await _pumpMainScreen(tester, auth: mockAuth);
+        await tester.pumpAndSettle();
+        final dynamic mainState = tester.state(find.byType(MainScreen));
+        await expectLater(
+          mainState.handleReportSubmit('800123', {'type': 'outdated'}),
+          throwsA(isA<Exception>()),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('product.reportSheet.networkError'.tr()), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'handleClearHistory optimistically clears history in UI at 0ms and persists',
+      (tester) async {
+        final sampleItem = ScanHistoryItem(
+          id: 'item_1',
+          barcode: '111111',
+          scannedAt: DateTime.now().toIso8601String(),
+        );
+        await _pumpMainScreen(tester, auth: mockAuth);
+        await tester.pumpAndSettle();
+        final dynamic mainState = tester.state(find.byType(MainScreen));
+        mainState.setState(() {
+          mainState.history = [sampleItem];
+        });
+        await tester.pump();
+        expect(mainState.history.length, greaterThan(0));
+
+        // Invocazione cancellazione
+        await mainState.handleClearHistory();
+        await tester.pump();
+        expect(mainState.history, isEmpty);
+      },
+    );
   });
 }

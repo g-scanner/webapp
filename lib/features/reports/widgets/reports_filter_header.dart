@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/foundation.dart';
@@ -88,85 +88,83 @@ class ReportsFilterHeader extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ── Card "In attesa" (Separata e indipendente) ──────────────
-        if (hasReportedProducts || showSkeleton) ...[
-          Skeletonizer(
-            enabled: showSkeleton,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        Skeletonizer(
+          enabled: showSkeleton,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.onSurface.withValues(alpha: 0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.onSurface.withValues(alpha: 0.02),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Builder(
-                    builder: (context) {
-                      final tc = AppStatusPill.colorsForVariant(
-                        AppStatusPillVariant.tertiary,
-                        colorScheme,
-                      );
-                      return Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: tc.bg,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.pending_actions,
-                          size: 20,
-                          color: tc.text,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    "report.list.item.activeBadge".tr(),
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: showSkeleton
-                          ? colorScheme.tertiary.withValues(alpha: 0.18)
-                          : colorScheme.tertiary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      "${showSkeleton ? 99 : activeReportsCount}",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: showSkeleton
-                            ? colorScheme.tertiary
-                            : colorScheme.onTertiary,
+              ],
+            ),
+            child: Row(
+              children: [
+                Builder(
+                  builder: (context) {
+                    final tc = AppStatusPill.colorsForVariant(
+                      AppStatusPillVariant.tertiary,
+                      colorScheme,
+                    );
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: tc.bg,
+                        shape: BoxShape.circle,
                       ),
+                      child: Icon(
+                        Icons.pending_actions,
+                        size: 20,
+                        color: tc.text,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  "report.list.item.activeBadge".tr(),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: showSkeleton
+                        ? colorScheme.tertiary.withValues(alpha: 0.18)
+                        : colorScheme.tertiary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "${showSkeleton ? 99 : activeReportsCount}",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: showSkeleton
+                          ? colorScheme.tertiary
+                          : colorScheme.onTertiary,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-        ],
+        ),
+        const SizedBox(height: 24),
 
         // ── Ricerca e Filtri ────────────────────────────────────────
         Row(

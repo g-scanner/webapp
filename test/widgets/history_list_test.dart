@@ -200,19 +200,21 @@ void main() {
       },
     );
 
-    testWidgets('Bento grid is hidden when history is empty and synced', (
-      tester,
-    ) async {
-      await _pumpHistoryList(
-        tester,
-        callbacks: mockCallbacks,
-        history: [],
-        liveProducts: [],
-        isSynced: true,
-      );
+    testWidgets(
+      'Bento grid is visible with zeros when history is empty and synced',
+      (tester) async {
+        await _pumpHistoryList(
+          tester,
+          callbacks: mockCallbacks,
+          history: [],
+          liveProducts: [],
+          isSynced: true,
+        );
 
-      expect(find.byIcon(Icons.warning_rounded), findsNothing);
-    });
+        expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
+        expect(find.text('0'), findsNWidgets(3));
+      },
+    );
 
     testWidgets(
       'Bento grid shows skeleton when history is empty and NOT synced',

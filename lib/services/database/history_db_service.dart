@@ -160,6 +160,18 @@ class HistoryDbService {
     }
     try {
       final prefs = await SharedPreferences.getInstance();
+      final bool isWipePending = prefs.getBool('history_wipe_pending') ?? false;
+      if (isWipePending) {
+        _deleteFirestoreHistory(db, user.uid).then((_) async {
+          final p = await SharedPreferences.getInstance();
+          await p.remove('history_wipe_pending');
+        }).catchError((e) {
+          debugPrint("Failed wiping Firestore history on reconnect: $e");
+        });
+        await _historyDao.wipeHistory(user.uid);
+        return [];
+      }
+
       final deletedBarcodes =
           prefs.getStringList('deleted_barcodes_sync_filter')?.toSet() ?? {};
       final deletedIds =
@@ -191,7 +203,30 @@ class HistoryDbService {
     }
   }
 
-  /// Svuota completamente la cronologia sia da SQLite sia da Firestore.
+  /// Elimina tutti i documenti della cronologia su Firestore a blocchi (batch).
+  static Future<void> _deleteFirestoreHistory(
+    FirebaseFirestore db,
+    String uid,
+  ) async {
+    final q = await db
+        .collection("users/$uid/history")
+        .get()
+        .timeout(const Duration(seconds: 4));
+    const int chunkSize = 450;
+    for (int i = 0; i < q.docs.length; i += chunkSize) {
+      final chunk = q.docs.sublist(
+        i,
+        (i + chunkSize < q.docs.length) ? i + chunkSize : q.docs.length,
+      );
+      final batch = db.batch();
+      for (var d in chunk) {
+        batch.delete(d.reference);
+      }
+      await batch.commit().timeout(const Duration(seconds: 4));
+    }
+  }
+
+  /// Svuota completamente la cronologia sia da SQLite sia da Firestore in modo ottimistico.
   static Future<void> wipeHistoryLocal(
     FirebaseFirestore db,
     FirebaseAuth auth,
@@ -210,27 +245,16 @@ class HistoryDbService {
       await prefs.remove('deleted_history_ids_sync_filter');
 
       if (user != null && !user.isAnonymous) {
-        final q = await db
-            .collection("users/${user.uid}/history")
-            .get()
-            .timeout(const Duration(seconds: 4));
-        // Chunked delete: Firestore WriteBatch max 500 ops — use 450 for safety margin
-        const int chunkSize = 450;
-        for (int i = 0; i < q.docs.length; i += chunkSize) {
-          final chunk = q.docs.sublist(
-            i,
-            (i + chunkSize < q.docs.length) ? i + chunkSize : q.docs.length,
-          );
-          final batch = db.batch();
-          for (var d in chunk) {
-            batch.delete(d.reference);
-          }
-          await batch.commit().timeout(const Duration(seconds: 4));
-        }
+        await prefs.setBool('history_wipe_pending', true);
+        _deleteFirestoreHistory(db, user.uid).then((_) async {
+          final p = await SharedPreferences.getInstance();
+          await p.remove('history_wipe_pending');
+        }).catchError((e) {
+          debugPrint("Firestore wipe warning: $e");
+        });
       }
     } catch (e) {
       debugPrint("Could not wipe history: $e");
-      rethrow;
     }
   }
 

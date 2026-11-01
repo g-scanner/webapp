@@ -7,11 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
-import 'daos/product_dao.dart';
 import 'daos/scan_history_dao.dart';
 import 'daos/product_report_dao.dart';
-import 'daos/sync_metadata_dao.dart';
-import 'local_cache_service.dart';
 import 'reports_db_service.dart' show reportsCollection;
 import 'settings_db_service.dart';
 import 'offline_db_sync_service.dart';
@@ -21,8 +18,6 @@ import 'offline_db_sync_service.dart';
 class AccountDataService {
   static const ScanHistoryDao _historyDao = ScanHistoryDao();
   static const ProductReportDao _reportDao = ProductReportDao();
-  static const ProductDao _productDao = ProductDao();
-  static const SyncMetadataDao _syncMetadataDao = SyncMetadataDao();
 
   /// Chiave SharedPreferences per tracciare l'UID dell'ultimo utente anonimo.
   static const String lastAnonymousUidKey = 'last_anonymous_uid';
@@ -320,50 +315,31 @@ class AccountDataService {
   }
 
   /// Svuota i dati personali dell'utente (cronologia, segnalazioni, impostazioni)
-  /// preservando per default la cache locale dei prodotti e dei metadati (riutilizzabili dai successivi utenti).
+  /// preservando la cache locale dei prodotti e dei metadati (riutilizzabili dai successivi utenti).
   /// Per gli utenti anonimi, preserva i dati al logout per consentire la sincronizzazione nella sessione successiva.
   static Future<void> wipeCurrentUserLocalData(
     FirebaseAuth auth, {
-    bool preserveProductCache = true,
+    String? explicitUserId,
   }) async {
     try {
       OfflineDbSyncService.cancelSync();
 
-      // 1. Svuota tabelle SQLite dei prodotti solo se richiesto esplicitamente
-      if (!preserveProductCache) {
-        await _productDao.deleteAllProducts();
-        await _syncMetadataDao.clearAll();
-      }
-
       final user = auth.currentUser;
+      final targetUid = explicitUserId ?? user?.uid;
       final prefs = await SharedPreferences.getInstance();
 
-      // Se l'utente è anonimo e stiamo eseguendo un normale logout (preserveProductCache == true),
+      // Se l'utente è anonimo e stiamo eseguendo un normale logout (explicitUserId == null),
       // NON cancelliamo i suoi dati personali per permettere alla schermata di sync
       // di proporli alla sessione successiva (anonima o registrata).
-      if (user != null && user.isAnonymous && preserveProductCache) {
+      if (user != null && user.isAnonymous && explicitUserId == null) {
         return;
       }
 
-      if (user != null && !user.isAnonymous) {
-        await _historyDao.wipeHistory(user.uid);
-        await _reportDao.wipeReports(user.uid);
-        await prefs.remove('celiac_history_${user.uid}');
-        await prefs.remove('celiac_reports_${user.uid}');
-        await prefs.remove(SettingsDbService.settingsKey);
-      }
-
-      // Se non stiamo preservando la cache (reset totale di fabbrica), svuota anche i dati anonimi
-      if (!preserveProductCache) {
-        final lastAnonUid = prefs.getString(lastAnonymousUidKey);
-        if (lastAnonUid != null && lastAnonUid.isNotEmpty) {
-          await _historyDao.wipeHistory(lastAnonUid);
-          await _reportDao.wipeReports(lastAnonUid);
-        }
-        await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
-        await prefs.remove(lastAnonymousUidKey);
-        await prefs.remove(LocalCacheService.productsKey);
-        await prefs.remove(LocalCacheService.lastSyncKey);
+      if (targetUid != null && targetUid.isNotEmpty && !(user?.isAnonymous ?? false)) {
+        await _historyDao.wipeHistory(targetUid);
+        await _reportDao.wipeReports(targetUid);
+        await prefs.remove('celiac_history_$targetUid');
+        await prefs.remove('celiac_reports_$targetUid');
         await prefs.remove(SettingsDbService.settingsKey);
       }
 
@@ -373,11 +349,6 @@ class AccountDataService {
     } catch (e) {
       debugPrint("Errore durante il wipe dei dati utente: $e");
     }
-  }
-
-  /// Svuota completamente tutti i dati locali (inclusa la cache dei prodotti).
-  static Future<void> wipeAllLocalData(FirebaseAuth auth) async {
-    await wipeCurrentUserLocalData(auth, preserveProductCache: false);
   }
 
   // ─── ACCOUNT DELETION HELPERS ────────────────────────────────────────────────
