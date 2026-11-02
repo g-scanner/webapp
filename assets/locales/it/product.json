@@ -80,7 +80,7 @@
       "lactoseDetected": "Vietato dal Filtro Intolleranza al Lattosio."
     },
     "actions": {
-      "reportError": "Segnala errore o inesattezza",
+      "reportError": "Segnala Dati Errati",
       "alreadyReported": "Prodotto già segnalato"
     },
     "reportSheet": {

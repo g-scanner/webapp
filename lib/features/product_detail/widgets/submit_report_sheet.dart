@@ -61,67 +61,65 @@ void showSubmitReportBottomSheet({
                   top: Radius.circular(32),
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // --- M3 Drag Handle ---
-                    Center(
-                      child: Container(
-                        width: 32,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 24),
-                        decoration: BoxDecoration(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.4,
-                          ),
-                          borderRadius: BorderRadius.circular(4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // --- M3 Drag Handle ---
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 5,
+                      margin: const EdgeInsets.only(top: 16, bottom: 24),
+                      decoration: BoxDecoration(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+
+                  // --- Intestazione ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Center(
+                      child: Text(
+                        "product.actions.reportError".tr(),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
-
-                    // --- Intestazione ---
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: colorScheme.iconCircleErrorBg,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.flag_rounded,
-                            color: colorScheme.error,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            "product.actions.reportError".tr(),
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurface,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text(
                       "product.reportSheet.communityCallout".tr(),
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
                         color: colorScheme.onSurfaceVariant,
                         height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // --- Contenuto Scrollabile ---
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
 
                     // --- Selettore Motivo (Stile Pillola G-Scanner) ---
                     Text(
@@ -246,10 +244,10 @@ void showSubmitReportBottomSheet({
                         filled: true,
                         fillColor: colorScheme.surfaceContainerHighest,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.all(16),
+                        contentPadding: const EdgeInsets.all(18),
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -372,8 +370,11 @@ void showSubmitReportBottomSheet({
                         ),
                       ],
                     ),
-                  ],
-                ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
