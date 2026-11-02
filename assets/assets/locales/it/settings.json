@@ -26,7 +26,9 @@
       "deleteConfirmBody": "Sei sicuro di voler eliminare il tuo account? Questa azione è irreversibile.\n\nPerderai:\n- La tua cronologia scansioni\n- Le tue impostazioni personali\n\nLe tue segnalazioni rimarranno attive ma verranno anonimizzate.",
       "deleteReauthTitle": "Accesso richiesto",
       "deleteReauthBody": "Per motivi di sicurezza, prima di procedere con l'eliminazione dell'account è necessario effettuare un nuovo accesso.\n\nPremendo \"Procedi\" verrai disconnesso automaticamente.",
-      "updateNameError": "Errore durante l’aggiornamento del nome. Riprova più tardi."
+      "updateNameError": "Errore durante l’aggiornamento del nome. Riprova più tardi.",
+      "signOutError": "Errore durante la disconnessione. Riprova più tardi.",
+      "deleteAccountError": "Errore durante l'eliminazione dell'account. Riprova più tardi."
     },
     "analysisRules": {
       "warnAdditivesTitle": "Avvertimento Additivi",
@@ -90,6 +92,7 @@
       "cloudSyncTitle": "Sincronizzazione account",
       "cloudSyncSubtitle": "Sincronizza le preferenze del database offline tra i tuoi dispositivi.",
       "downloadError": "Errore durante il download del database offline. Riprova più tardi.",
+      "uninstallError": "Errore durante la disinstallazione del database offline. Riprova più tardi.",
       "syncSuccess": "Database offline sincronizzato con successo.",
       "autoSyncSuccess": "Database offline sincronizzato automaticamente con successo.",
       "packages": {
@@ -146,7 +149,8 @@
       "clearProductsTitle": "Svuota Cache Prodotti",
       "clearProductsConfirm": "Confermi di voler eliminare tutti i prodotti memorizzati nella cache locale? Le scansioni dei prodotti già salvati sono molto più rapide.",
       "clearProductsAction": "Elimina Prodotti",
-      "clearProductsError": "Errore durante l'eliminazione della cache dei prodotti. Riprova."
+      "clearProductsError": "Errore durante l'eliminazione della cache dei prodotti. Riprova più tardi.",
+      "resetDbError": "Errore durante l'eliminazione dei dati. Riprova più tardi."
     },
     "legalMenu": {
       "termsAndConditionsTitle": "Termini e Condizioni",
