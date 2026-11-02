@@ -170,7 +170,7 @@
     },
     "status": {
       "offlineSaved": "Impostazioni salvate sul dispositivo. Verranno sincronizzate quando tornerai online.",
-      "saveError": "Impossibile salvare le impostazioni. Riprova più tardi."
+      "saveError": "Errore durante il salvataggio delle impostazioni. Riprova più tardi."
     }
   }
 }

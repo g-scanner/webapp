@@ -38,7 +38,7 @@
       }
     },
     "actions": {
-      "deleteError": "Impossibile eliminare la segnalazione. Riprova più tardi.",
+      "deleteError": "Errore durante l'eliminazione della segnalazione. Riprova più tardi.",
       "deleteOfflineSuccess": "Segnalazione rimossa sul dispositivo. L'operazione verrà sincronizzata quando tornerai online."
     }
   }
