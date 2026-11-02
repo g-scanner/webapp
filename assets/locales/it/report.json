@@ -16,7 +16,7 @@
         "yesterday": "Segnalato ieri, {time}",
         "default": "Segnalato il {date}, {time}"
       },
-        "title": "Dettaglio segnalazione"
+      "title": "Dettaglio segnalazione"
     },
     "list": {
       "dropdown": {
@@ -36,6 +36,10 @@
         "mineTitle": "Nessuna segnalazione inviata",
         "mineSubtitle": "Non hai ancora inviato alcuna segnalazione."
       }
+    },
+    "actions": {
+      "deleteError": "Impossibile eliminare la segnalazione. Riprova più tardi.",
+      "deleteOfflineSuccess": "Segnalazione rimossa sul dispositivo. L'operazione verrà sincronizzata quando tornerai online."
     }
   }
 }

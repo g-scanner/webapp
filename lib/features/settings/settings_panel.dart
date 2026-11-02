@@ -102,7 +102,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
       warnAdditives: key == 'warnAdditives' ? value : widget.settings.warnAdditives,
     );
     await widget.onSettingsChange(updated);
-    _triggerToast("common.status.preferencesSaved".tr());
   }
 
   Future<void> _handleLanguageChange(String newLang) async {
@@ -115,7 +114,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
     );
     await widget.onSettingsChange(updated);
     if (mounted) context.setLocale(Locale(newLang));
-    _triggerToast("common.status.preferencesSaved".tr());
   }
 
   Future<void> _handleThemeChange(String newTheme) async {
@@ -127,7 +125,6 @@ class _SettingsPanelState extends State<SettingsPanel> {
       preferredTheme: newTheme,
     );
     await widget.onSettingsChange(updated);
-    _triggerToast("common.status.preferencesSaved".tr());
   }
 
   Future<void> _handleClearHistory() async {

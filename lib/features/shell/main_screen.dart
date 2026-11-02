@@ -122,26 +122,28 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   void _initConnectivityListener() {
-    _connectivitySubscription =
-        ConnectivityHelper.onConnectivityChanged.listen((results) async {
-      final isNone = results.isEmpty ||
-          (results.length == 1 && results.first == ConnectivityResult.none);
-      if (isNone) {
-        _wasOffline = true;
-        return;
-      }
-
-      if (_wasOffline) {
-        _wasOffline = false;
-        final isOnline = await ConnectivityHelper.hasInternetConnection();
-        if (!mounted) return;
-        if (isOnline) {
-          _onNetworkRestored();
-        } else {
+    _connectivitySubscription = ConnectivityHelper.onConnectivityChanged.listen(
+      (results) async {
+        final isNone =
+            results.isEmpty ||
+            (results.length == 1 && results.first == ConnectivityResult.none);
+        if (isNone) {
           _wasOffline = true;
+          return;
         }
-      }
-    });
+
+        if (_wasOffline) {
+          _wasOffline = false;
+          final isOnline = await ConnectivityHelper.hasInternetConnection();
+          if (!mounted) return;
+          if (isOnline) {
+            _onNetworkRestored();
+          } else {
+            _wasOffline = true;
+          }
+        }
+      },
+    );
   }
 
   Future<void> _onNetworkRestored() async {
@@ -172,7 +174,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   /// Esegue la sincronizzazione silenziosa con Firestore al ritorno in primo piano
   /// o al cambio tab, con throttling per evitare chiamate ridondanti ravvicinate.
-  void _syncOnResumeIfNeeded({Duration cooldown = const Duration(seconds: 10)}) {
+  void _syncOnResumeIfNeeded({
+    Duration cooldown = const Duration(seconds: 10),
+  }) {
     final now = DateTime.now();
     if (_lastResumeSyncTime == null ||
         now.difference(_lastResumeSyncTime!) > cooldown) {
@@ -317,10 +321,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         if (mounted) {
           setState(() => userSettings = updatedSettings);
           if (hadActualUpdate) {
-            showAppSnackBar(
-              context,
-              'settings.offlineDb.autoSyncSuccess'.tr(),
-            );
+            showAppSnackBar(context, 'settings.offlineDb.autoSyncSuccess'.tr());
           }
         }
         await DbService.saveSettings(updatedSettings, isOfflineDbChange: true);
@@ -329,7 +330,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _checkWebWeeklyUpdatePrompt(UserSettings currentSettings) async {
-    final isAvailable = await OfflineDbSyncService.isWeeklyUpdateAvailable(currentSettings);
+    final isAvailable = await OfflineDbSyncService.isWeeklyUpdateAvailable(
+      currentSettings,
+    );
     if (!isAvailable) return;
 
     final isOnline = await ConnectivityHelper.hasInternetConnection();
@@ -448,7 +451,10 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 );
               }
             }
-            await DbService.saveSettings(updatedSettings, isOfflineDbChange: true);
+            await DbService.saveSettings(
+              updatedSettings,
+              isOfflineDbChange: true,
+            );
           },
         );
       }
@@ -483,8 +489,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         .then((syncedSettings) {
           if (mounted) {
             setState(() => userSettings = syncedSettings);
-            themeNotifier.value = themeModeFromString(syncedSettings.preferredTheme);
-            if (context.locale.languageCode != syncedSettings.preferredLanguage) {
+            themeNotifier.value = themeModeFromString(
+              syncedSettings.preferredTheme,
+            );
+            if (context.locale.languageCode !=
+                syncedSettings.preferredLanguage) {
               context.setLocale(Locale(syncedSettings.preferredLanguage));
             }
             _autoDownloadOfflineDbIfNeeded(syncedSettings);
@@ -627,10 +636,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     final hasOfflineDb = await OfflineDbService.isDatabaseInstalled();
     if (localProduct == null && !isConnected && !hasOfflineDb) {
       if (mounted) {
-        showAppSnackBar(
-          context,
-          'scanner.result.offlineNoDbPrompt'.tr(),
-        );
+        showAppSnackBar(context, 'scanner.result.offlineNoDbPrompt'.tr());
       }
       return false;
     }
@@ -995,23 +1001,20 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
     _offlineVerificationTimer?.cancel();
     _verifyPendingOfflineProducts();
-    _offlineVerificationTimer = Timer.periodic(
-      const Duration(seconds: 4),
-      (_) {
-        if (!mounted) {
-          _offlineVerificationTimer?.cancel();
-          _offlineVerificationTimer = null;
-          return;
-        }
-        final stillPending = products.any((p) => p.needsVerification);
-        if (!stillPending) {
-          _offlineVerificationTimer?.cancel();
-          _offlineVerificationTimer = null;
-          return;
-        }
-        _verifyPendingOfflineProducts();
-      },
-    );
+    _offlineVerificationTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) {
+        _offlineVerificationTimer?.cancel();
+        _offlineVerificationTimer = null;
+        return;
+      }
+      final stillPending = products.any((p) => p.needsVerification);
+      if (!stillPending) {
+        _offlineVerificationTimer?.cancel();
+        _offlineVerificationTimer = null;
+        return;
+      }
+      _verifyPendingOfflineProducts();
+    });
   }
 
   /// Esegue la verifica online da Open Food Facts per tutti i prodotti in sospeso (needsVerification: true).
@@ -1087,8 +1090,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (newlyFound.isNotEmpty && mounted) {
         setState(() {
           for (final p in newlyFound) {
-            final idx =
-                products.indexWhere((existing) => existing.barcode == p.barcode);
+            final idx = products.indexWhere(
+              (existing) => existing.barcode == p.barcode,
+            );
             if (idx != -1) {
               products[idx] = p;
             } else {
@@ -1101,7 +1105,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         }
       }
     } catch (e) {
-      debugPrint("Errore durante la risoluzione dei prodotti di cronologia: $e");
+      debugPrint(
+        "Errore durante la risoluzione dei prodotti di cronologia: $e",
+      );
     } finally {
       if (mounted) {
         _isResolvingHistoryProducts = false;
@@ -1236,18 +1242,27 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       await DbService.saveSettings(userSettings);
       await Future.wait([_loadLocalReports(), _fetchProducts()]);
+
+      final isOnline = await ConnectivityHelper.hasInternetConnection();
+      if (!isOnline && mounted) {
+        showAppSnackBar(
+          context,
+          'product.reportSheet.offlineSuccess'.tr(),
+        );
+      }
     } catch (e) {
       debugPrint("Segnalazione fallita: $e");
       if (mounted) {
         showAppSnackBar(
           context,
-          'product.reportSheet.networkError'.tr(),
+          'product.reportSheet.submitError'.tr(),
           isError: true,
         );
       }
       rethrow;
     }
   }
+
   Future<void> handleProductUpdate(Product updatedProduct) async {
     try {
       final finalProduct = Product(
@@ -1286,8 +1301,22 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // 2. Persistenza locale SQLite & tombstone + sync remoto asincrono
     try {
       await DbService.deleteHistoryByBarcodeLocal(barcode);
+      final isOnline = await ConnectivityHelper.hasInternetConnection();
+      if (!isOnline && mounted) {
+        showAppSnackBar(
+          context,
+          'history.item.deleteOfflineSuccess'.tr(),
+        );
+      }
     } catch (e) {
       debugPrint("Error deleting history by barcode: $e");
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'common.actions.deleteHistoryError'.tr(),
+          isError: true,
+        );
+      }
     }
     await _loadLocalHistory();
   }
@@ -1317,8 +1346,22 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // 2. Persistenza locale SQLite & tombstone + sync remoto asincrono
     try {
       await DbService.deleteHistoryItemLocal(id);
+      final isOnline = await ConnectivityHelper.hasInternetConnection();
+      if (!isOnline && mounted) {
+        showAppSnackBar(
+          context,
+          'history.item.deleteOfflineSuccess'.tr(),
+        );
+      }
     } catch (e) {
       debugPrint("Error deleting history item: $e");
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'common.actions.deleteHistoryError'.tr(),
+          isError: true,
+        );
+      }
     }
     await _loadLocalHistory();
   }
@@ -1334,8 +1377,22 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     // 2. Persistenza locale SQLite & tombstone + sync remoto asincrono
     try {
       await DbService.wipeHistoryLocal();
+      final isOnline = await ConnectivityHelper.hasInternetConnection();
+      if (!isOnline && mounted) {
+        showAppSnackBar(
+          context,
+          'history.header.clearOfflineSuccess'.tr(),
+        );
+      }
     } catch (e) {
       debugPrint("Error clearing history: $e");
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'history.header.clearError'.tr(),
+          isError: true,
+        );
+      }
     }
     await _loadLocalHistory();
   }
@@ -1403,8 +1460,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             }
           }
 
-          final updatedBarcodes = List<String>.from(userSettings.reportedBarcodes)
-            ..remove(barcode);
+          final updatedBarcodes = List<String>.from(
+            userSettings.reportedBarcodes,
+          )..remove(barcode);
           userSettings = userSettings.copyWith(
             userId: userSettings.userId ?? userId,
             reportedBarcodes: updatedBarcodes,
@@ -1419,8 +1477,23 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       DbService.deleteReportFromDb(reportId);
       DbService.saveLocalSettings(userSettings);
       DbService.saveSettings(userSettings);
+
+      final isOnline = await ConnectivityHelper.hasInternetConnection();
+      if (!isOnline && mounted) {
+        showAppSnackBar(
+          context,
+          'report.actions.deleteOfflineSuccess'.tr(),
+        );
+      }
     } catch (e) {
       debugPrint("Error deleting report: $e");
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'report.actions.deleteError'.tr(),
+          isError: true,
+        );
+      }
     }
     await _loadLocalReports();
   }
@@ -1770,10 +1843,42 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 !userSettings.offlineDbAutoSync && newSet.offlineDbAutoSync;
             setState(() => userSettings = newSet);
             themeNotifier.value = themeModeFromString(newSet.preferredTheme);
-            await DbService.saveSettings(newSet, isOfflineDbChange: isOfflineDbChange);
-            await BackgroundSyncManager.updatePeriodicTaskRegistration(newSet);
-            if (autoSyncTurnedOn && newSet.offlineDbTier != OfflineDbTier.none) {
-              _autoDownloadOfflineDbIfNeeded(newSet);
+            try {
+              await DbService.saveSettings(
+                newSet,
+                isOfflineDbChange: isOfflineDbChange,
+              );
+              await BackgroundSyncManager.updatePeriodicTaskRegistration(newSet);
+              if (autoSyncTurnedOn &&
+                  newSet.offlineDbTier != OfflineDbTier.none) {
+                _autoDownloadOfflineDbIfNeeded(newSet);
+              }
+
+              final currentUser = _auth.currentUser;
+              final bool isAuthenticated =
+                  currentUser != null && !currentUser.isAnonymous;
+              final bool isLocalOnlyOfflineChange =
+                  isOfflineDbChange && !newSet.offlineDbCloudSync;
+
+              if (isAuthenticated && !isLocalOnlyOfflineChange) {
+                final isOnline =
+                    await ConnectivityHelper.hasInternetConnection();
+                if (!isOnline && mounted) {
+                  showAppSnackBar(
+                    context,
+                    'settings.status.offlineSaved'.tr(),
+                  );
+                }
+              }
+            } catch (e) {
+              debugPrint("Error saving settings: $e");
+              if (mounted) {
+                showAppSnackBar(
+                  context,
+                  'settings.status.saveError'.tr(),
+                  isError: true,
+                );
+              }
             }
           },
           onResetDB: () async {

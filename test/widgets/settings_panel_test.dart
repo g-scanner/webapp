@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gscanner/core/network/connectivity_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
@@ -106,6 +107,7 @@ void main() {
   });
 
   setUp(() {
+    ConnectivityHelper.mockIsConnected = true;
     cb = MockCallbacks();
     auth = MockFirebaseAuth();
     mockDb = MockFirebaseFirestore();
@@ -137,6 +139,10 @@ void main() {
     when(() => user.updateDisplayName(any())).thenAnswer((_) async {});
 
     when(() => metadata.lastSignInTime).thenReturn(DateTime.now());
+  });
+
+  tearDown(() {
+    ConnectivityHelper.mockIsConnected = null;
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

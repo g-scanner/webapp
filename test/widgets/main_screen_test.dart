@@ -190,6 +190,13 @@ void main() {
     when(
       () => mockAuth.authStateChanges(),
     ).thenAnswer((_) => Stream.value(mockUser));
+    ConnectivityHelper.mockIsConnected = true;
+  });
+
+  tearDown(() {
+    ConnectivityHelper.mockIsConnected = null;
+    ConnectivityHelper.mockIsWifi = null;
+    ConnectivityHelper.mockConnectivityStream = null;
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1301,6 +1308,58 @@ void main() {
         await mainState.handleClearHistory();
         await tester.pump();
         expect(mainState.history, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'offline snackbars are shown for report, history and settings changes',
+      (tester) async {
+        ConnectivityHelper.mockIsConnected = false;
+        await _pumpMainScreen(tester, auth: mockAuth);
+        await tester.pumpAndSettle();
+        final dynamic mainState = tester.state(find.byType(MainScreen));
+
+        // 1. Submit report offline shows offline snackbar
+        await mainState.handleReportSubmit('800999', {'type': 'outdated'});
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('product.reportSheet.offlineSuccess'.tr()), findsOneWidget);
+
+        // 2. Clear history offline shows offline snackbar
+        await mainState.handleClearHistory();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('history.header.clearOfflineSuccess'.tr()), findsOneWidget);
+
+        // 3. Delete history item offline shows offline snackbar
+        await mainState.handleDeleteHistoryItem('item_123');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('history.item.deleteOfflineSuccess'.tr()), findsOneWidget);
+
+        // 4. Delete report offline shows offline snackbar
+        await mainState.handleDeleteReport('report_123');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('report.actions.deleteOfflineSuccess'.tr()), findsOneWidget);
+
+        // 5. Settings change offline for offlineDbChange with offlineDbCloudSync: false does NOT show snackbar
+        final settingsPanel = tester.widget<SettingsPanel>(find.byType(SettingsPanel, skipOffstage: false));
+        final localDbSetting = mainState.userSettings.copyWith(
+          offlineDbCloudSync: false,
+          offlineDbTier: OfflineDbTier.glutenFree,
+        );
+        await settingsPanel.onSettingsChange(localDbSetting, isOfflineDbChange: true);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('settings.status.offlineSaved'.tr()), findsNothing);
+
+        // 6. General settings change offline for authenticated user shows offlineSaved snackbar
+        final generalSetting = mainState.userSettings.copyWith(strictMode: false);
+        await settingsPanel.onSettingsChange(generalSetting, isOfflineDbChange: false);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('settings.status.offlineSaved'.tr()), findsOneWidget);
       },
     );
   });

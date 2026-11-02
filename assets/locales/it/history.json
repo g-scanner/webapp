@@ -2,7 +2,9 @@
   "history": {
     "header": {
       "title": "Cronologia scansioni",
-      "subtitle": "Consulta i prodotti scansionati in passato."
+      "subtitle": "Consulta i prodotti scansionati in passato.",
+      "clearError": "Impossibile cancellare la cronologia. Riprova più tardi.",
+      "clearOfflineSuccess": "Cronologia cancellata sul dispositivo. L'operazione verrà sincronizzata quando tornerai online."
     },
     "empty": {
       "title": "Nessuna scansione ancora",
@@ -28,7 +30,8 @@
       "fallbackName": "Prodotto {barcode}",
       "brandLoading": "Caricamento in corso...",
       "lactose": "Lattosio",
-      "offlineScan": "Scansione offline"
+      "offlineScan": "Scansione offline",
+      "deleteOfflineSuccess": "Scansione rimossa sul dispositivo. L'operazione verrà sincronizzata quando tornerai online."
     }
   }
 }

@@ -32,7 +32,7 @@
       "deleteReportConfirmTitle": "Elimina segnalazione",
       "deleteReportConfirmBody": "Sei sicuro di voler eliminare questa segnalazione? Questa azione è irreversibile.",
       "moreOptions": "Altre opzioni",
-      "deleteHistoryError": "Errore durante l'eliminazione dalla cronologia. Riprova.",
+      "deleteHistoryError": "Impossibile eliminare la scansione. Riprova più tardi.",
       "search": "Cerca per nome o codice a barre...",
       "retry": "Riprova",
       "settings": "Impostazioni"
@@ -51,9 +51,6 @@
     },
     "legal": {
       "privacyPolicy": "Privacy Policy"
-    },
-    "status": {
-      "preferencesSaved": "Preferenze salvate ed applicate!"
     }
   }
 }

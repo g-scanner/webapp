@@ -91,7 +91,8 @@
       "detailsHint": "Es: La confezione dice \"Senza Glutine\", ma l'app segnala il prodotto come Vietato.",
       "submit": "Invia segnalazione",
       "goToReport": "Vai alla segnalazione",
-      "networkError": "Connessione debole o assente. Impossibile inviare la segnalazione."
+      "submitError": "Impossibile inviare la segnalazione. Riprova più tardi.",
+      "offlineSuccess": "Segnalazione salvata sul dispositivo. L'operazione verrà sincronizzata quando tornerai online."
     },
     "header": {
       "scanDate": {
