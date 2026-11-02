@@ -12,7 +12,7 @@ import '../dialogs/dialogs.dart';
 class AccountSection extends StatelessWidget {
   final FirebaseAuth auth;
   final String? optimisticDisplayName;
-  final void Function(String) onTriggerToast;
+  final void Function(String message, {bool isError}) onTriggerToast;
   final void Function(String) onUpdateOptimisticDisplayName;
 
   const AccountSection({
@@ -261,7 +261,10 @@ class AccountSection extends StatelessWidget {
         await auth.currentUser?.delete();
         await auth.signOut();
       } catch (e) {
-        onTriggerToast("Errore: $e");
+        onTriggerToast(
+          "settings.account.deleteAccountError".tr(),
+          isError: true,
+        );
       }
     }
   }
@@ -367,7 +370,10 @@ class AccountSection extends StatelessWidget {
         await DbService.wipeCurrentUserLocalData();
         await auth.signOut();
       } catch (e) {
-        onTriggerToast("Errore durante la disconnessione: $e");
+        onTriggerToast(
+          "settings.account.signOutError".tr(),
+          isError: true,
+        );
       }
     }
   }

@@ -12,7 +12,7 @@ void showAccountManagementSheet({
   required BuildContext context,
   required FirebaseAuth auth,
   required String? optimisticDisplayName,
-  required void Function(String) onTriggerToast,
+  required void Function(String message, {bool isError}) onTriggerToast,
   required void Function(String) onUpdateOptimisticDisplayName,
   required Future<void> Function(BuildContext) onLogout,
   required Widget Function(BuildContext, bool, {double size}) buildAvatar,
@@ -345,6 +345,7 @@ void showAccountManagementSheet({
                               onUpdateOptimisticDisplayName(previousName);
                               onTriggerToast(
                                 "settings.account.updateNameError".tr(),
+                                isError: true,
                               );
                             }
                           } else {

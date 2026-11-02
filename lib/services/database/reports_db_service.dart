@@ -401,6 +401,7 @@ class ReportsDbService {
       await batch.commit();
     } catch (e) {
       debugPrint("Errore durante il salvataggio del voto: $e");
+      rethrow;
     }
   }
 

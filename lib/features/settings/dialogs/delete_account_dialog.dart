@@ -119,7 +119,7 @@ Future<bool> _showReauthDialog(BuildContext context, FirebaseAuth auth) async {
 Future<void> showDeleteAccountFlow({
   required BuildContext context,
   required FirebaseAuth auth,
-  required void Function(String) onTriggerToast,
+  required void Function(String message, {bool isError}) onTriggerToast,
 }) async {
   final user = auth.currentUser;
   if (user == null) return;
@@ -240,11 +240,17 @@ Future<void> showDeleteAccountFlow({
                                 await _showReauthDialog(context, auth);
                               }
                             } else {
-                              onTriggerToast("Errore: ${e.message}");
+                              onTriggerToast(
+                                "settings.account.deleteAccountError".tr(),
+                                isError: true,
+                              );
                             }
                           } catch (e) {
                             if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                            onTriggerToast("Errore imprevisto: $e");
+                            onTriggerToast(
+                              "settings.account.deleteAccountError".tr(),
+                              isError: true,
+                            );
                           }
                         },
                   style: FilledButton.styleFrom(

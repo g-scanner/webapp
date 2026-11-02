@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/foundation.dart';
@@ -85,12 +85,13 @@ class _SettingsPanelState extends State<SettingsPanel> {
     }
   }
 
-  void _triggerToast(String msg) {
+  void _triggerToast(String msg, {bool isError = false}) {
     if (!mounted) return;
     showAppSnackBar(
       context,
       msg,
-      icon: Icons.info_outline,
+      isError: isError,
+      icon: isError ? null : Icons.info_outline,
       duration: const Duration(seconds: 2),
     );
   }

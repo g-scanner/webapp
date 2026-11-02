@@ -120,7 +120,9 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     }
   }
 
-  void _handleVote(int vote) {
+  void _handleVote(int vote) async {
+    final oldVote = _currentVote;
+    final oldScore = _displayScore;
     setState(() {
       if (_currentVote == vote) {
         // Rimuove il voto (se riclicca)
@@ -145,7 +147,21 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     });
 
     if (widget.onVote != null) {
-      widget.onVote!(_currentVote); // Invia il -1, 0 o 1 al padre
+      try {
+        await widget.onVote!(_currentVote);
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _currentVote = oldVote;
+            _displayScore = oldScore;
+          });
+          showAppSnackBar(
+            context,
+            "report.detail.voteError".tr(),
+            isError: true,
+          );
+        }
+      }
     }
   }
 

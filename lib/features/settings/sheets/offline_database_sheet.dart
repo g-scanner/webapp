@@ -433,6 +433,12 @@ class _OfflineDatabaseSheetContentState
         }
       } catch (e) {
         debugPrint("Error uninstalling offline database: $e");
+        if (mounted) {
+          _triggerSnackbar(
+            "settings.offlineDb.uninstallError".tr(),
+            isError: true,
+          );
+        }
       }
     }
   }

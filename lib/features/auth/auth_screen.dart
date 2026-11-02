@@ -72,13 +72,13 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
     try {
       await _auth.signInAnonymously();
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException {
       if (!mounted) return;
-      _showError(e.message ?? "auth.errors.anonymousFailed".tr());
+      _showError("auth.errors.loginGenericError".tr());
       if (mounted) setState(() => _isLoading = false);
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      _showError("auth.errors.genericError".tr(namedArgs: {"error": e.toString()}));
+      _showError("auth.errors.loginGenericError".tr());
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -126,7 +126,7 @@ class _AuthScreenState extends State<AuthScreen> {
           errStr.contains('abort')) {
         _showInfo("auth.errors.googleCancelled".tr());
       } else {
-        _showError("auth.errors.firebaseError".tr(namedArgs: {"message": e.message ?? ""}));
+        _showError("auth.errors.loginGenericError".tr());
       }
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
@@ -138,7 +138,7 @@ class _AuthScreenState extends State<AuthScreen> {
           errStr.contains('abort')) {
         _showInfo("auth.errors.googleCancelledShort".tr());
       } else {
-        _showError("auth.errors.googleSignInError".tr(namedArgs: {"error": e.toString()}));
+        _showError("auth.errors.loginGenericError".tr());
       }
       if (mounted) setState(() => _isLoading = false);
     }
@@ -170,7 +170,7 @@ class _AuthScreenState extends State<AuthScreen> {
           _showInfo("auth.errors.facebookCancelled".tr());
         } else if (result.status == LoginStatus.failed) {
           if (!mounted) return;
-          _showError("auth.errors.facebookError".tr(namedArgs: {"message": result.message ?? ""}));
+          _showError("auth.errors.loginGenericError".tr());
         }
         if (mounted) setState(() => _isLoading = false);
         return;
@@ -210,12 +210,12 @@ class _AuthScreenState extends State<AuthScreen> {
           errStr.contains('abort')) {
         _showInfo("auth.errors.facebookCancelledOrInProgress".tr());
       } else {
-        _showError("auth.errors.firebaseError".tr(namedArgs: {"message": e.message ?? ""}));
+        _showError("auth.errors.loginGenericError".tr());
       }
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       if (!mounted) return;
-      _showError("auth.errors.facebookSignInError".tr(namedArgs: {"error": e.toString()}));
+      _showError("auth.errors.loginGenericError".tr());
       if (mounted) setState(() => _isLoading = false);
     }
   }

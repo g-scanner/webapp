@@ -16,7 +16,8 @@
         "yesterday": "Segnalato ieri, {time}",
         "default": "Segnalato il {date}, {time}"
       },
-      "title": "Dettaglio segnalazione"
+      "title": "Dettaglio segnalazione",
+      "voteError": "Errore durante la registrazione del voto. Riprova più tardi."
     },
     "list": {
       "dropdown": {

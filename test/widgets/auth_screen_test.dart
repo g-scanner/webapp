@@ -175,7 +175,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AppSnackBarWidget), findsOneWidget);
-        expect(find.text('Anonymous auth disabled'), findsOneWidget);
+        expect(find.text('auth.errors.loginGenericError'), findsOneWidget);
         // Il CircularProgressIndicator deve scomparire al termine dell'errore
         expect(find.byType(CircularProgressIndicator), findsNothing);
       },
@@ -195,7 +195,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AppSnackBarWidget), findsOneWidget);
-        expect(find.text('auth.errors.genericError'), findsOneWidget);
+        expect(find.text('auth.errors.loginGenericError'), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
       },
     );
@@ -288,7 +288,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AppSnackBarWidget), findsOneWidget);
-        expect(find.text('auth.errors.firebaseError'), findsOneWidget);
+        expect(find.text('auth.errors.loginGenericError'), findsOneWidget);
       },
     );
 
@@ -335,7 +335,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(AppSnackBarWidget), findsOneWidget);
-      expect(find.text('auth.errors.googleSignInError'), findsOneWidget);
+      expect(find.text('auth.errors.loginGenericError'), findsOneWidget);
     });
 
     // ==========================================
@@ -381,7 +381,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(AppSnackBarWidget), findsOneWidget);
-      expect(find.text('auth.errors.facebookError'), findsOneWidget);
+      expect(find.text('auth.errors.loginGenericError'), findsOneWidget);
     });
 
     testWidgets(
@@ -530,7 +530,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
 
         expect(find.byType(AppSnackBarWidget), findsOneWidget);
-        expect(find.text('auth.errors.firebaseError'), findsOneWidget);
+        expect(find.text('auth.errors.loginGenericError'), findsOneWidget);
       },
     );
 
@@ -549,7 +549,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(AppSnackBarWidget), findsOneWidget);
-      expect(find.text('auth.errors.facebookSignInError'), findsOneWidget);
+      expect(find.text('auth.errors.loginGenericError'), findsOneWidget);
     });
   });
 }

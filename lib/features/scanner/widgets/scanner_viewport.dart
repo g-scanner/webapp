@@ -7,6 +7,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/app_snackbar.dart';
 import 'scanner_view_painters.dart';
 
 export 'scanner_view_painters.dart';
@@ -71,7 +72,18 @@ class _ScannerViewportState extends State<ScannerViewport> {
 
   Future<void> _handleToggleTorch() async {
     if (widget.controller.value.isRunning) {
-      await widget.controller.toggleTorch();
+      try {
+        await widget.controller.toggleTorch();
+      } catch (e) {
+        debugPrint("Error toggling torch: $e");
+        if (mounted) {
+          showAppSnackBar(
+            context,
+            "scanner.viewport.torchError".tr(),
+            isError: true,
+          );
+        }
+      }
     }
   }
 
