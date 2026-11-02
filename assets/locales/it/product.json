@@ -91,7 +91,7 @@
       "detailsHint": "Es: La confezione dice \"Senza Glutine\", ma l'app segnala il prodotto come Vietato.",
       "submit": "Invia segnalazione",
       "goToReport": "Vai alla segnalazione",
-      "submitError": "Impossibile inviare la segnalazione. Riprova più tardi.",
+      "submitError": "Errore durante l'invio della segnalazione. Riprova più tardi.",
       "offlineSuccess": "Segnalazione salvata sul dispositivo. L'operazione verrà sincronizzata quando tornerai online."
     },
     "header": {

@@ -3,7 +3,7 @@
     "header": {
       "title": "Cronologia scansioni",
       "subtitle": "Consulta i prodotti scansionati in passato.",
-      "clearError": "Impossibile cancellare la cronologia. Riprova più tardi.",
+      "clearError": "Errore durante la cancellazione della cronologia. Riprova più tardi.",
       "clearOfflineSuccess": "Cronologia cancellata sul dispositivo. L'operazione verrà sincronizzata quando tornerai online."
     },
     "empty": {
