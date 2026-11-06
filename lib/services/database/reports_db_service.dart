@@ -68,6 +68,123 @@ class ReportsDbService {
     await prefs.setStringList(key, updated);
   }
 
+  static const String pendingVotesPrefix = 'pending_report_votes_';
+  static const String localVotesPrefix = 'local_report_votes_';
+
+  /// Restituisce la chiave SharedPreferences per i voti delle segnalazioni in attesa di sync.
+  static String getPendingVotesKey(String uid) => '$pendingVotesPrefix$uid';
+
+  /// Restituisce la chiave SharedPreferences per la cache locale dei voti dell'utente.
+  static String getLocalVotesKey(String uid) => '$localVotesPrefix$uid';
+
+  /// Recupera i voti in attesa di sincronizzazione salvati localmente.
+  static Future<Map<String, int>> getPendingVotes(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(getPendingVotesKey(uid));
+    if (jsonStr == null || jsonStr.isEmpty) return {};
+    try {
+      final decoded = json.decode(jsonStr);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry(k.toString(), (v as num).toInt()));
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  /// Contrassegna un voto su una segnalazione come pendente (salvato offline).
+  static Future<void> markVotePending(String uid, String barcode, int vote) async {
+    final prefs = await SharedPreferences.getInstance();
+    final votes = await getPendingVotes(uid);
+    votes[barcode] = vote;
+    await prefs.setString(getPendingVotesKey(uid), json.encode(votes));
+  }
+
+  /// Rimuove un voto dalla lista dei voti pendenti una volta sincronizzato.
+  static Future<void> markVoteSynced(String uid, String barcode) async {
+    final prefs = await SharedPreferences.getInstance();
+    final votes = await getPendingVotes(uid);
+    if (votes.containsKey(barcode)) {
+      votes.remove(barcode);
+      if (votes.isEmpty) {
+        await prefs.remove(getPendingVotesKey(uid));
+      } else {
+        await prefs.setString(getPendingVotesKey(uid), json.encode(votes));
+      }
+    }
+  }
+
+  /// Recupera la cache locale dei voti dell'utente.
+  static Future<Map<String, int>> getLocalVotes(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(getLocalVotesKey(uid));
+    if (jsonStr == null || jsonStr.isEmpty) return {};
+    try {
+      final decoded = json.decode(jsonStr);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry(k.toString(), (v as num).toInt()));
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  /// Salva il voto nella cache locale.
+  static Future<void> saveLocalVote(String uid, String barcode, int vote) async {
+    final prefs = await SharedPreferences.getInstance();
+    final votes = await getLocalVotes(uid);
+    votes[barcode] = vote;
+    await prefs.setString(getLocalVotesKey(uid), json.encode(votes));
+  }
+
+  /// Sincronizza i voti pendenti con Firestore.
+  static Future<void> syncPendingVotesWithFirestore(
+    FirebaseFirestore db,
+    FirebaseAuth auth,
+  ) async {
+    final user = auth.currentUser;
+    final userId = user?.uid ?? 'anonymous_voter';
+
+    final pendingVotes = await getPendingVotes(userId);
+    if (pendingVotes.isEmpty) return;
+
+    for (final entry in pendingVotes.entries) {
+      final barcode = entry.key;
+      final newVote = entry.value;
+
+      try {
+        final querySnapshot = await db
+            .collection(reportsCollection)
+            .where('barcode', isEqualTo: barcode)
+            .where('status', isEqualTo: 'open')
+            .limit(1)
+            .get()
+            .timeout(const Duration(seconds: 4));
+
+        if (querySnapshot.docs.isNotEmpty) {
+          final reportDoc = querySnapshot.docs.first;
+          final reportRef = reportDoc.reference;
+          final userVoteRef = reportRef.collection('votes').doc(userId);
+
+          final voteSnap = await userVoteRef.get().timeout(const Duration(seconds: 4));
+          int oldVote = 0;
+          if (voteSnap.exists) {
+            oldVote = voteSnap.data()?['val'] ?? 0;
+          }
+
+          if (oldVote != newVote) {
+            final scoreDiff = newVote - oldVote;
+            final batch = db.batch();
+            batch.set(userVoteRef, {'val': newVote});
+            batch.update(reportRef, {'score': FieldValue.increment(scoreDiff)});
+            await batch.commit().timeout(const Duration(seconds: 4));
+          }
+        }
+        await markVoteSynced(userId, barcode);
+      } catch (e) {
+        debugPrint('Failed to sync pending vote for barcode $barcode: $e');
+      }
+    }
+  }
+
   /// Recupera le segnalazioni locali dell'utente (cronologia segnalazioni).
   static Future<List<ProductReport>> fetchUserReports(FirebaseAuth auth) async {
     try {
@@ -178,6 +295,8 @@ class ReportsDbService {
           }
         }
       }
+
+      await syncPendingVotesWithFirestore(db, auth);
 
       remoteReports.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
 
@@ -371,13 +490,18 @@ class ReportsDbService {
   ) async {
     final userId = auth.currentUser?.uid ?? "anonymous_voter";
 
+    // Persistenza locale immediata (cache e coda pending per supporto offline)
+    await saveLocalVote(userId, barcode, newVote);
+    await markVotePending(userId, barcode, newVote);
+
     try {
       final querySnapshot = await db
           .collection(reportsCollection)
           .where('barcode', isEqualTo: barcode)
           .where('status', isEqualTo: 'open')
           .limit(1)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 4));
 
       if (querySnapshot.docs.isEmpty) return;
 
@@ -385,23 +509,25 @@ class ReportsDbService {
       final reportRef = reportDoc.reference;
       final userVoteRef = reportRef.collection('votes').doc(userId);
 
-      final voteSnap = await userVoteRef.get();
+      final voteSnap = await userVoteRef.get().timeout(const Duration(seconds: 4));
       int oldVote = 0;
       if (voteSnap.exists) {
         oldVote = voteSnap.data()?['val'] ?? 0;
       }
 
-      if (oldVote == newVote) return;
+      if (oldVote != newVote) {
+        final scoreDiff = newVote - oldVote;
 
-      final scoreDiff = newVote - oldVote;
+        final batch = db.batch();
+        batch.set(userVoteRef, {'val': newVote});
+        batch.update(reportRef, {'score': FieldValue.increment(scoreDiff)});
+        await batch.commit().timeout(const Duration(seconds: 4));
+      }
 
-      final batch = db.batch();
-      batch.set(userVoteRef, {'val': newVote});
-      batch.update(reportRef, {'score': FieldValue.increment(scoreDiff)});
-      await batch.commit();
+      // Sincronizzato con successo
+      await markVoteSynced(userId, barcode);
     } catch (e) {
-      debugPrint("Errore durante il salvataggio del voto: $e");
-      rethrow;
+      debugPrint("Firestore vote commit failed/timed out, queued locally: $e");
     }
   }
 
@@ -418,10 +544,14 @@ class ReportsDbService {
           .where('barcode', isEqualTo: barcode)
           .where('status', isEqualTo: 'open')
           .limit(1)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 3));
 
       if (querySnapshot.docs.isEmpty) {
-        return {'score': 0, 'userVote': 0};
+        final pendingVotes = await getPendingVotes(userId);
+        final localVotes = await getLocalVotes(userId);
+        final userVote = pendingVotes[barcode] ?? localVotes[barcode] ?? 0;
+        return {'score': 0, 'userVote': userVote};
       }
 
       final reportDoc = querySnapshot.docs.first;
@@ -431,15 +561,27 @@ class ReportsDbService {
       final voteSnap = await reportDoc.reference
           .collection('votes')
           .doc(userId)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 3));
       if (voteSnap.exists) {
         userVote = voteSnap.data()?['val'] ?? 0;
+      }
+
+      // Se esiste un voto pendente locale, sovrascrivi e adatta lo score
+      final pendingVotes = await getPendingVotes(userId);
+      if (pendingVotes.containsKey(barcode)) {
+        final pendingVote = pendingVotes[barcode]!;
+        score += (pendingVote - userVote);
+        userVote = pendingVote;
       }
 
       return {'score': score, 'userVote': userVote};
     } catch (e) {
       debugPrint("Errore durante il recupero del voto: $e");
-      return {'score': 0, 'userVote': 0};
+      final pendingVotes = await getPendingVotes(userId);
+      final localVotes = await getLocalVotes(userId);
+      final userVote = pendingVotes[barcode] ?? localVotes[barcode] ?? 0;
+      return {'score': 0, 'userVote': userVote};
     }
   }
 }

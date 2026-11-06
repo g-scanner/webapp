@@ -9,6 +9,7 @@ import '../../core/widgets/widgets.dart';
 import '../../models/models.dart';
 import '../../core/utils/responsive_wrapper.dart';
 import '../product_detail/product_detail_card.dart';
+import '../../core/network/connectivity_helper.dart';
 import 'widgets/report_voting_section.dart';
 
 class ReportDetailCard extends StatefulWidget {
@@ -81,24 +82,31 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     try {
       final firestoreInstance =
           widget.firebaseFirestore ?? FirebaseFirestore.instance;
-      final results = await Future.wait([
-        firestoreInstance
+      QuerySnapshot<Map<String, dynamic>>? querySnapshot;
+      try {
+        querySnapshot = await firestoreInstance
             .collection('reports')
             .where('barcode', isEqualTo: widget.product.barcode)
             .where('status', isEqualTo: 'open')
             .limit(1)
-            .get(),
-        widget.onInitVote != null
-            ? widget.onInitVote!()
-            : Future.value(<String, int>{}),
-      ]);
+            .get()
+            .timeout(const Duration(seconds: 3));
+      } catch (e) {
+        debugPrint("Impossibile caricare report da Firestore (offline?): $e");
+      }
 
-      final querySnapshot = results[0] as QuerySnapshot<Map<String, dynamic>>;
-      final voteData = results[1] as Map<String, int>;
+      Map<String, int> voteData = {};
+      if (widget.onInitVote != null) {
+        try {
+          voteData = await widget.onInitVote!();
+        } catch (e) {
+          debugPrint("Impossibile recuperare voto iniziale: $e");
+        }
+      }
 
       if (mounted) {
         setState(() {
-          if (querySnapshot.docs.isNotEmpty) {
+          if (querySnapshot != null && querySnapshot.docs.isNotEmpty) {
             _activeReport = ProductReport.fromJson(
               querySnapshot.docs.first.data(),
             );
@@ -149,6 +157,13 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     if (widget.onVote != null) {
       try {
         await widget.onVote!(_currentVote);
+        final isOnline = await ConnectivityHelper.hasInternetConnection();
+        if (!isOnline && mounted) {
+          showAppSnackBar(
+            context,
+            "report.detail.voteOfflineSuccess".tr(),
+          );
+        }
       } catch (e) {
         if (mounted) {
           setState(() {

@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gscanner/core/network/connectivity_helper.dart';
 
 import 'package:gscanner/models/models.dart';
 import 'package:gscanner/features/reports/report_detail_card.dart';
@@ -177,6 +178,7 @@ void main() {
   });
 
   setUp(() {
+    ConnectivityHelper.mockIsConnected = true;
     mockCallbacks = MockReportCallbacks();
     mockFirestore = MockFirebaseFirestore();
 
@@ -184,6 +186,10 @@ void main() {
     when(() => mockCallbacks.onVote(any())).thenAnswer((_) async {});
     when(() => mockCallbacks.onInitVote()).thenAnswer((_) async => {});
     when(() => mockCallbacks.onDeleteReport(any())).thenAnswer((_) async {});
+  });
+
+  tearDown(() {
+    ConnectivityHelper.mockIsConnected = null;
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -805,6 +811,72 @@ void main() {
 
       expect(find.byIcon(Icons.thumb_down), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
+    });
+
+    testWidgets('offline vote keeps optimistic UI and shows voteOfflineSuccess snackbar', (
+      tester,
+    ) async {
+      ConnectivityHelper.mockIsConnected = false;
+      addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+      _stubFirestoreEmptyQuery(mockFirestore);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 10,
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.tap(find.byIcon(Icons.thumb_up_outlined));
+      await tester.pump();
+
+      // UI updates optimistically without rollback
+      expect(find.text('11'), findsOneWidget);
+      expect(find.byIcon(Icons.thumb_up), findsOneWidget);
+      verify(() => mockCallbacks.onVote(1)).called(1);
+
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(
+        find.text('report.detail.voteOfflineSuccess'.tr()),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('online vote keeps optimistic UI without offline snackbar', (
+      tester,
+    ) async {
+      ConnectivityHelper.mockIsConnected = true;
+      addTearDown(() => ConnectivityHelper.mockIsConnected = null);
+
+      _stubFirestoreEmptyQuery(mockFirestore);
+      when(
+        () => mockCallbacks.onInitVote(),
+      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      await _pumpReportDetailCard(
+        tester,
+        callbacks: mockCallbacks,
+        mockFirestore: mockFirestore,
+        score: 10,
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.tap(find.byIcon(Icons.thumb_up_outlined));
+      await tester.pump();
+
+      expect(find.text('11'), findsOneWidget);
+      expect(find.byIcon(Icons.thumb_up), findsOneWidget);
+      verify(() => mockCallbacks.onVote(1)).called(1);
+
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(
+        find.text('report.detail.voteOfflineSuccess'.tr()),
+        findsNothing,
+      );
     });
   });
 

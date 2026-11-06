@@ -365,6 +365,8 @@ class AccountDataService {
         await prefs.remove(SettingsDbService.settingsKey);
         await prefs.remove(HistoryDbService.getPendingHistoryKey(targetUid));
         await prefs.remove(ReportsDbService.getPendingReportsKey(targetUid));
+        await prefs.remove(ReportsDbService.getPendingVotesKey(targetUid));
+        await prefs.remove(ReportsDbService.getLocalVotesKey(targetUid));
       }
 
       // Svuota chiavi generiche

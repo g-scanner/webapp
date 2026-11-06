@@ -1627,6 +1627,102 @@ void main() {
     );
 
     test(
+      'voteOnReportByBarcode queues vote locally when Firestore fails / offline',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.uid).thenReturn('voter_offline');
+
+        final mockQuery = MockQuery();
+        when(
+          () => mockReportsCol.where('barcode', isEqualTo: '800OFFLINE'),
+        ).thenReturn(mockQuery);
+        when(
+          () => mockQuery.where('status', isEqualTo: 'open'),
+        ).thenReturn(mockQuery);
+        when(() => mockQuery.limit(1)).thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenThrow(
+          Exception('firestore unavailable'),
+        );
+
+        // Does not throw exception even though Firestore threw
+        await DbService.voteOnReportByBarcode('800OFFLINE', 1);
+
+        final pending = await ReportsDbService.getPendingVotes('voter_offline');
+        expect(pending['800OFFLINE'], 1);
+
+        final local = await ReportsDbService.getLocalVotes('voter_offline');
+        expect(local['800OFFLINE'], 1);
+      },
+    );
+
+    test(
+      'getReportVoteDataByBarcode returns pending vote when Firestore fails / offline',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.uid).thenReturn('voter_offline');
+
+        await ReportsDbService.markVotePending('voter_offline', '800PENDING', -1);
+
+        final mockQuery = MockQuery();
+        when(
+          () => mockReportsCol.where('barcode', isEqualTo: '800PENDING'),
+        ).thenReturn(mockQuery);
+        when(
+          () => mockQuery.where('status', isEqualTo: 'open'),
+        ).thenReturn(mockQuery);
+        when(() => mockQuery.limit(1)).thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenThrow(
+          Exception('firestore unavailable'),
+        );
+
+        final voteData = await DbService.getReportVoteDataByBarcode('800PENDING');
+        expect(voteData['userVote'], -1);
+      },
+    );
+
+    test(
+      'syncPendingVotesWithFirestore pushes pending votes and clears queue',
+      () async {
+        when(() => mockAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('voter_sync');
+
+        await ReportsDbService.markVotePending('voter_sync', '800SYNCVOTE', 1);
+
+        final mockQuery = MockQuery();
+        final mockSnap = MockQuerySnapshot();
+        final mockReportDoc = MockQueryDocumentSnapshot();
+        final mockVotesCol = MockCollectionReference();
+        final mockVoteDocRef = MockDocumentReference();
+        final mockVoteSnap = MockDocumentSnapshot();
+
+        when(
+          () => mockReportsCol.where('barcode', isEqualTo: '800SYNCVOTE'),
+        ).thenReturn(mockQuery);
+        when(
+          () => mockQuery.where('status', isEqualTo: 'open'),
+        ).thenReturn(mockQuery);
+        when(() => mockQuery.limit(1)).thenReturn(mockQuery);
+        when(() => mockQuery.get()).thenAnswer((_) async => mockSnap);
+
+        when(() => mockSnap.docs).thenReturn([mockReportDoc]);
+        when(() => mockReportDoc.reference).thenReturn(mockDocRef);
+        when(() => mockDocRef.collection('votes')).thenReturn(mockVotesCol);
+        when(() => mockVotesCol.doc('voter_sync')).thenReturn(mockVoteDocRef);
+        when(() => mockVoteDocRef.get()).thenAnswer((_) async => mockVoteSnap);
+        when(() => mockVoteSnap.exists).thenReturn(false);
+
+        await DbService.syncPendingVotesWithFirestore();
+
+        verify(() => mockBatch.set(mockVoteDocRef, {'val': 1})).called(1);
+        verify(() => mockBatch.commit()).called(1);
+
+        final pendingAfter = await ReportsDbService.getPendingVotes('voter_sync');
+        expect(pendingAfter.containsKey('800SYNCVOTE'), isFalse);
+      },
+    );
+
+    test(
       'syncSettingsWithFirestore merges remote and local reported barcodes',
       () async {
         when(() => mockAuth.currentUser).thenReturn(mockUser);
@@ -2091,7 +2187,15 @@ void main() {
         final prod = createSampleProduct(barcode: '800PRESERVE');
         await DbService.saveLocalProducts([prod]);
 
+        await ReportsDbService.markVotePending('user_preserve', '800WIPEVOTE', 1);
+        await ReportsDbService.saveLocalVote('user_preserve', '800WIPEVOTE', 1);
+
         await DbService.wipeCurrentUserLocalData();
+
+        final pendingVotes = await ReportsDbService.getPendingVotes('user_preserve');
+        expect(pendingVotes.isEmpty, isTrue);
+        final localVotes = await ReportsDbService.getLocalVotes('user_preserve');
+        expect(localVotes.isEmpty, isTrue);
 
         expect(prefs.getStringList('celiac_history'), isNull);
         expect(prefs.getString('celiac_settings'), isNull);
