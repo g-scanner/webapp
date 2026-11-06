@@ -17,7 +17,8 @@
         "default": "Segnalato il {date}, {time}"
       },
       "title": "Dettaglio segnalazione",
-      "voteError": "Errore durante la registrazione del voto. Riprova più tardi."
+      "voteError": "Errore durante la registrazione del voto. Riprova più tardi.",
+      "voteOfflineSuccess": "Voto salvato sul dispositivo. Verrà sincronizzato appena torni online."
     },
     "list": {
       "dropdown": {
