@@ -765,6 +765,42 @@ void main() {
     );
 
     testWidgets(
+      'On finalize error during completed sync: rolls back and shows error snackbar',
+      (tester) async {
+        final mockClient = MockClient((request) async {
+          return http.Response('OK', 200);
+        });
+        OfflineDbSyncService.setMockClient(mockClient);
+
+        await tester.pumpWidget(
+          _buildApp(
+            settings: testSettings(
+              tier: OfflineDbTier.glutenFree,
+              lastSyncedAt: 1773000000,
+            ),
+            onSettingsChange: (_, {bool isOfflineDbChange = false}) async {
+              throw Exception('Database storage error on save');
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Aggiorna'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Errore durante il download del database'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'Web: displays "Protezione reti mobili" toggle and shows network usage warnings',
       (WidgetTester tester) async {
         OfflineDbSyncService.isWebOverride = true;

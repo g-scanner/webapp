@@ -225,25 +225,36 @@ class _OfflineDatabaseSheetContentState
             });
 
             if (progress.step == OfflineSyncStep.completed) {
-              await OfflineDbService.setInstalledTier(tier);
-              final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-              final updated = _currentSettings.copyWith(
-                offlineDbTier: tier,
-                offlineDbLastSyncedAt: nowEpoch,
-              );
-              _currentSettings = updated;
-              await widget.onSettingsChange(updated, isOfflineDbChange: true);
+              try {
+                await OfflineDbService.setInstalledTier(tier);
+                final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+                final updated = _currentSettings.copyWith(
+                  offlineDbTier: tier,
+                  offlineDbLastSyncedAt: nowEpoch,
+                );
+                _currentSettings = updated;
+                await widget.onSettingsChange(updated, isOfflineDbChange: true);
 
-              if (mounted) {
-                setState(() {
-                  _installedTier = tier;
-                  _previewPack = tier.key;
-                  _downloadingTier = null;
-                  _syncSubscription?.cancel();
-                  _syncSubscription = null;
-                });
-                widget.onDatabaseUpdated?.call();
-                _triggerSnackbar("settings.offlineDb.syncSuccess".tr());
+                if (mounted) {
+                  setState(() {
+                    _installedTier = tier;
+                    _previewPack = tier.key;
+                    _downloadingTier = null;
+                    _syncSubscription?.cancel();
+                    _syncSubscription = null;
+                  });
+                  widget.onDatabaseUpdated?.call();
+                  _triggerSnackbar("settings.offlineDb.syncSuccess".tr());
+                }
+              } catch (e) {
+                debugPrint("Error finalizing database sync: $e");
+                if (mounted) {
+                  await _performRollback();
+                  _triggerSnackbar(
+                    "settings.offlineDb.downloadError".tr(),
+                    isError: true,
+                  );
+                }
               }
             } else if (progress.step == OfflineSyncStep.error) {
               if (mounted) {
@@ -271,7 +282,8 @@ class _OfflineDatabaseSheetContentState
     _syncSubscription = null;
     OfflineDbSyncService.cancelSync();
 
-    if (_rollbackTier == OfflineDbTier.none) {
+    try {
+      if (_rollbackTier == OfflineDbTier.none) {
       await OfflineDbService.deleteDatabaseFile();
       await OfflineDbService.setInstalledTier(OfflineDbTier.none);
       if (_currentSettings.offlineDbTier != OfflineDbTier.none ||
@@ -312,6 +324,9 @@ class _OfflineDatabaseSheetContentState
         });
         widget.onDatabaseUpdated?.call();
       }
+    }
+    } catch (e) {
+      debugPrint("Error during _performRollback: $e");
     }
   }
 
