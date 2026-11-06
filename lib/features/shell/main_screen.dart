@@ -1881,25 +1881,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               }
             }
           },
-          onResetDB: () async {
-            try {
-              await DbService.wipeHistoryLocal();
-              if (mounted) {
-                setState(() {
-                  history = [];
-                  _navController.resetToScanner();
-                });
-              }
-            } catch (e) {
-              if (mounted) {
-                showAppSnackBar(
-                  context,
-                  "settings.dataAndHistory.resetDbError".tr(),
-                  isError: true,
-                );
-              }
-            }
-          },
           onClearHistory: handleClearHistory,
           onClearProductCache: handleClearProductCache,
           onRefresh: refreshAllData,

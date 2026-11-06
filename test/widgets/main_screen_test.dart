@@ -383,30 +383,7 @@ void main() {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // GROUP 4 – Settings Interaction & DB Reset
-  // ═══════════════════════════════════════════════════════════════════════════
-  group('GROUP 4 – Settings Interaction & DB Reset', () {
-    testWidgets(
-      'navigates to settings and triggers resetDB to return to tab 0',
-      (tester) async {
-        await _pumpMainScreen(tester, auth: mockAuth);
-
-        // Navigate to Settings
-        await tester.tap(find.text('common.navigation.settings'));
-        await tester.pump();
-        expect(tester.widget<IndexedStack>(_findMainIndexedStack()).index, 3);
-
-        // Trigger onResetDB via SettingsPanel's callback
-        final settingsPanel = tester.widget<SettingsPanel>(
-          find.byType(SettingsPanel),
-        );
-        await settingsPanel.onResetDB();
-        await tester.pump();
-
-        // Should be back on tab 0 (CameraModule)
-        expect(tester.widget<IndexedStack>(_findMainIndexedStack()).index, 0);
-      },
-    );
+  group('GROUP 4 – Settings Interaction', () {
 
     testWidgets('onSettingsChange updates themeNotifier and userSettings', (
       tester,

@@ -16,7 +16,7 @@ import 'utils/storage_utils.dart';
 class SettingsPanel extends StatefulWidget {
   final UserSettings settings;
   final Future<void> Function(UserSettings, {bool isOfflineDbChange}) onSettingsChange;
-  final Future<void> Function() onResetDB;
+
   final Future<void> Function() onClearHistory;
   final Future<void> Function()? onClearProductCache;
   final Future<void> Function()? onRefresh;
@@ -27,7 +27,7 @@ class SettingsPanel extends StatefulWidget {
     super.key,
     required this.settings,
     required this.onSettingsChange,
-    required this.onResetDB,
+
     required this.onClearHistory,
     this.onClearProductCache,
     this.onRefresh,

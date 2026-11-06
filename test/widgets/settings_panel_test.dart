@@ -27,7 +27,7 @@ class MockUserInfo extends Mock implements UserInfo {}
 
 class _Callbacks {
   Future<void> onSettingsChange(UserSettings s) async {}
-  Future<void> onResetDB() async {}
+
   Future<void> onClearHistory() async {}
   Future<void> onClearProductCache() async {}
 }
@@ -74,7 +74,7 @@ Future<void> _pump(
           settings: settings ?? _settings(),
           onSettingsChange: (s, {bool isOfflineDbChange = false}) =>
               cb.onSettingsChange(s),
-          onResetDB: () => cb.onResetDB(),
+
           onClearHistory: () => cb.onClearHistory(),
           onClearProductCache: () => cb.onClearProductCache(),
           firebaseAuth: auth,
@@ -121,7 +121,7 @@ void main() {
     DbService.db = mockDb;
 
     when(() => cb.onSettingsChange(any())).thenAnswer((_) async {});
-    when(() => cb.onResetDB()).thenAnswer((_) async {});
+
     when(() => cb.onClearHistory()).thenAnswer((_) async {});
     when(() => cb.onClearProductCache()).thenAnswer((_) async {});
 
