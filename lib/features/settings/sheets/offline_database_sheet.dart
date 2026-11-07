@@ -350,12 +350,12 @@ class _OfflineDatabaseSheetContentState
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: ctx.colorScheme.errorContainer,
+              color: ctx.colorScheme.iconCircleErrorBg,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.delete_outline_rounded,
-              color: ctx.colorScheme.onErrorContainer,
+              color: ctx.colorScheme.error,
               size: 28,
             ),
           ),
@@ -510,14 +510,14 @@ class _OfflineDatabaseSheetContentState
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: ctx.colorScheme.primaryContainer,
+              color: ctx.colorScheme.iconCirclePrimaryBg,
               shape: BoxShape.circle,
             ),
             child: Icon(
               isInitialInstall
                   ? Icons.cloud_download_rounded
                   : Icons.swap_horiz_rounded,
-              color: ctx.colorScheme.onPrimaryContainer,
+              color: ctx.colorScheme.primary,
               size: 28,
             ),
           ),
@@ -621,12 +621,12 @@ class _OfflineDatabaseSheetContentState
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: ctx.colorScheme.primaryContainer,
+                color: ctx.colorScheme.iconCirclePrimaryBg,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.refresh_rounded,
-                color: ctx.colorScheme.onPrimaryContainer,
+                color: ctx.colorScheme.primary,
                 size: 28,
               ),
             ),

@@ -117,18 +117,20 @@ class _VoteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Colori attivi: verde per upvote (statusPrimary), rosso per downvote (statusError)
+    // Colori attivi coordinati con i selettori di sincronizzazione dati
     final activeColor = isUpvote
-        ? colorScheme
-              .statusPrimaryText // verde tema app
-        : colorScheme.statusErrorText; // rosso tema app
+        ? colorScheme.statusPrimaryText
+        : colorScheme.statusErrorText;
     final activeBg = isUpvote
-        ? colorScheme.statusPrimaryBg
-        : colorScheme.statusErrorBg;
+        ? colorScheme.selectedItemBg
+        : colorScheme.selectedErrorItemBg;
+    final activeBorder = isUpvote
+        ? colorScheme.selectedItemBorder
+        : colorScheme.selectedErrorItemBorder;
 
     final iconColor = isActive ? activeColor : colorScheme.onSurfaceVariant;
     final textColor = isActive ? activeColor : colorScheme.onSurfaceVariant;
-    final bgColor = isActive ? activeBg : colorScheme.surfaceContainerHigh;
+    final bgColor = isActive ? activeBg : colorScheme.unselectedItemBg;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -137,10 +139,7 @@ class _VoteButton extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: isActive
-              ? activeColor.withValues(alpha: 0.35)
-              : Colors.transparent,
-          width: 1.5,
+          color: isActive ? activeBorder : Colors.transparent,
         ),
       ),
       child: Material(
@@ -150,8 +149,12 @@ class _VoteButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(999),
-          // splashColor: activeColor.withValues(alpha: 0.18),
-          // highlightColor: activeColor.withValues(alpha: 0.10),
+          splashColor: isUpvote
+              ? colorScheme.splashPrimary
+              : colorScheme.splashError,
+          highlightColor: isUpvote
+              ? colorScheme.selectedItemBg
+              : colorScheme.selectedErrorItemBg,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(

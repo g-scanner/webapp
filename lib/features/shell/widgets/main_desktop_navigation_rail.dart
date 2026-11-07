@@ -86,20 +86,19 @@ class MainDesktopNavigationRail extends StatelessWidget {
                             },
                             selectedLabelTextStyle: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: colorScheme.onSecondaryContainer,
+                              color: colorScheme.navSelectedFg,
                             ),
                             unselectedLabelTextStyle: TextStyle(
                               fontWeight: FontWeight.w500,
                               color: colorScheme.onSurfaceVariant,
                             ),
                             selectedIconTheme: IconThemeData(
-                              color: colorScheme.onSecondaryContainer,
+                              color: colorScheme.navSelectedFg,
                             ),
                             unselectedIconTheme: IconThemeData(
                               color: colorScheme.onSurfaceVariant,
                             ),
-                            indicatorColor: colorScheme.secondaryContainer
-                                .withValues(alpha: 0.3),
+                            indicatorColor: colorScheme.navSelectedBg,
                             labelType: NavigationRailLabelType.all,
                             destinations: [
                               NavigationRailDestination(

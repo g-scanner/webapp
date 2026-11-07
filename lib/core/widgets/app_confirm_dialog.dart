@@ -42,7 +42,7 @@ Future<void> showAppConfirmDialog({
             child: Icon(
               icon,
               color: isDestructive
-                  ? colorScheme.onErrorContainer
+                  ? colorScheme.error
                   : colorScheme.primary,
               size: 28,
             ),

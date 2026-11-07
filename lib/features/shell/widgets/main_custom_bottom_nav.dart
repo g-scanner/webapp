@@ -94,14 +94,14 @@ class MainCustomBottomNav extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? colorScheme.secondaryContainer.withValues(alpha: 0.3)
+                    ? colorScheme.navSelectedBg
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 isSelected ? activeIcon : inactiveIcon,
                 color: isSelected
-                    ? colorScheme.onSecondaryContainer
+                    ? colorScheme.navSelectedFg
                     : colorScheme.onSurfaceVariant,
                 size: 24,
               ),
@@ -116,7 +116,7 @@ class MainCustomBottomNav extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected
-                      ? colorScheme.onSecondaryContainer
+                      ? colorScheme.navSelectedFg
                       : colorScheme.onSurfaceVariant,
                   letterSpacing: 0.5,
                 ),

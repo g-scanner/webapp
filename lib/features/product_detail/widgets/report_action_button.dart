@@ -26,7 +26,7 @@ class ReportActionButton extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: colorScheme.errorContainer.withValues(alpha: 0.5),
+          color: colorScheme.statusErrorBg,
           borderRadius: BorderRadius.circular(32),
         ),
         alignment: Alignment.center,
@@ -35,7 +35,7 @@ class ReportActionButton extends StatelessWidget {
           children: [
             Icon(
               Icons.check_circle,
-              color: colorScheme.error,
+              color: colorScheme.statusErrorText,
               size: 20,
             ),
             const SizedBox(width: 8),
@@ -44,7 +44,7 @@ class ReportActionButton extends StatelessWidget {
                 "product.actions.alreadyReported".tr(),
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: colorScheme.error,
+                  color: colorScheme.statusErrorText,
                   fontWeight: FontWeight.w500,
                   fontSize: 16,
                 ),
@@ -58,8 +58,9 @@ class ReportActionButton extends StatelessWidget {
     return OutlinedButton.icon(
       onPressed: onReportPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: colorScheme.error,
-        side: BorderSide(color: colorScheme.error, width: 1.5),
+        foregroundColor: colorScheme.statusErrorText,
+        overlayColor: colorScheme.splashError,
+        side: BorderSide(color: colorScheme.statusErrorText, width: 1.5),
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(32),

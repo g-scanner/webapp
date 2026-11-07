@@ -60,7 +60,7 @@ class SectionCard extends StatelessWidget {
                   color: isCaution
                       ? colorScheme.onSurface
                       : isLactose
-                      ? colorScheme.onSecondaryContainer
+                      ? colorScheme.lactoseText
                       : colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
@@ -75,7 +75,7 @@ class SectionCard extends StatelessWidget {
                     color: isCaution
                         ? colorScheme.onSurface
                         : isLactose
-                        ? colorScheme.onSecondaryContainer
+                        ? colorScheme.lactoseText
                         : colorScheme.onSurfaceVariant,
                   ),
                 ),

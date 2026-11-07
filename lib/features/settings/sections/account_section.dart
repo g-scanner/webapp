@@ -283,12 +283,12 @@ class AccountSection extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: colorScheme.errorContainer,
+              color: colorScheme.iconCircleErrorBg,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.logout_rounded,
-              color: colorScheme.onErrorContainer,
+              color: colorScheme.error,
               size: 28,
             ),
           ),

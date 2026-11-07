@@ -2,6 +2,7 @@
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 import 'app_popup_menu_item.dart';
 
 /// Voce di menu popup con spunta circolare animata sul lato destro,
@@ -21,10 +22,14 @@ class AppRadioPopupMenuItem<T> extends AppPopupMenuItem<T> {
          mouseCursor: isSelected ? SystemMouseCursors.basic : SystemMouseCursors.click,
          customSplashColor: isSelected
              ? Colors.transparent
-             : (activeTextColor ?? colorScheme.primary).withValues(alpha: 0.12),
+             : (activeTextColor != null
+                 ? activeTextColor.withValues(alpha: 0.12)
+                 : colorScheme.splashPrimary),
          customHighlightColor: isSelected
              ? Colors.transparent
-             : (activeTextColor ?? colorScheme.primary).withValues(alpha: 0.08),
+             : (activeTextColor != null
+                 ? activeTextColor.withValues(alpha: 0.08)
+                 : colorScheme.selectedItemBg),
          customHoverColor: isSelected
              ? Colors.transparent
              : (activeTextColor ?? colorScheme.primary).withValues(alpha: 0.06),
@@ -32,8 +37,7 @@ class AppRadioPopupMenuItem<T> extends AppPopupMenuItem<T> {
            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
            decoration: BoxDecoration(
              color: isSelected
-                 ? (activeBgColor ??
-                     colorScheme.primary.withValues(alpha: 0.12))
+                 ? (activeBgColor ?? colorScheme.selectedItemBg)
                  : Colors.transparent,
              borderRadius: BorderRadius.circular(999),
            ),

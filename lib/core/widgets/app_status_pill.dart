@@ -25,6 +25,10 @@ enum AppStatusPillVariant {
   /// Grigio neutro — sconosciuto, disabilitato, in attesa.
   /// bg: surfaceContainerHighest · text: onSurfaceVariant
   neutral,
+
+  /// Azzurrino/blu — secondario, lattosio, filtro attivo.
+  /// bg: secondaryContainer · text: onSecondaryContainer
+  secondary,
 }
 
 /// Pillola di stato riutilizzabile con sfondo colorato e testo opzionalmente
@@ -98,6 +102,8 @@ class AppStatusPill extends StatelessWidget {
         return (bg: colorScheme.statusTertiaryBg, text: colorScheme.statusTertiaryText);
       case AppStatusPillVariant.neutral:
         return (bg: colorScheme.statusNeutralBg, text: colorScheme.statusNeutralText);
+      case AppStatusPillVariant.secondary:
+        return (bg: colorScheme.statusSecondaryBg, text: colorScheme.statusSecondaryText);
     }
   }
 
@@ -116,6 +122,8 @@ class AppStatusPill extends StatelessWidget {
         return colorScheme.iconCircleTertiaryBg;
       case AppStatusPillVariant.neutral:
         return colorScheme.statusNeutralBg;
+      case AppStatusPillVariant.secondary:
+        return colorScheme.iconCircleSecondaryBg;
     }
   }
 

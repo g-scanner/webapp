@@ -39,7 +39,7 @@ class ReportsFilterHeader extends StatelessWidget {
   Color _getFilterColor(BuildContext context, String filter) {
     final colorScheme = context.colorScheme;
     if (filter == "Mie") {
-      return colorScheme.secondaryContainer.withValues(alpha: 0.15);
+      return colorScheme.statusSecondaryBg;
     }
     return colorScheme.surfaceContainerHighest;
   }
@@ -47,7 +47,7 @@ class ReportsFilterHeader extends StatelessWidget {
   Color _getFilterTextColor(BuildContext context, String filter) {
     final colorScheme = context.colorScheme;
     if (filter == "Mie") {
-      return colorScheme.onSecondaryContainer;
+      return colorScheme.statusSecondaryText;
     }
     return colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
   }

@@ -43,6 +43,8 @@ final ThemeData lightTheme = ThemeData(
     inversePrimary: darkPrimary,
   ),
   scaffoldBackgroundColor: lightSurface,
+  splashColor: lightPrimary.withValues(alpha: 0.12),
+  highlightColor: lightPrimary.withValues(alpha: 0.08),
   appBarTheme: const AppBarTheme(
     backgroundColor: Color(0xFFFFFFFF),
     foregroundColor: lightOnSurface,
@@ -106,6 +108,8 @@ final ThemeData darkTheme = ThemeData(
     inversePrimary: lightPrimary,
   ),
   scaffoldBackgroundColor: darkSurface,
+  splashColor: darkPrimary.withValues(alpha: 0.12),
+  highlightColor: darkPrimary.withValues(alpha: 0.08),
   appBarTheme: const AppBarTheme(
     backgroundColor: darkSurface,
     foregroundColor: darkOnSurface,
@@ -195,8 +199,8 @@ extension AppColorTokens on ColorScheme {
   Color get statusPrimaryText => primary;
 
   Color get statusErrorBg => errorContainer.withValues(
-        alpha: brightness == Brightness.dark ? 0.2 : 0.5,
-      );
+    alpha: brightness == Brightness.dark ? 0.2 : 0.5,
+  );
   Color get statusErrorText => error;
 
   Color get statusTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
@@ -205,18 +209,39 @@ extension AppColorTokens on ColorScheme {
   Color get statusNeutralBg => surfaceContainerHighest;
   Color get statusNeutralText => onSurfaceVariant;
 
+  // ── Variante secondaria / Lattosio / Filtro attivo (azzurrino + blu) ───────
+  Color get statusSecondaryBg => secondaryContainer.withValues(alpha: 0.15);
+  Color get statusSecondaryText => onSecondaryContainer;
+
+  // Alias semantici espliciti per Lattosio
+  Color get lactoseBg => statusSecondaryBg;
+  Color get lactoseText => statusSecondaryText;
+
   // ── Cerchi icona ──────────────────────────────────────────────────────────
   Color get iconCirclePrimaryBg => primaryContainer.withValues(alpha: 0.15);
   Color get iconCircleErrorBg => errorContainer.withValues(
-        alpha: brightness == Brightness.dark ? 0.2 : 0.5,
-      );
+    alpha: brightness == Brightness.dark ? 0.2 : 0.5,
+  );
   Color get iconCircleTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
+  Color get iconCircleSecondaryBg => secondaryContainer.withValues(alpha: 0.15);
+
+  // ── Elemento selezionato barra navigazione (azzurrino + blu) ───────────────
+  Color get navSelectedBg => secondaryContainer.withValues(alpha: 0.3);
+  Color get navSelectedFg => onSecondaryContainer;
 
   // ── CTA bar ───────────────────────────────────────────────────────────────
   Color get ctaTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
 
-  // ── Elementi selezionati ──────────────────────────────────────────────────
+  // ── Elementi selezionati e non selezionati ────────────────────────────────
   Color get selectedItemBg => primaryContainer.withValues(alpha: 0.08);
+  Color get selectedItemBorder => primary.withValues(alpha: 0.25);
+
+  Color get selectedErrorItemBg => errorContainer.withValues(
+    alpha: brightness == Brightness.dark ? 0.2 : 0.5,
+  );
+  Color get selectedErrorItemBorder => error.withValues(alpha: 0.25);
+
+  Color get unselectedItemBg => surfaceContainerHighest.withValues(alpha: 0.35);
 
   // ── Pillola selettore popup (tema, lingua, motivo, …) ─────────────────────
   //   Sfondo neutro della pillola che apre un PopupMenuButton di scelta.
@@ -225,4 +250,8 @@ extension AppColorTokens on ColorScheme {
   // ── Accesso anonimo ────────────────────────────────────────────────────────
   //   Colore del bottone "Entra senza autenticazione" nella schermata di login.
   Color get anonymousEntryFg => primary;
+
+  // ── Effetti splash / interazione ───────────────────────────────────────────
+  Color get splashPrimary => primary.withValues(alpha: 0.12);
+  Color get splashError => error.withValues(alpha: 0.12);
 }

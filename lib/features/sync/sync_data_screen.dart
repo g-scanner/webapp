@@ -74,12 +74,12 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: colorScheme.errorContainer,
+            color: colorScheme.iconCircleErrorBg,
             shape: BoxShape.circle,
           ),
           child: Icon(
             Icons.warning_rounded,
-            color: colorScheme.onErrorContainer,
+            color: colorScheme.error,
             size: 28,
           ),
         ),
@@ -389,11 +389,11 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
         decoration: BoxDecoration(
           color: checked
               ? colorScheme.selectedItemBg
-              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+              : colorScheme.unselectedItemBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: checked
-                ? colorScheme.primary.withValues(alpha: 0.25)
+                ? colorScheme.selectedItemBorder
                 : Colors.transparent,
           ),
         ),
@@ -529,6 +529,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
             onPressed: !_isProcessing ? _showDiscardConfirmation : null,
             style: TextButton.styleFrom(
               foregroundColor: colorScheme.error,
+              overlayColor: colorScheme.splashError,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(32),
               ),

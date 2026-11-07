@@ -16,8 +16,8 @@ class AppDestructivePopupMenuItem<T> extends AppPopupMenuItem<T> {
     required ColorScheme colorScheme,
     super.onTap,
   }) : super(
-         customSplashColor: colorScheme.error.withValues(alpha: 0.12),
-         customHighlightColor: colorScheme.error.withValues(alpha: 0.08),
+         customSplashColor: colorScheme.splashError,
+         customHighlightColor: colorScheme.selectedErrorItemBg,
          customHoverColor: colorScheme.error.withValues(alpha: 0.06),
          child: Container(
            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

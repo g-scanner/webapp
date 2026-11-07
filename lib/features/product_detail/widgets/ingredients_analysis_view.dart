@@ -145,7 +145,7 @@ class LactoseAlertSection extends StatelessWidget {
       title: "product.lactoseAlert.title".tr(),
       icon: Icons.water_drop,
       isLactose: true,
-      bgColor: colorScheme.secondaryContainer.withValues(alpha: 0.15),
+      bgColor: colorScheme.lactoseBg,
       child: Text(
         "product.lactoseAlert.body".tr(),
         style: TextStyle(

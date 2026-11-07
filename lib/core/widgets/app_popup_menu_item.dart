@@ -2,6 +2,7 @@
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 /// Menu item personalizzato per PopupMenuButton progettato per il design system di G-Scanner:
 /// - Rispetta fedelmente il bordo arrotondato dell'elemento (default 12dp) durante hover, click e pressione prolungata.
@@ -47,10 +48,8 @@ class AppPopupMenuItemState<T, W extends AppPopupMenuItem<T>>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final splash = widget.customSplashColor ??
-        colorScheme.primary.withValues(alpha: 0.12);
-    final highlight = widget.customHighlightColor ??
-        colorScheme.primary.withValues(alpha: 0.08);
+    final splash = widget.customSplashColor ?? colorScheme.splashPrimary;
+    final highlight = widget.customHighlightColor ?? colorScheme.selectedItemBg;
     final hover = widget.customHoverColor ??
         colorScheme.primary.withValues(alpha: 0.06);
 

@@ -149,7 +149,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer.withValues(alpha: 0.15),
+        color: colorScheme.lactoseBg,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -158,7 +158,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
           Icon(
             Icons.water_drop_outlined,
             size: 14,
-            color: colorScheme.onSecondaryContainer,
+            color: colorScheme.lactoseText,
           ),
           const SizedBox(width: 4),
           Text(
@@ -166,7 +166,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: colorScheme.onSecondaryContainer,
+              color: colorScheme.lactoseText,
               letterSpacing: 0.2,
             ),
           ),

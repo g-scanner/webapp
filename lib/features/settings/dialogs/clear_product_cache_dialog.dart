@@ -20,12 +20,12 @@ Future<bool?> showClearProductCacheDialog(BuildContext context) {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: colorScheme.errorContainer,
+            color: colorScheme.iconCircleErrorBg,
             shape: BoxShape.circle,
           ),
           child: Icon(
             Icons.inventory_2_outlined,
-            color: colorScheme.onErrorContainer,
+            color: colorScheme.error,
             size: 28,
           ),
         ),
