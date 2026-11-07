@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
 import 'daos/scan_history_dao.dart';
+import 'background_sync_manager.dart';
 
 /// Servizio per la gestione della cronologia delle scansioni.
 /// Utilizza SQLite (sqflite) per paginazione nativa e zero caricamenti massivi in RAM.
@@ -52,6 +53,7 @@ class HistoryDbService {
     if (!current.contains(id)) {
       await prefs.setStringList(key, [...current, id]);
     }
+    await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
   }
 
   /// Rimuove gli ID specificati dalla lista dei pendenti (sincronizzati con successo o eliminati).
@@ -63,6 +65,7 @@ class HistoryDbService {
     final idSet = ids.toSet();
     final updated = current.where((id) => !idSet.contains(id)).toList();
     await prefs.setStringList(key, updated);
+    await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
   }
 
   /// Salva una nuova voce di cronologia nel database locale SQLite e, se autenticato, su Firestore.
@@ -383,6 +386,7 @@ class HistoryDbService {
           'deleted_barcodes_sync_filter',
           deletedFilter,
         );
+        await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
       }
 
       if (user != null && !user.isAnonymous) {
@@ -443,6 +447,7 @@ class HistoryDbService {
           'deleted_history_ids_sync_filter',
           deletedFilter,
         );
+        await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
       }
 
       if (user != null && !user.isAnonymous) {

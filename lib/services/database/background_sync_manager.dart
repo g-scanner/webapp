@@ -1,19 +1,30 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:background_downloader/background_downloader.dart' as bg;
 import 'package:path/path.dart' as p;
 import 'package:crypto/crypto.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../firebase_options.dart';
 import '../../models/models.dart';
 import 'offline_db_service.dart';
 import 'offline_db_sync_service.dart';
 import 'settings_db_service.dart';
+import 'reports_db_service.dart';
+import 'history_db_service.dart';
 import '../../core/network/connectivity_helper.dart';
 
 /// Identificativo del task di sincronizzazione periodica in background (Trigger 1).
 const String offlineDbPeriodicTask = 'com.emanueleciotola.gscanner.offlineDbPeriodicSync';
+
+/// Identificativo del task one-shot per la sincronizzazione dei dati utente pendenti (Trigger 2).
+const String pendingDataOneShotTask = 'com.emanueleciotola.gscanner.pendingDataOneShotSync';
 
 /// Esegue il download del delta su iOS delegandolo nativamente a Background URLSession.
 /// Rispetta il limite rigido dei 30 secondi: l'OS gestisce il download HTTP in background
@@ -137,11 +148,72 @@ Future<bool> performIosBackgroundDownloadAndMerge(UserSettings settings) async {
   }
 }
 
+/// Esegue la sincronizzazione verso Firestore dei dati utente pendenti generati offline.
+/// Controlla i vincoli di rete (Wi-Fi, connettività Internet) e la presenza effettiva di dati.
+Future<bool> performPendingDataSync(UserSettings settings) async {
+  try {
+    debugPrint('BackgroundSyncManager [PendingSync]: Starting pending data sync...');
+
+    if (settings.offlineDbWifiOnly) {
+      final isWifi = await ConnectivityHelper.isWifiConnection();
+      if (!isWifi) {
+        debugPrint(
+          'BackgroundSyncManager [PendingSync]: Aborted: offlineDbWifiOnly is active and device is not on Wi-Fi.',
+        );
+        return true;
+      }
+    }
+
+    final hasInternet = await ConnectivityHelper.hasInternetConnection();
+    if (!hasInternet) {
+      debugPrint('BackgroundSyncManager [PendingSync]: Aborted: no internet connection.');
+      return true;
+    }
+
+    final hasData = await BackgroundSyncManager.hasPendingUserData();
+    if (!hasData) {
+      debugPrint('BackgroundSyncManager [PendingSync]: Aborted: no pending user data found.');
+      return true;
+    }
+
+    // Inizializza Firebase se non ancora disponibile nell'isolate di background
+    if (Firebase.apps.isEmpty) {
+      WidgetsFlutterBinding.ensureInitialized();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+
+    final db = FirebaseFirestore.instance;
+    final auth = FirebaseAuth.instance;
+
+    // 1. Sincronizza i voti sulle segnalazioni in attesa
+    await ReportsDbService.syncPendingVotesWithFirestore(db, auth);
+
+    // 2. Sincronizza le segnalazioni (upload pendenti e cancellazione tombstones)
+    await ReportsDbService.syncReportsWithFirestore(db, auth);
+
+    // 3. Sincronizza la cronologia scansioni (upload pendenti e cancellazione tombstones)
+    await HistoryDbService.syncHistoryWithFirestore(db, auth);
+
+    debugPrint('BackgroundSyncManager [PendingSync]: Completed successfully.');
+    return true;
+  } catch (e) {
+    debugPrint('BackgroundSyncManager [PendingSync]: Error: $e');
+    return false;
+  }
+}
+
 /// Callback dispatcher di WorkManager (eseguita in un isolate Dart separato quando l'app è chiusa).
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     debugPrint('BackgroundSyncManager: WorkManager task started: $taskName');
+
+    if (taskName == pendingDataOneShotTask) {
+      final settings = await SettingsDbService.getLocalSettings();
+      return performPendingDataSync(settings);
+    }
 
     if (taskName == offlineDbPeriodicTask) {
       try {
@@ -279,6 +351,118 @@ class BackgroundSyncManager {
     }
   }
 
+  /// Verifica se sono presenti dati utente in attesa di sincronizzazione
+  /// (voti, segnalazioni, tombstones segnalazioni, cronologia, tombstones cronologia).
+  static Future<bool> hasPendingUserData([String? userId]) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final uid = userId ??
+          (Firebase.apps.isNotEmpty
+              ? FirebaseAuth.instance.currentUser?.uid
+              : null) ??
+          'anonymous_voter';
+
+      // 1. Voti pendenti
+      final pendingVotesStr =
+          prefs.getString(ReportsDbService.getPendingVotesKey(uid));
+      if (pendingVotesStr != null &&
+          pendingVotesStr.isNotEmpty &&
+          pendingVotesStr != '{}') {
+        return true;
+      }
+
+      // 2. Segnalazioni pendenti
+      final pendingReports =
+          prefs.getStringList(ReportsDbService.getPendingReportsKey(uid));
+      if (pendingReports != null && pendingReports.isNotEmpty) {
+        return true;
+      }
+
+      // 3. Tombstone segnalazioni
+      final deletedReports = prefs.getStringList('deleted_reports_sync_filter');
+      if (deletedReports != null && deletedReports.isNotEmpty) {
+        return true;
+      }
+
+      // 4. Cronologia scansioni pendenti
+      final pendingHistory =
+          prefs.getStringList(HistoryDbService.getPendingHistoryKey(uid));
+      if (pendingHistory != null && pendingHistory.isNotEmpty) {
+        return true;
+      }
+
+      // 5. Tombstone cronologia
+      final deletedBarcodes =
+          prefs.getStringList('deleted_barcodes_sync_filter');
+      if (deletedBarcodes != null && deletedBarcodes.isNotEmpty) {
+        return true;
+      }
+      final deletedHistoryIds =
+          prefs.getStringList('deleted_history_ids_sync_filter');
+      if (deletedHistoryIds != null && deletedHistoryIds.isNotEmpty) {
+        return true;
+      }
+    } catch (e) {
+      debugPrint('BackgroundSyncManager.hasPendingUserData error: $e');
+    }
+
+    return false;
+  }
+
+  /// Schedula il task One-Shot per i dati utente pendenti solo se necessario.
+  /// Su Web o se non vi sono dati pendenti, è una no-op sicura.
+  static Future<void> schedulePendingDataSyncIfNeeded({
+    UserSettings? settings,
+    ExistingWorkPolicy existingWorkPolicy = ExistingWorkPolicy.keep,
+  }) async {
+    if (kIsWeb) return;
+
+    final hasData = await hasPendingUserData();
+    if (!hasData) {
+      await cancelPendingDataSync();
+      return;
+    }
+
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    try {
+      final effectiveSettings =
+          settings ?? await SettingsDbService.getLocalSettings();
+
+      await Workmanager().registerOneOffTask(
+        pendingDataOneShotTask,
+        pendingDataOneShotTask,
+        constraints: Constraints(
+          networkType: effectiveSettings.offlineDbWifiOnly
+              ? NetworkType.unmetered
+              : NetworkType.connected,
+          requiresBatteryNotLow: false,
+        ),
+        existingWorkPolicy: existingWorkPolicy,
+      );
+      debugPrint(
+        'BackgroundSyncManager: Scheduled One-Shot pending data sync (wifiOnly: ${effectiveSettings.offlineDbWifiOnly}).',
+      );
+    } catch (e) {
+      debugPrint(
+        'BackgroundSyncManager: Failed scheduling One-Shot pending data sync: $e',
+      );
+    }
+  }
+
+  /// Cancella il task One-Shot se le code sono state svuotate (es. in foreground).
+  static Future<void> cancelPendingDataSync() async {
+    if (kIsWeb) return;
+    try {
+      await Workmanager().cancelByUniqueName(pendingDataOneShotTask);
+      debugPrint('BackgroundSyncManager: Cancelled One-Shot pending data sync.');
+    } catch (e) {
+      debugPrint('BackgroundSyncManager: Failed cancelling One-Shot task: $e');
+    }
+  }
+
   /// Registra o annulla il task periodico di 7 giorni in base alle preferenze dell'utente.
   static Future<void> updatePeriodicTaskRegistration(UserSettings settings) async {
     if (kIsWeb) return;
@@ -288,6 +472,12 @@ class BackgroundSyncManager {
     }
 
     try {
+      // Se ci sono dati pendenti, aggiorna anche il task One-Shot con le nuove impostazioni (es. cambio wifiOnly)
+      await schedulePendingDataSyncIfNeeded(
+        settings: settings,
+        existingWorkPolicy: ExistingWorkPolicy.replace,
+      );
+
       final shouldSchedule = settings.offlineDbTier != OfflineDbTier.none &&
           settings.offlineDbAutoSync;
 

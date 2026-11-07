@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/models.dart';
 import 'daos/product_report_dao.dart';
 import 'local_cache_service.dart' show productsCollection;
+import 'background_sync_manager.dart';
 
 const String reportsCollection = "reports";
 
@@ -55,6 +56,7 @@ class ReportsDbService {
     if (!current.contains(id)) {
       await prefs.setStringList(key, [...current, id]);
     }
+    await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
   }
 
   /// Rimuove gli ID specificati dalla lista delle segnalazioni pendenti.
@@ -66,6 +68,7 @@ class ReportsDbService {
     final idSet = ids.toSet();
     final updated = current.where((id) => !idSet.contains(id)).toList();
     await prefs.setStringList(key, updated);
+    await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
   }
 
   static const String pendingVotesPrefix = 'pending_report_votes_';
@@ -97,6 +100,7 @@ class ReportsDbService {
     final votes = await getPendingVotes(uid);
     votes[barcode] = vote;
     await prefs.setString(getPendingVotesKey(uid), json.encode(votes));
+    await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
   }
 
   /// Rimuove un voto dalla lista dei voti pendenti una volta sincronizzato.
@@ -111,6 +115,7 @@ class ReportsDbService {
         await prefs.setString(getPendingVotesKey(uid), json.encode(votes));
       }
     }
+    await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
   }
 
   /// Recupera la cache locale dei voti dell'utente.
@@ -460,6 +465,7 @@ class ReportsDbService {
         deletedFilter.add(reportId);
         if (deletedFilter.length > 100) deletedFilter.removeAt(0);
         await prefs.setStringList('deleted_reports_sync_filter', deletedFilter);
+        await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
       }
 
       // Supporta pulizia prefs per test che iniettano in SharedPreferences
@@ -596,7 +602,7 @@ class ReportsDbService {
       final pendingVotes = await getPendingVotes(userId);
       final localVotes = await getLocalVotes(userId);
       final userVote = pendingVotes[barcode] ?? localVotes[barcode] ?? 0;
-      return {'score': 0, 'userVote': userVote};
+      return {'upvotes': 0, 'downvotes': 0, 'userVote': userVote};
     }
   }
 }
