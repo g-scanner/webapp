@@ -1553,7 +1553,7 @@ void main() {
     );
 
     test(
-      'voteOnReportByBarcode creates vote and updates report score via batch',
+      'voteOnReportByBarcode creates vote and updates upvotes via batch',
       () async {
         when(() => mockAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.uid).thenReturn('voter_1');
@@ -1589,7 +1589,7 @@ void main() {
     );
 
     test(
-      'getReportVoteDataByBarcode retrieves report score and user vote',
+      'getReportVoteDataByBarcode retrieves upvotes, downvotes and user vote',
       () async {
         when(() => mockAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.uid).thenReturn('voter_1');
@@ -1611,7 +1611,7 @@ void main() {
         when(() => mockQuery.get()).thenAnswer((_) async => mockSnap);
 
         when(() => mockSnap.docs).thenReturn([mockReportDoc]);
-        when(() => mockReportDoc.data()).thenReturn({'score': 5});
+        when(() => mockReportDoc.data()).thenReturn({'upvotes': 5, 'downvotes': 2});
         when(() => mockReportDoc.reference).thenReturn(mockDocRef);
         when(() => mockDocRef.collection('votes')).thenReturn(mockVotesCol);
         when(() => mockVotesCol.doc('voter_1')).thenReturn(mockVoteDocRef);
@@ -1621,7 +1621,8 @@ void main() {
 
         final voteData = await DbService.getReportVoteDataByBarcode('800VOTE');
 
-        expect(voteData['score'], 5);
+        expect(voteData['upvotes'], 5);
+        expect(voteData['downvotes'], 2);
         expect(voteData['userVote'], 1);
       },
     );

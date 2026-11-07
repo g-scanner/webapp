@@ -171,10 +171,14 @@ class ReportsDbService {
           }
 
           if (oldVote != newVote) {
-            final scoreDiff = newVote - oldVote;
+            final upvotesDiff = (newVote == 1 ? 1 : 0) - (oldVote == 1 ? 1 : 0);
+            final downvotesDiff = (newVote == -1 ? 1 : 0) - (oldVote == -1 ? 1 : 0);
             final batch = db.batch();
             batch.set(userVoteRef, {'val': newVote});
-            batch.update(reportRef, {'score': FieldValue.increment(scoreDiff)});
+            batch.update(reportRef, {
+              if (upvotesDiff != 0) 'upvotes': FieldValue.increment(upvotesDiff),
+              if (downvotesDiff != 0) 'downvotes': FieldValue.increment(downvotesDiff),
+            });
             await batch.commit().timeout(const Duration(seconds: 4));
           }
         }
@@ -516,11 +520,16 @@ class ReportsDbService {
       }
 
       if (oldVote != newVote) {
-        final scoreDiff = newVote - oldVote;
+        // Calcola delta per upvotes e downvotes
+        final upvotesDiff = (newVote == 1 ? 1 : 0) - (oldVote == 1 ? 1 : 0);
+        final downvotesDiff = (newVote == -1 ? 1 : 0) - (oldVote == -1 ? 1 : 0);
 
         final batch = db.batch();
         batch.set(userVoteRef, {'val': newVote});
-        batch.update(reportRef, {'score': FieldValue.increment(scoreDiff)});
+        batch.update(reportRef, {
+          if (upvotesDiff != 0) 'upvotes': FieldValue.increment(upvotesDiff),
+          if (downvotesDiff != 0) 'downvotes': FieldValue.increment(downvotesDiff),
+        });
         await batch.commit().timeout(const Duration(seconds: 4));
       }
 
@@ -551,11 +560,12 @@ class ReportsDbService {
         final pendingVotes = await getPendingVotes(userId);
         final localVotes = await getLocalVotes(userId);
         final userVote = pendingVotes[barcode] ?? localVotes[barcode] ?? 0;
-        return {'score': 0, 'userVote': userVote};
+        return {'upvotes': 0, 'downvotes': 0, 'userVote': userVote};
       }
 
       final reportDoc = querySnapshot.docs.first;
-      int score = reportDoc.data()['score'] ?? 0;
+      int upvotes = reportDoc.data()['upvotes'] ?? 0;
+      int downvotes = reportDoc.data()['downvotes'] ?? 0;
       int userVote = 0;
 
       final voteSnap = await reportDoc.reference
@@ -567,15 +577,20 @@ class ReportsDbService {
         userVote = voteSnap.data()?['val'] ?? 0;
       }
 
-      // Se esiste un voto pendente locale, sovrascrivi e adatta lo score
+      // Se esiste un voto pendente locale, sovrascrivi e adatta i conteggi
       final pendingVotes = await getPendingVotes(userId);
       if (pendingVotes.containsKey(barcode)) {
         final pendingVote = pendingVotes[barcode]!;
-        score += (pendingVote - userVote);
+        // Rimuovi il contributo del voto remoto
+        if (userVote == 1) upvotes = (upvotes - 1).clamp(0, 999999);
+        if (userVote == -1) downvotes = (downvotes - 1).clamp(0, 999999);
+        // Aggiungi il contributo del voto pending
+        if (pendingVote == 1) upvotes++;
+        if (pendingVote == -1) downvotes++;
         userVote = pendingVote;
       }
 
-      return {'score': score, 'userVote': userVote};
+      return {'upvotes': upvotes, 'downvotes': downvotes, 'userVote': userVote};
     } catch (e) {
       debugPrint("Errore durante il recupero del voto: $e");
       final pendingVotes = await getPendingVotes(userId);

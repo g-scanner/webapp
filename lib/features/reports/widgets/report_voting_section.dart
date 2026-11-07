@@ -9,14 +9,16 @@ import '../../../core/theme/theme.dart';
 class ReportVotingSection extends StatelessWidget {
   final bool isVoteLoading;
   final int currentVote;
-  final int displayScore;
+  final int upvotes;
+  final int downvotes;
   final ValueChanged<int> onVote;
 
   const ReportVotingSection({
     super.key,
     required this.isVoteLoading,
     required this.currentVote,
-    required this.displayScore,
+    required this.upvotes,
+    required this.downvotes,
     required this.onVote,
   });
 
@@ -27,163 +29,148 @@ class ReportVotingSection extends StatelessWidget {
     if (isVoteLoading) {
       return Skeletonizer(
         enabled: true,
-        child: Center(
-          child: Column(
-            children: [
-              Text(
-                "report.detail.agreeQuestion".tr(),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.thumb_up_outlined,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "0",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Container(
-                      width: 1,
-                      height: 24,
-                      color: colorScheme.outlineVariant,
-                    ),
-                    const SizedBox(width: 20),
-                    Icon(
-                      Icons.thumb_down_outlined,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+        child: _buildLayout(
+          colorScheme: colorScheme,
+          upvoteChild: _VoteButton(
+            icon: Icons.thumb_up_outlined,
+            count: 0,
+            isActive: false,
+            isUpvote: true,
+            colorScheme: colorScheme,
+            onTap: () {},
+          ),
+          downvoteChild: _VoteButton(
+            icon: Icons.thumb_down_outlined,
+            count: 0,
+            isActive: false,
+            isUpvote: false,
+            colorScheme: colorScheme,
+            onTap: () {},
           ),
         ),
       );
     }
 
-    return Center(
-      child: Column(
-        children: [
-          Text(
-            "report.detail.agreeQuestion".tr(),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: colorScheme.onSurfaceVariant,
-            ),
+    return _buildLayout(
+      colorScheme: colorScheme,
+      upvoteChild: _VoteButton(
+        icon: currentVote == 1 ? Icons.thumb_up : Icons.thumb_up_outlined,
+        count: upvotes,
+        isActive: currentVote == 1,
+        isUpvote: true,
+        colorScheme: colorScheme,
+        onTap: () => onVote(1),
+      ),
+      downvoteChild: _VoteButton(
+        icon: currentVote == -1 ? Icons.thumb_down : Icons.thumb_down_outlined,
+        count: downvotes,
+        isActive: currentVote == -1,
+        isUpvote: false,
+        colorScheme: colorScheme,
+        onTap: () => onVote(-1),
+      ),
+    );
+  }
+
+  Widget _buildLayout({
+    required ColorScheme colorScheme,
+    required Widget upvoteChild,
+    required Widget downvoteChild,
+  }) {
+    return Column(
+      children: [
+        Text(
+          "report.detail.agreeQuestion".tr(),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(999),
-            ),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [upvoteChild, const SizedBox(width: 12), downvoteChild],
+        ),
+      ],
+    );
+  }
+}
+
+/// Bottone singolo voto con conteggio e indicatore visivo.
+class _VoteButton extends StatelessWidget {
+  final IconData icon;
+  final int count;
+  final bool isActive;
+  final bool isUpvote;
+  final ColorScheme colorScheme;
+  final VoidCallback onTap;
+
+  const _VoteButton({
+    required this.icon,
+    required this.count,
+    required this.isActive,
+    required this.isUpvote,
+    required this.colorScheme,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Colori attivi: verde per upvote (statusPrimary), rosso per downvote (statusError)
+    final activeColor = isUpvote
+        ? colorScheme
+              .statusPrimaryText // verde tema app
+        : colorScheme.statusErrorText; // rosso tema app
+    final activeBg = isUpvote
+        ? colorScheme.statusPrimaryBg
+        : colorScheme.statusErrorBg;
+
+    final iconColor = isActive ? activeColor : colorScheme.onSurfaceVariant;
+    final textColor = isActive ? activeColor : colorScheme.onSurfaceVariant;
+    final bgColor = isActive ? activeBg : colorScheme.surfaceContainerHigh;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isActive
+              ? activeColor.withValues(alpha: 0.35)
+              : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          // splashColor: activeColor.withValues(alpha: 0.18),
+          // highlightColor: activeColor.withValues(alpha: 0.10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(999),
-                      bottomLeft: Radius.circular(999),
-                    ),
-                    onTap: () => onVote(1),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            currentVote == 1
-                                ? Icons.thumb_up
-                                : Icons.thumb_up_outlined,
-                            size: 20,
-                            color: currentVote == 1
-                                ? colorScheme.onSurface
-                                : colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            displayScore < 0 ? "0" : "$displayScore",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: currentVote == 1
-                                  ? FontWeight.bold
-                                  : FontWeight.w600,
-                              color: currentVote == 1
-                                  ? colorScheme.onSurface
-                                  : colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 24,
-                  color: colorScheme.outlineVariant.withValues(
-                    alpha: 0.5,
-                  ),
-                ),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(999),
-                      bottomRight: Radius.circular(999),
-                    ),
-                    onTap: () => onVote(-1),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      child: Icon(
-                        currentVote == -1
-                            ? Icons.thumb_down
-                            : Icons.thumb_down_outlined,
-                        size: 20,
-                        color: currentVote == -1
-                            ? colorScheme.onSurface
-                            : colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                Icon(icon, size: 20, color: iconColor),
+                const SizedBox(width: 8),
+                Text(
+                  count.toString(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                    color: textColor,
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

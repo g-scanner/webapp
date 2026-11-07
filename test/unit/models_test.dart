@@ -509,20 +509,23 @@ void main() {
         comments: 'Trovata farina di frumento!',
         submittedAt: '2026-08-20T15:00:00Z',
         status: 'open',
-        score: 3,
+        upvotes: 3,
+        downvotes: 1,
       );
 
       final jsonMap = report.toJson();
       expect(jsonMap['id'], 'rep_001');
       expect(jsonMap['userId'], 'user_456');
       expect(jsonMap['barcode'], '8001112223334');
-      expect(jsonMap['score'], 3);
+      expect(jsonMap['upvotes'], 3);
+      expect(jsonMap['downvotes'], 1);
 
       final deserialized = ProductReport.fromJson(jsonMap);
       expect(deserialized.id, 'rep_001');
       expect(deserialized.userId, 'user_456');
       expect(deserialized.type, 'gluten_detected');
-      expect(deserialized.score, 3);
+      expect(deserialized.upvotes, 3);
+      expect(deserialized.downvotes, 1);
     });
 
     test('fromJson applies defaults for missing fields', () {
@@ -536,7 +539,8 @@ void main() {
       expect(report.type, 'label_unclear');
       expect(report.status, 'open');
       expect(report.comments, '');
-      expect(report.score, 0);
+      expect(report.upvotes, 0);
+      expect(report.downvotes, 0);
       expect(report.submittedAt, isNotEmpty);
     });
   });

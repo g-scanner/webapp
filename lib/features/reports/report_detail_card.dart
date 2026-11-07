@@ -24,7 +24,8 @@ class ReportDetailCard extends StatefulWidget {
   final String reportComment;
   final String reportDate;
   final int initialUpvotes;
-  final int score;
+  final int upvotes;
+  final int downvotes;
 
   final Future<void> Function(int voteDirection)? onVote;
   final Future<Map<String, int>> Function()? onInitVote;
@@ -48,7 +49,8 @@ class ReportDetailCard extends StatefulWidget {
     required this.reportDate,
     this.initialUpvotes = 12,
     this.onVote,
-    this.score = 0,
+    this.upvotes = 0,
+    this.downvotes = 0,
     this.onInitVote,
     this.userSettings,
     this.isOwnReport = false,
@@ -66,7 +68,8 @@ class ReportDetailCard extends StatefulWidget {
 class _ReportDetailCardState extends State<ReportDetailCard> {
   // Stato del voto: 0 = nessun voto, 1 = upvote, -1 = downvote
   int _currentVote = 0;
-  late int _displayScore;
+  late int _upvotes;
+  late int _downvotes;
   bool _isVoteLoading = true;
 
   ProductReport? _activeReport;
@@ -74,7 +77,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
   @override
   void initState() {
     super.initState();
-    _displayScore = widget.score;
+    _upvotes = widget.upvotes;
+    _downvotes = widget.downvotes;
     _loadInitialData();
   }
 
@@ -112,7 +116,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             );
           }
           if (voteData.isNotEmpty) {
-            _displayScore = voteData['score'] ?? widget.score;
+            _upvotes = voteData['upvotes'] ?? widget.upvotes;
+            _downvotes = voteData['downvotes'] ?? widget.downvotes;
             _currentVote = voteData['userVote'] ?? 0;
           }
           _isVoteLoading = false;
@@ -130,26 +135,21 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
   void _handleVote(int vote) async {
     final oldVote = _currentVote;
-    final oldScore = _displayScore;
+    final oldUpvotes = _upvotes;
+    final oldDownvotes = _downvotes;
     setState(() {
       if (_currentVote == vote) {
         // Rimuove il voto (se riclicca)
-        if (vote == 1) _displayScore--;
-        if (vote == -1) {
-          _displayScore++; // Se toglie il downvote, il punteggio sale
-        }
+        if (vote == 1) _upvotes = (_upvotes - 1).clamp(0, 999999);
+        if (vote == -1) _downvotes = (_downvotes - 1).clamp(0, 999999);
         _currentVote = 0;
       } else {
+        // Rimuovi il contributo precedente
+        if (_currentVote == 1) _upvotes = (_upvotes - 1).clamp(0, 999999);
+        if (_currentVote == -1) _downvotes = (_downvotes - 1).clamp(0, 999999);
         // Applica il nuovo voto
-        if (vote == 1) {
-          _displayScore += (_currentVote == -1)
-              ? 2
-              : 1; // Se passa da Giù a Su, sale di 2
-        } else if (vote == -1) {
-          _displayScore -= (_currentVote == 1)
-              ? 2
-              : 1; // Se passa da Su a Giù, scende di 2
-        }
+        if (vote == 1) _upvotes++;
+        if (vote == -1) _downvotes++;
         _currentVote = vote;
       }
     });
@@ -168,7 +168,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
         if (mounted) {
           setState(() {
             _currentVote = oldVote;
-            _displayScore = oldScore;
+            _upvotes = oldUpvotes;
+            _downvotes = oldDownvotes;
           });
           showAppSnackBar(
             context,
@@ -655,7 +656,8 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
             ReportVotingSection(
               isVoteLoading: _isVoteLoading,
               currentVote: _currentVote,
-              displayScore: _displayScore,
+              upvotes: _upvotes,
+              downvotes: _downvotes,
               onVote: _handleVote,
             ),
             const SizedBox(height: 40),

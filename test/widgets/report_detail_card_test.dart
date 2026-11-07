@@ -106,7 +106,8 @@ Future<void> _pumpReportDetailCard(
   String reportReasonKey = 'label_unclear',
   String reportComment = 'Etichetta illeggibile',
   String reportDate = '2026-08-10T10:00:00Z',
-  int score = 5,
+  int upvotes = 5,
+  int downvotes = 2,
   bool isOwnReport = false,
   String? reportId = _kReportId,
   bool showProductLink = true,
@@ -130,7 +131,8 @@ Future<void> _pumpReportDetailCard(
         reportReasonKey: reportReasonKey,
         reportComment: reportComment,
         reportDate: reportDate,
-        score: score,
+        upvotes: upvotes,
+        downvotes: downvotes,
         onVote: passOnVote ? (int v) => callbacks.onVote(v) : null,
         onInitVote: passOnInitVote ? () => callbacks.onInitVote() : null,
         isOwnReport: isOwnReport,
@@ -533,7 +535,7 @@ void main() {
   // GROUP 5: Voting System
   // ═══════════════════════════════════════════════════════════════════════════
   group('Voting System', () {
-    testWidgets('shows initial score from widget.score parameter', (
+    testWidgets('shows initial upvotes from widget.upvotes parameter', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
@@ -541,40 +543,43 @@ void main() {
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 42,
+        upvotes: 42,
+        downvotes: 2,
       );
       expect(find.text('42'), findsOneWidget);
     });
 
-    testWidgets('shows score from onInitVote when it returns non-empty map', (
+    testWidgets('shows upvotes from onInitVote when it returns non-empty map', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 99, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 99, 'downvotes': 10, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 5,
+        upvotes: 5,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
       expect(find.text('99'), findsOneWidget);
     });
 
-    testWidgets('upvote increases score by 1 and calls onVote(1)', (
+    testWidgets('upvote increases upvotes by 1 and calls onVote(1)', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 10, 'downvotes': 2, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 10,
+        upvotes: 10,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -586,18 +591,19 @@ void main() {
       verify(() => mockCallbacks.onVote(1)).called(1);
     });
 
-    testWidgets('tapping upvote twice retracts vote (score back to initial)', (
+    testWidgets('tapping upvote twice retracts vote (upvotes back to initial)', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 10, 'downvotes': 2, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 10,
+        upvotes: 10,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -616,51 +622,53 @@ void main() {
       ]);
     });
 
-    testWidgets('downvote decreases score by 1 and calls onVote(-1)', (
+    testWidgets('downvote increases downvotes by 1 and calls onVote(-1)', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 10, 'downvotes': 2, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 10,
+        upvotes: 10,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_down_outlined));
       await tester.pump();
 
-      expect(find.text('9'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
       expect(find.byIcon(Icons.thumb_down), findsOneWidget);
       verify(() => mockCallbacks.onVote(-1)).called(1);
     });
 
     testWidgets(
-      'tapping downvote twice retracts vote (score back to initial)',
+      'tapping downvote twice retracts vote (downvotes back to initial)',
       (tester) async {
         _stubFirestoreEmptyQuery(mockFirestore);
         when(
           () => mockCallbacks.onInitVote(),
-        ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+        ).thenAnswer((_) async => {'upvotes': 10, 'downvotes': 2, 'userVote': 0});
         await _pumpReportDetailCard(
           tester,
           callbacks: mockCallbacks,
           mockFirestore: mockFirestore,
-          score: 10,
+          upvotes: 10,
+          downvotes: 2,
         );
         await tester.pump(const Duration(milliseconds: 200));
 
         await tester.tap(find.byIcon(Icons.thumb_down_outlined));
         await tester.pump();
-        expect(find.text('9'), findsOneWidget);
+        expect(find.text('3'), findsOneWidget);
 
         await tester.tap(find.byIcon(Icons.thumb_down));
         await tester.pump();
-        expect(find.text('10'), findsOneWidget);
+        expect(find.text('2'), findsOneWidget);
         expect(find.byIcon(Icons.thumb_down_outlined), findsOneWidget);
 
         verifyInOrder([
@@ -670,18 +678,19 @@ void main() {
       },
     );
 
-    testWidgets('switching upvote -> downvote decreases score by 2', (
+    testWidgets('switching upvote -> downvote: upvotes-1 downvotes+1', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 10, 'downvotes': 2, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 10,
+        upvotes: 10,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -691,7 +700,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.thumb_down_outlined));
       await tester.pump();
-      expect(find.text('9'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
       expect(find.byIcon(Icons.thumb_down), findsOneWidget);
 
       verifyInOrder([
@@ -700,24 +709,25 @@ void main() {
       ]);
     });
 
-    testWidgets('switching downvote -> upvote increases score by 2', (
+    testWidgets('switching downvote -> upvote: downvotes-1 upvotes+1', (
       tester,
     ) async {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 10, 'downvotes': 2, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 10,
+        upvotes: 10,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_down_outlined));
       await tester.pump();
-      expect(find.text('9'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.thumb_up_outlined));
       await tester.pump();
@@ -736,19 +746,20 @@ void main() {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 0, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 0, 'downvotes': 0, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 0,
+        upvotes: 0,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
       await tester.tap(find.byIcon(Icons.thumb_down_outlined));
       await tester.pump();
 
-      // _displayScore is -1 internally, but widget shows "0" when < 0
+      // downvotes clamped to 0 (can't go negative)
       expect(find.text('0'), findsOneWidget);
     });
 
@@ -758,12 +769,13 @@ void main() {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 5, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 5, 'downvotes': 2, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 5,
+        upvotes: 5,
+        downvotes: 2,
         passOnVote: false,
       );
       await tester.pump(const Duration(milliseconds: 200));
@@ -781,12 +793,13 @@ void main() {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 7, 'userVote': 1});
+      ).thenAnswer((_) async => {'upvotes': 7, 'downvotes': 1, 'userVote': 1});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 5,
+        upvotes: 5,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -800,12 +813,13 @@ void main() {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 3, 'userVote': -1});
+      ).thenAnswer((_) async => {'upvotes': 3, 'downvotes': 4, 'userVote': -1});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 5,
+        upvotes: 5,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -822,12 +836,13 @@ void main() {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 10, 'downvotes': 2, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 10,
+        upvotes: 10,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -856,12 +871,13 @@ void main() {
       _stubFirestoreEmptyQuery(mockFirestore);
       when(
         () => mockCallbacks.onInitVote(),
-      ).thenAnswer((_) async => {'score': 10, 'userVote': 0});
+      ).thenAnswer((_) async => {'upvotes': 10, 'downvotes': 2, 'userVote': 0});
       await _pumpReportDetailCard(
         tester,
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
-        score: 10,
+        upvotes: 10,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -919,7 +935,8 @@ void main() {
             reportReasonKey: 'label_unclear',
             reportComment: 'Test',
             reportDate: '2026-08-10T10:00:00Z',
-            score: 5,
+            upvotes: 5,
+            downvotes: 2,
             onInitVote: () => mockCallbacks.onInitVote(),
             isOwnReport: false,
             useResponsiveWrapper: false,
@@ -1094,7 +1111,8 @@ void main() {
           'comments': '',
           'submittedAt': '2026-08-10T10:00:00Z',
           'status': 'open',
-          'score': 5,
+          'upvotes': 5,
+          'downvotes': 2,
         });
 
         await _pumpReportDetailCard(
@@ -1197,7 +1215,8 @@ void main() {
           'comments': '',
           'submittedAt': yesterdayIso,
           'status': 'open',
-          'score': 5,
+          'upvotes': 5,
+          'downvotes': 2,
         });
 
         await _pumpReportDetailCard(
@@ -1240,7 +1259,8 @@ void main() {
         callbacks: mockCallbacks,
         mockFirestore: mockFirestore,
         reportComment: 'Fallback comment',
-        score: 3,
+        upvotes: 3,
+        downvotes: 2,
       );
       await tester.pump(const Duration(milliseconds: 300));
 

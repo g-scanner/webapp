@@ -11,7 +11,8 @@ class ProductReport {
   final String comments;
   final String submittedAt;
   final String status;
-  final int score;
+  final int upvotes;
+  final int downvotes;
 
   ProductReport({
     required this.id,
@@ -23,7 +24,8 @@ class ProductReport {
     required this.comments,
     required this.submittedAt,
     required this.status,
-    this.score = 0,
+    this.upvotes = 0,
+    this.downvotes = 0,
   });
 
   factory ProductReport.fromJson(Map<String, dynamic> json) {
@@ -37,7 +39,8 @@ class ProductReport {
       comments: json['comments'] ?? '',
       submittedAt: json['submittedAt'] ?? DateTime.now().toIso8601String(),
       status: json['status'] ?? 'open',
-      score: json['score'] ?? 0,
+      upvotes: json['upvotes'] ?? 0,
+      downvotes: json['downvotes'] ?? 0,
     );
   }
 
@@ -52,7 +55,8 @@ class ProductReport {
       'comments': comments,
       'submittedAt': submittedAt,
       'status': status,
-      'score': score,
+      'upvotes': upvotes,
+      'downvotes': downvotes,
     };
   }
 }

@@ -98,9 +98,10 @@ class _MyAppState extends State<MyApp> {
 
     // Ascolta cambiamenti futuri (login, logout, cambio utente).
     // skip(1): il primo evento è lo stato attuale, già gestito sopra.
-    _authSubscription = _firebaseAuth.authStateChanges().skip(1).listen(
-      _onAuthChanged,
-    );
+    _authSubscription = _firebaseAuth
+        .authStateChanges()
+        .skip(1)
+        .listen(_onAuthChanged);
   }
 
   @override
@@ -180,45 +181,44 @@ class _MyAppState extends State<MyApp> {
     if (resolved.syncSummary != null) {
       return SyncDataScreen(
         dataSummary: resolved.syncSummary!,
-        onDecision: (bool wantToSync, [
-          SyncChoices choices = const SyncChoices(),
-        ]) async {
-          if (wantToSync) {
-            if (resolved.user.isAnonymous) {
-              await DbService.migrateAnonymousDataToNewAnonymous(
-                resolved.user.uid,
-                syncHistory: choices.syncHistory,
-                syncReports: choices.syncReports,
-                syncSettings: choices.syncSettings,
-              );
-            } else {
-              await DbService.migrateLocalDataToFirestore(
-                resolved.user.uid,
-                syncHistory: choices.syncHistory,
-                syncReports: choices.syncReports,
-                syncSettings: choices.syncSettings,
-              );
-            }
-          } else {
-            await DbService.wipeAnonymousData();
-          }
-          if (resolved.user.isAnonymous) {
-            await DbService.trackAnonymousSession(resolved.user.uid);
-          }
-          if (mounted) {
-            setState(() {
-              _resolved = ResolvedAuth(user: resolved.user);
-            });
-          }
-        },
+        onDecision:
+            (
+              bool wantToSync, [
+              SyncChoices choices = const SyncChoices(),
+            ]) async {
+              if (wantToSync) {
+                if (resolved.user.isAnonymous) {
+                  await DbService.migrateAnonymousDataToNewAnonymous(
+                    resolved.user.uid,
+                    syncHistory: choices.syncHistory,
+                    syncReports: choices.syncReports,
+                    syncSettings: choices.syncSettings,
+                  );
+                } else {
+                  await DbService.migrateLocalDataToFirestore(
+                    resolved.user.uid,
+                    syncHistory: choices.syncHistory,
+                    syncReports: choices.syncReports,
+                    syncSettings: choices.syncSettings,
+                  );
+                }
+              } else {
+                await DbService.wipeAnonymousData();
+              }
+              if (resolved.user.isAnonymous) {
+                await DbService.trackAnonymousSession(resolved.user.uid);
+              }
+              if (mounted) {
+                setState(() {
+                  _resolved = ResolvedAuth(user: resolved.user);
+                });
+              }
+            },
       );
     }
 
     // ── MainScreen ──
-    return MainScreen(
-      key: ValueKey(resolved.user.uid),
-      auth: _firebaseAuth,
-    );
+    return MainScreen(key: ValueKey(resolved.user.uid), auth: _firebaseAuth);
   }
 }
 
