@@ -201,9 +201,17 @@ class _MyAppState extends State<MyApp> {
                     syncReports: choices.syncReports,
                     syncSettings: choices.syncSettings,
                   );
+                  if (!choices.syncSettings) {
+                    await DbService.fetchAndApplyRemoteSettings(
+                      resolved.user.uid,
+                    );
+                  }
                 }
               } else {
                 await DbService.wipeAnonymousData();
+                if (!resolved.user.isAnonymous) {
+                  await DbService.fetchAndApplyRemoteSettings(resolved.user.uid);
+                }
               }
               if (resolved.user.isAnonymous) {
                 await DbService.trackAnonymousSession(resolved.user.uid);

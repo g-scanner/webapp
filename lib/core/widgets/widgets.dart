@@ -3,6 +3,7 @@
 
 export 'app_circle_more_menu.dart';
 export 'app_confirm_dialog.dart';
+export 'app_destructive_action_button.dart';
 export 'app_destructive_popup_menu_item.dart';
 export 'app_pill_filter_dropdown.dart';
 export 'app_popup_menu_item.dart';

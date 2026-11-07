@@ -254,4 +254,9 @@ extension AppColorTokens on ColorScheme {
   // ── Effetti splash / interazione ───────────────────────────────────────────
   Color get splashPrimary => primary.withValues(alpha: 0.12);
   Color get splashError => error.withValues(alpha: 0.12);
+
+  // ── Bottone azione distruttiva (elimina account, disinstalla, cancella dati) ─
+  Color get destructiveButtonBg => errorContainer.withValues(alpha: 0.3);
+  Color get destructiveButtonBorder => errorContainer;
+  Color get destructiveButtonFg => error;
 }

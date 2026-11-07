@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 import '../dialogs/dialogs.dart';
 
 /// Mostra il bottom sheet di gestione account per l'utente loggato.
@@ -265,37 +266,17 @@ void showAccountManagementSheet({
                           ),
                         ),
                         const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              showDeleteAccountFlow(
-                                context: context,
-                                auth: auth,
-                                onTriggerToast: onTriggerToast,
-                              );
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: colorScheme.error,
-                              backgroundColor: colorScheme.errorContainer
-                                  .withValues(alpha: 0.3),
-                              side: BorderSide(
-                                color: colorScheme.errorContainer,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            icon: const Icon(
-                              Icons.person_remove_outlined,
-                              size: 20,
-                            ),
-                            label: Text(
-                              "settings.account.deleteAccount".tr(),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
+                        AppDestructiveActionButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            showDeleteAccountFlow(
+                              context: context,
+                              auth: auth,
+                              onTriggerToast: onTriggerToast,
+                            );
+                          },
+                          icon: Icons.person_remove_outlined,
+                          label: "settings.account.deleteAccount".tr(),
                         ),
                       ],
                     ),

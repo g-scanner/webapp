@@ -1232,26 +1232,10 @@ class _OfflineDatabaseSheetContentState
 
                       // Pulsante di Azione
                       if (_previewPack == _installedTier.key)
-                        OutlinedButton.icon(
+                        AppDestructiveActionButton(
                           onPressed: isSyncing ? null : _handleUninstallPackage,
-                          icon: const Icon(
-                            Icons.delete_outline_rounded,
-                            size: 20,
-                          ),
-                          label: Text(
-                            "settings.offlineDb.uninstallPackage".tr(),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: colorScheme.error,
-                            backgroundColor: colorScheme.errorContainer
-                                .withValues(alpha: 0.3),
-                            side: BorderSide(color: colorScheme.errorContainer),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
+                          icon: Icons.delete_outline_rounded,
+                          label: "settings.offlineDb.uninstallPackage".tr(),
                         )
                       else if (_installedTier == OfflineDbTier.none)
                         FilledButton(

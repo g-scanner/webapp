@@ -104,8 +104,18 @@ class SocialAuthButtons extends StatelessWidget {
           ),
           style: TextButton.styleFrom(
             foregroundColor: context.colorScheme.anonymousEntryFg,
-            overlayColor: context.colorScheme.splashPrimary,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ).copyWith(
+            overlayColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.pressed)) {
+                return context.colorScheme.splashPrimary;
+              }
+              if (states.contains(WidgetState.hovered) ||
+                  states.contains(WidgetState.focused)) {
+                return context.colorScheme.selectedItemBg;
+              }
+              return null;
+            }),
           ),
         ),
         const SizedBox(height: 4),

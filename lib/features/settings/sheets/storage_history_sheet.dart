@@ -7,6 +7,7 @@ import '../../../core/theme/theme.dart';
 import '../dialogs/clear_history_dialog.dart';
 import '../dialogs/clear_product_cache_dialog.dart';
 import '../utils/storage_utils.dart';
+import '../../../core/widgets/widgets.dart';
 
 /// Mostra il Modal Bottom Sheet "Memoria e Cronologia" in puro stile M3.
 void showStorageHistorySheet({
@@ -321,47 +322,21 @@ void showStorageHistorySheet({
                             ),
                           ),
                           const SizedBox(height: 18),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: () async {
-                                final confirm =
-                                    await showClearHistoryDialog(sheetContext);
-                                if (confirm == true) {
-                                  await onClearHistory();
-                                  setModalState(() {
-                                    currentHistoryCount = 0;
-                                    currentHistoryBytes = 0;
-                                  });
-                                  onStorageUpdated?.call();
-                                }
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: colorScheme.error,
-                                backgroundColor: colorScheme.errorContainer
-                                    .withValues(alpha: 0.3),
-                                side: BorderSide(
-                                  color: colorScheme.errorContainer,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                              icon: const Icon(
-                                Icons.delete_outline_rounded,
-                                size: 20,
-                              ),
-                              label: Text(
-                                "settings.dataHistory.clearHistoryAction".tr(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
+                          AppDestructiveActionButton(
+                            onPressed: () async {
+                              final confirm =
+                                  await showClearHistoryDialog(sheetContext);
+                              if (confirm == true) {
+                                await onClearHistory();
+                                setModalState(() {
+                                  currentHistoryCount = 0;
+                                  currentHistoryBytes = 0;
+                                });
+                                onStorageUpdated?.call();
+                              }
+                            },
+                            icon: Icons.delete_outline_rounded,
+                            label: "settings.dataHistory.clearHistoryAction".tr(),
                           ),
                         ],
                       ),

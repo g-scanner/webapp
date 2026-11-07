@@ -142,7 +142,6 @@ class ProductDetailAppBarActions extends StatelessWidget {
         if (effectiveUserReportId != null && onDeleteReport != null) {
           await onDeleteReport!(effectiveUserReportId!);
         }
-        onBack();
       },
     );
   }

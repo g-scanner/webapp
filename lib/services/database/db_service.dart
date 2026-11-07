@@ -224,6 +224,9 @@ class DbService {
   static Future<void> wipeAnonymousData() =>
       AccountDataService.wipeAnonymousData();
 
+  static Future<UserSettings> fetchAndApplyRemoteSettings(String uid) =>
+      AccountDataService.fetchAndApplyRemoteSettings(db, uid);
+
   static Future<bool> isNewAnonymousSession(String currentAnonUid) =>
       AccountDataService.isNewAnonymousSession(currentAnonUid);
 

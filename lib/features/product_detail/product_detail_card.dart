@@ -70,10 +70,12 @@ class ProductDetailCard extends StatefulWidget {
 class _ProductDetailCardState extends State<ProductDetailCard> {
   final ScrollController _scrollController = ScrollController();
   bool _hasJustReported = false;
+  bool _hasDeletedReport = false;
 
   Product get currentProduct => widget.productNotifier?.value ?? widget.product;
 
   bool get _hasUserReported {
+    if (_hasDeletedReport) return false;
     if (widget.reportIdNotifier != null) {
       return widget.reportIdNotifier!.value != null;
     }
@@ -81,6 +83,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   String? get _effectiveUserReportId {
+    if (_hasDeletedReport) return null;
     if (widget.reportIdNotifier != null) {
       return widget.reportIdNotifier!.value;
     }
@@ -198,6 +201,12 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
   }
 
   void _onReportIdNotifierChanged() {
+    if (widget.reportIdNotifier?.value == null) {
+      _hasDeletedReport = true;
+      _hasJustReported = false;
+    } else {
+      _hasDeletedReport = false;
+    }
     if (mounted) setState(() {});
   }
 
@@ -260,6 +269,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
       onSubmitted: () {
         if (mounted) {
           setState(() {
+            _hasDeletedReport = false;
             _hasJustReported = true;
           });
         }

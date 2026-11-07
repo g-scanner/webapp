@@ -529,10 +529,20 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
             onPressed: !_isProcessing ? _showDiscardConfirmation : null,
             style: TextButton.styleFrom(
               foregroundColor: colorScheme.error,
-              overlayColor: colorScheme.splashError,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(32),
               ),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.pressed)) {
+                  return colorScheme.splashError;
+                }
+                if (states.contains(WidgetState.hovered) ||
+                    states.contains(WidgetState.focused)) {
+                  return colorScheme.selectedErrorItemBg;
+                }
+                return null;
+              }),
             ),
             icon: const Icon(Icons.delete_outline_rounded, size: 20),
             label: Text(

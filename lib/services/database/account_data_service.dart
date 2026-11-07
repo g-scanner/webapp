@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
+import '../../core/theme/theme.dart';
 import 'daos/scan_history_dao.dart';
 import 'daos/product_report_dao.dart';
 import 'history_db_service.dart';
@@ -211,11 +212,18 @@ class AccountDataService {
             debugPrint("Failed committing history batch to Firestore: $e");
           }
         }
+      } else {
+        await prefs.remove('deleted_barcodes_sync_filter');
+        await prefs.remove('deleted_history_ids_sync_filter');
+        await prefs.remove('celiac_history');
       }
 
       // 2. MIGRAZIONE SEGNALAZIONI (LOCALE + FIRESTORE)
       if (syncReports) {
         await _migrateReports(db, lastAnonUid, newUid);
+      } else {
+        await prefs.remove('deleted_reports_sync_filter');
+        await prefs.remove('celiac_reports');
       }
 
       // 3. MIGRAZIONE IMPOSTAZIONI
@@ -279,11 +287,18 @@ class AccountDataService {
       // 1. MIGRAZIONE CRONOLOGIA (LOCALE IN SQLITE)
       if (syncHistory) {
         await _historyDao.reassignHistory(lastAnonUid, newAnonUid);
+      } else {
+        await prefs.remove('deleted_barcodes_sync_filter');
+        await prefs.remove('deleted_history_ids_sync_filter');
+        await prefs.remove('celiac_history');
       }
 
       // 2. MIGRAZIONE SEGNALAZIONI (LOCALE IN SQLITE + AGGIORNAMENTO FIRESTORE)
       if (syncReports) {
         await _migrateReports(db, lastAnonUid, newAnonUid);
+      } else {
+        await prefs.remove('deleted_reports_sync_filter');
+        await prefs.remove('celiac_reports');
       }
 
       // 3. MIGRAZIONE IMPOSTAZIONI (LOCALE IN SHAREDPREFERENCES)
@@ -313,6 +328,40 @@ class AccountDataService {
     }
   }
 
+  /// Scarica le impostazioni da Firestore per l'utente [uid] e le applica localmente.
+  /// Se su Firestore non esistono, genera e salva le impostazioni di default per questo account.
+  static Future<UserSettings> fetchAndApplyRemoteSettings(
+    FirebaseFirestore db,
+    String uid,
+  ) async {
+    try {
+      final docSnap = await db.collection("users").doc(uid).get();
+      if (docSnap.exists && docSnap.data() != null) {
+        final remoteSettings = UserSettings.fromJson(docSnap.data()!).copyWith(
+          userId: uid,
+        );
+        await SettingsDbService.saveLocalSettings(remoteSettings);
+        themeNotifier.value = themeModeFromString(remoteSettings.preferredTheme);
+        return remoteSettings;
+      }
+    } catch (e) {
+      debugPrint("fetchAndApplyRemoteSettings error: $e");
+    }
+    final defaultSettings = UserSettings(
+      userId: uid,
+      strictMode: true,
+      alertLactose: false,
+      warnAdditives: true,
+      autoSaveHistory: true,
+      preferredLanguage: UserSettings.defaultSystemLanguage,
+      preferredTheme: 'system',
+      updatedAt: 0,
+    );
+    await SettingsDbService.saveLocalSettings(defaultSettings);
+    themeNotifier.value = themeModeFromString(defaultSettings.preferredTheme);
+    return defaultSettings;
+  }
+
   /// Svuota unicamente i dati appartenenti all'utente anonimo (scartati alla schermata sincro).
   static Future<void> wipeAnonymousData([String? anonUid]) async {
     try {
@@ -327,8 +376,18 @@ class AccountDataService {
         }
         await prefs.remove(HistoryDbService.getPendingHistoryKey(lastUid));
         await prefs.remove(ReportsDbService.getPendingReportsKey(lastUid));
+        await prefs.remove(ReportsDbService.getPendingVotesKey(lastUid));
+        await prefs.remove(ReportsDbService.getLocalVotesKey(lastUid));
       }
 
+      // Rimuoviamo i filtri tombstones e le chiavi globali/orfane anonime
+      // per evitare che cancellino elementi dall'account Firestore su cui ci si è appena autenticati.
+      await prefs.remove('deleted_barcodes_sync_filter');
+      await prefs.remove('deleted_history_ids_sync_filter');
+      await prefs.remove('deleted_reports_sync_filter');
+      await prefs.remove('celiac_history');
+      await prefs.remove('celiac_reports');
+      await prefs.remove(SettingsDbService.reportedBarcodesKey);
       await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
       await prefs.remove(lastAnonymousUidKey);
     } catch (e) {

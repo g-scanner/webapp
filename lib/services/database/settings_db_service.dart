@@ -43,7 +43,7 @@ class SettingsDbService {
       preferredLanguage: UserSettings.defaultSystemLanguage,
       preferredTheme: 'system',
       reportedBarcodes: prefs.getStringList(reportedBarcodesKey) ?? const [],
-      updatedAt: DateTime.now().millisecondsSinceEpoch,
+      updatedAt: 0,
     );
     await saveLocalSettings(defaultSettings);
     return defaultSettings;
@@ -178,11 +178,13 @@ class SettingsDbService {
 
       final localTimestamp = localSettings.updatedAt ?? 0;
       final remoteTimestamp = firestoreSettings.updatedAt ?? 0;
+      final bool isDifferentUser =
+          localSettings.userId != null && localSettings.userId != user.uid;
 
       final UserSettings resolvedSettings;
       bool shouldPushToFirestore = false;
 
-      if (localTimestamp > remoteTimestamp) {
+      if (!isDifferentUser && localTimestamp > remoteTimestamp) {
         // La modifica locale è più recente (es. modifiche offline o effettuate su questo dispositivo):
         // manteniamo le impostazioni locali e sincronizziamo verso Firestore.
         resolvedSettings = localSettings.copyWith(
@@ -190,8 +192,9 @@ class SettingsDbService {
           reportedBarcodes: mergedBarcodes,
         );
         shouldPushToFirestore = true;
-      } else if (remoteTimestamp > localTimestamp) {
-        // La modifica remota su Firestore è più recente:
+      } else if (remoteTimestamp > localTimestamp || isDifferentUser) {
+        // La modifica remota su Firestore è più recente OPPURE le impostazioni locali
+        // appartengono esplicitamente a un altro utente:
         // adottiamo le impostazioni da Firestore e aggiorniamo la persistenza locale.
         var resolved = firestoreSettings.copyWith(
           userId: user.uid,
@@ -200,7 +203,9 @@ class SettingsDbService {
         // Se la sincronizzazione cloud del DB offline è disattivata (localmente o su Firestore),
         // è la scelta locale a importare: preserviamo le impostazioni offline DB di questo dispositivo,
         // mentre il toggle cloudSync stesso viene sincronizzato da Firestore.
-        if (!localSettings.offlineDbCloudSync || !firestoreSettings.offlineDbCloudSync) {
+        if (!isDifferentUser &&
+            (!localSettings.offlineDbCloudSync ||
+                !firestoreSettings.offlineDbCloudSync)) {
           resolved = resolved.copyWith(
             offlineDbTier: localSettings.offlineDbTier,
             offlineDbLastSyncedAt: localSettings.offlineDbLastSyncedAt,
@@ -210,7 +215,8 @@ class SettingsDbService {
           );
         }
         resolvedSettings = resolved;
-        if (mergedBarcodes.length != remoteBarcodes.length) {
+        if (!isDifferentUser &&
+            mergedBarcodes.length != remoteBarcodes.length) {
           shouldPushToFirestore = true;
         }
       } else {
