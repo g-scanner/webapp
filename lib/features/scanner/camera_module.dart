@@ -83,9 +83,6 @@ class _CameraModuleState extends State<CameraModule>
     _manualFocusNode.addListener(_onManualFocusChange);
 
     if (kIsWeb) {
-      MobileScannerPlatform.instance.setWebBarcodeReader(
-        WebBarcodeReader.zxingWasm,
-      );
       setupWebVisibilityListener((isVisible) {
         if (!mounted) return;
         if (isVisible) {
