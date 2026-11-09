@@ -230,10 +230,17 @@ class _AuthScreenState extends State<AuthScreen> {
     bool completed = false;
     bool timerHandled = false;
 
-    final checkTimer = Timer.periodic(const Duration(milliseconds: 150), (
+    final checkTimer = Timer.periodic(const Duration(milliseconds: 250), (
       timer,
-    ) {
-      if (_isPopupClosed() && !completed) {
+    ) async {
+      if (_isPopupClosed() && !completed && !timerHandled) {
+        // Grace period: quando il popup OAuth si chiude dopo il login,
+        // FirebaseAuth impiega una frazione di secondo per completare il Future.
+        await Future.delayed(const Duration(milliseconds: 400));
+        if (completed) {
+          timer.cancel();
+          return;
+        }
         timer.cancel();
         timerHandled = true;
         if (mounted && _isLoading) {
