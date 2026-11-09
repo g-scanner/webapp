@@ -14,6 +14,7 @@ import 'history_db_service.dart';
 import 'reports_db_service.dart';
 import 'settings_db_service.dart';
 import 'offline_db_sync_service.dart';
+import 'background_sync_manager.dart';
 
 /// Servizio responsabile della migrazione dei dati anonimi post-login
 /// e della cancellazione/pulizia di tutti i dati locali.
@@ -390,6 +391,7 @@ class AccountDataService {
       await prefs.remove(SettingsDbService.reportedBarcodesKey);
       await prefs.remove(SettingsDbService.hasAnonymousSettingsKey);
       await prefs.remove(lastAnonymousUidKey);
+      await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
     } catch (e) {
       debugPrint("Errore durante il wipe dei dati anonimi: $e");
     }

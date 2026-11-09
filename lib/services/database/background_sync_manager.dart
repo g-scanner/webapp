@@ -218,13 +218,11 @@ void callbackDispatcher() {
     if (taskName == offlineDbPeriodicTask) {
       try {
         final settings = await SettingsDbService.getLocalSettings();
-        if (settings.offlineDbTier == OfflineDbTier.none) {
-          debugPrint('BackgroundSyncManager: Offline DB disabled, skipping background sync.');
-          return Future.value(true);
-        }
-
-        if (!settings.offlineDbAutoSync) {
-          debugPrint('BackgroundSyncManager: autoSync disabled by user, skipping.');
+        if (settings.offlineDbTier == OfflineDbTier.none || !settings.offlineDbAutoSync) {
+          debugPrint('BackgroundSyncManager: Offline DB disabled or autoSync off, cancelling periodic background task.');
+          try {
+            await Workmanager().cancelByUniqueName(offlineDbPeriodicTask);
+          } catch (_) {}
           return Future.value(true);
         }
 
@@ -449,6 +447,17 @@ class BackgroundSyncManager {
       debugPrint(
         'BackgroundSyncManager: Failed scheduling One-Shot pending data sync: $e',
       );
+    }
+  }
+
+  /// Cancella esplicitamente il task periodico nativo per il database offline.
+  static Future<void> cancelOfflineDbPeriodicTask() async {
+    if (kIsWeb) return;
+    try {
+      await Workmanager().cancelByUniqueName(offlineDbPeriodicTask);
+      debugPrint('BackgroundSyncManager: Periodic task cancelled.');
+    } catch (e) {
+      debugPrint('BackgroundSyncManager: Failed cancelling periodic task: $e');
     }
   }
 

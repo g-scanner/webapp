@@ -332,6 +332,7 @@ class HistoryDbService {
       await prefs.remove('deleted_barcodes_sync_filter');
       await prefs.remove('deleted_history_ids_sync_filter');
       await prefs.remove(getPendingHistoryKey(userId));
+      await BackgroundSyncManager.schedulePendingDataSyncIfNeeded();
 
       if (user != null && !user.isAnonymous) {
         await prefs.setBool('history_wipe_pending', true);

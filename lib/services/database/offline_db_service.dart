@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
 import '../../core/network/connectivity_helper.dart';
+import 'background_sync_manager.dart';
 
 /// Servizio responsabile dell'interrogazione e gestione del Database SQLite offline locale.
 class OfflineDbService {
@@ -323,6 +324,9 @@ class OfflineDbService {
         }
         await cleanupTemporaryFiles();
       }
+      try {
+        await BackgroundSyncManager.cancelOfflineDbPeriodicTask();
+      } catch (_) {}
     } catch (e) {
       debugPrint("OfflineDbService.deleteDatabaseFile error: $e");
     }
