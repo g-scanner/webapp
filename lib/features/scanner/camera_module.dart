@@ -75,7 +75,8 @@ class _CameraModuleState extends State<CameraModule>
             BarcodeFormat.code39,
             BarcodeFormat.dataMatrix,
           ],
-          cameraResolution: kIsWeb ? null : const Size(480, 640),
+          cameraResolution:
+              kIsWeb ? const Size(1280, 720) : const Size(480, 640),
         );
 
     _manualFocusNode = FocusNode();
