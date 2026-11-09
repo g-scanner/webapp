@@ -116390,15 +116390,13 @@ case 8:case 3:return A.k(null,r)
 case 1:return A.j(p.at(-1),r)}})
 return A.l($async$uC,r)},
 uD(a){return this.ap_(a)},
-ap_(a){var s=0,r=A.m(t.H),q=1,p=[],o=this,n,m,l
+ap_(a){var s=0,r=A.m(t.H),q=1,p=[],o=this,n,m
 var $async$uD=A.i(function(b,c){if(b===1){p.push(c)
 s=q}for(;;)switch(s){case 0:s=4
 return A.c(A.kT(!0,new A.ahQ(A.t(a).ax),a,t.y),$async$uD)
 case 4:s=c===!0?2:3
 break
-case 2:n=o.e
-n.$1(A.r("settings.account.signingOut",null,null))
-q=6
+case 2:q=6
 s=9
 return A.c(A.hX($.ey(),null),$async$uD)
 case 9:s=10
@@ -116407,8 +116405,8 @@ case 10:q=1
 s=8
 break
 case 6:q=5
-l=p.pop()
-n.$2$isError(A.r("settings.account.signOutError",null,null),!0)
+m=p.pop()
+o.e.$2$isError(A.r("settings.account.signOutError",null,null),!0)
 s=8
 break
 case 5:s=1
