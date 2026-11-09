@@ -59,6 +59,11 @@ class OfflineDbSyncService {
   /// Tier attualmente in fase di sincronizzazione o download.
   static OfflineDbTier? currentSyncingTier;
   static StreamSubscription<OfflineSyncProgress>? _autoDownloadSubscription;
+  static bool _isSyncCancelled = false;
+  static bool get isSyncCancelled => _isSyncCancelled;
+  static HttpClient? _activeNativeClient;
+  static http.Client? _activeWebClient;
+  static IOSink? _activeNativeSink;
 
   /// Indica se una sincronizzazione del database offline è attualmente in corso.
   static bool get isSyncing =>
@@ -66,10 +71,26 @@ class OfflineDbSyncService {
 
   /// Annulla eventuali sincronizzazioni automatiche o manuali in corso.
   static void cancelSync() {
+    _isSyncCancelled = true;
     _autoDownloadSubscription?.cancel();
     _autoDownloadSubscription = null;
     currentSyncingTier = null;
     syncProgressNotifier.value = const OfflineSyncProgress.idle();
+
+    try {
+      _activeNativeClient?.close(force: true);
+    } catch (_) {}
+    _activeNativeClient = null;
+
+    try {
+      _activeWebClient?.close();
+    } catch (_) {}
+    _activeWebClient = null;
+
+    try {
+      _activeNativeSink?.close();
+    } catch (_) {}
+    _activeNativeSink = null;
   }
 
   @visibleForTesting
@@ -369,12 +390,19 @@ class OfflineDbSyncService {
       return;
     }
 
+    _isSyncCancelled = false;
     currentSyncingTier = tier;
     await for (final progress in _syncDatabaseInternal(
       tier: tier,
       currentLastSyncedAt: currentLastSyncedAt,
       client: client,
     )) {
+      if (_isSyncCancelled) {
+        currentSyncingTier = null;
+        syncProgressNotifier.value = const OfflineSyncProgress.idle();
+        yield const OfflineSyncProgress.idle();
+        return;
+      }
       syncProgressNotifier.value = progress;
       if (!progress.isInProgress) {
         currentSyncingTier = null;
@@ -388,7 +416,7 @@ class OfflineDbSyncService {
     required int? currentLastSyncedAt,
     http.Client? client,
   }) async* {
-    if (tier == OfflineDbTier.none) {
+    if (tier == OfflineDbTier.none || _isSyncCancelled) {
       yield const OfflineSyncProgress.idle();
       return;
     }
@@ -506,6 +534,7 @@ class OfflineDbSyncService {
         );
 
         final httpClient = client ?? _mockClient ?? (internalClient = http.Client());
+        _activeWebClient = httpClient;
         http.StreamedResponse? successfulResponse;
 
         for (final candidateUrl in downloadUrlsToTry) {
@@ -543,6 +572,7 @@ class OfflineDbSyncService {
         var lastEmittedTime = DateTime.now().millisecondsSinceEpoch;
 
         await for (final chunk in response.stream) {
+          if (_isSyncCancelled) return;
           bytesBuilder.add(chunk);
           receivedBytes += chunk.length;
           if (totalBytes > 0) {
@@ -607,6 +637,7 @@ class OfflineDbSyncService {
         debugPrint("OfflineDbSyncService web sync error: $e\n$stack");
         yield OfflineSyncProgress.error(e.toString());
       } finally {
+        _activeWebClient = null;
         internalClient?.close();
       }
       return;
@@ -672,6 +703,7 @@ class OfflineDbSyncService {
         nativeClient = HttpClient()
           ..userAgent = userAgent
           ..connectionTimeout = const Duration(seconds: 15);
+        _activeNativeClient = nativeClient;
 
         HttpClientResponse? successfulResponse;
 
@@ -712,6 +744,7 @@ class OfflineDbSyncService {
       final downloadSw = Stopwatch()..start();
 
       sink = tempGzFile.openWrite();
+      _activeNativeSink = sink;
       var lastEmittedProgress = 0.1;
       var lastEmittedTime = DateTime.now().millisecondsSinceEpoch;
       var lastLogTime = DateTime.now().millisecondsSinceEpoch;
@@ -723,6 +756,12 @@ class OfflineDbSyncService {
       final trackingStream = downloadStream.transform(
         StreamTransformer<List<int>, List<int>>.fromHandlers(
           handleData: (chunk, output) {
+            if (_isSyncCancelled) {
+              if (!progressController.isClosed) {
+                progressController.close();
+              }
+              return;
+            }
             output.add(chunk);
             receivedBytes += chunk.length;
             final now = DateTime.now().millisecondsSinceEpoch;
@@ -778,9 +817,12 @@ class OfflineDbSyncService {
       });
 
       await for (final p in progressController.stream) {
+        if (_isSyncCancelled) return;
         yield p;
       }
+      if (_isSyncCancelled) return;
       await downloadFuture;
+      if (_isSyncCancelled) return;
 
       downloadSw.stop();
       debugPrint('[OFFLINE_DB] Download completato in ${downloadSw.elapsedMilliseconds}ms (${(receivedBytes / 1024 / 1024).toStringAsFixed(1)} MB)');
@@ -855,7 +897,11 @@ class OfflineDbSyncService {
       debugPrint("OfflineDbSyncService sync error: $e\n$stack");
       yield OfflineSyncProgress.error(e.toString());
     } finally {
-      nativeClient?.close();
+      _activeNativeClient = null;
+      _activeNativeSink = null;
+      try {
+        nativeClient?.close(force: true);
+      } catch (_) {}
       if (sink != null) {
         try {
           await sink?.close();

@@ -73,6 +73,7 @@ class _OfflineDatabaseSheetContentState
 
   StreamSubscription<OfflineSyncProgress>? _syncSubscription;
   StreamSubscription<UserSettings>? _settingsSubscription;
+  bool _isCancelling = false;
   OfflineSyncProgress _syncProgress = const OfflineSyncProgress(
     step: OfflineSyncStep.idle,
     progress: 0.0,
@@ -129,7 +130,7 @@ class _OfflineDatabaseSheetContentState
   }
 
   void _onGlobalSyncProgress() {
-    if (!mounted) return;
+    if (!mounted || _isCancelling) return;
     final progress = OfflineDbSyncService.syncProgressNotifier.value;
     if (_syncSubscription != null) return;
 
@@ -335,7 +336,29 @@ class _OfflineDatabaseSheetContentState
   }
 
   Future<void> _cancelSync() async {
-    await _performRollback();
+    if (_isCancelling) return;
+    _isCancelling = true;
+
+    _syncSubscription?.cancel();
+    _syncSubscription = null;
+    OfflineDbSyncService.cancelSync();
+
+    if (mounted) {
+      setState(() {
+        _syncProgress = const OfflineSyncProgress.idle();
+        _downloadingTier = null;
+      });
+    }
+
+    try {
+      await _performRollback();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCancelling = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleUninstallPackage() async {
