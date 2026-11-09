@@ -37,6 +37,14 @@ class OfflineDbSyncService {
 
   static String _baseUrl = _defaultReleaseBaseUrl;
   static http.Client? _mockClient;
+  static Map<String, dynamic>? _mockManifest;
+
+  /// Timeout per le richieste HTTP. Se null, nessun timeout viene applicato (utile nei test).
+  @visibleForTesting
+  static Duration? manifestTimeout = const Duration(seconds: 15);
+
+  @visibleForTesting
+  static Duration? downloadTimeout = const Duration(seconds: 30);
 
   @visibleForTesting
   static bool? isWebOverride;
@@ -74,6 +82,12 @@ class OfflineDbSyncService {
     _mockClient = client;
   }
 
+  /// Imposta un manifest mock statico (bypass della HTTP fetch) per i test.
+  @visibleForTesting
+  static void setMockManifest(Map<String, dynamic>? manifest) {
+    _mockManifest = manifest;
+  }
+
   /// Calcola l'epoch (secondi) della Domenica più recente alle ore 04:00 locali.
   /// Se oggi è Domenica ma prima delle 04:00, ritorna la Domenica precedente.
   @visibleForTesting
@@ -99,6 +113,9 @@ class OfflineDbSyncService {
   static void resetState() {
     _baseUrl = _defaultReleaseBaseUrl;
     _mockClient = null;
+    _mockManifest = null;
+    manifestTimeout = const Duration(seconds: 15);
+    downloadTimeout = const Duration(seconds: 30);
     isWebOverride = null;
     cancelSync();
   }
@@ -124,39 +141,79 @@ class OfflineDbSyncService {
   @visibleForTesting
   static void resetBaseUrl() => resetState();
 
+  static const String userAgent = 'G-Scanner/1.0 (https://g-scanner.github.io)';
+
+  static Map<String, String> get defaultHeaders => const {
+        'User-Agent': userAgent,
+      };
+
+  static String? get _configuredProxyBaseUrl {
+    final proxy = _webProxyBaseUrl.trim();
+    if (proxy.isEmpty) return null;
+    return proxy.endsWith('/') ? proxy.substring(0, proxy.length - 1) : proxy;
+  }
+
   /// Restituisce l'URL base effettivo, instradando tramite proxy CORS se eseguito su Web.
   static String getEffectiveBaseUrl() {
     if (_baseUrl != _defaultReleaseBaseUrl) {
       return _baseUrl;
     }
     if (kIsWeb) {
-      final proxy = _webProxyBaseUrl.trim();
-      if (proxy.isNotEmpty) {
-        final cleanProxy = proxy.endsWith('/')
-            ? proxy.substring(0, proxy.length - 1)
-            : proxy;
+      final cleanProxy = _configuredProxyBaseUrl;
+      if (cleanProxy != null) {
         return '$cleanProxy/offline-data';
       }
     }
     return _baseUrl;
   }
 
-  /// Scarica e analizza il manifest version.json da GitHub Releases.
+  /// Scarica e analizza il manifest version.json da GitHub Releases (con fallback automatico su proxy).
   static Future<Map<String, dynamic>?> fetchVersionManifest({
     http.Client? client,
   }) async {
+    // In-process mock bypass: usato dai test che non vogliono fare HTTP per il manifest
+    if (_mockManifest != null) {
+      debugPrint("OfflineDbSyncService: Using mock manifest (bypass HTTP)");
+      return _mockManifest;
+    }
+
     final httpClient = client ?? _mockClient ?? http.Client();
     try {
-      final currentBaseUrl = getEffectiveBaseUrl();
-      final response = await httpClient.get(
-        Uri.parse('$currentBaseUrl/version.json'),
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
+      final primaryBaseUrl = getEffectiveBaseUrl();
+      final urlsToTry = <String>['$primaryBaseUrl/version.json'];
+
+      if (_baseUrl == _defaultReleaseBaseUrl) {
+        final proxy = _configuredProxyBaseUrl;
+        if (proxy != null) {
+          final proxyUrl = '$proxy/offline-data/version.json';
+          final githubUrl = '$_defaultReleaseBaseUrl/version.json';
+          if (!urlsToTry.contains(proxyUrl)) urlsToTry.add(proxyUrl);
+          if (!urlsToTry.contains(githubUrl)) urlsToTry.add(githubUrl);
+        }
       }
-      return null;
-    } catch (e) {
-      debugPrint("OfflineDbSyncService.fetchVersionManifest error: $e");
+
+      for (final url in urlsToTry) {
+        try {
+          debugPrint("OfflineDbSyncService: Fetching version manifest from $url");
+          final reqFuture = httpClient.get(Uri.parse(url), headers: defaultHeaders);
+          final response = manifestTimeout != null ? await reqFuture.timeout(manifestTimeout!) : await reqFuture;
+
+          if (response.statusCode == 200) {
+            final data = json.decode(response.body) as Map<String, dynamic>;
+            debugPrint(
+              "OfflineDbSyncService: Manifest loaded successfully from $url (published_at: ${data['published_at']})",
+            );
+            return data;
+          } else {
+            debugPrint(
+              "OfflineDbSyncService.fetchVersionManifest failed for $url: HTTP ${response.statusCode} (${response.reasonPhrase})",
+            );
+          }
+        } catch (e) {
+          debugPrint("OfflineDbSyncService.fetchVersionManifest error for $url: $e");
+        }
+      }
+      debugPrint("OfflineDbSyncService: Could not fetch version manifest from any source.");
       return null;
     } finally {
       if (client == null && _mockClient == null) httpClient.close();
@@ -341,8 +398,13 @@ class OfflineDbSyncService {
       progress: 0.05,
     );
 
+    debugPrint(
+      "OfflineDbSyncService: Starting sync for tier ${tier.key} (lastSyncedAt: $currentLastSyncedAt)",
+    );
+
     final manifest = await fetchVersionManifest(client: client);
     if (manifest == null) {
+      debugPrint("OfflineDbSyncService: Aborting sync - manifest_fetch_failed");
       yield const OfflineSyncProgress.error("manifest_fetch_failed");
       return;
     }
@@ -354,6 +416,9 @@ class OfflineDbSyncService {
     final packagesMap = manifest['packages'] as Map<String, dynamic>? ?? {};
     final packageData = packagesMap[tier.key] as Map<String, dynamic>?;
     if (packageData == null) {
+      debugPrint(
+        "OfflineDbSyncService: Aborting sync - package_not_found_in_manifest for ${tier.key}. Available: ${packagesMap.keys.toList()}",
+      );
       yield const OfflineSyncProgress.error("package_not_found_in_manifest");
       return;
     }
@@ -396,8 +461,39 @@ class OfflineDbSyncService {
         return;
     }
 
-    final currentBaseUrl = getEffectiveBaseUrl();
-    final downloadUrl = '$currentBaseUrl/$fileName';
+    debugPrint(
+      "OfflineDbSyncService: Calculated sync action for ${tier.key}: $action (fileName: $fileName)",
+    );
+
+    final downloadUrlsToTry = <String>[];
+    if (kIsWeb) {
+      // Su Web, la CDN proxy è necessaria per abilitare il CORS
+      final proxy = _configuredProxyBaseUrl;
+      if (proxy != null && _baseUrl == _defaultReleaseBaseUrl) {
+        downloadUrlsToTry.add('$proxy/offline-data/$fileName');
+      }
+      final primaryBaseUrl = getEffectiveBaseUrl();
+      if (!downloadUrlsToTry.contains('$primaryBaseUrl/$fileName')) {
+        downloadUrlsToTry.add('$primaryBaseUrl/$fileName');
+      }
+    } else {
+      // Su Native (Android / iOS / Desktop), GitHub Releases diretto è prioritario a piena banda!
+      final primaryBaseUrl = getEffectiveBaseUrl();
+      if (!downloadUrlsToTry.contains('$primaryBaseUrl/$fileName')) {
+        downloadUrlsToTry.add('$primaryBaseUrl/$fileName');
+      }
+      if (!downloadUrlsToTry.contains('$_defaultReleaseBaseUrl/$fileName')) {
+        downloadUrlsToTry.add('$_defaultReleaseBaseUrl/$fileName');
+      }
+      final proxy = _configuredProxyBaseUrl;
+      if (proxy != null && _baseUrl == _defaultReleaseBaseUrl) {
+        final proxyUrl = '$proxy/offline-data/$fileName';
+        if (!downloadUrlsToTry.contains(proxyUrl)) {
+          downloadUrlsToTry.add(proxyUrl);
+        }
+      }
+    }
+
     final targetDbPath = await OfflineDbService.getDatabasePath();
 
     if (kIsWeb) {
@@ -410,27 +506,57 @@ class OfflineDbSyncService {
         );
 
         final httpClient = client ?? _mockClient ?? (internalClient = http.Client());
-        final request = http.Request('GET', Uri.parse(downloadUrl));
-        final response = await httpClient.send(request);
+        http.StreamedResponse? successfulResponse;
 
-        if (response.statusCode != 200) {
-          yield OfflineSyncProgress.error("http_error_${response.statusCode}");
+        for (final candidateUrl in downloadUrlsToTry) {
+          try {
+            debugPrint("OfflineDbSyncService: Attempting download (web) from $candidateUrl");
+            final request = http.Request('GET', Uri.parse(candidateUrl));
+            request.headers.addAll(defaultHeaders);
+            final sendFuture = httpClient.send(request);
+            final response = downloadTimeout != null ? await sendFuture.timeout(downloadTimeout!) : await sendFuture;
+            if (response.statusCode == 200) {
+              successfulResponse = response;
+              debugPrint("OfflineDbSyncService: Connected to $candidateUrl (contentLength: ${response.contentLength})");
+              break;
+            } else {
+              debugPrint(
+                "OfflineDbSyncService: Candidate $candidateUrl failed with HTTP ${response.statusCode} (${response.reasonPhrase})",
+              );
+            }
+          } catch (e) {
+            debugPrint("OfflineDbSyncService: Error connecting to candidate $candidateUrl: $e");
+          }
+        }
+
+        if (successfulResponse == null) {
+          debugPrint("OfflineDbSyncService: All download endpoints failed for $fileName");
+          yield const OfflineSyncProgress.error("download_endpoints_failed");
           return;
         }
 
+        final response = successfulResponse;
         final totalBytes = response.contentLength ?? 0;
         var receivedBytes = 0;
         final bytesBuilder = BytesBuilder();
+        var lastEmittedProgress = 0.1;
+        var lastEmittedTime = DateTime.now().millisecondsSinceEpoch;
 
         await for (final chunk in response.stream) {
           bytesBuilder.add(chunk);
           receivedBytes += chunk.length;
           if (totalBytes > 0) {
             final downloadProgress = 0.1 + (receivedBytes / totalBytes) * 0.6; // 0.1 -> 0.7
-            yield OfflineSyncProgress(
-              step: OfflineSyncStep.downloading,
-              progress: downloadProgress.clamp(0.1, 0.7),
-            );
+            final now = DateTime.now().millisecondsSinceEpoch;
+            // Throttle: emetti solo ad avanzamenti >= 1% o ogni >= 100ms per evitare backpressure TCP
+            if (downloadProgress - lastEmittedProgress >= 0.01 || now - lastEmittedTime >= 100) {
+              lastEmittedProgress = downloadProgress;
+              lastEmittedTime = now;
+              yield OfflineSyncProgress(
+                step: OfflineSyncStep.downloading,
+                progress: downloadProgress.clamp(0.1, 0.7),
+              );
+            }
           }
         }
 
@@ -444,6 +570,9 @@ class OfflineDbSyncService {
         if (expectedSha256 != null && expectedSha256.isNotEmpty) {
           final actualSha256 = sha256.convert(compressedBytes).toString();
           if (actualSha256.toLowerCase() != expectedSha256.toLowerCase()) {
+            debugPrint(
+              "OfflineDbSyncService: SHA256 mismatch (web)! Expected: $expectedSha256, Actual: $actualSha256",
+            );
             yield const OfflineSyncProgress.error("sha256_mismatch");
             return;
           }
@@ -472,9 +601,10 @@ class OfflineDbSyncService {
         }
         await OfflineDbService.setInstalledTier(tier);
 
+        debugPrint("OfflineDbSyncService: Web sync completed successfully for ${tier.key}");
         yield const OfflineSyncProgress.completed();
-      } catch (e) {
-        debugPrint("OfflineDbSyncService web sync error: $e");
+      } catch (e, stack) {
+        debugPrint("OfflineDbSyncService web sync error: $e\n$stack");
         yield OfflineSyncProgress.error(e.toString());
       } finally {
         internalClient?.close();
@@ -485,7 +615,8 @@ class OfflineDbSyncService {
     final dir = Directory(p.dirname(targetDbPath));
     final tempGzFile = File(p.join(dir.path, 'download_temp.db.gz'));
     final tempExtractedDb = File(p.join(dir.path, 'temp_extracted.db'));
-    http.Client? internalClient;
+    IOSink? sink;
+    HttpClient? nativeClient;
 
     try {
       // 1. DOWNLOAD STREAMING (NATIVE)
@@ -494,46 +625,175 @@ class OfflineDbSyncService {
         progress: 0.1,
       );
 
-      final httpClient = client ?? _mockClient ?? (internalClient = http.Client());
-      final request = http.Request('GET', Uri.parse(downloadUrl));
-      final response = await httpClient.send(request);
+      final useMockPath = client != null || _mockClient != null;
+      int totalBytes = 0;
+      var receivedBytes = 0;
+      String connectedUrl = '';
+      Stream<List<int>>? downloadStream;
 
-      if (response.statusCode != 200) {
-        yield OfflineSyncProgress.error("http_error_${response.statusCode}");
-        return;
+      if (useMockPath) {
+        // ---- PATH TESTABILE (package:http mock client) ----
+        final httpClient = client ?? _mockClient!;
+        http.StreamedResponse? successfulResponse;
+
+        for (final candidateUrl in downloadUrlsToTry) {
+          try {
+            debugPrint("OfflineDbSyncService: Attempting download (native) from $candidateUrl");
+            final request = http.Request('GET', Uri.parse(candidateUrl));
+            request.headers.addAll(defaultHeaders);
+            final sendFuture = httpClient.send(request);
+            final response = downloadTimeout != null ? await sendFuture.timeout(downloadTimeout!) : await sendFuture;
+            if (response.statusCode == 200) {
+              successfulResponse = response;
+              connectedUrl = candidateUrl;
+              debugPrint("OfflineDbSyncService: Connected to $candidateUrl (contentLength: ${response.contentLength})");
+              break;
+            } else {
+              debugPrint(
+                "OfflineDbSyncService: Candidate $candidateUrl failed with HTTP ${response.statusCode} (${response.reasonPhrase})",
+              );
+            }
+          } catch (e) {
+            debugPrint("OfflineDbSyncService: Error connecting to candidate $candidateUrl: $e");
+          }
+        }
+
+        if (successfulResponse == null) {
+          debugPrint("OfflineDbSyncService: All download endpoints failed for $fileName");
+          yield const OfflineSyncProgress.error("download_endpoints_failed");
+          return;
+        }
+        totalBytes = successfulResponse.contentLength ?? 0;
+        downloadStream = successfulResponse.stream;
+      } else {
+        // ---- PATH NATIVO AD ALTA VELOCITÀ (dart:io HttpClient) ----
+        // dart:io HttpClient produce chunk da 32-64 KB (vs 1-4 KB di package:http),
+        // riducendo drasticamente le iterazioni dell'event loop e massimizzando il throughput.
+        nativeClient = HttpClient()
+          ..userAgent = userAgent
+          ..connectionTimeout = const Duration(seconds: 15);
+
+        HttpClientResponse? successfulResponse;
+
+        for (final candidateUrl in downloadUrlsToTry) {
+          try {
+            debugPrint("OfflineDbSyncService: Attempting download (native/dart:io) from $candidateUrl");
+            final request = await nativeClient.getUrl(Uri.parse(candidateUrl));
+            request.headers.set('User-Agent', userAgent);
+            final sendFuture = request.close();
+            final response = downloadTimeout != null ? await sendFuture.timeout(downloadTimeout!) : await sendFuture;
+            if (response.statusCode == 200) {
+              successfulResponse = response;
+              connectedUrl = candidateUrl;
+              totalBytes = response.contentLength;
+              debugPrint("OfflineDbSyncService: Connected (dart:io) to $candidateUrl (contentLength: $totalBytes)");
+              break;
+            } else {
+              // Drain per evitare socket leak
+              await response.drain<void>();
+              debugPrint(
+                "OfflineDbSyncService: Candidate $candidateUrl failed with HTTP ${response.statusCode} (${response.reasonPhrase})",
+              );
+            }
+          } catch (e) {
+            debugPrint("OfflineDbSyncService: Error connecting to candidate $candidateUrl: $e");
+          }
+        }
+
+        if (successfulResponse == null) {
+          debugPrint("OfflineDbSyncService: All download endpoints failed for $fileName");
+          yield const OfflineSyncProgress.error("download_endpoints_failed");
+          return;
+        }
+        downloadStream = successfulResponse;
       }
 
-      final totalBytes = response.contentLength ?? 0;
-      var receivedBytes = 0;
-      final sink = tempGzFile.openWrite();
-      Digest? computedDigest;
-      final inputByteConversion = sha256.startChunkedConversion(
-        ChunkedConversionSink<Digest>.withCallback((digests) {
-          if (digests.isNotEmpty) {
-            computedDigest = digests.single;
-          }
-        }),
+      final totalSw = Stopwatch()..start();
+      final downloadSw = Stopwatch()..start();
+
+      sink = tempGzFile.openWrite();
+      var lastEmittedProgress = 0.1;
+      var lastEmittedTime = DateTime.now().millisecondsSinceEpoch;
+      var lastLogTime = DateTime.now().millisecondsSinceEpoch;
+
+      debugPrint('[OFFLINE_DB] >>> INIZIO DOWNLOAD NATIVO da: $connectedUrl (Totale: ${(totalBytes / 1024 / 1024).toStringAsFixed(1)} MB)');
+
+      final progressController = StreamController<OfflineSyncProgress>();
+
+      final trackingStream = downloadStream.transform(
+        StreamTransformer<List<int>, List<int>>.fromHandlers(
+          handleData: (chunk, output) {
+            output.add(chunk);
+            receivedBytes += chunk.length;
+            final now = DateTime.now().millisecondsSinceEpoch;
+
+            if (now - lastLogTime >= 1500) {
+              lastLogTime = now;
+              final mb = (receivedBytes / 1024 / 1024).toStringAsFixed(1);
+              final speed = (receivedBytes / 1024 / (downloadSw.elapsedMilliseconds == 0 ? 1 : (downloadSw.elapsedMilliseconds / 1000))).toStringAsFixed(0);
+              debugPrint('[OFFLINE_DB] [$connectedUrl] Download in corso: $mb MB / ${(totalBytes / 1024 / 1024).toStringAsFixed(1)} MB ($speed KB/s)');
+            }
+
+            if (totalBytes > 0) {
+              final downloadProgress = 0.1 + (receivedBytes / totalBytes) * 0.6; // 0.1 -> 0.7
+              // Emetti aggiornamenti UI moderati (>= 2% o >= 400ms) per mantenere il socket a banda piena
+              if (downloadProgress - lastEmittedProgress >= 0.02 || now - lastEmittedTime >= 400) {
+                lastEmittedProgress = downloadProgress;
+                lastEmittedTime = now;
+                if (!progressController.isClosed) {
+                  progressController.add(
+                    OfflineSyncProgress(
+                      step: OfflineSyncStep.downloading,
+                      progress: downloadProgress.clamp(0.1, 0.7),
+                    ),
+                  );
+                }
+              }
+            }
+          },
+          handleDone: (output) {
+            output.close();
+          },
+          handleError: (error, stack, output) {
+            output.addError(error, stack);
+            if (!progressController.isClosed) {
+              progressController.addError(error, stack);
+            }
+          },
+        ),
       );
 
-      await for (final chunk in response.stream) {
-        sink.add(chunk);
-        inputByteConversion.add(chunk);
-        receivedBytes += chunk.length;
-        if (totalBytes > 0) {
-          final downloadProgress = 0.1 + (receivedBytes / totalBytes) * 0.6; // 0.1 -> 0.7
-          yield OfflineSyncProgress(
-            step: OfflineSyncStep.downloading,
-            progress: downloadProgress.clamp(0.1, 0.7),
-          );
+      final downloadFuture = sink.addStream(trackingStream).then((_) async {
+        await sink?.flush();
+        await sink?.close();
+        sink = null;
+        if (!progressController.isClosed) {
+          await progressController.close();
         }
+      }).catchError((e, stack) {
+        if (!progressController.isClosed) {
+          progressController.addError(e, stack);
+          progressController.close();
+        }
+      });
+
+      await for (final p in progressController.stream) {
+        yield p;
       }
-      await sink.flush();
-      await sink.close();
-      inputByteConversion.close();
+      await downloadFuture;
+
+      downloadSw.stop();
+      debugPrint('[OFFLINE_DB] Download completato in ${downloadSw.elapsedMilliseconds}ms (${(receivedBytes / 1024 / 1024).toStringAsFixed(1)} MB)');
 
       if (expectedSha256 != null && expectedSha256.isNotEmpty) {
-        final actualSha256 = computedDigest?.toString() ?? '';
+        final shaSw = Stopwatch()..start();
+        final actualSha256 = (await sha256.bind(tempGzFile.openRead()).first).toString();
+        shaSw.stop();
+        debugPrint('[OFFLINE_DB] Verifica SHA256 completata in ${shaSw.elapsedMilliseconds}ms ($actualSha256)');
         if (actualSha256.toLowerCase() != expectedSha256.toLowerCase()) {
+          debugPrint(
+            "OfflineDbSyncService: SHA256 mismatch (native)! Expected: $expectedSha256, Actual: $actualSha256",
+          );
           yield const OfflineSyncProgress.error("sha256_mismatch");
           return;
         }
@@ -545,11 +805,15 @@ class OfflineDbSyncService {
         progress: 0.75,
       );
 
+      debugPrint('[OFFLINE_DB] Inizio decompressione Gzip...');
+      final decompressSw = Stopwatch()..start();
       if (tempExtractedDb.existsSync()) {
         tempExtractedDb.deleteSync();
       }
 
       await decompressGzipFile(tempGzFile, tempExtractedDb);
+      decompressSw.stop();
+      debugPrint('[OFFLINE_DB] Decompressione completata in ${decompressSw.elapsedMilliseconds}ms (File estratto: ${(tempExtractedDb.lengthSync() / 1024 / 1024).toStringAsFixed(1)} MB)');
 
       if (tempGzFile.existsSync()) {
         tempGzFile.deleteSync();
@@ -560,6 +824,9 @@ class OfflineDbSyncService {
         step: OfflineSyncStep.merging,
         progress: 0.85,
       );
+
+      debugPrint('[OFFLINE_DB] Inizio installazione/merge database...');
+      final mergeSw = Stopwatch()..start();
 
       if (action == OfflineSyncAction.fullDownload) {
         // Sostituzione atomica del file
@@ -578,13 +845,22 @@ class OfflineDbSyncService {
       }
 
       await OfflineDbService.setInstalledTier(tier);
+      mergeSw.stop();
+      totalSw.stop();
+      debugPrint('[OFFLINE_DB] Installazione completata in ${mergeSw.elapsedMilliseconds}ms. TEMPO TOTALE: ${(totalSw.elapsedMilliseconds / 1000).toStringAsFixed(1)}s');
 
+      debugPrint("OfflineDbSyncService: Native sync completed successfully for ${tier.key}");
       yield const OfflineSyncProgress.completed();
-    } catch (e) {
-      debugPrint("OfflineDbSyncService sync error: $e");
+    } catch (e, stack) {
+      debugPrint("OfflineDbSyncService sync error: $e\n$stack");
       yield OfflineSyncProgress.error(e.toString());
     } finally {
-      internalClient?.close();
+      nativeClient?.close();
+      if (sink != null) {
+        try {
+          await sink?.close();
+        } catch (_) {}
+      }
       if (tempGzFile.existsSync()) {
         try {
           tempGzFile.deleteSync();

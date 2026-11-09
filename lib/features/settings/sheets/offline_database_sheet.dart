@@ -246,8 +246,8 @@ class _OfflineDatabaseSheetContentState
                   widget.onDatabaseUpdated?.call();
                   _triggerSnackbar("settings.offlineDb.syncSuccess".tr());
                 }
-              } catch (e) {
-                debugPrint("Error finalizing database sync: $e");
+              } catch (e, stack) {
+                debugPrint("OfflineDatabaseSheet: Error finalizing database sync: $e\n$stack");
                 if (mounted) {
                   await _performRollback();
                   _triggerSnackbar(
@@ -257,6 +257,9 @@ class _OfflineDatabaseSheetContentState
                 }
               }
             } else if (progress.step == OfflineSyncStep.error) {
+              debugPrint(
+                "OfflineDatabaseSheet: Sync failed with step 'error' - reason: ${progress.errorMessage}",
+              );
               if (mounted) {
                 await _performRollback();
                 _triggerSnackbar(
@@ -266,7 +269,8 @@ class _OfflineDatabaseSheetContentState
               }
             }
           },
-          onError: (err) async {
+          onError: (err, stack) async {
+            debugPrint("OfflineDatabaseSheet: Sync stream onError: $err\n$stack");
             if (!mounted) return;
             await _performRollback();
             _triggerSnackbar(

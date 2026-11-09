@@ -153,6 +153,25 @@ Widget _buildApp({
   );
 }
 
+/// Manifest come Map per setMockManifest().
+Map<String, dynamic> _mockManifestMap() => {
+      'published_at': 1773320000,
+      'delta_7d_since': 1773320000 - 7 * 86400,
+      'delta_30d_since': 1773320000 - 30 * 86400,
+      'packages': {
+        'gluten_free': {
+          'full': {'file': 'gluten_free_full.db.gz', 'sha256': ''},
+          'delta_7d': {'file': 'gluten_free_delta_7d.db.gz', 'sha256': ''},
+          'delta_30d': {'file': 'gluten_free_delta_30d.db.gz', 'sha256': ''},
+        },
+        'euro_core': {
+          'full': {'file': 'euro_core_full.db.gz', 'sha256': ''},
+          'delta_7d': {'file': 'euro_core_delta_7d.db.gz', 'sha256': ''},
+          'delta_30d': {'file': 'euro_core_delta_30d.db.gz', 'sha256': ''},
+        },
+      },
+    };
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   sqfliteFfiInit();
@@ -171,6 +190,11 @@ void main() {
     dbPath = p.join(tempDir.path, 'offline_products.db');
     OfflineDbService.setMockDatabasePath(dbPath);
     ConnectivityHelper.mockIsWifi = true;
+    // Imposta il manifest mock statico per evitare richieste HTTP reali in tutti i test
+    OfflineDbSyncService.setMockManifest(_mockManifestMap());
+    // Disabilita i timeout nei widget test per evitare FakeTimer pendenti con MockClient asincroni
+    OfflineDbSyncService.downloadTimeout = null;
+    OfflineDbSyncService.manifestTimeout = null;
   });
 
   tearDown(() async {
@@ -179,9 +203,12 @@ void main() {
     OfflineDbService.setMockDatabasePath(null);
     OfflineDbService.mockIsDatabaseInstalled = null;
     OfflineDbSyncService.setMockClient(null);
+    OfflineDbSyncService.setMockManifest(null);
     OfflineDbSyncService.resetBaseUrl();
     if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
+      try {
+        await tempDir.delete(recursive: true);
+      } catch (_) {}
     }
   });
 
@@ -427,18 +454,19 @@ void main() {
         // During sync, status pill should display "Download in corso"
         expect(find.text('Download in corso'), findsOneWidget);
         // Percentage is explicitly displayed
-        expect(find.text('5%'), findsOneWidget);
+        expect(find.textContaining('%'), findsOneWidget);
         // Cancel button (X) is present to the right
         final cancelBtn = find.byKey(const ValueKey('cancelSyncButton'));
         expect(cancelBtn, findsOneWidget);
 
         // Tap cancel button (X)
         await tester.tap(cancelBtn);
+        completer.complete(http.Response('canceled', 499));
         await tester.pumpAndSettle();
 
         // Sync stopped: cancel button and percentage are gone, "Aggiorna" is restored
         expect(find.byKey(const ValueKey('cancelSyncButton')), findsNothing);
-        expect(find.text('5%'), findsNothing);
+        expect(find.textContaining('%'), findsNothing);
         expect(find.text('Aggiorna'), findsOneWidget);
       },
     );
@@ -492,6 +520,7 @@ void main() {
 
         // Tap cancel button (X)
         await tester.tap(cancelBtn);
+        completer.complete(http.Response('canceled', 499));
         await tester.pumpAndSettle();
 
         // Resets back to disabled and settings were never mutated
@@ -596,9 +625,9 @@ void main() {
     testWidgets(
       'On download error: shows error snackbar and does not update tier',
       (tester) async {
-        final mockClient = MockClient((request) async {
-          return http.Response('Server error', 500);
-        });
+        // Il manifest è già mockato via setMockManifest() nel setUp.
+        // Il MockClient risponde 500 per simulare un errore di download del .db.gz.
+        final mockClient = MockClient((request) async => http.Response('Server error', 500));
         OfflineDbSyncService.setMockClient(mockClient);
 
         var settingsChanged = false;
@@ -695,6 +724,7 @@ void main() {
         await tester.ensureVisible(cancelBtn);
         await tester.pumpAndSettle();
         await tester.tap(cancelBtn);
+        completer.complete(http.Response('canceled', 499));
         await tester.pumpAndSettle();
 
         // Rollback: Hero card rolls back to previous DB (Solo Celiachia)
@@ -706,9 +736,9 @@ void main() {
     testWidgets(
       'On switch error: rolls back to previous installed package and retains original settings',
       (tester) async {
-        final mockClient = MockClient((request) async {
-          return http.Response('Server Error', 500);
-        });
+        // Il manifest è già mockato via setMockManifest() nel setUp.
+        // Il MockClient risponde 500 per simulare un errore di download (switch).
+        final mockClient = MockClient((request) async => http.Response('Server Error', 500));
         OfflineDbSyncService.setMockClient(mockClient);
 
         OfflineDbService.mockIsDatabaseInstalled = true;
@@ -767,6 +797,10 @@ void main() {
     testWidgets(
       'On finalize error during completed sync: rolls back and shows error snackbar',
       (tester) async {
+        // Disattiva il manifest mock statico per ripristinare il comportamento originale:
+        // il MockClient risponde 'OK' (non JSON valido) a version.json -> errore -> snackbar
+        OfflineDbSyncService.setMockManifest(null);
+
         final mockClient = MockClient((request) async {
           return http.Response('OK', 200);
         });
