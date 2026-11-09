@@ -91,6 +91,8 @@ class OfflineDbSyncService {
       _activeNativeSink?.close();
     } catch (_) {}
     _activeNativeSink = null;
+
+    unawaited(OfflineDbService.cleanupTemporaryFiles());
   }
 
   @visibleForTesting
@@ -315,14 +317,11 @@ class OfflineDbSyncService {
     final isInstalled = await OfflineDbService.isDatabaseInstalled();
     final installedTier = await OfflineDbService.getInstalledTier();
 
-    // 1. Se un database è installato ma appartiene a un Tier diverso da quello richiesto:
-    // cancelliamo fisicamente il vecchio DB per scaricare ed installare quello corretto!
-    if (isInstalled && installedTier != null && installedTier != settings.offlineDbTier) {
-      debugPrint(
-        'OfflineDbSyncService: Tier mismatch (installed: ${installedTier.key}, desired: ${settings.offlineDbTier.key}). Deleting old DB...',
-      );
-      await OfflineDbService.deleteDatabaseFile();
-    } else if (isInstalled) {
+    // Pulizia preventiva proattiva di file temporanei orfani
+    await OfflineDbService.cleanupTemporaryFiles();
+
+    // 1. Se un database è già installato con lo stesso tier:
+    if (isInstalled && installedTier == settings.offlineDbTier) {
       // 2. Se è già installato con lo stesso tier:
       // Gate settimanale — controlla solo al primo avvio dopo Domenica 04:00 locale.
       // Se l'ultimo sync è più recente del rilascio settimanale, skip totale.
@@ -643,6 +642,7 @@ class OfflineDbSyncService {
       return;
     }
 
+    await OfflineDbService.cleanupTemporaryFiles();
     final dir = Directory(p.dirname(targetDbPath));
     final tempGzFile = File(p.join(dir.path, 'download_temp.db.gz'));
     final tempExtractedDb = File(p.join(dir.path, 'temp_extracted.db'));
@@ -917,6 +917,7 @@ class OfflineDbSyncService {
           tempExtractedDb.deleteSync();
         } catch (_) {}
       }
+      await OfflineDbService.cleanupTemporaryFiles();
     }
   }
 

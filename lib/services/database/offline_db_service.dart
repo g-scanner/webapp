@@ -252,7 +252,35 @@ class OfflineDbService {
     );
   }
 
-  /// Chiude la connessione ed elimina fisicamente il database dal dispositivo.
+  /// Elimina file temporanei o orfani (.gz, temp_*, .tmp) nella directory del database offline.
+  static Future<void> cleanupTemporaryFiles() async {
+    if (kIsWeb) return;
+    try {
+      final path = await getDatabasePath();
+      final dir = Directory(p.dirname(path));
+      if (!dir.existsSync()) return;
+
+      final entities = dir.listSync();
+      for (final entity in entities) {
+        if (entity is File) {
+          final name = p.basename(entity.path);
+          if (name.endsWith('.gz') ||
+              name.endsWith('.tmp') ||
+              name.startsWith('download_temp') ||
+              name.startsWith('temp_extracted') ||
+              name.startsWith('patch_web_source')) {
+            try {
+              entity.deleteSync();
+            } catch (_) {}
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("OfflineDbService.cleanupTemporaryFiles error: $e");
+    }
+  }
+
+  /// Chiude la connessione ed elimina fisicamente il database e tutti i file temporanei o journal dal dispositivo.
   static Future<void> deleteDatabaseFile() async {
     try {
       if (_database != null && _database!.isOpen) {
@@ -272,11 +300,28 @@ class OfflineDbService {
         if (await databaseFactory.databaseExists(path)) {
           await databaseFactory.deleteDatabase(path);
         }
+        const tempWebPatch = 'gscanner_temp_patch.db';
+        if (await databaseFactory.databaseExists(tempWebPatch)) {
+          await databaseFactory.deleteDatabase(tempWebPatch);
+        }
       } else {
         final file = File(path);
         if (file.existsSync()) {
           file.deleteSync();
         }
+        final journalFile = File('$path-journal');
+        if (journalFile.existsSync()) {
+          try { journalFile.deleteSync(); } catch (_) {}
+        }
+        final walFile = File('$path-wal');
+        if (walFile.existsSync()) {
+          try { walFile.deleteSync(); } catch (_) {}
+        }
+        final shmFile = File('$path-shm');
+        if (shmFile.existsSync()) {
+          try { shmFile.deleteSync(); } catch (_) {}
+        }
+        await cleanupTemporaryFiles();
       }
     } catch (e) {
       debugPrint("OfflineDbService.deleteDatabaseFile error: $e");
