@@ -62,8 +62,9 @@ class _CameraModuleState extends State<CameraModule>
         MobileScannerController(
           autoStart: false,
           facing: CameraFacing.back,
-          detectionSpeed:
-              kIsWeb ? DetectionSpeed.normal : DetectionSpeed.noDuplicates,
+          detectionSpeed: kIsWeb
+              ? DetectionSpeed.normal
+              : DetectionSpeed.noDuplicates,
           detectionTimeoutMs: 250,
           formats: const [
             BarcodeFormat.ean13,
@@ -75,14 +76,16 @@ class _CameraModuleState extends State<CameraModule>
             BarcodeFormat.code39,
             BarcodeFormat.dataMatrix,
           ],
-          cameraResolution:
-              kIsWeb ? const Size(1280, 720) : const Size(480, 640),
+          cameraResolution: kIsWeb ? null : const Size(480, 640),
         );
 
     _manualFocusNode = FocusNode();
     _manualFocusNode.addListener(_onManualFocusChange);
 
     if (kIsWeb) {
+      MobileScannerPlatform.instance.setWebBarcodeReader(
+        WebBarcodeReader.zxingWasm,
+      );
       setupWebVisibilityListener((isVisible) {
         if (!mounted) return;
         if (isVisible) {

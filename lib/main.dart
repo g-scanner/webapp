@@ -2,11 +2,13 @@
 // PROJECT: G-Scanner — See LICENSE file in root for terms.
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'firebase_options.dart';
 import 'services/database/app_database.dart';
@@ -25,6 +27,9 @@ export 'features/shell/main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    MobileScannerPlatform.instance.setWebBarcodeReader(WebBarcodeReader.zxingWasm);
+  }
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await EasyLocalization.ensureInitialized();
   await AppDatabase.instance.database;
