@@ -365,7 +365,6 @@ class AccountSection extends StatelessWidget {
     );
 
     if (confirm == true) {
-      onTriggerToast("settings.account.signingOut".tr());
       try {
         await DbService.wipeCurrentUserLocalData();
         await auth.signOut();
