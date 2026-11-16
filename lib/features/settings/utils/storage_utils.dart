@@ -41,15 +41,15 @@ Future<StorageMetrics> fetchStorageMetrics(String? userId) async {
   }
 }
 
-/// Converte una dimensione in byte in una stringa leggibile (B, KB, MB, GB).
+/// Converte una dimensione in byte in una stringa leggibile (KB, MB, GB).
 String formatBytes(int bytes) {
-  if (bytes <= 0) return '0 B';
+  if (bytes <= 0) return '0 KB';
   const kb = 1024;
   const mb = 1024 * 1024;
   const gb = 1024 * 1024 * 1024;
 
   if (bytes < kb) {
-    return '$bytes B';
+    return '< 1 KB';
   } else if (bytes < mb) {
     final value = bytes / kb;
     return '${value >= 10 ? value.toStringAsFixed(0) : value.toStringAsFixed(1).replaceAll('.0', '')} KB';

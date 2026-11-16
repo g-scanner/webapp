@@ -130,7 +130,7 @@
       "sheetTitle": "Memoria e Cronologia",
       "cacheTitle": "Cache Prodotti",
       "cacheDesc": "Conserva i dati dei prodotti già scansionati per consultarli istantaneamente anche offline.",
-      "historyTitle": "Cronologia Scansioni",
+      "historyTitle": "Cronologia",
       "historyDesc": "Conserva la lista di tutte le scansioni effettuate, con risultato analisi e data.",
       "totalStorageLabel": "Spazio totale occupato sul dispositivo",
       "clearCacheAction": "Svuota Cache Prodotti",
