@@ -58,9 +58,11 @@
     "analysis": {
       "notSuitable": "Rilevati ingredienti contententi glutine.",
       "safe": "Certificazione o dicitura \"Senza Glutine\" rilevata.",
+      "claimDiscrepancy": "Prodotto con dicitura \"Senza Glutine\" potenzialmente errata. Leggi l'etichetta.",
+      "claimDiscrepancyReason": "Discrepanza tra etichetta e ingredienti con glutine rilevati.",
       "naturallySafe": "Prodotto di base naturalmente privo di glutine.",
-      "uncertainNoLabel": "Prodotto lavorato senza dicitura \"Senza glutine\". Verifica l'etichetta.",
-      "uncertainTraces": "Trovate diciture di contaminazione. Verifica l'etichetta.",
+      "uncertainNoLabel": "Prodotto lavorato senza dicitura \"Senza glutine\". Leggi l'etichetta.",
+      "uncertainTraces": "Trovate diciture di contaminazione. Leggi l'etichetta.",
       "unknown": "Informazioni insufficienti. Leggi l'etichetta fisica.",
       "strictFilterBlocked": "Rilevate possibili tracce di contaminazione crociata dal Filtro Rigido Contaminazioni.",
       "glutenSource": "Fonte diretta di glutine.",
