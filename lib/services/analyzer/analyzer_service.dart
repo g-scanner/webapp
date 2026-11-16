@@ -267,7 +267,7 @@ class AnalyzerService {
             !ingredientsAnalyzed.any((i) => i.dangerLevel == "danger")) {
           ingredientsAnalyzed.add(
             IngredientAnalyzed(
-              ingredient: "Glutine",
+              ingredient: "product.analysis.glutenAllergenIngredient".tr(),
               dangerLevel: "danger",
               reason: "product.analysis.glutenSource".tr(),
             ),
@@ -277,7 +277,7 @@ class AnalyzerService {
         if (hasAnyTrace) {
           ingredientsAnalyzed.add(
             IngredientAnalyzed(
-              ingredient: "Tracce",
+              ingredient: "product.analysis.traceIngredient".tr(),
               dangerLevel: "warning",
               reason: "product.analysis.traceWarningReason".tr(),
             ),
@@ -328,7 +328,7 @@ class AnalyzerService {
       if (hasAnyTrace && strictMode) {
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
-            ingredient: "Tracce",
+            ingredient: "product.analysis.traceIngredient".tr(),
             dangerLevel: "danger",
             reason: "product.analysis.contaminationBlocked".tr(),
           ),
@@ -368,7 +368,7 @@ class AnalyzerService {
         reason = "product.analysis.uncertainTraces".tr();
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
-            ingredient: "Tracce",
+            ingredient: "product.analysis.traceIngredient".tr(),
             dangerLevel: "warning",
             reason: "product.analysis.traceWarningReason".tr(),
           ),

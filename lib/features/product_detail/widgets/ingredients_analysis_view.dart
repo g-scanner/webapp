@@ -18,9 +18,175 @@ class IngredientsAnalysisView extends StatelessWidget {
     required this.displayedIngredientsAnalyzed,
   });
 
+  /// Builds a RichText with inline highlights for each analyzed ingredient
+  /// found in the raw ingredient string.
+  Widget _buildHighlightedIngredients(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) {
+    final String rawText = displayedIngredients;
+    if (rawText.trim().isEmpty) return const SizedBox.shrink();
+
+    // Build a map of lowercase keyword → dangerLevel from the analyzed items.
+    // Only include items whose ingredient name actually appears in the raw text
+    // (skip synthetic labels like "Certificazione Senza Glutine").
+    final String lowerRaw = rawText.toLowerCase();
+    final List<_HighlightEntry> entries = [];
+
+    for (final item in displayedIngredientsAnalyzed) {
+      final String keyword = item.ingredient.toLowerCase();
+      if (keyword.isEmpty) continue;
+
+      // Try to find all occurrences of this keyword in the raw text
+      int searchFrom = 0;
+      while (true) {
+        final int pos = lowerRaw.indexOf(keyword, searchFrom);
+        if (pos == -1) break;
+
+        entries.add(
+          _HighlightEntry(
+            start: pos,
+            end: pos + keyword.length,
+            dangerLevel: item.dangerLevel,
+          ),
+        );
+        searchFrom = pos + keyword.length;
+      }
+    }
+
+    // If nothing to highlight, return plain text
+    if (entries.isEmpty) {
+      return Text(
+        rawText,
+        style: TextStyle(
+          fontSize: 14,
+          color: colorScheme.onSurface,
+          height: 1.5,
+        ),
+      );
+    }
+
+    // Sort by start position, then by longest match first (to prefer longer matches)
+    entries.sort((a, b) {
+      final cmp = a.start.compareTo(b.start);
+      if (cmp != 0) return cmp;
+      return b.end.compareTo(a.end); // longer first
+    });
+
+    // Remove overlapping entries — keep the first (longest) match at each position
+    final List<_HighlightEntry> resolved = [];
+    int lastEnd = 0;
+    for (final e in entries) {
+      if (e.start >= lastEnd) {
+        resolved.add(e);
+        lastEnd = e.end;
+      }
+    }
+
+    // Build TextSpans
+    final List<InlineSpan> spans = [];
+    final TextStyle baseStyle = TextStyle(
+      fontSize: 14,
+      color: colorScheme.onSurface,
+      height: 1.5,
+    );
+    int cursor = 0;
+
+    for (final entry in resolved) {
+      // Plain text before this highlight
+      if (cursor < entry.start) {
+        spans.add(TextSpan(text: rawText.substring(cursor, entry.start)));
+      }
+
+      // Determine highlight color from the pill variant system
+      final AppStatusPillVariant variant = _variantForDangerLevel(
+        entry.dangerLevel,
+      );
+      final colors = AppStatusPill.colorsForVariant(variant, colorScheme);
+
+      // Highlighted span with pill-colored background
+      spans.add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: colors.bg,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              rawText.substring(entry.start, entry.end),
+              style: baseStyle.copyWith(
+                color: colors.text,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      cursor = entry.end;
+    }
+
+    // Trailing plain text
+    if (cursor < rawText.length) {
+      spans.add(TextSpan(text: rawText.substring(cursor)));
+    }
+
+    return RichText(
+      text: TextSpan(style: baseStyle, children: spans),
+    );
+  }
+
+  static AppStatusPillVariant _variantForDangerLevel(String dangerLevel) {
+    switch (dangerLevel) {
+      case "danger":
+        return AppStatusPillVariant.error;
+      case "warning":
+        return AppStatusPillVariant.tertiary;
+      case "safe":
+      default:
+        return AppStatusPillVariant.primary;
+    }
+  }
+
+  List<IngredientAnalyzed> _getSortedIngredientsAnalyzed() {
+    if (displayedIngredients.trim().isEmpty ||
+        displayedIngredientsAnalyzed.isEmpty) {
+      return displayedIngredientsAnalyzed;
+    }
+
+    final String lowerText = displayedIngredients.toLowerCase();
+    final indexedItems = displayedIngredientsAnalyzed.asMap().entries.toList();
+
+    indexedItems.sort((entryA, entryB) {
+      final a = entryA.value;
+      final b = entryB.value;
+      final posA = a.ingredient.isNotEmpty
+          ? lowerText.indexOf(a.ingredient.toLowerCase())
+          : -1;
+      final posB = b.ingredient.isNotEmpty
+          ? lowerText.indexOf(b.ingredient.toLowerCase())
+          : -1;
+
+      if (posA != -1 && posB != -1) {
+        final cmp = posA.compareTo(posB);
+        if (cmp != 0) return cmp;
+        return entryA.key.compareTo(entryB.key);
+      }
+      if (posA != -1) return -1;
+      if (posB != -1) return 1;
+      return entryA.key.compareTo(entryB.key);
+    });
+
+    return indexedItems.map((e) => e.value).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
+    final sortedIngredientsAnalyzed = _getSortedIngredientsAnalyzed();
 
     return SectionCard(
       title: "product.ingredients.title".tr(),
@@ -39,19 +205,12 @@ class IngredientsAnalysisView extends StatelessWidget {
               ),
             ),
           if (displayedIngredients.trim().isNotEmpty) ...[
-            Text(
-              displayedIngredients,
-              style: TextStyle(
-                fontSize: 14,
-                color: colorScheme.onSurface,
-                height: 1.5,
-              ),
-            ),
-            if (displayedIngredientsAnalyzed.isNotEmpty)
+            _buildHighlightedIngredients(context, colorScheme),
+            if (sortedIngredientsAnalyzed.isNotEmpty)
               const SizedBox(height: 16),
           ],
-          if (displayedIngredientsAnalyzed.isNotEmpty) ...[
-            ...displayedIngredientsAnalyzed.asMap().entries.map((entry) {
+          if (sortedIngredientsAnalyzed.isNotEmpty) ...[
+            ...sortedIngredientsAnalyzed.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
               final bool showTopDivider =
@@ -132,6 +291,19 @@ class IngredientsAnalysisView extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Internal helper to track a highlight region in the ingredient string.
+class _HighlightEntry {
+  final int start;
+  final int end;
+  final String dangerLevel;
+
+  const _HighlightEntry({
+    required this.start,
+    required this.end,
+    required this.dangerLevel,
+  });
 }
 
 class LactoseAlertSection extends StatelessWidget {

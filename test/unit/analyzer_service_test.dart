@@ -398,7 +398,7 @@ void main() {
 
       expect(res.status, GlutenSafetyStatus.incerto);
       expect(
-        res.ingredientsAnalyzed.any((i) => i.ingredient == 'Tracce'),
+        res.ingredientsAnalyzed.any((i) => i.ingredient == 'product.analysis.traceIngredient'.tr()),
         isTrue,
       );
     });
@@ -1050,7 +1050,7 @@ void main() {
       expect(res.status, GlutenSafetyStatus.incerto);
       expect(
         res.ingredientsAnalyzed.any(
-          (i) => i.ingredient == 'Tracce' && i.dangerLevel == 'warning',
+          (i) => i.ingredient == 'product.analysis.traceIngredient'.tr() && i.dangerLevel == 'warning',
         ),
         isTrue,
       );
@@ -1070,7 +1070,7 @@ void main() {
       expect(res.status, GlutenSafetyStatus.nonAdatto);
       expect(
         res.ingredientsAnalyzed.any(
-          (i) => i.ingredient == 'Tracce' && i.dangerLevel == 'danger',
+          (i) => i.ingredient == 'product.analysis.traceIngredient'.tr() && i.dangerLevel == 'danger',
         ),
         isTrue,
       );
@@ -1324,7 +1324,7 @@ void main() {
       expect(res.status, GlutenSafetyStatus.incerto);
       expect(
         res.ingredientsAnalyzed.any(
-          (i) => i.ingredient == 'Tracce',
+          (i) => i.ingredient == 'product.analysis.traceIngredient'.tr(),
         ),
         isTrue,
       );
@@ -1344,7 +1344,7 @@ void main() {
       expect(res.status, GlutenSafetyStatus.nonAdatto);
       expect(
         res.ingredientsAnalyzed.any(
-          (i) => i.ingredient == 'Tracce' && i.dangerLevel == 'danger',
+          (i) => i.ingredient == 'product.analysis.traceIngredient'.tr() && i.dangerLevel == 'danger',
         ),
         isTrue,
       );

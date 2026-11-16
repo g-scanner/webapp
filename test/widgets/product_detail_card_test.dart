@@ -935,5 +935,55 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'Ingredients analysis: orders analyzed ingredients by their appearance in raw text',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: IngredientsAnalysisView(
+              displayedIngredients: 'Farina di frumento, amido di mais, latte.',
+              displayedIngredientsAnalyzed: [
+                IngredientAnalyzed(
+                  ingredient: 'latte',
+                  dangerLevel: 'danger',
+                  reason: 'Lattosio',
+                ),
+                IngredientAnalyzed(
+                  ingredient: 'frumento',
+                  dangerLevel: 'danger',
+                  reason: 'Glutine',
+                ),
+                IngredientAnalyzed(
+                  ingredient: 'amido',
+                  dangerLevel: 'warning',
+                  reason: 'Additivo',
+                ),
+                IngredientAnalyzed(
+                  ingredient: 'Tracce',
+                  dangerLevel: 'warning',
+                  reason: 'Tracce generiche',
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(IngredientsAnalysisView), findsOneWidget);
+
+        // Find positions of the ingredient title texts in the analyzed items below (using .last to target the item cards)
+        final frumentoPos = tester.getTopLeft(find.text('frumento').last).dy;
+        final amidoPos = tester.getTopLeft(find.text('amido').last).dy;
+        final lattePos = tester.getTopLeft(find.text('latte').last).dy;
+        final traccePos = tester.getTopLeft(find.text('Tracce').last).dy;
+
+        // They must appear from top to bottom in order of appearance in ingredients text:
+        // 'frumento' (first in text) < 'amido' (second in text) < 'latte' (third in text) < 'Tracce' (synthetic, not in text)
+        expect(frumentoPos < amidoPos, isTrue);
+        expect(amidoPos < lattePos, isTrue);
+        expect(lattePos < traccePos, isTrue);
+      },
+    );
   });
 }
