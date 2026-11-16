@@ -196,7 +196,8 @@ String themeModeToString(ThemeMode mode) {
 extension AppColorTokens on ColorScheme {
   // ── Stato glutine ──────────────────────────────────────────────────────────
   Color get statusPrimaryBg => primaryContainer.withValues(alpha: 0.15);
-  Color get statusPrimaryText => primary;
+  Color get statusPrimaryText =>
+      brightness == Brightness.dark ? darkStatusPrimaryText : primary;
 
   Color get statusErrorBg => errorContainer.withValues(
     alpha: brightness == Brightness.dark ? 0.2 : 0.5,

@@ -45,3 +45,4 @@ const Color darkOnTertiaryContainer = Color(0xFF5C2D00);
 const Color darkError = Color(0xFFFFB4AB);
 const Color darkErrorContainer = Color(0xFF93000A);
 const Color darkOnErrorContainer = Color(0xFFFFDAD6);
+const Color darkStatusPrimaryText = Color(0xFF51CF66);
