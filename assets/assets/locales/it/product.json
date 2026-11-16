@@ -75,6 +75,8 @@
       "uncertainIngredientReason": "Ambiguità segnalata dal Filtro Avvertimento Additivi.",
       "safeTraceIngredient": "Tracce (<20ppm)",
       "safeTraceReason": "Tracce segnalate, ma il bollino garantisce limiti sicuri.",
+      "traceIngredient": "Tracce",
+      "glutenAllergenIngredient": "Glutine",
       "traceWarningReason": "Contaminazione crociata. Il Filtro Rigido è disattivato.",
       "maltIngredient": "Malto",
       "maltReason": "Possibile malto d'orzo. Origine non specificata.",
