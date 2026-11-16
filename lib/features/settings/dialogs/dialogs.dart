@@ -5,5 +5,4 @@ export 'account_management_sheet.dart';
 export 'clear_history_dialog.dart';
 export 'clear_product_cache_dialog.dart';
 export 'delete_account_dialog.dart';
-export 'edit_name_dialog.dart';
 export 'legal_content_dialog.dart';

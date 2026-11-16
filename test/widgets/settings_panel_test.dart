@@ -842,10 +842,10 @@ void main() {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // GROUP 10 – Edit Name Flow with Optimistic Update
+  // GROUP 10 – Edit Name Flow with Optimistic Update (Inline Editing)
   // ═══════════════════════════════════════════════════════════════════════════
   group('GROUP 10 – Edit Name Flow with Optimistic Update', () {
-    testWidgets('tapping edit name switches view to edit name form', (
+    testWidgets('tapping edit name switches inline view to edit name controls', (
       tester,
     ) async {
       when(() => user.isAnonymous).thenReturn(false);
@@ -860,7 +860,7 @@ void main() {
       await tester.tap(find.text('settings.account.editName'));
       await tester.pumpAndSettle();
 
-      expect(find.text('settings.account.editNameSubtitle'), findsOneWidget);
+      expect(find.byKey(const ValueKey("InlineEditNameView")), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(
         find.descendant(
@@ -871,35 +871,11 @@ void main() {
       ); // Prepopulated in TextField
       expect(find.text('common.actions.cancel'), findsOneWidget);
       expect(find.text('common.actions.save'), findsOneWidget);
+      // Bottom sheet structure remains intact, action buttons in account card are collapsed during edit
+      expect(find.text('settings.account.signOut'), findsNothing);
     });
 
-    testWidgets(
-      'back button in edit name view returns to menu view without updating',
-      (tester) async {
-        when(() => user.isAnonymous).thenReturn(false);
-        when(() => user.displayName).thenReturn('Mario Rossi');
-        when(() => auth.currentUser).thenReturn(user);
-
-        await _pump(tester, cb: cb, auth: auth);
-
-        await tester.tap(find.text('settings.account.manageAccount'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('settings.account.editName'));
-        await tester.pumpAndSettle();
-
-        // Tap back button in header
-        await tester.tap(find.byIcon(Icons.arrow_back));
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pumpAndSettle();
-
-        // Returned to menu view
-        expect(find.text('settings.account.signOut'), findsOneWidget);
-        verifyNever(() => user.updateDisplayName(any()));
-      },
-    );
-
-    testWidgets('cancelling edit name form returns to menu view', (
+    testWidgets('cancelling edit name form returns to inline display view and expands account choices', (
       tester,
     ) async {
       when(() => user.isAnonymous).thenReturn(false);
@@ -915,9 +891,10 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('common.actions.cancel'));
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
+      expect(find.byKey(const ValueKey("InlineDisplayNameView")), findsOneWidget);
+      expect(find.text('Mario Rossi'), findsWidgets);
       expect(find.text('settings.account.signOut'), findsOneWidget);
       verifyNever(() => user.updateDisplayName(any()));
     });
@@ -1369,8 +1346,9 @@ void main() {
 
         // Verify initial display name is present in MenuView inside bottom sheet
         final menuView = find.byKey(const ValueKey("MenuView"));
+        final displayNameView = find.byKey(const ValueKey("InlineDisplayNameView"));
         expect(
-          find.descendant(of: menuView, matching: find.text('Mario Rossi')),
+          find.descendant(of: displayNameView, matching: find.text('Mario Rossi')),
           findsOneWidget,
         );
 
@@ -1390,7 +1368,7 @@ void main() {
 
         // The MenuView should immediately reflect the new name before closing the sheet
         expect(
-          find.descendant(of: menuView, matching: find.text('Luigi Verdi')),
+          find.descendant(of: displayNameView, matching: find.text('Luigi Verdi')),
           findsOneWidget,
         );
         expect(
