@@ -1129,4 +1129,225 @@ void main() {
       }
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 15 – Gluten-Free Claim & Danger Discrepancy (Option B)
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 15 – Gluten-Free Claim & Danger Discrepancy', () {
+    test('trusts official OFF bollino/certification tag (Green / adatto) even if ingredients contain cereal derivatives', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Biscotti Certificati Spiga Barrata',
+        brand: 'Brand',
+        ingredients: 'Amido di frumento deglutinato, zucchero, uova',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+        offTags: OffTags(
+          allergensTags: [],
+          tracesTags: [],
+          labelsTags: ['en:gluten-free', 'en:spiga-sbarrata'],
+          ingredientsAnalysisTags: [],
+        ),
+      );
+
+      // Con bollino ufficiale, ci fidiamo della certificazione ministeriale / OFF
+      expect(res.status, GlutenSafetyStatus.adatto);
+      expect(res.reason, 'product.analysis.safe'.tr());
+    });
+
+    test('marks product as incerto (Yellow) when text-only claim conflicts with wheat in ingredients (no official bollino)', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Biscotti Artigianali',
+        brand: 'Brand',
+        ingredients: 'Farina di frumento, zucchero, uova, prodotto senza glutine',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+        offTags: OffTags(
+          allergensTags: [],
+          tracesTags: [],
+          labelsTags: [], // Nessun bollino ufficiale nei labels OFF
+          ingredientsAnalysisTags: [],
+        ),
+      );
+
+      // Claim solo testuale contraddetto da frumento -> incerto per discrepanza
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(res.reason, 'product.analysis.claimDiscrepancy'.tr());
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.dangerLevel == 'warning' && i.reason == 'product.analysis.claimDiscrepancyReason'.tr(),
+        ),
+        isTrue,
+      );
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'frumento' && i.dangerLevel == 'danger',
+        ),
+        isTrue,
+      );
+      expect(res.allergens, contains('Glutine'));
+    });
+
+    test('marks product as incerto when text-only claim conflicts with barley in product name', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Snack d\'Orzo Senza Glutine',
+        brand: 'Brand',
+        ingredients: 'Mais, riso, sale',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(res.reason, 'product.analysis.claimDiscrepancy'.tr());
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'orzo' && i.dangerLevel == 'danger',
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 16 – Naturally Safe Categories Cascade Textual Analysis
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 16 – Naturally Safe Categories Cascade Textual Analysis', () {
+    test('categorized as en:coffees but containing orzo (barley coffee) is marked nonAdatto (Red)', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Caffè d\'Orzo Solubile',
+        brand: 'Brand',
+        ingredients: 'Orzo tostato 100%',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:coffees'],
+      );
+
+      expect(res.status, GlutenSafetyStatus.nonAdatto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'orzo' && i.dangerLevel == 'danger',
+        ),
+        isTrue,
+      );
+    });
+
+    test('categorized as en:coffees with malt in product name is marked incerto (Yellow)', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Caffè e Malto Solubile',
+        brand: 'Brand',
+        ingredients: 'Caffè 50%, estratto di malto 50%',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:coffees'],
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'product.analysis.maltIngredient',
+        ),
+        isTrue,
+      );
+    });
+
+    test('categorized as en:teas with malt flavoring in ingredients is marked incerto (Yellow)', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Tè Aromatizzato',
+        brand: 'TeaBrand',
+        ingredients: 'Tè nero 95%, aroma di malto 5%',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:teas'],
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'product.analysis.maltIngredient',
+        ),
+        isTrue,
+      );
+    });
+
+    test('categorized as en:vegetables with farro is marked nonAdatto (Red)', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Minestrone con Cereali',
+        brand: 'VerdureBio',
+        ingredients: 'Zucchine, carote, patate, farro perlato',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:vegetables'],
+      );
+
+      expect(res.status, GlutenSafetyStatus.nonAdatto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'farro' && i.dangerLevel == 'danger',
+        ),
+        isTrue,
+      );
+    });
+
+    test('categorized as en:vegetables with modified starch is marked incerto (Yellow) when warnAdditives = true', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Piselli in Salsa',
+        brand: 'VerdureBio',
+        ingredients: 'Piselli, acqua, amido modificato, sale',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:vegetables'],
+        warnAdditives: true,
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'amido modificato' && i.dangerLevel == 'warning',
+        ),
+        isTrue,
+      );
+    });
+
+    test('categorized as en:coffees with traces is marked incerto (strictMode = false) and NOT adatto', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Caffè Macinato 100% Arabica',
+        brand: 'Brand',
+        ingredients: 'Caffè torrefatto. Può contenere tracce di glutine.',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:coffees'],
+        strictMode: false,
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'Tracce',
+        ),
+        isTrue,
+      );
+    });
+
+    test('categorized as en:coffees with traces is blocked as nonAdatto when strictMode = true', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Caffè Macinato 100% Arabica',
+        brand: 'Brand',
+        ingredients: 'Caffè torrefatto. Può contenere tracce di frumento.',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:coffees'],
+        strictMode: true,
+      );
+
+      expect(res.status, GlutenSafetyStatus.nonAdatto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) => i.ingredient == 'Tracce' && i.dangerLevel == 'danger',
+        ),
+        isTrue,
+      );
+    });
+  });
 }

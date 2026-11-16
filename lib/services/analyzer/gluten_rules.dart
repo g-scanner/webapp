@@ -295,6 +295,13 @@ class GlutenRules {
   static String sanitizeForGluten(String input) {
     String text = input.toLowerCase();
     final safePhrases = [
+      "amido di frumento deglutinato",
+      "amido di grano deglutinato",
+      "deglutinated wheat starch",
+      "wheat starch deglutinated",
+      "amidon de blé déglutiné",
+      "almidón de trigo deglutenizado",
+      "glutenfreie weizenstärke",
       "senza glutine",
       "privo di glutine",
       "gluten free",
@@ -302,13 +309,17 @@ class GlutenRules {
       "sans gluten",
       "sin gluten",
       "libre de gluten",
-      "deglutinato",
-      "degliutinato",
-      "amido di frumento deglutinato",
       "spiga barrata",
       "spiga sbarrata",
       "adatto ai celiaci",
       "zero glutine",
+      "deglutinato",
+      "deglutinata",
+      "deglutinati",
+      "deglutinate",
+      "degliutinato",
+      "deglutenized",
+      "deglutenised",
     ];
     for (var phrase in safePhrases) {
       text = text.replaceAll(phrase, " ");
