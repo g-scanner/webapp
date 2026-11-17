@@ -136,10 +136,12 @@ class OffProductParser {
       }
     }
 
-    final imageUrl = pData['image_url'] ??
+    final rawImageUrl = pData['image_url'] ??
         pData['image_front_url'] ??
-        pData['image_thumb_url'] ??
-        "";
+        pData['image_thumb_url'];
+    final imageUrl = (rawImageUrl is String && rawImageUrl.trim().isNotEmpty)
+        ? rawImageUrl.trim()
+        : null;
 
     final nowIso = DateTime.now().toIso8601String();
 

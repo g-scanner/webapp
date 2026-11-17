@@ -237,6 +237,9 @@ class OffIngestionService {
         if (product.pendingReportsCount == 0) {
           data.remove('pending_reports_count');
         }
+        // Inietta il Timestamp nativo del server per consentire alle Firestore Security Rules
+        // di verificare la staleness del prodotto (le regole non possono parsare stringhe ISO-8601).
+        data['fetched_from_off_ts'] = FieldValue.serverTimestamp();
         await db
             .collection(productsCollection)
             .doc(product.barcode)
@@ -280,6 +283,8 @@ class OffIngestionService {
             if (newOffProduct.pendingReportsCount == 0) {
               offMap.remove('pending_reports_count');
             }
+            // Inietta il Timestamp nativo del server per le Firestore Security Rules
+            offMap['fetched_from_off_ts'] = FieldValue.serverTimestamp();
             await db
                 .collection(productsCollection)
                 .doc(product.barcode)

@@ -194,6 +194,8 @@ class LocalCacheService {
       if (product.pendingReportsCount == 0) {
         data.remove('pending_reports_count');
       }
+      // Inietta il Timestamp nativo del server per le Firestore Security Rules
+      data['fetched_from_off_ts'] = FieldValue.serverTimestamp();
       await db
           .collection(productsCollection)
           .doc(product.barcode)
