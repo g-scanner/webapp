@@ -190,10 +190,14 @@ class LocalCacheService {
     Product product,
   ) async {
     try {
+      final data = product.toJson();
+      if (product.pendingReportsCount == 0) {
+        data.remove('pending_reports_count');
+      }
       await db
           .collection(productsCollection)
           .doc(product.barcode)
-          .set(product.toJson(), SetOptions(merge: true))
+          .set(data, SetOptions(merge: true))
           .timeout(const Duration(seconds: 3));
     } catch (e) {
       debugPrint("Error saving product to Firestore: $e");

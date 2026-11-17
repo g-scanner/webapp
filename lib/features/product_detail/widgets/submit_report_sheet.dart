@@ -257,22 +257,30 @@ void showSubmitReportBottomSheet({
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Flexible(
-                          child: TextButton(
-                            onPressed: submittingReport
-                                ? null
-                                : () => Navigator.pop(sheetCtx),
-                            style: TextButton.styleFrom(
-                              foregroundColor: colorScheme.onSurfaceVariant,
-                              minimumSize: const Size(0, 48),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                          child: SizedBox(
+                            height: 48,
+                            child: OutlinedButton(
+                              onPressed: submittingReport
+                                  ? null
+                                  : () => Navigator.pop(sheetCtx),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: colorScheme.onSurface,
+                                side: BorderSide(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              "common.actions.cancel".tr(),
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                              child: Text(
+                                "common.actions.cancel".tr(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),

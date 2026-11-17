@@ -233,10 +233,14 @@ class OffIngestionService {
   }) async {
     if (saveToFirestore) {
       try {
+        final data = product.toJson();
+        if (product.pendingReportsCount == 0) {
+          data.remove('pending_reports_count');
+        }
         await db
             .collection(productsCollection)
             .doc(product.barcode)
-            .set(product.toJson(), SetOptions(merge: true))
+            .set(data, SetOptions(merge: true))
             .timeout(const Duration(seconds: 3));
       } catch (e) {
         debugPrint("Error saving product to Firestore: $e");
@@ -272,10 +276,14 @@ class OffIngestionService {
           // Scrive su Firestore SOLO SE il contenuto del prodotto (ingredienti, allergeni, nomi)
           // è effettivamente cambiato rispetto alla versione già memorizzata.
           if (ProductContentHasher.hasContentChanged(product, newOffProduct)) {
+            final offMap = newOffProduct.toJson();
+            if (newOffProduct.pendingReportsCount == 0) {
+              offMap.remove('pending_reports_count');
+            }
             await db
                 .collection(productsCollection)
                 .doc(product.barcode)
-                .set(newOffProduct.toJson(), SetOptions(merge: true));
+                .set(offMap, SetOptions(merge: true));
             await LocalCacheService.upsertLocalProduct(newOffProduct);
           } else {
             // Contenuto invariato: aggiorna solo la data locale per prolungare la validità senza scritture Firestore

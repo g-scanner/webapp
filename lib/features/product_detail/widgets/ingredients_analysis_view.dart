@@ -206,17 +206,19 @@ class IngredientsAnalysisView extends StatelessWidget {
                 height: 1.4,
               ),
             ),
-          if (displayedIngredients.trim().isNotEmpty) ...[
+          if (displayedIngredients.trim().isNotEmpty)
             _buildHighlightedIngredients(context, colorScheme),
-            if (sortedIngredientsAnalyzed.isNotEmpty)
-              const SizedBox(height: 16),
-          ],
           if (sortedIngredientsAnalyzed.isNotEmpty) ...[
+            // Single divider between raw text and analyzed items block
+            if (displayedIngredients.trim().isNotEmpty)
+              Divider(
+                height: 24,
+                thickness: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
             ...sortedIngredientsAnalyzed.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
-              final bool showTopDivider =
-                  displayedIngredients.trim().isNotEmpty || index > 0;
 
               AppStatusPillVariant pillVariant;
               String pillLabel;
@@ -241,20 +243,8 @@ class IngredientsAnalysisView extends StatelessWidget {
                   break;
               }
 
-              return Container(
-                margin: EdgeInsets.only(top: showTopDivider ? 12 : 0),
-                padding: EdgeInsets.only(top: showTopDivider ? 12 : 0),
-                decoration: BoxDecoration(
-                  border: showTopDivider
-                      ? Border(
-                          top: BorderSide(
-                            color: colorScheme.outlineVariant.withValues(
-                              alpha: 0.3,
-                            ),
-                          ),
-                        )
-                      : null,
-                ),
+              return Padding(
+                padding: EdgeInsets.only(top: index == 0 ? 0 : 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

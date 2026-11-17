@@ -55,23 +55,25 @@ class ReportActionButton extends StatelessWidget {
       );
     }
 
-    return OutlinedButton.icon(
-      onPressed: onReportPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: colorScheme.statusErrorText,
-        overlayColor: colorScheme.splashError,
-        side: BorderSide(color: colorScheme.statusErrorText, width: 1.5),
-        minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(32),
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.tonalIcon(
+        onPressed: onReportPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          foregroundColor: colorScheme.onSurface,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
         ),
-      ),
-      icon: const Icon(Icons.flag_outlined, size: 20),
-      label: Text(
-        "product.actions.reportError".tr(),
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
+        icon: const Icon(Icons.flag_outlined, size: 20),
+        label: Text(
+          "product.actions.reportError".tr(),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
         ),
       ),
     );
