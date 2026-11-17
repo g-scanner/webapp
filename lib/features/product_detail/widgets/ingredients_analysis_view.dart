@@ -145,6 +145,8 @@ class IngredientsAnalysisView extends StatelessWidget {
         return AppStatusPillVariant.error;
       case "warning":
         return AppStatusPillVariant.tertiary;
+      case "lactose":
+        return AppStatusPillVariant.secondary;
       case "safe":
       default:
         return AppStatusPillVariant.primary;
@@ -227,6 +229,10 @@ class IngredientsAnalysisView extends StatelessWidget {
                 case "warning":
                   pillVariant = AppStatusPillVariant.tertiary;
                   pillLabel = "product.ingredients.warningBadge".tr();
+                  break;
+                case "lactose":
+                  pillVariant = AppStatusPillVariant.secondary;
+                  pillLabel = "product.ingredients.lactoseBadge".tr();
                   break;
                 case "safe":
                 default:

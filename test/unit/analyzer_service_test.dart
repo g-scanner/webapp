@@ -607,7 +607,7 @@ void main() {
       final lactoseItem = res.ingredientsAnalyzed.firstWhere(
         (i) => i.ingredient.toLowerCase() == 'latte',
       );
-      expect(lactoseItem.dangerLevel, 'danger');
+      expect(lactoseItem.dangerLevel, 'lactose');
       expect(lactoseItem.reason, 'product.analysis.lactoseDetected'.tr());
     });
 
@@ -863,7 +863,7 @@ void main() {
       expect(res.reason.contains('🥛'), isFalse);
       expect(
         res.ingredientsAnalyzed.any(
-          (i) => i.dangerLevel == 'danger' && i.reason == 'product.analysis.lactoseDetected'.tr(),
+          (i) => i.dangerLevel == 'lactose' && i.reason == 'product.analysis.lactoseDetected'.tr(),
         ),
         isTrue,
       );

@@ -442,7 +442,7 @@ class AnalyzerService {
           ingredientsAnalyzed.add(
             IngredientAnalyzed(
               ingredient: item,
-              dangerLevel: "danger",
+              dangerLevel: "lactose",
               reason: "product.analysis.lactoseDetected".tr(),
             ),
           );
