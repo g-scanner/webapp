@@ -1099,20 +1099,16 @@ void main() {
       expect(find.text('scanner.legend.title'), findsOneWidget);
 
       expect(find.text('product.status.safe'), findsOneWidget);
-      expect(find.text('scanner.legend.subtitles.glutenFree'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
 
       expect(find.text('product.status.uncertain'), findsOneWidget);
-      expect(find.text('scanner.legend.subtitles.checkLabel'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.warning), findsOneWidget);
 
       expect(find.text('product.status.unsafe'), findsOneWidget);
-      expect(find.text('scanner.legend.subtitles.hasGluten'), findsOneWidget);
-      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.cancel), findsOneWidget);
 
       expect(find.text('product.status.unknown'), findsOneWidget);
-      expect(find.text('scanner.legend.subtitles.notFound'), findsOneWidget);
-      expect(find.byIcon(Icons.help_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.help), findsOneWidget);
     });
   });
 

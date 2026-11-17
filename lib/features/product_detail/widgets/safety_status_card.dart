@@ -74,7 +74,13 @@ class SafetyStatusCard extends StatelessWidget {
               color: AppStatusPill.iconCircleBgForVariant(variant, colorScheme),
               shape: BoxShape.circle,
             ),
-            child: Icon(statusIcon, color: heroTextColor, size: 48),
+            child: Icon(
+              statusIcon,
+              color: effectiveStatus == GlutenSafetyStatus.sconosciuto
+                  ? colorScheme.onSurface
+                  : heroTextColor,
+              size: 48,
+            ),
           ),
           const SizedBox(height: 12),
           Text(

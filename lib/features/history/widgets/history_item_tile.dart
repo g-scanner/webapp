@@ -72,12 +72,12 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
       case GlutenSafetyStatus.incerto:
         variant = AppStatusPillVariant.tertiary;
         label = "history.item.status.uncertain".tr();
-        icon = Icons.help_outline;
+        icon = Icons.warning_amber;
         break;
       case GlutenSafetyStatus.sconosciuto:
         variant = AppStatusPillVariant.neutral;
         label = "history.item.status.unknown".tr();
-        icon = Icons.search_off;
+        icon = Icons.help_outline;
         break;
     }
 
@@ -91,11 +91,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
       }
     }
 
-    return AppStatusPill.preset(
-      variant: variant,
-      label: label,
-      icon: icon,
-    );
+    return AppStatusPill.preset(variant: variant, label: label, icon: icon);
   }
 
   /// Colore dei placeholder skeleton: di default surfaceContainerHighest,
@@ -188,11 +184,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.cloud_off_outlined,
-            size: 14,
-            color: colorScheme.error,
-          ),
+          Icon(Icons.cloud_off_outlined, size: 14, color: colorScheme.error),
           const SizedBox(width: 4),
           Text(
             "history.item.offlineScan".tr(),
@@ -214,9 +206,8 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
     final cardBg = context.cardBackground;
     final skeletonBg = _skeletonColor(context);
 
-    final bool hasLactosePill = !widget.isPending &&
-        widget.alertLactose &&
-        widget.data.hasLactose;
+    final bool hasLactosePill =
+        !widget.isPending && widget.alertLactose && widget.data.hasLactose;
     final bool hasOfflinePill = !widget.isPending && widget.data.isOffline;
     final bool hasOtherPills = hasLactosePill || hasOfflinePill;
 
@@ -241,10 +232,8 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                         widget.data.status,
                         isCompact: hasOtherPills,
                       ),
-                    if (hasLactosePill)
-                      _buildLactoseTag(context),
-                    if (hasOfflinePill)
-                      _buildOfflineTag(context),
+                    if (hasLactosePill) _buildLactoseTag(context),
+                    if (hasOfflinePill) _buildOfflineTag(context),
                   ],
                 ),
                 const SizedBox(height: 8),

@@ -95,15 +95,30 @@ class AppStatusPill extends StatelessWidget {
   ) {
     switch (variant) {
       case AppStatusPillVariant.primary:
-        return (bg: colorScheme.statusPrimaryBg, text: colorScheme.statusPrimaryText);
+        return (
+          bg: colorScheme.statusPrimaryBg,
+          text: colorScheme.statusPrimaryText,
+        );
       case AppStatusPillVariant.error:
-        return (bg: colorScheme.statusErrorBg, text: colorScheme.statusErrorText);
+        return (
+          bg: colorScheme.statusErrorBg,
+          text: colorScheme.statusErrorText,
+        );
       case AppStatusPillVariant.tertiary:
-        return (bg: colorScheme.statusTertiaryBg, text: colorScheme.statusTertiaryText);
+        return (
+          bg: colorScheme.statusTertiaryBg,
+          text: colorScheme.statusTertiaryText,
+        );
       case AppStatusPillVariant.neutral:
-        return (bg: colorScheme.statusNeutralBg, text: colorScheme.statusNeutralText);
+        return (
+          bg: colorScheme.statusNeutralBg,
+          text: colorScheme.statusNeutralText,
+        );
       case AppStatusPillVariant.secondary:
-        return (bg: colorScheme.statusSecondaryBg, text: colorScheme.statusSecondaryText);
+        return (
+          bg: colorScheme.statusSecondaryBg,
+          text: colorScheme.statusSecondaryText,
+        );
     }
   }
 
@@ -121,7 +136,7 @@ class AppStatusPill extends StatelessWidget {
       case AppStatusPillVariant.tertiary:
         return colorScheme.iconCircleTertiaryBg;
       case AppStatusPillVariant.neutral:
-        return colorScheme.statusNeutralBg;
+        return colorScheme.iconCircleNeutralBg;
       case AppStatusPillVariant.secondary:
         return colorScheme.iconCircleSecondaryBg;
     }

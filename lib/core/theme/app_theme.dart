@@ -186,6 +186,7 @@ String themeModeToString(ThemeMode mode) {
 //   iconCirclePrimaryBg  → sfondo cerchio icona per azioni primarie / info
 //   iconCircleErrorBg    → sfondo cerchio icona per azioni distruttive
 //   iconCircleTertiaryBg → sfondo cerchio icona per warning / segnalazioni
+//   iconCircleNeutralBg  → sfondo cerchio icona per stati sconosciuti
 //
 // Sfondo CTA bar (footer colorato nelle card)
 //   ctaTertiaryBg → sfondo barra CTA segnalazioni / incerto
@@ -224,6 +225,7 @@ extension AppColorTokens on ColorScheme {
     alpha: brightness == Brightness.dark ? 0.2 : 0.5,
   );
   Color get iconCircleTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
+  Color get iconCircleNeutralBg => onSurfaceVariant.withValues(alpha: 0.1);
   Color get iconCircleSecondaryBg => secondaryContainer.withValues(alpha: 0.15);
 
   // ── Elemento selezionato barra navigazione (azzurrino + blu) ───────────────
