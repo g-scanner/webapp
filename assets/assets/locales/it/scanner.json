@@ -8,12 +8,24 @@
       "torchError": "Errore nella gestione della torcia. Riprova."
     },
     "legend": {
-      "title": "Indicatori di Sicurezza",
-      "subtitles": {
-        "glutenFree": "Senza glutine",
-        "checkLabel": "Controlla l'etichetta",
-        "hasGluten": "Contiene glutine",
-        "notFound": "Prodotto non trovato"
+      "title": "Indicatori di sicurezza",
+      "hintTitle": "Tocca un indicatore per info",
+      "hintSubtitle": "Scopri quando ciascun colore del semaforo viene mostrato e quali ingredienti o filtri lo attivano.",
+      "safe": {
+        "pill": "Senza glutine",
+        "description": "Prodotto con certificazione gluten-free oppure con ingredienti naturalmente privi di glutine."
+      },
+      "uncertain": {
+        "pill": "Potenzialmente rischioso",
+        "description": "Prodotto con additivi dubbi, segnalazioni attive oppure tracce (con Filtro Rigido disattivato)."
+      },
+      "unsafe": {
+        "pill": "Contiene glutine o tracce",
+        "description": "Prodotto con ingredienti pericolosi oppure tracce (con Filtro Rigido Contaminazioni attivo)."
+      },
+      "unknown": {
+        "pill": "Dati insufficienti",
+        "description": "Prodotto non trovato oppure con informazioni insufficienti per determinarne la sicurezza."
       }
     },
     "camera": {
