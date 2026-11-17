@@ -22,7 +22,8 @@
       "title": "ANALISI INGREDIENTI",
       "dangerBadge": "Pericolo",
       "warningBadge": "Attenzione",
-      "safeBadge": "Sicuro"
+      "safeBadge": "Sicuro",
+      "lactoseBadge": "Lattosio"
     },
     "disclaimer": {
       "title": "INFORMAZIONI E AVVERTENZE",
