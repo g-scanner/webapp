@@ -6,6 +6,8 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
 
 class ReportActionButton extends StatelessWidget {
+  static const double _kSlotHeight = 50.0;
+
   final bool hasUserReported;
   final int pendingReportsCount;
   final VoidCallback onReportPressed;
@@ -22,40 +24,43 @@ class ReportActionButton extends StatelessWidget {
     final colorScheme = context.colorScheme;
 
     if (hasUserReported || pendingReportsCount > 0) {
-      return Container(
+      final mutedColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.75);
+
+      return SizedBox(
+        height: _kSlotHeight,
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: colorScheme.statusErrorBg,
-          borderRadius: BorderRadius.circular(32),
-        ),
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: colorScheme.statusErrorText,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                "product.actions.alreadyReported".tr(),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: colorScheme.statusErrorText,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.flag_rounded,
+                color: mutedColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  "product.actions.alreadyReported".tr(),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: mutedColor,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
     return SizedBox(
+      height: _kSlotHeight,
       width: double.infinity,
       child: FilledButton.tonalIcon(
         onPressed: onReportPressed,
