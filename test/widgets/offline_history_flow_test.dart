@@ -23,7 +23,7 @@ class _MockStatusAssetLoader extends AssetLoader {
             'safe': 'Sicuro - non contiene glutine',
             'unsafe': 'Vietato - contiene glutine',
             'uncertain': 'Incerto - potrebbe contenere glutine',
-            'unknown': 'Sconosciuto - informazioni insufficienti',
+            'unknown': 'Ignoto - informazioni insufficienti',
           },
           'lactose': 'Lattosio',
           'offlineScan': 'Scansione offline',
