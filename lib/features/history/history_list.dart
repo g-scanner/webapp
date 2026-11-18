@@ -210,12 +210,14 @@ class _HistoryListState extends State<HistoryList> {
     int safeCount = 0;
     int dangerCount = 0;
     int uncertainCount = 0;
+    int unknownCount = 0;
 
     for (var item in effectiveHistory) {
       final data = _analyzeHistoryItem(item);
       if (data.status == GlutenSafetyStatus.adatto) safeCount++;
       if (data.status == GlutenSafetyStatus.nonAdatto) dangerCount++;
       if (data.status == GlutenSafetyStatus.incerto) uncertainCount++;
+      if (data.status == GlutenSafetyStatus.sconosciuto) unknownCount++;
 
       final matchesSearch =
           _search.isEmpty ||
@@ -261,6 +263,7 @@ class _HistoryListState extends State<HistoryList> {
               safeCount: safeCount,
               uncertainCount: uncertainCount,
               dangerCount: dangerCount,
+              unknownCount: unknownCount,
               showSkeleton: showSkeleton,
             ),
             const SizedBox(height: 24),

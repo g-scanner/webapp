@@ -12,6 +12,7 @@ class HistoryBentoStats extends StatelessWidget {
   final int safeCount;
   final int uncertainCount;
   final int dangerCount;
+  final int unknownCount;
   final bool showSkeleton;
 
   const HistoryBentoStats({
@@ -19,6 +20,7 @@ class HistoryBentoStats extends StatelessWidget {
     required this.safeCount,
     required this.uncertainCount,
     required this.dangerCount,
+    required this.unknownCount,
     this.showSkeleton = false,
   });
 
@@ -38,6 +40,10 @@ class HistoryBentoStats extends StatelessWidget {
       AppStatusPill.variantForStatus(GlutenSafetyStatus.nonAdatto),
       colorScheme,
     );
+    final unknownColors = AppStatusPill.colorsForVariant(
+      AppStatusPill.variantForStatus(GlutenSafetyStatus.sconosciuto),
+      colorScheme,
+    );
 
     return Skeletonizer(
       enabled: showSkeleton,
@@ -50,21 +56,29 @@ class HistoryBentoStats extends StatelessWidget {
             textColor: safeColors.text,
             icon: Icons.check_circle,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           _buildStatBox(
             count: uncertainCount.toString(),
             label: "history.filters.uncertain".tr(),
             bgColor: uncertainColors.bg,
             textColor: uncertainColors.text,
-            icon: Icons.warning_rounded,
+            icon: Icons.warning,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           _buildStatBox(
             count: dangerCount.toString(),
             label: "history.filters.unsafe".tr(),
             bgColor: dangerColors.bg,
             textColor: dangerColors.text,
             icon: Icons.cancel,
+          ),
+          const SizedBox(width: 10),
+          _buildStatBox(
+            count: unknownCount.toString(),
+            label: "history.filters.unknown".tr(),
+            bgColor: unknownColors.bg,
+            textColor: unknownColors.text,
+            icon: Icons.help,
           ),
         ],
       ),
@@ -80,24 +94,26 @@ class HistoryBentoStats extends StatelessWidget {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: textColor, size: 28),
-            const SizedBox(height: 8),
+            Icon(icon, color: textColor, size: 20),
+            const SizedBox(height: 6),
             Text(
               count,
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: textColor,
                 height: 1.1,
               ),
             ),
+            const SizedBox(height: 1),
             Text(
               label,
               style: TextStyle(
@@ -105,6 +121,9 @@ class HistoryBentoStats extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 color: textColor,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -112,3 +131,4 @@ class HistoryBentoStats extends StatelessWidget {
     );
   }
 }
+
