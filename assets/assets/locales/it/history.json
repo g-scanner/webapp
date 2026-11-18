@@ -16,7 +16,7 @@
       "safe": "Sicuri",
       "uncertain": "Incerti",
       "unsafe": "Vietati",
-      "unknown": "Scon.",
+      "unknown": "Ignoti",
       "noResultsTitle": "Ancora niente qui",
       "noResultsForFilter": "Nessun prodotto corrisponde al filtro selezionato."
     },
@@ -25,7 +25,7 @@
         "safe": "Sicuro - non contiene glutine",
         "unsafe": "Vietato - contiene glutine",
         "uncertain": "Incerto - potrebbe contenere glutine",
-        "unknown": "Sconosciuto - informazioni insufficienti"
+        "unknown": "Ignoto - informazioni insufficienti"
       },
       "fallbackName": "Prodotto {barcode}",
       "brandLoading": "Caricamento in corso...",
