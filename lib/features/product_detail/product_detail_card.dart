@@ -8,6 +8,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../models/models.dart';
 import '../../core/core.dart';
 import '../../services/analyzer_service.dart';
+import '../../services/database/db_service.dart';
 import 'widgets/widgets.dart';
 
 export 'widgets/widgets.dart';
@@ -84,10 +85,25 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
   String? get _effectiveUserReportId {
     if (_hasDeletedReport) return null;
-    if (widget.reportIdNotifier != null) {
+    if (widget.reportIdNotifier != null && widget.reportIdNotifier!.value != null) {
       return widget.reportIdNotifier!.value;
     }
-    return widget.userReportId;
+    return widget.userReportId ?? _remoteActiveReport?.id;
+  }
+
+  ProductReport? _remoteActiveReport;
+  String? _lastCheckedBarcode;
+
+  Future<void> _checkRemoteActiveReport() async {
+    final barcode = currentProduct.barcode;
+    if (barcode.isEmpty || _lastCheckedBarcode == barcode) return;
+    _lastCheckedBarcode = barcode;
+    final report = await DbService.getActiveReportByBarcode(barcode);
+    if (mounted && currentProduct.barcode == barcode) {
+      setState(() {
+        _remoteActiveReport = report;
+      });
+    }
   }
 
   bool get _isEffectiveStaleData {
@@ -127,6 +143,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     // Se la card viene visualizzata in stato stale o offline/unverified, avvia il listener/timer
     // che effettua il check appena la connessione a Internet torna disponibile.
     _initOnlineRefreshTimerIfNeeded();
+    _checkRemoteActiveReport();
   }
 
   void _initOnlineRefreshTimerIfNeeded() {
@@ -196,6 +213,9 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     if (!_shouldCheckOnline) {
       _onlineRetryTimer?.cancel();
       _onlineRetryTimer = null;
+    }
+    if (currentProduct.barcode != _lastCheckedBarcode) {
+      _checkRemoteActiveReport();
     }
     if (mounted) setState(() {});
   }
@@ -302,14 +322,14 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
     final bool hasAllergenData = currentProduct.hasAllergenData;
 
     final bool isReported =
-        (currentProduct.pendingReportsCount > 0) || _hasUserReported;
+        (currentProduct.pendingReportsCount > 0) || _hasUserReported || (_remoteActiveReport != null);
 
     final analysis = AnalyzerService.analyzeGlutenSafety(
       name: productName,
       brand: productBrand,
       ingredients: displayedIngredients,
       allergensList: rawAllergens,
-      reportCount: currentProduct.pendingReportsCount,
+      reportCount: isReported ? 1 : 0,
       categoriesTags: const [],
       strictMode: widget.userSettings.strictMode,
       warnAdditives: widget.userSettings.warnAdditives,
@@ -437,8 +457,7 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
                   final bool hasActiveReport =
                       widget.showReportLink &&
                       widget.onViewReport != null &&
-                      (currentProduct.pendingReportsCount > 0 ||
-                          _hasUserReported);
+                      isReported;
 
                   // On-the-fly: calcola lo stato originale ignorando report
                   String displayedReasonWithOldStatus = displayedReason;
@@ -520,8 +539,8 @@ class _ProductDetailCardState extends State<ProductDetailCard> {
 
               // ── Pulsante Segnalazione ──────────────────────────
               ReportActionButton(
-                hasUserReported: _hasUserReported,
-                pendingReportsCount: currentProduct.pendingReportsCount,
+                hasUserReported: isReported,
+                pendingReportsCount: isReported ? 1 : 0,
                 onReportPressed: () => _showReportBottomSheet(context),
               ),
 

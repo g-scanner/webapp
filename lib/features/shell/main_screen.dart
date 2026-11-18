@@ -1728,18 +1728,23 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     }
   }
 
-  void _openReportDetail(BuildContext context, Product loadedProduct) {
+  void _openReportDetail(BuildContext context, Product loadedProduct) async {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isWideScreen = screenWidth > 960;
-    final reportOfProduct = reports.cast<ProductReport?>().firstWhere(
+    var reportOfProduct = reports.cast<ProductReport?>().firstWhere(
       (r) =>
           r?.barcode == loadedProduct.barcode &&
           (userId == null || r?.userId == userId),
       orElse: () => null,
     );
+    if (reportOfProduct == null) {
+      reportOfProduct = await DbService.getActiveReportByBarcode(loadedProduct.barcode);
+    }
+    if (!context.mounted) return;
+
     final bool isOwn =
         reportedSessionBarcodes.contains(loadedProduct.barcode) ||
-        reportOfProduct != null;
+        (reportOfProduct != null && userId != null && reportOfProduct.userId == userId);
     final String comment = reportOfProduct?.comments ?? '';
     final String rDate = reportOfProduct != null
         ? reportOfProduct.submittedAt

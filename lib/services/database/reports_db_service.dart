@@ -275,12 +275,6 @@ class ReportsDbService {
             for (final rep in reportsToUpload) {
               final docRef = db.collection(reportsCollection).doc(rep.id);
               batch.set(docRef, rep.toJson(), SetOptions(merge: true));
-
-              final prodRef = db.collection(productsCollection).doc(rep.barcode);
-              batch.set(prodRef, {
-                'pending_reports_count': FieldValue.increment(1),
-                'last_updated': rep.submittedAt,
-              }, SetOptions(merge: true));
             }
 
             final userRef = db.collection("users").doc(user.uid);
@@ -357,14 +351,7 @@ class ReportsDbService {
       final reportRef = db.collection(reportsCollection).doc(reportId);
       batch.set(reportRef, finalReport.toJson());
 
-      // 2. Increment `pending_reports_count` su `products` e imposta `last_updated`
-      final prodRef = db.collection(productsCollection).doc(barcode);
-      batch.set(prodRef, {
-        'pending_reports_count': FieldValue.increment(1),
-        'last_updated': nowIso,
-      }, SetOptions(merge: true));
-
-      // 3. Aggiungi barcode alla lista `reportedBarcodes` dell'utente
+      // 2. Aggiungi barcode alla lista `reportedBarcodes` dell'utente
       if (user != null) {
         final userRef = db.collection("users").doc(userId);
         batch.set(userRef, {
@@ -423,16 +410,7 @@ class ReportsDbService {
       // 2. Cancella DEFINITIVAMENTE il report (Approccio Efemero)
       batch.delete(reportRef);
 
-      // 3. Decrementa `pending_reports_count` ed aggiorna `last_updated`
-      if (barcode != null) {
-        final prodRef = db.collection(productsCollection).doc(barcode);
-        batch.set(prodRef, {
-          'pending_reports_count': FieldValue.increment(-1),
-          'last_updated': nowIso,
-        }, SetOptions(merge: true));
-      }
-
-      // 4. Rimuovi barcode da `reportedBarcodes` dell'utente
+      // 3. Rimuovi barcode da `reportedBarcodes` dell'utente
       final user = auth.currentUser;
       if (user != null && barcode != null) {
         batch.set(db.collection("users").doc(user.uid), {
@@ -603,6 +581,31 @@ class ReportsDbService {
       final localVotes = await getLocalVotes(userId);
       final userVote = pendingVotes[barcode] ?? localVotes[barcode] ?? 0;
       return {'upvotes': 0, 'downvotes': 0, 'userVote': userVote};
+    }
+  }
+
+  /// Recupera l'eventuale segnalazione aperta ('open') presente su Firestore per il barcode specificato.
+  /// Consente di rilevare segnalazioni della community in tempo reale senza dover mantenere contatori su products.
+  static Future<ProductReport?> getActiveReportByBarcode(
+    FirebaseFirestore db,
+    String barcode,
+  ) async {
+    try {
+      final snap = await db
+          .collection(reportsCollection)
+          .where('barcode', isEqualTo: barcode)
+          .where('status', isEqualTo: 'open')
+          .limit(1)
+          .get()
+          .timeout(const Duration(seconds: 3));
+
+      if (snap.docs.isNotEmpty) {
+        return ProductReport.fromJson(snap.docs.first.data());
+      }
+      return null;
+    } catch (e) {
+      debugPrint("Error fetching active report for barcode: $e");
+      return null;
     }
   }
 }

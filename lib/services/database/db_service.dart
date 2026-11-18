@@ -142,6 +142,9 @@ class DbService {
   static Future<Map<String, int>> getReportVoteDataByBarcode(String barcode) =>
       ReportsDbService.getReportVoteDataByBarcode(db, auth, barcode);
 
+  static Future<ProductReport?> getActiveReportByBarcode(String barcode) =>
+      ReportsDbService.getActiveReportByBarcode(db, barcode);
+
   static Future<void> syncPendingVotesWithFirestore() =>
       ReportsDbService.syncPendingVotesWithFirestore(db, auth);
 

@@ -191,9 +191,9 @@ class LocalCacheService {
   ) async {
     try {
       final data = product.toJson();
-      if (product.pendingReportsCount == 0) {
-        data.remove('pending_reports_count');
-      }
+      // Non inviare mai il contatore delle segnalazioni su Firestore: la gestione allarmi
+      // è ora delegata direttamente all'esistenza fisica di record nella collezione /reports.
+      data.remove('pending_reports_count');
       // Inietta il Timestamp nativo del server per le Firestore Security Rules
       data['fetched_from_off_ts'] = FieldValue.serverTimestamp();
       await db

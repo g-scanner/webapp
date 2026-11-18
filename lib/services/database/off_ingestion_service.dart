@@ -234,9 +234,8 @@ class OffIngestionService {
     if (saveToFirestore) {
       try {
         final data = product.toJson();
-        if (product.pendingReportsCount == 0) {
-          data.remove('pending_reports_count');
-        }
+        // Mai inviare pending_reports_count a Firestore: la collezione /reports è la sola sorgente di verità
+        data.remove('pending_reports_count');
         // Inietta il Timestamp nativo del server per consentire alle Firestore Security Rules
         // di verificare la staleness del prodotto (le regole non possono parsare stringhe ISO-8601).
         data['fetched_from_off_ts'] = FieldValue.serverTimestamp();
@@ -280,9 +279,7 @@ class OffIngestionService {
           // è effettivamente cambiato rispetto alla versione già memorizzata.
           if (ProductContentHasher.hasContentChanged(product, newOffProduct)) {
             final offMap = newOffProduct.toJson();
-            if (newOffProduct.pendingReportsCount == 0) {
-              offMap.remove('pending_reports_count');
-            }
+            offMap.remove('pending_reports_count');
             // Inietta il Timestamp nativo del server per le Firestore Security Rules
             offMap['fetched_from_off_ts'] = FieldValue.serverTimestamp();
             await db
