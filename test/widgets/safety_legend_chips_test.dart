@@ -51,11 +51,11 @@ void main() {
       expect(find.text('scanner.legend.hintTitle'), findsOneWidget);
       expect(find.text('scanner.legend.hintSubtitle'), findsOneWidget);
 
-      // Verify slot height
-      final slotFinder = find.byType(LayoutBuilder);
+      // Verify slot height via key
+      final slotFinder = find.byKey(const ValueKey('_safetyLegendDetailSlot'));
       expect(slotFinder, findsOneWidget);
       final sizeBefore = tester.getSize(slotFinder);
-      expect(sizeBefore.height, 124.0);
+      expect(sizeBefore.height, 118.0);
     });
 
     testWidgets(
@@ -64,7 +64,7 @@ void main() {
       await tester.pumpWidget(buildTestableWidget());
       await tester.pumpAndSettle();
 
-      final slotFinder = find.byType(LayoutBuilder);
+      final slotFinder = find.byKey(const ValueKey('_safetyLegendDetailSlot'));
       final initialSlotSize = tester.getSize(slotFinder);
 
       // Tap on Sicuro
@@ -98,9 +98,9 @@ void main() {
       expect(find.text('scanner.legend.unsafe.pill'), findsOneWidget);
       expect(find.text('scanner.legend.unsafe.description'), findsOneWidget);
 
-      // Slot height remains rigidly 124.0
-      final slotFinder = find.byType(LayoutBuilder);
-      expect(tester.getSize(slotFinder).height, 124.0);
+      // Slot height remains rigidly 118.0
+      final slotFinder = find.byKey(const ValueKey('_safetyLegendDetailSlot'));
+      expect(tester.getSize(slotFinder).height, 118.0);
     });
 
     testWidgets('tap on same indicator deselects and returns to rest state',
@@ -121,9 +121,9 @@ void main() {
       expect(find.text('scanner.legend.hintTitle'), findsOneWidget);
       expect(find.text('scanner.legend.hintSubtitle'), findsOneWidget);
 
-      // Slot height remains rigidly 124.0
-      final slotFinder = find.byType(LayoutBuilder);
-      expect(tester.getSize(slotFinder).height, 124.0);
+      // Slot height remains rigidly 118.0
+      final slotFinder = find.byKey(const ValueKey('_safetyLegendDetailSlot'));
+      expect(tester.getSize(slotFinder).height, 118.0);
     });
   });
 }

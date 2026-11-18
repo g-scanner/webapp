@@ -14,7 +14,7 @@ class SafetyLegendChips extends StatefulWidget {
 }
 
 class _SafetyLegendChipsState extends State<SafetyLegendChips> {
-  static const double _kSlotHeight = 124.0;
+  static const double _kSlotHeight = 118.0;
   static const double _kPointerHeight = 8.5;
   static const double _kPointerWidth = 16.0;
 
@@ -89,7 +89,7 @@ class _SafetyLegendChipsState extends State<SafetyLegendChips> {
               );
             }),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 9),
           _buildDetailSlot(context, colorScheme, items),
         ],
       ),
@@ -140,18 +140,14 @@ class _SafetyLegendChipsState extends State<SafetyLegendChips> {
   ) {
     final isSelected = _selectedIndex == index;
     final colorScheme = context.colorScheme;
-    final circleBg = AppStatusPill.iconCircleBgForVariant(
-      item.variant,
-      colorScheme,
-    );
-    final iconColor = AppStatusPill.colorsForVariant(
-      item.variant,
-      colorScheme,
-    ).text;
-    final tintColor = AppStatusPill.colorsForVariant(
-      item.variant,
-      colorScheme,
-    ).text;
+    final circleBg = AppStatusPill.iconCircleBgForVariant(item.variant, colorScheme);
+    final iconColor = AppStatusPill.colorsForVariant(item.variant, colorScheme).text;
+
+    // Geometria precisa della tile per centrare il cerchio perfettamente sull'icona
+    const double circleSize = 44.0;
+    const double iconTop = 9.0;
+    const double tileHeight = 86.0;
+    const double circleBottomUnselected = tileHeight - (iconTop + circleSize); // 33.0
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -164,52 +160,74 @@ class _SafetyLegendChipsState extends State<SafetyLegendChips> {
           child: InkWell(
             onTap: () => _onIndicatorTap(index),
             borderRadius: BorderRadius.circular(16),
-            hoverColor: tintColor.withValues(alpha: 0.08),
+            hoverColor: iconColor.withValues(alpha: 0.08),
             splashColor: Colors.transparent,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? tintColor.withValues(alpha: 0.10)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedScale(
-                    scale: isSelected ? 1.06 : 1.0,
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: circleBg,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Icon(item.icon, color: iconColor, size: 26),
-                      ),
+            highlightColor: Colors.transparent,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final double tileWidth = constraints.maxWidth;
+                final double horizontalInset = (tileWidth - circleSize) / 2;
+
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    height: tileHeight,
+                    width: tileWidth,
+                    child: Stack(
+                      children: [
+                        // Background che nasce centrato sull'icona e si espande sull'intera tile
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 280),
+                          curve: Curves.easeOutCubic,
+                          top: isSelected ? 0.0 : iconTop,
+                          bottom: isSelected ? 0.0 : circleBottomUnselected,
+                          left: isSelected ? 0.0 : horizontalInset,
+                          right: isSelected ? 0.0 : horizontalInset,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 280),
+                            curve: Curves.easeOutCubic,
+                            decoration: BoxDecoration(
+                              color: circleBg,
+                              borderRadius: BorderRadius.circular(
+                                isSelected ? 16.0 : (circleSize / 2),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Contenuto con icona allineata esattamente all'area 44x44
+                        Padding(
+                          padding: const EdgeInsets.only(top: iconTop, bottom: 8),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: tileWidth,
+                                height: circleSize,
+                                child: Center(
+                                  child: Icon(item.icon, color: iconColor, size: 26),
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                              Text(
+                                item.title,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: colorScheme.onSurface,
+                                  height: 1.2,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.title,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.onSurface,
-                      height: 1.2,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),
@@ -226,6 +244,7 @@ class _SafetyLegendChipsState extends State<SafetyLegendChips> {
     final cardBg = context.cardBackground;
 
     return SizedBox(
+      key: const ValueKey('_safetyLegendDetailSlot'),
       height: _kSlotHeight,
       width: double.infinity,
       child: LayoutBuilder(
@@ -322,9 +341,9 @@ class _SafetyLegendChipsState extends State<SafetyLegendChips> {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(
                           16,
-                          _kPointerHeight + 12,
+                          _kPointerHeight + 10,
                           16,
-                          12,
+                          10,
                         ),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 160),
