@@ -14,7 +14,7 @@ import '../mocks/shared_mocks.dart';
 
 class MockCallbacks extends Mock {
   void onBack();
-  Future<void> onReportSubmit(String barcode, Map<String, dynamic> reportData);
+  void onReportSubmit(String barcode, Map<String, dynamic> reportData);
   Future<void> onProductUpdate(Product updatedProduct);
   Future<void> onDeleteHistoryByBarcode(String barcode);
   Future<void> onDeleteReport(String reportId);
@@ -51,7 +51,7 @@ void main() {
 
     when(
       () => mockCallbacks.onReportSubmit(any(), any()),
-    ).thenAnswer((_) async {});
+    ).thenReturn(null);
     when(() => mockCallbacks.onProductUpdate(any())).thenAnswer((_) async {});
     when(
       () => mockCallbacks.onDeleteHistoryByBarcode(any()),

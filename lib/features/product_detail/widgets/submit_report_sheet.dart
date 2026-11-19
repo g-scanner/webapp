@@ -12,7 +12,7 @@ void showSubmitReportBottomSheet({
   required BuildContext context,
   required Product currentProduct,
   required UserSettings userSettings,
-  required Future<void> Function(
+  required void Function(
     String barcode,
     Map<String, dynamic> reportData,
   )
@@ -22,7 +22,6 @@ void showSubmitReportBottomSheet({
   String reportType = "label_unclear";
   final TextEditingController reportCommentsController =
       TextEditingController();
-  bool submittingReport = false;
 
   String getReportTypeLabel(String type) {
     switch (type) {
@@ -260,9 +259,7 @@ void showSubmitReportBottomSheet({
                           child: SizedBox(
                             height: 48,
                             child: OutlinedButton(
-                              onPressed: submittingReport
-                                  ? null
-                                  : () => Navigator.pop(sheetCtx),
+                              onPressed: () => Navigator.pop(sheetCtx),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: colorScheme.onSurface,
                                 side: BorderSide(
@@ -291,61 +288,55 @@ void showSubmitReportBottomSheet({
                           child: SizedBox(
                             height: 48,
                             child: FilledButton(
-                              onPressed: submittingReport
-                                  ? null
-                                  : () async {
-                                      setSheetState(
-                                        () => submittingReport = true,
-                                      );
-                                      try {
-                                        final currentLang =
-                                            userSettings.preferredLanguage;
-                                        final origAnalysis =
-                                            AnalyzerService.analyzeGlutenSafety(
-                                              name: currentProduct.getName(
-                                                currentLang,
-                                              ),
-                                              brand: currentProduct.getBrand(
-                                                currentLang,
-                                              ),
-                                              ingredients: currentProduct
-                                                  .getIngredients(currentLang),
-                                              allergensList: currentProduct
-                                                  .getAllergens(currentLang),
-                                              reportCount: 0,
-                                              categoriesTags: const [],
-                                              strictMode:
-                                                  userSettings.strictMode,
-                                              warnAdditives:
-                                                  userSettings.warnAdditives,
-                                              alertLactose:
-                                                  userSettings.alertLactose,
-                                              preferredLanguage: currentLang,
-                                              ignoreReports: true,
-                                            );
-                                        await onReportSubmit(
-                                          currentProduct.barcode,
-                                          {
-                                            "type": reportType,
-                                            "comments":
-                                                reportCommentsController.text,
-                                            "originalStatus":
-                                                origAnalysis.status.name,
-                                          },
+                              onPressed: () {
+                                    // Approccio ottimistico: calcola, chiudi subito, lancia in background
+                                    final currentLang =
+                                        userSettings.preferredLanguage;
+                                    final origAnalysis =
+                                        AnalyzerService.analyzeGlutenSafety(
+                                          name: currentProduct.getName(
+                                            currentLang,
+                                          ),
+                                          brand: currentProduct.getBrand(
+                                            currentLang,
+                                          ),
+                                          ingredients: currentProduct
+                                              .getIngredients(currentLang),
+                                          allergensList: currentProduct
+                                              .getAllergens(currentLang),
+                                          reportCount: 0,
+                                          categoriesTags: const [],
+                                          strictMode:
+                                              userSettings.strictMode,
+                                          warnAdditives:
+                                              userSettings.warnAdditives,
+                                          alertLactose:
+                                              userSettings.alertLactose,
+                                          preferredLanguage: currentLang,
+                                          ignoreReports: true,
                                         );
-                                        onSubmitted();
-                                        if (sheetCtx.mounted) {
-                                          Navigator.pop(sheetCtx);
-                                        }
-                                        reportCommentsController.clear();
-                                      } catch (err) {
-                                        debugPrint('Report submit error: $err');
-                                      } finally {
-                                        setSheetState(
-                                          () => submittingReport = false,
-                                        );
-                                      }
-                                    },
+
+                                    final reportData = {
+                                      "type": reportType,
+                                      "comments":
+                                          reportCommentsController.text,
+                                      "originalStatus":
+                                          origAnalysis.status.name,
+                                    };
+
+                                    // Chiudi immediatamente il bottom sheet (0 ms)
+                                    Navigator.pop(sheetCtx);
+                                    reportCommentsController.clear();
+
+                                    // Notifica lo stato come "già segnalato" istantaneamente
+                                    onSubmitted();
+
+                                    // Lancia la persistenza in background (fire-and-forget dalla UI)
+                                    onReportSubmit(
+                                      currentProduct.barcode,
+                                      reportData,
+                                    );
+                                  },
                               style: FilledButton.styleFrom(
                                 backgroundColor: colorScheme.error,
                                 foregroundColor: colorScheme.onError,
@@ -356,23 +347,12 @@ void showSubmitReportBottomSheet({
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                               ),
-                              child: submittingReport
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: colorScheme.onError.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(
-                                      "product.reportSheet.submit".tr(),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                              child: Text(
+                                    "product.reportSheet.submit".tr(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
                                     ),
+                                  ),
                             ),
                           ),
                         ),

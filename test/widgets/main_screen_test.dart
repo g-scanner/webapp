@@ -1256,9 +1256,11 @@ void main() {
         await _pumpMainScreen(tester, auth: mockAuth);
         await tester.pumpAndSettle();
         final dynamic mainState = tester.state(find.byType(MainScreen));
-        await mainState.handleReportSubmit('800123', {'type': 'outdated'});
+        mainState.handleReportSubmit('800123', {'type': 'outdated'});
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
+        // Let background persistence complete
+        await tester.pump(const Duration(seconds: 1));
         final localReports = await DbService.fetchUserReports();
         expect(localReports.any((r) => r.barcode == '800123'), isTrue);
       },
@@ -1296,10 +1298,13 @@ void main() {
         await tester.pumpAndSettle();
         final dynamic mainState = tester.state(find.byType(MainScreen));
 
-        // 1. Submit report offline shows offline snackbar
-        await mainState.handleReportSubmit('800999', {'type': 'outdated'});
+        // 1. Submit report offline saves locally and background persistence notifies offline
+        mainState.handleReportSubmit('800999', {'type': 'outdated'});
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
+        // Let background persistence complete and offline snackbar appear
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 5));
         expect(find.text('product.reportSheet.offlineSuccess'.tr()), findsOneWidget);
 
         // 2. Clear history offline shows offline snackbar

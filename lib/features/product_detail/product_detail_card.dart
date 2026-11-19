@@ -19,7 +19,7 @@ class ProductDetailCard extends StatefulWidget {
   final ValueNotifier<String?>? reportIdNotifier;
   final bool isLoading;
   final VoidCallback onBack;
-  final Future<void> Function(String barcode, Map<String, dynamic> reportData)
+  final void Function(String barcode, Map<String, dynamic> reportData)
   onReportSubmit;
   final Future<void> Function(Product updatedProduct) onProductUpdate;
   final UserSettings userSettings;

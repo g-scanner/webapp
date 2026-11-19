@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
 import 'daos/product_report_dao.dart';
-import 'local_cache_service.dart' show productsCollection;
 import 'background_sync_manager.dart';
 
 const String reportsCollection = "reports";
@@ -88,14 +87,20 @@ class ReportsDbService {
     try {
       final decoded = json.decode(jsonStr);
       if (decoded is Map) {
-        return decoded.map((k, v) => MapEntry(k.toString(), (v as num).toInt()));
+        return decoded.map(
+          (k, v) => MapEntry(k.toString(), (v as num).toInt()),
+        );
       }
     } catch (_) {}
     return {};
   }
 
   /// Contrassegna un voto su una segnalazione come pendente (salvato offline).
-  static Future<void> markVotePending(String uid, String barcode, int vote) async {
+  static Future<void> markVotePending(
+    String uid,
+    String barcode,
+    int vote,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final votes = await getPendingVotes(uid);
     votes[barcode] = vote;
@@ -126,14 +131,20 @@ class ReportsDbService {
     try {
       final decoded = json.decode(jsonStr);
       if (decoded is Map) {
-        return decoded.map((k, v) => MapEntry(k.toString(), (v as num).toInt()));
+        return decoded.map(
+          (k, v) => MapEntry(k.toString(), (v as num).toInt()),
+        );
       }
     } catch (_) {}
     return {};
   }
 
   /// Salva il voto nella cache locale.
-  static Future<void> saveLocalVote(String uid, String barcode, int vote) async {
+  static Future<void> saveLocalVote(
+    String uid,
+    String barcode,
+    int vote,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final votes = await getLocalVotes(uid);
     votes[barcode] = vote;
@@ -169,7 +180,9 @@ class ReportsDbService {
           final reportRef = reportDoc.reference;
           final userVoteRef = reportRef.collection('votes').doc(userId);
 
-          final voteSnap = await userVoteRef.get().timeout(const Duration(seconds: 4));
+          final voteSnap = await userVoteRef.get().timeout(
+            const Duration(seconds: 4),
+          );
           int oldVote = 0;
           if (voteSnap.exists) {
             oldVote = voteSnap.data()?['val'] ?? 0;
@@ -177,12 +190,15 @@ class ReportsDbService {
 
           if (oldVote != newVote) {
             final upvotesDiff = (newVote == 1 ? 1 : 0) - (oldVote == 1 ? 1 : 0);
-            final downvotesDiff = (newVote == -1 ? 1 : 0) - (oldVote == -1 ? 1 : 0);
+            final downvotesDiff =
+                (newVote == -1 ? 1 : 0) - (oldVote == -1 ? 1 : 0);
             final batch = db.batch();
             batch.set(userVoteRef, {'val': newVote});
             batch.update(reportRef, {
-              if (upvotesDiff != 0) 'upvotes': FieldValue.increment(upvotesDiff),
-              if (downvotesDiff != 0) 'downvotes': FieldValue.increment(downvotesDiff),
+              if (upvotesDiff != 0)
+                'upvotes': FieldValue.increment(upvotesDiff),
+              if (downvotesDiff != 0)
+                'downvotes': FieldValue.increment(downvotesDiff),
             });
             await batch.commit().timeout(const Duration(seconds: 4));
           }
@@ -249,6 +265,15 @@ class ReportsDbService {
         if (deletedFilter.contains(report.id)) {
           // Elimina definitivamente la segnalazione fantasma da Firestore
           d.reference.delete().catchError((_) => null);
+          if (report.barcode.isNotEmpty) {
+            db
+                .collection("users")
+                .doc(user.uid)
+                .set({
+                  'reportedBarcodes': FieldValue.arrayRemove([report.barcode]),
+                }, SetOptions(merge: true))
+                .catchError((_) => null);
+          }
         } else {
           remoteReports.add(report);
           remoteDocIds.add(report.id);
@@ -266,7 +291,9 @@ class ReportsDbService {
       if (pendingIds.isNotEmpty) {
         final localReports = await _reportDao.getUserReports(user.uid);
         final reportsToUpload = localReports
-            .where((r) => pendingIds.contains(r.id) && !deletedFilter.contains(r.id))
+            .where(
+              (r) => pendingIds.contains(r.id) && !deletedFilter.contains(r.id),
+            )
             .toList();
 
         if (reportsToUpload.isNotEmpty) {
@@ -291,7 +318,9 @@ class ReportsDbService {
               remoteReports.add(rep);
             }
           } catch (e) {
-            debugPrint("Failed uploading pending local reports to Firestore: $e");
+            debugPrint(
+              "Failed uploading pending local reports to Firestore: $e",
+            );
             for (final rep in reportsToUpload) {
               remoteReports.add(rep);
             }
@@ -363,7 +392,9 @@ class ReportsDbService {
         await batch.commit().timeout(const Duration(seconds: 4));
         await markReportsSynced(userId, [reportId]);
       } catch (commitError) {
-        debugPrint("Firestore batch commit failed/timed out, queued locally: $commitError");
+        debugPrint(
+          "Firestore batch commit failed/timed out, queued locally: $commitError",
+        );
       }
 
       return finalReport;
@@ -387,11 +418,12 @@ class ReportsDbService {
   ) async {
     try {
       final reportRef = db.collection(reportsCollection).doc(reportId);
-      final reportSnap = await reportRef.get().timeout(const Duration(seconds: 3));
+      final reportSnap = await reportRef.get().timeout(
+        const Duration(seconds: 3),
+      );
       if (!reportSnap.exists) return;
 
       final barcode = reportSnap.data()?['barcode'] as String?;
-      final nowIso = DateTime.now().toIso8601String();
 
       // Leggi voti del report prima del batch
       final votesQuery = await reportRef
@@ -451,7 +483,11 @@ class ReportsDbService {
       final reportsStr = prefs.getStringList(key) ?? [];
       if (reportsStr.isNotEmpty) {
         final reports = reportsStr
-            .map((e) => ProductReport.fromJson(json.decode(e) as Map<String, dynamic>))
+            .map(
+              (e) => ProductReport.fromJson(
+                json.decode(e) as Map<String, dynamic>,
+              ),
+            )
             .toList();
         final index = reports.indexWhere((r) => r.id == reportId);
         if (index != -1) {
@@ -497,7 +533,9 @@ class ReportsDbService {
       final reportRef = reportDoc.reference;
       final userVoteRef = reportRef.collection('votes').doc(userId);
 
-      final voteSnap = await userVoteRef.get().timeout(const Duration(seconds: 4));
+      final voteSnap = await userVoteRef.get().timeout(
+        const Duration(seconds: 4),
+      );
       int oldVote = 0;
       if (voteSnap.exists) {
         oldVote = voteSnap.data()?['val'] ?? 0;
@@ -512,7 +550,8 @@ class ReportsDbService {
         batch.set(userVoteRef, {'val': newVote});
         batch.update(reportRef, {
           if (upvotesDiff != 0) 'upvotes': FieldValue.increment(upvotesDiff),
-          if (downvotesDiff != 0) 'downvotes': FieldValue.increment(downvotesDiff),
+          if (downvotesDiff != 0)
+            'downvotes': FieldValue.increment(downvotesDiff),
         });
         await batch.commit().timeout(const Duration(seconds: 4));
       }

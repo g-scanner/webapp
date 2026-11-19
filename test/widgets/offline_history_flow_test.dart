@@ -376,7 +376,7 @@ void main() {
             child: ProductDetailCard(
               product: offlineProduct,
               onBack: () {},
-              onReportSubmit: (_, _) async {},
+              onReportSubmit: (_, _) {},
               onProductUpdate: (_) async {},
               userSettings: testSettings(),
             ),
@@ -408,7 +408,7 @@ void main() {
             child: ProductDetailCard(
               product: notFoundProduct,
               onBack: () {},
-              onReportSubmit: (_, _) async {},
+              onReportSubmit: (_, _) {},
               onProductUpdate: (_) async {},
               userSettings: testSettings(),
             ),
@@ -445,7 +445,7 @@ void main() {
             child: ProductDetailCard(
               product: offlineProduct,
               onBack: () {},
-              onReportSubmit: (_, _) async {},
+              onReportSubmit: (_, _) {},
               onProductUpdate: (_) async {},
               userSettings: testSettings(),
               onRefreshOnline: (barcode) async {

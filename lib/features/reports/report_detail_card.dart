@@ -420,7 +420,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                         onBack: () => Navigator.pop(context),
                         // Sola lettura: la segnalazione è già stata inviata,
                         // questi callback non verranno mai chiamati da qui.
-                        onReportSubmit: (_, _) async {},
+                        onReportSubmit: (_, _) {},
                         onProductUpdate: (_) async {},
                         userSettings:
                             widget.userSettings ??

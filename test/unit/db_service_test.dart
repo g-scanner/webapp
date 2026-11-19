@@ -2631,12 +2631,29 @@ void main() {
         when(() => mockQuery.get()).thenAnswer((_) async => mockSnap);
         when(() => mockSnap.docs).thenReturn([docTombstone, docValid]);
 
+        // Mock per la rimozione di reportedBarcodes dall'utente
+        final mockUserDocRef = MockDocumentReference();
+        when(() => mockUsersCol.doc('user_tombstone_reports'))
+            .thenReturn(mockUserDocRef);
+        when(() => mockUserDocRef.set(any(), any()))
+            .thenAnswer((_) async {});
+
         final syncedReports = await DbService.syncReportsWithFirestore();
 
         expect(syncedReports.length, equals(1));
         expect(syncedReports.first.id, equals('rep_valid_789'));
         verify(() => refTombstone.delete()).called(1);
         verifyNever(() => refValid.delete());
+
+        // Verifica che il barcode venga rimosso da reportedBarcodes su Firestore
+        verify(
+          () => mockUserDocRef.set(
+            {
+              'reportedBarcodes': FieldValue.arrayRemove(['800_REP_TOMB']),
+            },
+            any(),
+          ),
+        ).called(1);
       },
     );
   });

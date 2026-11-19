@@ -1169,89 +1169,101 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     _navigateToProduct(match);
   }
 
-  Future<void> handleReportSubmit(
+  void handleReportSubmit(String barcode, Map<String, dynamic> reportData) {
+    final lang = userSettings.preferredLanguage;
+    final product = products.firstWhere(
+      (p) => p.barcode == barcode,
+      orElse: () => Product(
+        barcode: barcode,
+        nameMap: const {'it': 'Prodotto'},
+        brandMap: const {'it': ''},
+        ingredientsMap: const {'it': ''},
+        allergensMap: const {'it': <String>[]},
+        lastUpdated: '',
+      ),
+    );
+
+    // 1. Aggiornamento ottimistico immediato in UI (0 ms)
+    final pIdx = products.indexWhere((p) => p.barcode == barcode);
+    final Product updatedProd;
+    if (pIdx != -1) {
+      final p = products[pIdx];
+      updatedProd = Product(
+        barcode: p.barcode,
+        nameMap: p.nameMap,
+        brandMap: p.brandMap,
+        ingredientsMap: p.ingredientsMap,
+        allergensMap: p.allergensMap,
+        imageUrl: p.imageUrl,
+        lastUpdated: p.lastUpdated,
+        pendingReportsCount: p.pendingReportsCount + 1,
+        fetchedFromOffAt: p.fetchedFromOffAt,
+      );
+      products[pIdx] = updatedProd;
+      if (_openProductNotifiers.containsKey(barcode)) {
+        _openProductNotifiers[barcode]!.value = updatedProd;
+      }
+    } else {
+      updatedProd = Product(
+        barcode: barcode,
+        nameMap: product.nameMap,
+        brandMap: product.brandMap,
+        ingredientsMap: product.ingredientsMap,
+        allergensMap: product.allergensMap,
+        lastUpdated: DateTime.now().toIso8601String(),
+        pendingReportsCount: 1,
+      );
+      products.add(updatedProd);
+    }
+
+    setState(() {
+      reportedSessionBarcodes.add(barcode);
+      if (!userSettings.reportedBarcodes.contains(barcode)) {
+        userSettings = userSettings.copyWith(
+          reportedBarcodes: [...userSettings.reportedBarcodes, barcode],
+        );
+      }
+    });
+
+    // 2. Persistenza locale SQLite & tombstone + sync remoto asincrono
+    _persistReportInBackground(
+      barcode,
+      product.getName(lang),
+      product.getBrand(lang),
+      reportData,
+      updatedProd,
+    );
+  }
+
+  Future<void> _persistReportInBackground(
     String barcode,
+    String productName,
+    String productBrand,
     Map<String, dynamic> reportData,
+    Product updatedProd,
   ) async {
     try {
-      final lang = userSettings.preferredLanguage;
-      final product = products.firstWhere(
-        (p) => p.barcode == barcode,
-        orElse: () => Product(
-          barcode: barcode,
-          nameMap: const {'it': 'Prodotto'},
-          brandMap: const {'it': ''},
-          ingredientsMap: const {'it': ''},
-          allergensMap: const {'it': <String>[]},
-          lastUpdated: '',
-        ),
-      );
-
       final newReport = await DbService.submitProductReportClientSide(
         barcode,
-        product.getName(lang),
-        product.getBrand(lang),
+        productName,
+        productBrand,
         reportData,
       );
-
-      final pIdx = products.indexWhere((p) => p.barcode == barcode);
-      final Product updatedProd;
-      if (pIdx != -1) {
-        final p = products[pIdx];
-        updatedProd = Product(
-          barcode: p.barcode,
-          nameMap: p.nameMap,
-          brandMap: p.brandMap,
-          ingredientsMap: p.ingredientsMap,
-          allergensMap: p.allergensMap,
-          imageUrl: p.imageUrl,
-          lastUpdated: p.lastUpdated,
-          pendingReportsCount: p.pendingReportsCount + 1,
-          fetchedFromOffAt: p.fetchedFromOffAt,
-        );
-        products[pIdx] = updatedProd;
-        if (_openProductNotifiers.containsKey(barcode)) {
-          _openProductNotifiers[barcode]!.value = updatedProd;
-        }
-      } else {
-        updatedProd = Product(
-          barcode: barcode,
-          nameMap: product.nameMap,
-          brandMap: product.brandMap,
-          ingredientsMap: product.ingredientsMap,
-          allergensMap: product.allergensMap,
-          lastUpdated: DateTime.now().toIso8601String(),
-          pendingReportsCount: 1,
-        );
-        products.add(updatedProd);
-      }
-      await DbService.upsertLocalProduct(updatedProd);
-
-      setState(() {
-        reportedSessionBarcodes.add(barcode);
-        if (!userSettings.reportedBarcodes.contains(barcode)) {
-          userSettings = userSettings.copyWith(
-            reportedBarcodes: [...userSettings.reportedBarcodes, barcode],
-          );
-        }
-      });
 
       if (_openReportIdNotifiers.containsKey(barcode)) {
         _openReportIdNotifiers[barcode]!.value = newReport.id;
       }
 
+      await DbService.upsertLocalProduct(updatedProd);
       await DbService.saveSettings(userSettings);
       await Future.wait([_loadLocalReports(), _fetchProducts()]);
 
       final isOnline = await ConnectivityHelper.hasInternetConnection();
       if (!isOnline && mounted) {
-        showAppSnackBar(
-          context,
-          'product.reportSheet.offlineSuccess'.tr(),
-        );
+        showAppSnackBar(context, 'product.reportSheet.offlineSuccess'.tr());
       }
     } catch (e) {
-      debugPrint("Segnalazione fallita: $e");
+      debugPrint("Segnalazione – errore persistenza background: $e");
       if (mounted) {
         showAppSnackBar(
           context,
@@ -1259,7 +1271,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           isError: true,
         );
       }
-      rethrow;
     }
   }
 
@@ -1303,10 +1314,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await DbService.deleteHistoryByBarcodeLocal(barcode);
       final isOnline = await ConnectivityHelper.hasInternetConnection();
       if (!isOnline && mounted) {
-        showAppSnackBar(
-          context,
-          'history.item.deleteOfflineSuccess'.tr(),
-        );
+        showAppSnackBar(context, 'history.item.deleteOfflineSuccess'.tr());
       }
     } catch (e) {
       debugPrint("Error deleting history by barcode: $e");
@@ -1348,10 +1356,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await DbService.deleteHistoryItemLocal(id);
       final isOnline = await ConnectivityHelper.hasInternetConnection();
       if (!isOnline && mounted) {
-        showAppSnackBar(
-          context,
-          'history.item.deleteOfflineSuccess'.tr(),
-        );
+        showAppSnackBar(context, 'history.item.deleteOfflineSuccess'.tr());
       }
     } catch (e) {
       debugPrint("Error deleting history item: $e");
@@ -1379,10 +1384,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await DbService.wipeHistoryLocal();
       final isOnline = await ConnectivityHelper.hasInternetConnection();
       if (!isOnline && mounted) {
-        showAppSnackBar(
-          context,
-          'history.header.clearOfflineSuccess'.tr(),
-        );
+        showAppSnackBar(context, 'history.header.clearOfflineSuccess'.tr());
       }
     } catch (e) {
       debugPrint("Error clearing history: $e");
@@ -1480,10 +1482,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
       final isOnline = await ConnectivityHelper.hasInternetConnection();
       if (!isOnline && mounted) {
-        showAppSnackBar(
-          context,
-          'report.actions.deleteOfflineSuccess'.tr(),
-        );
+        showAppSnackBar(context, 'report.actions.deleteOfflineSuccess'.tr());
       }
     } catch (e) {
       debugPrint("Error deleting report: $e");
@@ -1737,14 +1736,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           (userId == null || r?.userId == userId),
       orElse: () => null,
     );
-    if (reportOfProduct == null) {
-      reportOfProduct = await DbService.getActiveReportByBarcode(loadedProduct.barcode);
-    }
+    reportOfProduct ??= await DbService.getActiveReportByBarcode(
+      loadedProduct.barcode,
+    );
     if (!context.mounted) return;
 
     final bool isOwn =
         reportedSessionBarcodes.contains(loadedProduct.barcode) ||
-        (reportOfProduct != null && userId != null && reportOfProduct.userId == userId);
+        (reportOfProduct != null &&
+            userId != null &&
+            reportOfProduct.userId == userId);
     final String comment = reportOfProduct?.comments ?? '';
     final String rDate = reportOfProduct != null
         ? reportOfProduct.submittedAt
@@ -1853,7 +1854,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 newSet,
                 isOfflineDbChange: isOfflineDbChange,
               );
-              await BackgroundSyncManager.updatePeriodicTaskRegistration(newSet);
+              await BackgroundSyncManager.updatePeriodicTaskRegistration(
+                newSet,
+              );
               if (autoSyncTurnedOn &&
                   newSet.offlineDbTier != OfflineDbTier.none) {
                 _autoDownloadOfflineDbIfNeeded(newSet);
@@ -1869,10 +1872,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
                 final isOnline =
                     await ConnectivityHelper.hasInternetConnection();
                 if (!isOnline && mounted) {
-                  showAppSnackBar(
-                    context,
-                    'settings.status.offlineSaved'.tr(),
-                  );
+                  showAppSnackBar(context, 'settings.status.offlineSaved'.tr());
                 }
               }
             } catch (e) {
