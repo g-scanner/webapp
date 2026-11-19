@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Unit Tests: OfflineDbService
+// PROJECT: GlutiEnd — Unit Tests: OfflineDbService
 
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:gscanner/services/database/offline_db_service.dart';
+import 'package:glutiend/services/database/offline_db_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +17,7 @@ void main() {
   late String dbPath;
 
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('gscanner_offline_test_');
+    tempDir = await Directory.systemTemp.createTemp('glutiend_offline_test_');
     dbPath = p.join(tempDir.path, 'offline_products.db');
     OfflineDbService.setMockDatabasePath(dbPath);
   });

@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../theme/app_theme.dart';
 
 /// Barra di ricerca a pillola riutilizzabile con animazione di switch icona cerca/cancella,
-/// conforme al design system di G-Scanner.
+/// conforme al design system di GlutiEnd.
 class AppSearchBar extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;

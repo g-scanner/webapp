@@ -6,7 +6,7 @@ Strumento di utilità per modificare **a runtime o a freddo** le date di sincron
 
 ## 🎯 Scopo
 
-Consente di simulare date di sincronizzazione passate per verificare istantaneamente il comportamento dell'interfaccia utente di G-Scanner senza dover attendere giorni reali o manipolare manualmente l'orologio di sistema del dispositivo:
+Consente di simulare date di sincronizzazione passate per verificare istantaneamente il comportamento dell'interfaccia utente di GlutiEnd senza dover attendere giorni reali o manipolare manualmente l'orologio di sistema del dispositivo:
 
 - **`-10 giorni` (Soft Stale)**: verifica la comparsa della **pillola gialla** *"Aggiornamento consigliato"* sulla card del Database Offline e all'interno del modal.
 - **`-40 giorni` (Hard Stale)**: verifica la comparsa della **pillola rossa** *"Obsoleto (>30 gg)"*.
@@ -20,7 +20,7 @@ Consente di simulare date di sincronizzazione passate per verificare istantaneam
 
 1. **ADB (Android Debug Bridge)** installato e accessibile da terminale (incluso nell'Android SDK / Platform Tools).
 2. Un dispositivo Android fisico o un emulatore collegato con il **Debug USB** abilitato (`adb devices`).
-3. L'app G-Scanner installata in modalità debug sul dispositivo (`it.emanueleciotola.gscanner`).
+3. L'app GlutiEnd installata in modalità debug sul dispositivo (`it.emanueleciotola.glutiend`).
 4. **Python 3.x** oppure **PowerShell** (Windows).
 
 ---
@@ -93,5 +93,5 @@ python tools/sync_date_tester/sync_date_tester.py --status
 
 ## ⚙️ Dettagli Tecnici
 
-1. **Lettura/Scrittura**: utilizza `run-as it.emanueleciotola.gscanner` per accedere in modo sicuro al file privato `/data/data/it.emanueleciotola.gscanner/shared_prefs/FlutterSharedPreferences.xml`.
+1. **Lettura/Scrittura**: utilizza `run-as it.emanueleciotola.glutiend` per accedere in modo sicuro al file privato `/data/data/it.emanueleciotola.glutiend/shared_prefs/FlutterSharedPreferences.xml`.
 2. **Ricarica a Runtime**: poiché Android tiene in cache in RAM le SharedPreferences durante l'esecuzione del processo, lo script esegue automaticamente un riavvio istantaneo dell'attività principale (`am force-stop` + `am start`), rendendo la modifica visibile a schermo in meno di un secondo. È possibile disattivare il riavvio passando il flag `--no-restart` / `-NoRestart`.

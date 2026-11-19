@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/features/scanner/widgets/safety_legend_chips.dart';
-import 'package:gscanner/core/widgets/app_status_pill.dart';
+import 'package:glutiend/features/scanner/widgets/safety_legend_chips.dart';
+import 'package:glutiend/core/widgets/app_status_pill.dart';
 
 void main() {
   Widget buildTestableWidget() {

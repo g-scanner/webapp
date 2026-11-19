@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/services/database/background_sync_manager.dart';
-import 'package:gscanner/services/database/reports_db_service.dart';
-import 'package:gscanner/services/database/history_db_service.dart';
-import 'package:gscanner/core/network/connectivity_helper.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/services/database/background_sync_manager.dart';
+import 'package:glutiend/services/database/reports_db_service.dart';
+import 'package:glutiend/services/database/history_db_service.dart';
+import 'package:glutiend/core/network/connectivity_helper.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

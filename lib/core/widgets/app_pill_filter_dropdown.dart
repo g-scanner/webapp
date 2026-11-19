@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
@@ -21,7 +21,7 @@ class AppPillFilterOption<T> {
 }
 
 /// Dropdown a pillola riutilizzabile per i filtri (es. cronologia, segnalazioni),
-/// conforme al design system di G-Scanner.
+/// conforme al design system di GlutiEnd.
 class AppPillFilterDropdown<T> extends StatelessWidget {
   final String tooltip;
   final T selectedValue;

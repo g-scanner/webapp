@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Widget & Business Logic Tests: ReportDetailCard
+// PROJECT: GlutiEnd — Widget & Business Logic Tests: ReportDetailCard
 
 // ignore_for_file: unused_import
 
@@ -10,11 +10,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:gscanner/core/network/connectivity_helper.dart';
+import 'package:glutiend/core/network/connectivity_helper.dart';
 
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/features/reports/report_detail_card.dart';
-import 'package:gscanner/features/product_detail/product_detail_card.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/features/reports/report_detail_card.dart';
+import 'package:glutiend/features/product_detail/product_detail_card.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

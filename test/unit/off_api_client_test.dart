@@ -1,5 +1,5 @@
 ﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Pure Unit Tests: OffApiClient
+// PROJECT: GlutiEnd — Pure Unit Tests: OffApiClient
 
 import 'dart:async';
 import 'dart:io';
@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
-import 'package:gscanner/core/network/off_api_client.dart';
+import 'package:glutiend/core/network/off_api_client.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ void main() {
       expect(capturedHeaders['Accept'], 'application/json');
       // User-Agent is present only when kIsWeb == false (test host = Windows)
       expect(capturedHeaders.containsKey('User-Agent'), isTrue);
-      expect(capturedHeaders['User-Agent'], contains('G-Scanner'));
+      expect(capturedHeaders['User-Agent'], contains('GlutiEnd'));
     });
   });
 

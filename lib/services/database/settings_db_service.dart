@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'dart:async';
 import 'dart:convert';
@@ -14,7 +14,8 @@ import 'offline_db_service.dart';
 class SettingsDbService {
   static const String settingsKey = 'celiac_settings';
   static const String reportedBarcodesKey = 'celiac_reported_barcodes';
-  static const String termsAcceptedKey = 'gscanner_terms_accepted';
+  static const String termsAcceptedKey = 'glutiend_terms_accepted';
+  static const String _legacyTermsAcceptedKey = 'gscanner_terms_accepted';
   static const String hasAnonymousSettingsKey = 'has_anonymous_settings';
 
   static final StreamController<UserSettings> _settingsUpdateController =
@@ -269,7 +270,9 @@ class SettingsDbService {
 
   static Future<bool> hasAcceptedTerms() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(termsAcceptedKey) ?? false;
+    return prefs.getBool(termsAcceptedKey) ??
+        prefs.getBool(_legacyTermsAcceptedKey) ??
+        false;
   }
 
   static Future<void> saveTermsAccepted() async {

@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -24,30 +24,30 @@ class _LegalConsentDialogState extends State<LegalConsentDialog> {
   String get tosUrl {
     switch (widget.lang) {
       case 'it':
-        return 'https://g-scanner.github.io/it/TerminiDiServizio.html';
+        return 'https://glutiend.github.io/it/TerminiDiServizio.html';
       case 'es':
-        return 'https://g-scanner.github.io/es/TerminosYCondiciones.html';
+        return 'https://glutiend.github.io/es/TerminosYCondiciones.html';
       case 'de':
-        return 'https://g-scanner.github.io/de/Nutzungsbedingungen.html';
+        return 'https://glutiend.github.io/de/Nutzungsbedingungen.html';
       case 'fr':
-        return 'https://g-scanner.github.io/fr/ConditionsDUtilisation.html';
+        return 'https://glutiend.github.io/fr/ConditionsDUtilisation.html';
       default:
-        return 'https://g-scanner.github.io/TermsOfService.html';
+        return 'https://glutiend.github.io/TermsOfService.html';
     }
   }
 
   String get privacyUrl {
     switch (widget.lang) {
       case 'it':
-        return 'https://g-scanner.github.io/it/InformativaSullaPrivacy.html';
+        return 'https://glutiend.github.io/it/InformativaSullaPrivacy.html';
       case 'es':
-        return 'https://g-scanner.github.io/es/PoliticaDePrivacidad.html';
+        return 'https://glutiend.github.io/es/PoliticaDePrivacidad.html';
       case 'de':
-        return 'https://g-scanner.github.io/de/Datenschutzerklaerung.html';
+        return 'https://glutiend.github.io/de/Datenschutzerklaerung.html';
       case 'fr':
-        return 'https://g-scanner.github.io/fr/PolitiqueDeConfidentialite.html';
+        return 'https://glutiend.github.io/fr/PolitiqueDeConfidentialite.html';
       default:
-        return 'https://g-scanner.github.io/PrivacyPolicy.html';
+        return 'https://glutiend.github.io/PrivacyPolicy.html';
     }
   }
 

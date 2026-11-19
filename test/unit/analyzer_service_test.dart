@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Pure Unit Tests: AnalyzerService
+// PROJECT: GlutiEnd — Pure Unit Tests: AnalyzerService
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/services/analyzer_service.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/services/analyzer_service.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {

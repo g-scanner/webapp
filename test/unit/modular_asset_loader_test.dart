@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Pure Unit Tests: ModularAssetLoader
+// PROJECT: GlutiEnd — Pure Unit Tests: ModularAssetLoader
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/core/localization/modular_asset_loader.dart';
+import 'package:glutiend/core/localization/modular_asset_loader.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

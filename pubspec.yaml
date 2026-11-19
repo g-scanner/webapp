@@ -1,11 +1,11 @@
 # Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-PROJECT: G-Scanner — See LICENSE file in root for terms.
+# PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
-name: gscanner
-description: "Scan food barcodes instantly to detect hidden gluten, lactose, and suspicious additives. A 100% free, privacy-focused ingredient scanner for celiacs and food intolerances."
+name: glutiend
+description: "GlutiEnd - Scan food barcodes instantly to detect hidden gluten, lactose, and suspicious additives. A 100% free, privacy-focused ingredient scanner for celiacs and food intolerances."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.8.0+1
 
 environment:
   sdk: ^3.11.0

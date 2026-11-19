@@ -21,10 +21,10 @@ import 'history_db_service.dart';
 import '../../core/network/connectivity_helper.dart';
 
 /// Identificativo del task di sincronizzazione periodica in background (Trigger 1).
-const String offlineDbPeriodicTask = 'com.emanueleciotola.gscanner.offlineDbPeriodicSync';
+const String offlineDbPeriodicTask = 'it.emanueleciotola.glutiend.offlineDbPeriodicSync';
 
 /// Identificativo del task one-shot per la sincronizzazione dei dati utente pendenti (Trigger 2).
-const String pendingDataOneShotTask = 'com.emanueleciotola.gscanner.pendingDataOneShotSync';
+const String pendingDataOneShotTask = 'it.emanueleciotola.glutiend.pendingDataOneShotSync';
 
 /// Esegue il download del delta su iOS delegandolo nativamente a Background URLSession.
 /// Rispetta il limite rigido dei 30 secondi: l'OS gestisce il download HTTP in background

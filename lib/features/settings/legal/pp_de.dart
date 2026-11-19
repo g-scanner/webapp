@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 const String ppDe = r'''
-# Datenschutzerklärung von G-Scanner
+# Datenschutzerklärung von GlutiEnd
 
 **Version:** 1.0
 
@@ -12,19 +12,19 @@ const String ppDe = r'''
 
 ---
 
-Diese Datenschutzerklärung beschreibt die Modalitäten der Verarbeitung personenbezogener Daten, die über die mobile und webbasierte Anwendung **G-Scanner** erfolgt, entwickelt in Übereinstimmung mit der **Verordnung (EU) 2016/679 (DSGVO)** sowie dem anwendbaren italienischen Datenschutzrecht.
+Diese Datenschutzerklärung beschreibt die Modalitäten der Verarbeitung personenbezogener Daten, die über die mobile und webbasierte Anwendung **GlutiEnd** erfolgt, entwickelt in Übereinstimmung mit der **Verordnung (EU) 2016/679 (DSGVO)** sowie dem anwendbaren italienischen Datenschutzrecht.
 
 ---
 
 ## Zweck der Anwendung
 
-G-Scanner ist eine Anwendung, die es den Nutzern ermöglicht, durch Scannen von Barcodes Informationen über Lebensmittel abzurufen, mit besonderem Augenmerk auf die Bedürfnisse von Personen, die an Zöliakie oder Laktoseintoleranz leiden.
+GlutiEnd ist eine Anwendung, die es den Nutzern ermöglicht, durch Scannen von Barcodes Informationen über Lebensmittel abzurufen, mit besonderem Augenmerk auf die Bedürfnisse von Personen, die an Zöliakie oder Laktoseintoleranz leiden.
 
 Die Anwendung ermöglicht es den Nutzern zudem, spezifische Ernährungspräferenzen zu konfigurieren, Hinweise basierend auf voreingestellten Informationsfiltern zu erhalten und durch das Teilen von Produktmeldungen an einer Community teilzunehmen.
 
 **Wichtig – Haftungsbeschränkung**
 
-Die von G-Scanner bereitgestellten Informationen dienen ausschließlich informativen Zwecken und zur Unterstützung des Nutzers.
+Die von GlutiEnd bereitgestellten Informationen dienen ausschließlich informativen Zwecken und zur Unterstützung des Nutzers.
 
 Die Anwendung **stellt kein Medizinprodukt dar**, **bietet keine medizinische Beratung**, **hat keinen diagnostischen oder therapeutischen Wert** und **erzeugt keine rechtlich bindenden Wirkungen oder Bewertungen**.
 
@@ -50,7 +50,7 @@ Der Verantwortliche für die Verarbeitung der personenbezogenen Daten ist:
 
 E-Mail:
 
-**[supporto-gscanner@googlegroups.com](mailto:supporto-gscanner@googlegroups.com)**
+**[supporto-glutiend@googlegroups.com](mailto:supporto-glutiend@googlegroups.com)**
 
 Für jegliche Anfragen bezüglich der Verarbeitung personenbezogener Daten oder zur Ausübung der durch die DSGVO gewährten Rechte kann der Verantwortliche unter der oben genannten Adresse kontaktiert werden.
 
@@ -62,7 +62,7 @@ Die Anwendung verarbeitet ausschließlich die Daten, die für ihren Betrieb und 
 
 ### 2.1 Anonyme Nutzer
 
-Wird G-Scanner genutzt, ohne dass eine Anmeldung (Login) erfolgt, verbleiben die personenbezogenen Daten und die konfigurierten Präferenzen des Nutzers ausschließlich auf dem Gerät und werden lokal mittels **SharedPreferences** gespeichert.
+Wird GlutiEnd genutzt, ohne dass eine Anmeldung (Login) erfolgt, verbleiben die personenbezogenen Daten und die konfigurierten Präferenzen des Nutzers ausschließlich auf dem Gerät und werden lokal mittels **SharedPreferences** gespeichert.
 
 Dazu gehören:
 
@@ -108,7 +108,7 @@ Im Zuge der Authentifizierung werden die zur Identifizierung des Nutzers erforde
 
 Diesen Informationen wird eine eindeutige Benutzerkennung (**User ID**) zugeordnet.
 
-G-Scanner hat keinen Zugriff auf die Authentifizierungsdaten des Nutzers, wie Passwörter oder gleichwertige Mittel, und verarbeitet diese Informationen nicht.
+GlutiEnd hat keinen Zugriff auf die Authentifizierungsdaten des Nutzers, wie Passwörter oder gleichwertige Mittel, und verarbeitet diese Informationen nicht.
 
 ### 2.3 In der Cloud-Datenbank gespeicherte Daten
 
@@ -142,7 +142,7 @@ Die durch die Authentifizierung erhaltenen Identifikationsdaten (Vorname, Nachna
 
 ### 2.4 Cookies und lokale Speichertechnologien
 
-G-Scanner verwendet (sowohl in der Web-App-Version als auch als mobile Anwendung) keine Profiling-Cookies, Werbe-Tracking-Tools oder Analysesysteme von Drittanbietern.
+GlutiEnd verwendet (sowohl in der Web-App-Version als auch als mobile Anwendung) keine Profiling-Cookies, Werbe-Tracking-Tools oder Analysesysteme von Drittanbietern.
 
 Die Anwendung verwendet ausschließlich unbedingt erforderliche lokale Speichertechnologien (wie SharedPreferences auf Mobilgeräten und LocalStorage / Technische Cookies in Browsern), und zwar ausschließlich zu folgenden Zwecken:
 
@@ -156,7 +156,7 @@ Die lokal gespeicherten Daten verbleiben auf dem Gerät des Nutzers, bis sie gel
 
 ### 2.5 Lokale Datenbank für die Offline-Nutzung
 
-G-Scanner kann es dem Nutzer ermöglichen, eine lokale Kopie von Daten zu Lebensmitteln auf sein Gerät herunterzuladen, um das Einsehen und Scannen von Produkten auch ohne Internetverbindung zu ermöglichen.
+GlutiEnd kann es dem Nutzer ermöglichen, eine lokale Kopie von Daten zu Lebensmitteln auf sein Gerät herunterzuladen, um das Einsehen und Scannen von Produkten auch ohne Internetverbindung zu ermöglichen.
 
 Die Offline-Datenbank enthält ausschließlich Lebensmittelinformationen, die für den Betrieb der Offline-Funktionen erforderlich sind, und enthält keine personenbezogenen Daten des Nutzers.
 
@@ -172,7 +172,7 @@ Die Offline-Datenbank kann vom Nutzer über die von der Anwendung bereitgestellt
 
 ## 3. Besondere Kategorien personenbezogener Daten (Art. 9 DSGVO)
 
-G-Scanner ermöglicht es dem Nutzer, spezifische persönliche Präferenzen für das Abrufen von Informationen über Lebensmittel zu konfigurieren. Diese Einstellungen können den Gesundheitszustand oder besondere Ernährungsbedürfnisse des Nutzers widerspiegeln und stellen somit unter Umständen **besondere Kategorien personenbezogener Daten** im Sinne von **Art. 9 der Verordnung (EU) 2016/679 (DSGVO)** dar.
+GlutiEnd ermöglicht es dem Nutzer, spezifische persönliche Präferenzen für das Abrufen von Informationen über Lebensmittel zu konfigurieren. Diese Einstellungen können den Gesundheitszustand oder besondere Ernährungsbedürfnisse des Nutzers widerspiegeln und stellen somit unter Umständen **besondere Kategorien personenbezogener Daten** im Sinne von **Art. 9 der Verordnung (EU) 2016/679 (DSGVO)** dar.
 
 Die in der Anwendung verfügbaren Einstellungen sind die folgenden:
 
@@ -194,7 +194,7 @@ Die Verarbeitung dieser Informationen erfolgt **ausschließlich nach vorheriger 
 
 Es steht dem Nutzer frei, die oben genannten Einstellungen jederzeit entsprechend seinen persönlichen Bedürfnissen zu ändern, zu aktivieren oder zu deaktivieren.
 
-Diese Entscheidungen werden in der Verantwortung des Nutzers getroffen, der anerkennt, dass G-Scanner ausschließlich ein **informatives Hilfsmittel** darstellt und Folgendes nicht ersetzt:
+Diese Entscheidungen werden in der Verantwortung des Nutzers getroffen, der anerkennt, dass GlutiEnd ausschließlich ein **informatives Hilfsmittel** darstellt und Folgendes nicht ersetzt:
 
 * die Überprüfung der Produktetiketten;
 
@@ -210,7 +210,7 @@ Der Nutzer kann seine Präferenzen jederzeit ändern oder die zuvor erteilte Ein
 
 ## 4. Zwecke der Verarbeitung
 
-Die über G-Scanner erhobenen personenbezogenen Daten werden für die folgenden Zwecke verarbeitet:
+Die über GlutiEnd erhobenen personenbezogenen Daten werden für die folgenden Zwecke verarbeitet:
 
 * um das Scannen von Barcodes und das Abrufen von Informationen zu Lebensmitteln zu ermöglichen;
 
@@ -244,7 +244,7 @@ Die Verarbeitung der personenbezogenen Daten basiert auf:
 
 ## 6. Minderjährige
 
-Die Nutzung von G-Scanner ist für Personen unter **14 Jahren** untersagt.
+Die Nutzung von GlutiEnd ist für Personen unter **14 Jahren** untersagt.
 
 In Übereinstimmung mit dem italienischen Gesetz zur digitalen Einwilligung richtet sich die Anwendung nicht an Nutzer unter 14 Jahren und erhebt nicht wissentlich personenbezogene Daten von solchen Personen.
 
@@ -254,7 +254,7 @@ Sollte der Verantwortliche Kenntnis davon erlangen, dass Daten von Personen unte
 
 ## 7. Zugriff auf Gerätefunktionen und -informationen
 
-Um das ordnungsgemäße Funktionieren der angebotenen Funktionen zu gewährleisten, kann G-Scanner auf bestimmte Funktionen und Informationen des Geräts des Nutzers zugreifen.
+Um das ordnungsgemäße Funktionieren der angebotenen Funktionen zu gewährleisten, kann GlutiEnd auf bestimmte Funktionen und Informationen des Geräts des Nutzers zugreifen.
 
 ### Kamera
 
@@ -296,7 +296,7 @@ Die Sprache der Benutzeroberfläche wird nicht für Profiling-, Tracking- oder W
 
 ## 8. Keine Werbung, kein Tracking und keine Erfassung von Analysedaten
 
-G-Scanner wendet eine Richtlinie zum Schutz der Privatsphäre der Nutzer an.
+GlutiEnd wendet eine Richtlinie zum Schutz der Privatsphäre der Nutzer an.
 
 Die Anwendung:
 
@@ -318,7 +318,7 @@ Die Anwendung:
 
 * übermittelt oder überträgt keine personenbezogenen Daten an Dritte für kommerzielle Zwecke.
 
-Insbesondere erfasst **G-Scanner keine Werbekennungen, Informationen zur Anwendungsnutzung, Diagnosedaten oder technische Gerätedaten für Analyse- oder Profilingzwecke**.
+Insbesondere erfasst **GlutiEnd keine Werbekennungen, Informationen zur Anwendungsnutzung, Diagnosedaten oder technische Gerätedaten für Analyse- oder Profilingzwecke**.
 
 Die Anwendung führt keine Prozesse zur Verhaltensüberwachung des Nutzers durch und erstellt keine kommerziellen oder werblichen Profile.
 
@@ -328,7 +328,7 @@ Die Anwendung führt keine Prozesse zur Verhaltensüberwachung des Nutzers durch
 
 ### 9.1 Anonyme Nutzer
 
-Wenn der Nutzer G-Scanner ohne Authentifizierung nutzt, verbleiben die personenbezogenen Daten und die konfigurierten Präferenzen ausschließlich lokal auf dem Gerät und werden über **SharedPreferences** gespeichert.
+Wenn der Nutzer GlutiEnd ohne Authentifizierung nutzt, verbleiben die personenbezogenen Daten und die konfigurierten Präferenzen ausschließlich lokal auf dem Gerät und werden über **SharedPreferences** gespeichert.
 
 Diese Daten werden gespeichert, bis:
 
@@ -372,7 +372,7 @@ Der Nutzer verfügt über zwei verschiedene Methoden zur Verwaltung der Löschun
 
 ### 10.1 Kontolöschung über die interne Funktion der Anwendung
 
-Wenn der Nutzer die entsprechende interne Funktion zur Kontolöschung verwendet, die in G-Scanner verfügbar ist, wird das zugehörige **Firebase Authentication-Profil** gelöscht.
+Wenn der Nutzer die entsprechende interne Funktion zur Kontolöschung verwendet, die in GlutiEnd verfügbar ist, wird das zugehörige **Firebase Authentication-Profil** gelöscht.
 
 Dieser Vorgang führt zu:
 
@@ -398,7 +398,7 @@ Die Verbindung zwischen diesen Daten und der Identität des Nutzers wird dauerha
 
 Sollte der Nutzer die vollständige und endgültige physische Löschung aller Datensätze verlangen, die seiner Kennung in den Cloud-Systemen zugeordnet sind, muss er eine ausdrückliche Anfrage an den Verantwortlichen richten über:
 
-**[supporto-gscanner@googlegroups.com](mailto:supporto-gscanner@googlegroups.com)**
+**[supporto-glutiend@googlegroups.com](mailto:supporto-glutiend@googlegroups.com)**
 
 Die Anfrage muss **vor der Löschung des Profils über die Anwendung** erfolgen, und zwar unter Verwendung derselben E-Mail-Adresse, die mit dem für den Zugang genutzten Konto verknüpft ist.
 
@@ -434,7 +434,7 @@ Gemäß den Artikeln 15 ff. DSGVO kann die betroffene Person das Recht ausüben 
 
 Zur Ausübung ihrer Rechte kann die betroffene Person den Verantwortlichen kontaktieren unter:
 
-**[supporto-gscanner@googlegroups.com](mailto:supporto-gscanner@googlegroups.com)**
+**[supporto-glutiend@googlegroups.com](mailto:supporto-glutiend@googlegroups.com)**
 
 ---
 
@@ -466,17 +466,17 @@ Der Verantwortliche behält sich das Recht vor, diese Datenschutzerklärung zu �
 
 * Änderungen der Modalitäten bei der Verarbeitung personenbezogener Daten.
 
-Die aktualisierte Version wird innerhalb der Anwendung und/oder über etwaige offizielle Kanäle von G-Scanner unter Angabe des Datums der letzten Aktualisierung zur Verfügung gestellt.
+Die aktualisierte Version wird innerhalb der Anwendung und/oder über etwaige offizielle Kanäle von GlutiEnd unter Angabe des Datums der letzten Aktualisierung zur Verfügung gestellt.
 
 ---
 
 ## 14. Dienstleister und Datenübermittlung
 
-Zur Bereitstellung der von G-Scanner angebotenen Funktionen bedient sich der Verantwortliche technologischer Dienstleister, die personenbezogene Daten ausschließlich im Rahmen des für die Durchführung der angeforderten Dienste erforderlichen Umfangs verarbeiten.
+Zur Bereitstellung der von GlutiEnd angebotenen Funktionen bedient sich der Verantwortliche technologischer Dienstleister, die personenbezogene Daten ausschließlich im Rahmen des für die Durchführung der angeforderten Dienste erforderlichen Umfangs verarbeiten.
 
 ### 14.1 Cloud-Infrastruktur (Google Firebase)
 
-Für Authentifizierungs- und Datenspeicherungsfunktionen verwendet G-Scanner die Plattform **Google Firebase**, bereitgestellt von **Google Ireland Limited**, mit Sitz in Gordon House, Barrow Street, Dublin 4, Irland.
+Für Authentifizierungs- und Datenspeicherungsfunktionen verwendet GlutiEnd die Plattform **Google Firebase**, bereitgestellt von **Google Ireland Limited**, mit Sitz in Gordon House, Barrow Street, Dublin 4, Irland.
 
 Die Anwendung nutzt insbesondere:
 
@@ -490,7 +490,7 @@ Unberührt bleiben etwaige Verarbeitungstätigkeiten, für die Google gemäß de
 
 ### 14.2 Datenlokalisierung und Übermittlung in Drittländer
 
-Die von G-Scanner genutzte **Cloud Firestore**-Datenbank ist in folgender Region konfiguriert:
+Die von GlutiEnd genutzte **Cloud Firestore**-Datenbank ist in folgender Region konfiguriert:
 
 **eur3 – Frankfurt (Deutschland)**
 
@@ -520,7 +520,7 @@ Während des Authentifizierungsvorgangs agieren:
 
 als **unabhängige Verantwortliche**, beschränkt auf die Aktivitäten, die zur Überprüfung der Anmeldedaten, zur Verwaltung der digitalen Identität und zur Bereitstellung des Authentifizierungsdienstes erforderlich sind.
 
-G-Scanner erhält ausschließlich die Daten, die für die Erstellung und Verwaltung des Kontos erforderlich sind, diese können umfassen:
+GlutiEnd erhält ausschließlich die Daten, die für die Erstellung und Verwaltung des Kontos erforderlich sind, diese können umfassen:
 
 * Vorname;
 
@@ -542,7 +542,7 @@ Der Verantwortliche haftet nicht für Verarbeitungen, die von diesen Anbietern e
 
 ## 15. Keine automatisierte Entscheidungsfindung (Art. 22 DSGVO)
 
-G-Scanner verwendet Filter und Informationskriterien, die von der Anwendung konfiguriert werden, um Hinweise zu Lebensmitteln zu geben.
+GlutiEnd verwendet Filter und Informationskriterien, die von der Anwendung konfiguriert werden, um Hinweise zu Lebensmitteln zu geben.
 
 Die von der Anwendung generierten Klassifizierungen, wie beispielsweise **"Verboten"**, **"Erlaubt"**, **"Achtung"** oder gleichwertige Angaben, stellen ausschließlich Unterstützungsinformationen dar, die auf den verfügbaren Daten und den vom Nutzer ausgewählten Einstellungen basieren.
 
@@ -562,5 +562,5 @@ Diese Datenschutzerklärung sowie die Nutzungsbedingungen und alle weiteren rech
 
 E-Mail:
 
-**[supporto-gscanner@googlegroups.com](mailto:supporto-gscanner@googlegroups.com)**
+**[supporto-glutiend@googlegroups.com](mailto:supporto-glutiend@googlegroups.com)**
 ''';

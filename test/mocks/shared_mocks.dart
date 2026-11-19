@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Shared Mocks for Widget & Unit Tests.
+// PROJECT: GlutiEnd — Shared Mocks for Widget & Unit Tests.
 
 // ignore_for_file: subtype_of_sealed_class
 

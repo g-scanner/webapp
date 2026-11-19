@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:gscanner/core/theme/app_theme.dart';
+import 'package:glutiend/core/theme/app_theme.dart';
 
 /// Barra di navigazione inferiore personalizzata per dispositivi mobili.
 class MainCustomBottomNav extends StatelessWidget {

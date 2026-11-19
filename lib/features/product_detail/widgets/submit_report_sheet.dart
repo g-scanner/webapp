@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -187,7 +187,7 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // --- Selettore Motivo (Stile Pillola G-Scanner) ---
+                    // --- Selettore Motivo (Stile Pillola GlutiEnd) ---
                     Text(
                       "product.reportSheet.reasonLabel".tr(),
                       style: TextStyle(

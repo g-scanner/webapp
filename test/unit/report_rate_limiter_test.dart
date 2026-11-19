@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gscanner/services/report_rate_limiter.dart';
+import 'package:glutiend/services/report_rate_limiter.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

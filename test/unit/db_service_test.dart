@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Pure Unit Tests: DbService
+// PROJECT: GlutiEnd — Pure Unit Tests: DbService
 
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,12 +9,12 @@ import 'package:cloud_firestore/cloud_firestore.dart'
     show SetOptions, FieldValue;
 import 'package:http/http.dart' as http;
 
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/services/db_service.dart';
-import 'package:gscanner/services/analyzer_service.dart';
-import 'package:gscanner/services/database/app_database.dart';
-import 'package:gscanner/services/database/daos/scan_history_dao.dart';
-import 'package:gscanner/services/database/daos/product_report_dao.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/services/db_service.dart';
+import 'package:glutiend/services/analyzer_service.dart';
+import 'package:glutiend/services/database/app_database.dart';
+import 'package:glutiend/services/database/daos/scan_history_dao.dart';
+import 'package:glutiend/services/database/daos/product_report_dao.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {

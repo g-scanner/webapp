@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:gscanner/core/theme/app_theme.dart';
+import 'package:glutiend/core/theme/app_theme.dart';
 
 /// Layout desktop per schermi ampi (>960px) con NavigationRail laterale.
 class MainDesktopNavigationRail extends StatelessWidget {

@@ -1,8 +1,9 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 const OFF_BASE_URL = 'https://world.openfoodfacts.org';
-const GITHUB_OFFLINE_BASE_URL = 'https://github.com/g-scanner/webapp/releases/download/offline-data';
-const USER_AGENT = 'G-Scanner/1.0 (https://g-scanner.github.io)';
+const GITHUB_OFFLINE_BASE_URL = 'https://github.com/glutiend/webapp/releases/download/offline-data';
+const USER_AGENT = 'GlutiEnd/1.0 (https://glutiend.github.io; supporto-glutiend@googlegroups.com)';
 
 function buildCorsHeaders(origin = '*') {
   return {

@@ -7,12 +7,56 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:1026607445667:android:855a4514bc2269a78e3116",
+        "android_client_info": {
+          "package_name": "it.emanueleciotola.glutiend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1026607445667-17rnkrlq2rb5csff47m8832htnco8964.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzVVkQ02iXJI_sQiBq7oN6t8vFHbZeZDw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1026607445667-17rnkrlq2rb5csff47m8832htnco8964.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1026607445667-9n4il00a2cmtr36cb2mvhrds0moc6qnj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "it.emanueleciotola.gscanner"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:1026607445667:android:c10ca7ddfb5fb9558e3116",
         "android_client_info": {
           "package_name": "it.emanueleciotola.gscanner"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "1026607445667-k6gbcfhlo4euu0kflp4k6heam0hftva9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "it.emanueleciotola.gscanner",
+            "certificate_hash": "27c9a56e4e29e7293474ea0117cc5d22d783967e"
+          }
+        },
         {
           "client_id": "1026607445667-tehmncv5mu5q4frufaako7tdmijl0107.apps.googleusercontent.com",
           "client_type": 1,

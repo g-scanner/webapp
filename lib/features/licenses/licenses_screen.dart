@@ -122,7 +122,7 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                     recognizer: TapGestureRecognizer()
                       ..onTap = () async {
                         final url = Uri.parse(
-                          'https://github.com/tuo-username/g-scanner/blob/main/LICENSE',
+                          'https://github.com/glutiend/webapp/blob/main/LICENSE.md',
                         );
                         if (await canLaunchUrl(url)) {
                           await launchUrl(

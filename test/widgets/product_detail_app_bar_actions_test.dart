@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Widget Tests: ProductDetailAppBarActions
+// PROJECT: GlutiEnd — Widget Tests: ProductDetailAppBarActions
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-import 'package:gscanner/features/product_detail/widgets/product_detail_app_bar_actions.dart';
+import 'package:glutiend/features/product_detail/widgets/product_detail_app_bar_actions.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {

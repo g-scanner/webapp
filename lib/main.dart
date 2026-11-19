@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -151,7 +151,7 @@ class _MyAppState extends State<MyApp> {
       valueListenable: themeNotifier,
       builder: (context, currentThemeMode, _) {
         return MaterialApp(
-          title: 'G-Scanner',
+          title: 'GlutiEnd',
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: currentThemeMode,

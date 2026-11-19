@@ -1,5 +1,5 @@
 ﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 // This is a basic Flutter widget test.
 
 // flutter test test/widgets/
@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:gscanner/features/auth/auth_screen.dart';
+import 'package:glutiend/features/auth/auth_screen.dart';
 import 'mocks/shared_mocks.dart';
 
 void main() {
@@ -21,7 +21,7 @@ void main() {
 
   setUpAll(() async {
     setupMocktailFallbacks();
-    SharedPreferences.setMockInitialValues({'gscanner_terms_accepted': true});
+    SharedPreferences.setMockInitialValues({'glutiend_terms_accepted': true});
     await EasyLocalization.ensureInitialized();
   });
 

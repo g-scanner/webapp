@@ -1,5 +1,5 @@
 ﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Widget Tests: CustomLicensesPage
+// PROJECT: GlutiEnd — Widget Tests: CustomLicensesPage
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-import 'package:gscanner/features/licenses/licenses_screen.dart';
+import 'package:glutiend/features/licenses/licenses_screen.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Pure Unit Tests: Off Network Resilience & Anti-Ghost Protection
+// PROJECT: GlutiEnd — Pure Unit Tests: Off Network Resilience & Anti-Ghost Protection
 
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,12 +7,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/core/core.dart';
-import 'package:gscanner/services/database/off_ingestion_service.dart';
-import 'package:gscanner/services/database/offline_db_service.dart';
-import 'package:gscanner/services/database/local_cache_service.dart';
-import 'package:gscanner/services/database/history_db_service.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/core/core.dart';
+import 'package:glutiend/services/database/off_ingestion_service.dart';
+import 'package:glutiend/services/database/offline_db_service.dart';
+import 'package:glutiend/services/database/local_cache_service.dart';
+import 'package:glutiend/services/database/history_db_service.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {
@@ -989,7 +989,7 @@ void main() {
     late String dbPath;
 
     setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp('gscanner_ingestion_offline_');
+      tempDir = await Directory.systemTemp.createTemp('glutiend_ingestion_offline_');
       dbPath = '${tempDir.path}/offline_products.db';
       OfflineDbService.setMockDatabasePath(dbPath);
     });

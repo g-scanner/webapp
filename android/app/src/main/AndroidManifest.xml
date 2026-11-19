@@ -14,7 +14,7 @@
     </queries>
 
     <application
-        android:label="G-Scanner"
+        android:label="GlutiEnd"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

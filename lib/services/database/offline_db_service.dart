@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'dart:io' show Platform, Directory, File;
 import 'package:flutter/foundation.dart';
@@ -301,7 +301,7 @@ class OfflineDbService {
         if (await databaseFactory.databaseExists(path)) {
           await databaseFactory.deleteDatabase(path);
         }
-        const tempWebPatch = 'gscanner_temp_patch.db';
+        const tempWebPatch = 'glutiend_temp_patch.db';
         if (await databaseFactory.databaseExists(tempWebPatch)) {
           await databaseFactory.deleteDatabase(tempWebPatch);
         }

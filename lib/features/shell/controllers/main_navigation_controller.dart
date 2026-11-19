@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
-import 'package:gscanner/models/models.dart';
+import 'package:glutiend/models/models.dart';
 
 /// Controller reattivo per la gestione dello stato di navigazione della shell.
 class MainNavigationController extends ChangeNotifier {

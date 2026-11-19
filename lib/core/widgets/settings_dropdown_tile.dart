@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
@@ -14,7 +14,7 @@ class SettingsDropdownOption<T> {
 }
 
 /// Riga standard delle impostazioni con titolo, sottotitolo e selettore a pillola popup,
-/// conforme al design system di G-Scanner.
+/// conforme al design system di GlutiEnd.
 class SettingsDropdownTile<T> extends StatelessWidget {
   final String title;
   final String subtitle;

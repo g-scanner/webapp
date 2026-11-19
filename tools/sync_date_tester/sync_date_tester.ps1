@@ -7,7 +7,7 @@
     [string]$Serial = $null
 )
 
-$PackageName = "it.emanueleciotola.gscanner"
+$PackageName = "it.emanueleciotola.glutiend"
 $SettingsKey = "flutter.celiac_settings"
 $LastSyncKey = "flutter.celiac_app_last_sync_time"
 

@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'dart:async';
 import 'package:flutter/foundation.dart'
@@ -9,25 +9,25 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/services/analyzer_service.dart';
-import 'package:gscanner/services/db_service.dart';
-import 'package:gscanner/services/database/background_sync_manager.dart';
-import 'package:gscanner/core/core.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/services/analyzer_service.dart';
+import 'package:glutiend/services/db_service.dart';
+import 'package:glutiend/services/database/background_sync_manager.dart';
+import 'package:glutiend/core/core.dart';
 
-import 'package:gscanner/features/scanner/camera_module.dart';
-import 'package:gscanner/features/history/history_list.dart';
-import 'package:gscanner/features/reports/reports_list.dart';
-import 'package:gscanner/features/settings/settings_panel.dart';
-import 'package:gscanner/features/product_detail/product_detail_card.dart';
-import 'package:gscanner/features/reports/report_detail_card.dart';
+import 'package:glutiend/features/scanner/camera_module.dart';
+import 'package:glutiend/features/history/history_list.dart';
+import 'package:glutiend/features/reports/reports_list.dart';
+import 'package:glutiend/features/settings/settings_panel.dart';
+import 'package:glutiend/features/product_detail/product_detail_card.dart';
+import 'package:glutiend/features/reports/report_detail_card.dart';
 
 import 'controllers/main_navigation_controller.dart';
 import 'widgets/main_custom_bottom_nav.dart';
 import 'widgets/main_desktop_navigation_rail.dart';
 import 'widgets/main_indexed_stack.dart';
 
-/// Schermata principale (Shell) dell'applicazione G-Scanner.
+/// Schermata principale (Shell) dell'applicazione GlutiEnd.
 /// Coordina la navigazione a tab, la sincronizzazione dei dati e il routing ai dettagli.
 class MainScreen extends StatefulWidget {
   final FirebaseAuth? auth;

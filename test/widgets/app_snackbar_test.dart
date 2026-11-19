@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Widget Tests: AppSnackBar
+// PROJECT: GlutiEnd — Widget Tests: AppSnackBar
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/core/widgets/app_snackbar.dart';
+import 'package:glutiend/core/widgets/app_snackbar.dart';
 
 void main() {
   Widget buildTestScaffold({required VoidCallback onTrigger}) {

@@ -1,5 +1,6 @@
 {
-    // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+    // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+    // PROJECT: GlutiEnd — See LICENSE file in root for terms.
     // Usare IntelliSense per informazioni sui possibili attributi.
     // Al passaggio del mouse vengono visualizzate le descrizioni degli attributi esistenti.
     // Per altre informazioni, visitare: https://go.microsoft.com/fwlink/?linkid=830387
@@ -15,7 +16,7 @@
             "args": [
                 "--web-port",
                 "54162",
-                "--dart-define=OFF_PROXY_BASE_URL=https://gscanner-off-proxy.g-scanner.workers.dev"
+                "--dart-define=OFF_PROXY_BASE_URL=https://glutiend-off-proxy.glutiend.workers.dev"
             ],
             "preLaunchTask": "flutter build web (OFF proxy)"
         }

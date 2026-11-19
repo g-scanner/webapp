@@ -1,5 +1,5 @@
 ﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 /// Eccezione sollevata quando Open Food Facts o la connessione di rete falliscono.
 class OffNetworkException implements Exception {

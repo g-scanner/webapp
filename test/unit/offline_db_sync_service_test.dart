@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Unit Tests: OfflineDbSyncService
+// PROJECT: GlutiEnd — Unit Tests: OfflineDbSyncService
 
 import 'dart:convert';
 import 'dart:io';
@@ -11,10 +11,10 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/core/network/connectivity_helper.dart';
-import 'package:gscanner/services/database/offline_db_sync_service.dart';
-import 'package:gscanner/services/database/offline_db_service.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/core/network/connectivity_helper.dart';
+import 'package:glutiend/services/database/offline_db_sync_service.dart';
+import 'package:glutiend/services/database/offline_db_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +29,7 @@ void main() {
     OfflineDbSyncService.resetState();
     OfflineDbService.mockIsDatabaseInstalled = null;
     OfflineDbService.mockInstalledTier = null;
-    tempDir = await Directory.systemTemp.createTemp('gscanner_sync_test_');
+    tempDir = await Directory.systemTemp.createTemp('glutiend_sync_test_');
     dbPath = p.join(tempDir.path, 'offline_products.db');
     OfflineDbService.setMockDatabasePath(dbPath);
   });

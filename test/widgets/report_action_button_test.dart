@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/features/product_detail/widgets/report_action_button.dart';
+import 'package:glutiend/features/product_detail/widgets/report_action_button.dart';
 
 void main() {
   Widget buildTestableWidget({

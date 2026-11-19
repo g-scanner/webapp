@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Widget Tests: StaleDataWarningCard
+// PROJECT: GlutiEnd — Widget Tests: StaleDataWarningCard
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:gscanner/features/product_detail/widgets/stale_data_warning_card.dart';
-import 'package:gscanner/features/product_detail/widgets/section_card.dart';
+import 'package:glutiend/features/product_detail/widgets/stale_data_warning_card.dart';
+import 'package:glutiend/features/product_detail/widgets/section_card.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {

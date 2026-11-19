@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
@@ -15,7 +15,7 @@ class AppDatabase {
 
   static final AppDatabase instance = AppDatabase._internal();
 
-  static const String databaseName = 'gscanner.db';
+  static const String databaseName = 'glutiend.db';
   static const int databaseVersion = 1;
 
   Database? _db;
@@ -53,7 +53,7 @@ class AppDatabase {
         : (Platform.environment.containsKey('FLUTTER_TEST')
             ? databaseFactoryFfiNoIsolate
             : databaseFactoryFfi);
-    final path = inMemory ? inMemoryDatabasePath : 'test_gscanner.db';
+    final path = inMemory ? inMemoryDatabasePath : 'test_glutiend.db';
     if (!inMemory) {
       await dbFactory.deleteDatabase(path);
     }

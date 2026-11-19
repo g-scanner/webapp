@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-G-Scanner Offline Database Generator (DuckDB + SQLite)
+GlutiEnd Offline Database Generator (DuckDB + SQLite)
 Conformità ODbL 1.0 (Open Food Facts Database)
 
 Estrae i dump compressi di Open Food Facts (JSONL.GZ) in modalità streaming
@@ -124,7 +124,7 @@ def export_package(
     }
 
 def main():
-    parser = argparse.ArgumentParser(description="Generatore DB Offline G-Scanner (4 Macro-Pacchetti)")
+    parser = argparse.ArgumentParser(description="Generatore DB Offline GlutiEnd (4 Macro-Pacchetti)")
     parser.add_argument("--input", required=True, help="Percorso del dump OFF (.jsonl o .jsonl.gz)")
     parser.add_argument("--outdir", default="./dist", help="Directory di output per gli archivi")
     parser.add_argument("--delete-input", action="store_true", help="Elimina il file dump sorgente subito dopo l'ingestione DuckDB per liberare spazio disco")

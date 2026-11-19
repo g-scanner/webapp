@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 const String tosIt = r'''
-## Termini e Condizioni d'Uso (ToS) di G-Scanner
+## Termini e Condizioni d'Uso (ToS) di GlutiEnd
 
 **Versione:** 1.0
 **Data di entrata in vigore:** 9 ottobre 2026
@@ -10,7 +10,7 @@ const String tosIt = r'''
 
 ---
 
-Il presente documento disciplina l'accesso e l'utilizzo dell'applicazione **G-Scanner** (di seguito, l’“App”).
+Il presente documento disciplina l'accesso e l'utilizzo dell'applicazione **GlutiEnd** (di seguito, l’“App”).
 
 Prima di utilizzare l'App, l'Utente è tenuto a leggere attentamente i presenti **Termini e Condizioni d'Uso** (di seguito, i “Termini”).
 
@@ -22,14 +22,14 @@ Qualora l'Utente non intenda accettare integralmente i presenti Termini, è tenu
 
 # 1. Identità dello Sviluppatore e Natura del Progetto
 
-L'App **G-Scanner** è sviluppata e gestita da:
+L'App **GlutiEnd** è sviluppata e gestita da:
 
 **Emanuele Ciotola**
 
 Contatto per assistenza, richieste o comunicazioni:
-**supporto-gscanner@googlegroups.com**
+**supporto-glutiend@googlegroups.com**
 
-G-Scanner è un progetto software:
+GlutiEnd è un progetto software:
 
 * **gratuito**;
 * **amatoriale**;
@@ -76,7 +76,7 @@ Il mancato rispetto anche di una sola disposizione dei presenti Termini può com
 
 ## 4.1 Assenza di finalità mediche
 
-**G-Scanner non è un dispositivo medico, non costituisce uno strumento diagnostico e non fornisce consulenze mediche, nutrizionali o sanitarie.**
+**GlutiEnd non è un dispositivo medico, non costituisce uno strumento diagnostico e non fornisce consulenze mediche, nutrizionali o sanitarie.**
 
 L'App non effettua diagnosi, non certifica la sicurezza degli alimenti e non sostituisce il parere di medici, nutrizionisti o altri professionisti qualificati.
 
@@ -175,9 +175,9 @@ Lo Sviluppatore:
 
 L'Utente riconosce che eventuali inesattezze, omissioni o dati obsoleti presenti nel database di Open Food Facts non possono essere imputati allo Sviluppatore.
 
-L'Utente riconosce inoltre che **Open Food Facts opera come database collaborativo indipendente e che G-Scanner si limita a utilizzare tali informazioni senza certificarne o modificarne necessariamente il contenuto originale.**
+L'Utente riconosce inoltre che **Open Food Facts opera come database collaborativo indipendente e che GlutiEnd si limita a utilizzare tali informazioni senza certificarne o modificarne necessariamente il contenuto originale.**
 
-In particolare, G-Scanner non certifica la conformità normativa dei prodotti alimentari, la sicurezza degli stessi o la correttezza delle informazioni presenti nelle etichette dei produttori.
+In particolare, GlutiEnd non certifica la conformità normativa dei prodotti alimentari, la sicurezza degli stessi o la correttezza delle informazioni presenti nelle etichette dei produttori.
 
 I dati eventualmente memorizzati localmente per consentire il funzionamento offline possono inoltre essere soggetti a ritardi nell'aggiornamento rispetto ai dati disponibili online.
 
@@ -266,7 +266,7 @@ La cancellazione dell'account può comportare la perdita definitiva delle funzio
 
 ## 7.3 Segnalazioni degli Utenti
 
-Gli utenti autenticati possono contribuire al miglioramento del servizio inviando segnalazioni relative ai prodotti presenti nel database di G-Scanner.
+Gli utenti autenticati possono contribuire al miglioramento del servizio inviando segnalazioni relative ai prodotti presenti nel database di GlutiEnd.
 
 Le segnalazioni possono consistere esclusivamente in:
 
@@ -295,7 +295,7 @@ L'Utente si impegna a inviare esclusivamente informazioni:
 
 ## 7.4 Licenza sui contenuti inviati dagli Utenti
 
-Con l'invio di segnalazioni tramite l'App, l'Utente concede allo Sviluppatore una licenza gratuita, non esclusiva, valida per la durata necessaria alla gestione, manutenzione e miglioramento dell'Applicazione e del database di G-Scanner, e utilizzabile nei limiti consentiti dalla legge, sui contenuti testuali e informativi forniti.
+Con l'invio di segnalazioni tramite l'App, l'Utente concede allo Sviluppatore una licenza gratuita, non esclusiva, valida per la durata necessaria alla gestione, manutenzione e miglioramento dell'Applicazione e del database di GlutiEnd, e utilizzabile nei limiti consentiti dalla legge, sui contenuti testuali e informativi forniti.
 
 Tale licenza è limitata alle finalità sopra indicate e non potrà essere utilizzata per scopi diversi.
 
@@ -311,7 +311,7 @@ La presente licenza non comporta:
 
 * trasferimento della proprietà dei contenuti;
 * rinuncia ai diritti eventualmente spettanti all'Utente;
-* autorizzazione a utilizzare tali contenuti per finalità estranee alla gestione e al miglioramento di G-Scanner.
+* autorizzazione a utilizzare tali contenuti per finalità estranee alla gestione e al miglioramento di GlutiEnd.
 
 ## 7.5 Diritto di sospensione e rimozione account
 
@@ -337,7 +337,7 @@ Tale decisione potrà essere adottata anche senza preavviso nei casi in cui ciò
 
 # 8. Proprietà Intellettuale dell'Applicazione
 
-Tutti i diritti di proprietà intellettuale relativi a G-Scanner, inclusi, a titolo esemplificativo:
+Tutti i diritti di proprietà intellettuale relativi a GlutiEnd, inclusi, a titolo esemplificativo:
 
 * codice sorgente;
 * codice compilato;
@@ -416,7 +416,7 @@ Lo Sviluppatore concede all'Utente una licenza:
 * revocabile;
 * non trasferibile;
 
-per utilizzare G-Scanner esclusivamente per finalità personali e lecite.
+per utilizzare GlutiEnd esclusivamente per finalità personali e lecite.
 
 La licenza consente esclusivamente:
 
@@ -440,7 +440,7 @@ Ogni diritto non espressamente concesso rimane riservato allo Sviluppatore.
 
 ## 11.1 Modifiche ed evoluzione del servizio
 
-L'Utente riconosce che G-Scanner è un software in continua evoluzione.
+L'Utente riconosce che GlutiEnd è un software in continua evoluzione.
 
 Lo Sviluppatore può modificare, aggiornare, migliorare, sospendere o interrompere funzionalità dell'App in qualsiasi momento, anche senza preavviso, quando ciò sia necessario per motivi tecnici, organizzativi, di sicurezza o sviluppo.
 
@@ -464,7 +464,7 @@ Tali modifiche non attribuiscono automaticamente all'Utente diritto a compensazi
 
 ## 11.2 Modalità offline e database locali
 
-G-Scanner può offrire una modalità di utilizzo offline che consente all'Utente di utilizzare determinate funzionalità dell'Applicazione senza una connessione Internet attiva.
+GlutiEnd può offrire una modalità di utilizzo offline che consente all'Utente di utilizzare determinate funzionalità dell'Applicazione senza una connessione Internet attiva.
 
 Per consentire l'utilizzo offline, l'Applicazione può mettere a disposizione dell'Utente differenti varianti di un database locale, caratterizzate da dimensioni e quantità di dati differenti. L'Utente può scegliere e scaricare la variante più adatta alle proprie esigenze e allo spazio di archiviazione disponibile sul proprio dispositivo.
 
@@ -476,7 +476,7 @@ I dati presenti nel database locale possono inoltre risultare meno aggiornati ri
 
 # 12. Uso Corretto dell'Applicazione, Sicurezza e Divieto di Abuso Tecnico
 
-L'Utente si impegna a utilizzare G-Scanner in modo corretto, conforme alla legge, ai presenti Termini e ai principi di buona fede.
+L'Utente si impegna a utilizzare GlutiEnd in modo corretto, conforme alla legge, ai presenti Termini e ai principi di buona fede.
 
 L'Utente è tenuto a non utilizzare l'App in modo tale da compromettere:
 
@@ -548,7 +548,7 @@ Nei limiti massimi consentiti dalla normativa applicabile e fatti salvi i diritt
 
 # 15. Limitazione Generale di Responsabilità
 
-Nei limiti massimi consentiti dalla normativa applicabile e fatti salvi i diritti inderogabili dell'Utente quale consumatore, G-Scanner viene fornita:
+Nei limiti massimi consentiti dalla normativa applicabile e fatti salvi i diritti inderogabili dell'Utente quale consumatore, GlutiEnd viene fornita:
 **"così com'è" ("AS IS")**
 e
 **"come disponibile" ("AS AVAILABLE")**.
@@ -648,10 +648,10 @@ Per gli Utenti che non rivestano tale qualifica, eventuali controversie derivant
 
 # Contatti
 
-**Applicazione:** G-Scanner
+**Applicazione:** GlutiEnd
 
 **Sviluppatore:** Emanuele Ciotola
 
 **E-mail di supporto:**
-**supporto-gscanner@googlegroups.com**
+**supporto-glutiend@googlegroups.com**
 ''';

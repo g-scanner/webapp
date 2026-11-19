@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Widget & Business Logic Tests: AuthScreen
+// PROJECT: GlutiEnd — Widget & Business Logic Tests: AuthScreen
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,9 +9,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:gscanner/features/auth/auth_screen.dart';
-import 'package:gscanner/core/widgets/widgets.dart';
-import 'package:gscanner/services/db_service.dart';
+import 'package:glutiend/features/auth/auth_screen.dart';
+import 'package:glutiend/core/widgets/widgets.dart';
+import 'package:glutiend/services/db_service.dart';
 import '../mocks/shared_mocks.dart';
 
 class MockAccessToken extends Mock implements AccessToken {}
@@ -35,7 +35,7 @@ void main() {
   });
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({'gscanner_terms_accepted': true});
+    SharedPreferences.setMockInitialValues({'glutiend_terms_accepted': true});
 
     mockAuth = MockFirebaseAuth();
     mockGoogleSignIn = MockGoogleSignIn();
@@ -76,7 +76,7 @@ void main() {
         await pumpAuthScreen(tester);
 
         // Verifica Branding
-        expect(find.text('G-Scanner'), findsOneWidget);
+        expect(find.text('GlutiEnd'), findsOneWidget);
         expect(find.byType(Image), findsWidgets);
 
         // Verifica Bottoni Social e Anonimo
@@ -91,7 +91,7 @@ void main() {
       'Legal consent dialog flow: shown when terms not accepted, enables start button on checkbox tap, saves consent',
       (WidgetTester tester) async {
         SharedPreferences.setMockInitialValues({
-          'gscanner_terms_accepted': false,
+          'glutiend_terms_accepted': false,
         });
 
         await pumpAuthScreen(tester);

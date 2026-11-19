@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Pure Unit Tests: OffProductParser
+// PROJECT: GlutiEnd — Pure Unit Tests: OffProductParser
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/services/database/off_product_parser.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/services/database/off_product_parser.dart';
 
 void main() {
   final testSettings = UserSettings(

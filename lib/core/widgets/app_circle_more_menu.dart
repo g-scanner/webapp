@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../theme/app_theme.dart';
 
 /// Pulsante circolare 40dp con tre puntini verticali per menu opzioni,
-/// coordinato con il design system di G-Scanner.
+/// coordinato con il design system di GlutiEnd.
 class AppCircleMoreMenu<T> extends StatelessWidget {
   final PopupMenuItemBuilder<T> itemBuilder;
   final PopupMenuItemSelected<T>? onSelected;

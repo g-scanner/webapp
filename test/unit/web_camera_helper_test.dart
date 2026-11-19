@@ -1,8 +1,8 @@
 ﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Pure Unit Tests: Web Camera Helper Stubs & Suspension
+// PROJECT: GlutiEnd — Pure Unit Tests: Web Camera Helper Stubs & Suspension
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/core/utils/web_camera_helper.dart';
+import 'package:glutiend/core/utils/web_camera_helper.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

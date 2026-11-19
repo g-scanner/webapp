@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -31,7 +31,7 @@ class AuthBrandingHeader extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          "G-Scanner",
+          "GlutiEnd",
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,

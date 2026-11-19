@@ -25,7 +25,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Web App
-        run: flutter build web --release --base-href "/webapp/" --dart-define=OFF_PROXY_BASE_URL=https://gscanner-off-proxy.g-scanner.workers.dev
+        run: flutter build web --release --base-href "/webapp/" --dart-define=OFF_PROXY_BASE_URL=https://glutiend-off-proxy.glutiend.workers.dev
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

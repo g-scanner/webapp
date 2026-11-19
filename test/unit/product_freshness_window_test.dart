@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Pure Unit Tests: 3-Window Freshness Architecture (GOAT)
+// PROJECT: GlutiEnd — Pure Unit Tests: 3-Window Freshness Architecture (GOAT)
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/models/models.dart';
+import 'package:glutiend/models/models.dart';
 
 void main() {
   group('ProductFreshnessWindow – Level A: Super Fresco (0 - 7 days)', () {

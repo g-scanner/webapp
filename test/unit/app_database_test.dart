@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Dedicated Unit Tests: AppDatabase & DAOs
+// PROJECT: GlutiEnd — Dedicated Unit Tests: AppDatabase & DAOs
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/services/database/app_database.dart';
-import 'package:gscanner/services/database/daos/product_dao.dart';
-import 'package:gscanner/services/database/daos/scan_history_dao.dart';
-import 'package:gscanner/services/database/daos/product_report_dao.dart';
-import 'package:gscanner/services/database/daos/sync_metadata_dao.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/services/database/app_database.dart';
+import 'package:glutiend/services/database/daos/product_dao.dart';
+import 'package:glutiend/services/database/daos/scan_history_dao.dart';
+import 'package:glutiend/services/database/daos/product_report_dao.dart';
+import 'package:glutiend/services/database/daos/sync_metadata_dao.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

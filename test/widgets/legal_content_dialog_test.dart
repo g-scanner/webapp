@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Widget Tests: Legal Content Dialog & Markdown Viewer
+// PROJECT: GlutiEnd — Widget Tests: Legal Content Dialog & Markdown Viewer
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gscanner/features/settings/dialogs/legal_content_dialog.dart';
-import 'package:gscanner/features/settings/legal/legal_texts.dart';
+import 'package:glutiend/features/settings/dialogs/legal_content_dialog.dart';
+import 'package:glutiend/features/settings/legal/legal_texts.dart';
 import '../mocks/shared_mocks.dart';
 
 void main() {

@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Widget Tests: MyApp & MainScreen Orchestrators
+// PROJECT: GlutiEnd — Widget Tests: MyApp & MainScreen Orchestrators
 
 // ignore_for_file: subtype_of_sealed_class
 
@@ -12,20 +12,20 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:gscanner/main.dart';
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/services/db_service.dart';
-import 'package:gscanner/core/theme/theme_notifier.dart';
-import 'package:gscanner/features/auth/auth_screen.dart';
-import 'package:gscanner/features/scanner/camera_module.dart';
-import 'package:gscanner/features/settings/settings_panel.dart';
-import 'package:gscanner/features/product_detail/product_detail_card.dart';
-import 'package:gscanner/features/sync/sync_data_screen.dart';
-import 'package:gscanner/features/history/history_list.dart';
-import 'package:gscanner/services/database/app_database.dart';
-import 'package:gscanner/services/database/daos/scan_history_dao.dart';
-import 'package:gscanner/services/database/daos/product_report_dao.dart';
-import 'package:gscanner/core/network/connectivity_helper.dart';
+import 'package:glutiend/main.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/services/db_service.dart';
+import 'package:glutiend/core/theme/theme_notifier.dart';
+import 'package:glutiend/features/auth/auth_screen.dart';
+import 'package:glutiend/features/scanner/camera_module.dart';
+import 'package:glutiend/features/settings/settings_panel.dart';
+import 'package:glutiend/features/product_detail/product_detail_card.dart';
+import 'package:glutiend/features/sync/sync_data_screen.dart';
+import 'package:glutiend/features/history/history_list.dart';
+import 'package:glutiend/services/database/app_database.dart';
+import 'package:glutiend/services/database/daos/scan_history_dao.dart';
+import 'package:glutiend/services/database/daos/product_report_dao.dart';
+import 'package:glutiend/core/network/connectivity_helper.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

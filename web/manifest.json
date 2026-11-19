@@ -1,9 +1,9 @@
 {
-    "//": "Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved. PROJECT: G-Scanner — See LICENSE file in root for terms.",
+    "//": "Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved. PROJECT: GlutiEnd — See LICENSE file in root for terms.",
     "id": "/webapp/",
-    "name": "G-Scanner | Food Scanner",
-    "short_name": "G-Scanner",
-    "description": "Scan food barcodes with G-Scanner. Instantly discover gluten, suspicious additives, or lactose. Free and ad-free!",
+    "name": "GlutiEnd | Food Scanner",
+    "short_name": "GlutiEnd",
+    "description": "Scan food barcodes with GlutiEnd. Instantly discover gluten, suspicious additives, or lactose. Free and ad-free!",
     "lang": "en",
     "dir": "ltr",
     "start_url": "/webapp/",

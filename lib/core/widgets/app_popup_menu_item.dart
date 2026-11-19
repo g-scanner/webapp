@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Menu item personalizzato per PopupMenuButton progettato per il design system di G-Scanner:
+/// Menu item personalizzato per PopupMenuButton progettato per il design system di GlutiEnd:
 /// - Rispetta fedelmente il bordo arrotondato dell'elemento (default 12dp) durante hover, click e pressione prolungata.
 /// - Elimina completamente i rettangoli neri squadrati nativi di PopupMenuItem che sbordavano fuori dagli angoli.
 /// - Confinamento del margine esterno (default 8dp orizzontale, 2dp verticale) in modo che l'effetto Ink

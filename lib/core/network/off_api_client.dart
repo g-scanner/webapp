@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:http/http.dart' as http;
 
 class OffApiClient {
   static const String _userAgent =
-      'G-Scanner/1.0 (https://g-scanner.github.io)';
+      'GlutiEnd/1.0 (https://glutiend.github.io; supporto-glutiend@googlegroups.com)';
 
   static const String _webProxyBaseUrl = String.fromEnvironment(
     'OFF_PROXY_BASE_URL',

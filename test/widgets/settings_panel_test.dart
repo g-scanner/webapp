@@ -1,20 +1,20 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Widget Tests: SettingsPanel
+// PROJECT: GlutiEnd — Widget Tests: SettingsPanel
 
 // ignore_for_file: subtype_of_sealed_class
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gscanner/core/network/connectivity_helper.dart';
+import 'package:glutiend/core/network/connectivity_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:gscanner/models/models.dart';
-import 'package:gscanner/services/db_service.dart';
-import 'package:gscanner/features/settings/settings_panel.dart';
-import 'package:gscanner/features/licenses/licenses_screen.dart';
+import 'package:glutiend/models/models.dart';
+import 'package:glutiend/services/db_service.dart';
+import 'package:glutiend/features/settings/settings_panel.dart';
+import 'package:glutiend/features/licenses/licenses_screen.dart';
 import '../mocks/shared_mocks.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 Copyright (c) 2026 Emanuele Ciotola. Tutti i diritti riservati / All Rights Reserved.
 
-PROGETTO: G-Scanner
+PROGETTO: GlutiEnd
 
 Questo codice sorgente è reso pubblicamente visibile ("Source-Available") ESCLUSIVAMENTE a scopo di trasparenza, verifica tecnica e portfolio personale. 
 
@@ -15,6 +15,6 @@ SALVO ESPLICITA AUTORIZZAZIONE SCRITTA DELL'AUTORE, È SEVERAMENTE VIETATO:
 
 Tutti i diritti di proprietà intellettuale, inclusi codice, algoritmi, logiche interne e design, appartengono esclusivamente a Emanuele Ciotola.
 
-L'accesso a questa repository implica l'accettazione integrale dei Termini e Condizioni d'Uso (ToS) ufficiali del progetto G-Scanner.
+L'accesso a questa repository implica l'accettazione integrale dei Termini e Condizioni d'Uso (ToS) ufficiali del progetto GlutiEnd.
 
-Per richieste di autorizzazione, contattare: supporto-gscanner@googlegroups.com
+Per richieste di autorizzazione, contattare: supporto-glutiend@googlegroups.com

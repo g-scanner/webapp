@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-# PROJECT: G-Scanner — See LICENSE file in root for terms.
+# PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 """
-G-Scanner Sync Date Tester (ADB Tool)
+GlutiEnd Sync Date Tester (ADB Tool)
 
 Permette di modificare a runtime o a freddo:
 1. La data dell'ultimo sync del Database Offline (offlineDbLastSyncedAt in celiac_settings)
@@ -27,7 +27,7 @@ import subprocess
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
-PACKAGE_NAME = "it.emanueleciotola.gscanner"
+PACKAGE_NAME = "it.emanueleciotola.glutiend"
 SETTINGS_KEY = "flutter.celiac_settings"
 LAST_SYNC_KEY = "flutter.celiac_app_last_sync_time"
 
@@ -302,7 +302,7 @@ def parse_day_arg(val):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="G-Scanner Tool: Modifica a runtime/a freddo le date di sincronizzazione in SharedPreferences via ADB."
+        description="GlutiEnd Tool: Modifica a runtime/a freddo le date di sincronizzazione in SharedPreferences via ADB."
     )
     parser.add_argument("-s", "--serial", help="Serial del device ADB da usare.")
     parser.add_argument("--offline-db", help="Imposta offlineDbLastSyncedAt: -10, -40, now, null, o numero di giorni fa.")

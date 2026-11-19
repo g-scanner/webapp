@@ -1,6 +1,7 @@
-# Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.\nPROJECT: G-Scanner — See LICENSE file in root for terms.
+# Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+# PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
-name = "gscanner-off-proxy"
+name = "glutiend-off-proxy"
 main = "worker.js"
 compatibility_date = "2026-08-05"
 

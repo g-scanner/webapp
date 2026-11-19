@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 /// Pulsante riutilizzabile per azioni distruttive secondarie / tonali,
-/// coordinato con il design system di G-Scanner per operazioni critiche
+/// coordinato con il design system di GlutiEnd per operazioni critiche
 /// (elimina account, disinstalla pacchetto offline, cancella cronologia).
 class AppDestructiveActionButton extends StatelessWidget {
   final VoidCallback? onPressed;

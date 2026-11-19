@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — See LICENSE file in root for terms.
+// PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'dart:async';
 import 'dart:convert';
@@ -28,11 +28,11 @@ enum OfflineSyncAction {
 /// dei database offline tramite GitHub Releases.
 class OfflineDbSyncService {
   static const String _defaultReleaseBaseUrl =
-      'https://github.com/g-scanner/webapp/releases/download/offline-data';
+      'https://github.com/glutiend/webapp/releases/download/offline-data';
 
   static const String _webProxyBaseUrl = String.fromEnvironment(
     'OFF_PROXY_BASE_URL',
-    defaultValue: 'https://gscanner-off-proxy.g-scanner.workers.dev',
+    defaultValue: 'https://glutiend-off-proxy.glutiend.workers.dev',
   );
 
   static String _baseUrl = _defaultReleaseBaseUrl;
@@ -164,7 +164,7 @@ class OfflineDbSyncService {
   @visibleForTesting
   static void resetBaseUrl() => resetState();
 
-  static const String userAgent = 'G-Scanner/1.0 (https://g-scanner.github.io)';
+  static const String userAgent = 'GlutiEnd/1.0 (https://glutiend.github.io; supporto-glutiend@googlegroups.com)';
 
   static Map<String, String> get defaultHeaders => const {
         'User-Agent': userAgent,
@@ -982,7 +982,7 @@ class OfflineDbSyncService {
     required String targetDbPath,
     required Uint8List patchBytes,
   }) async {
-    const tempPatchPath = 'gscanner_temp_patch.db';
+    const tempPatchPath = 'glutiend_temp_patch.db';
 
     // 1. Scrivi i bytes del delta su IndexedDB VFS
     await databaseFactory.writeDatabaseBytes(tempPatchPath, patchBytes);

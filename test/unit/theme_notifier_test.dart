@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
-// PROJECT: G-Scanner — Pure Unit Tests: Theme Notifier & App Theme
+// PROJECT: GlutiEnd — Pure Unit Tests: Theme Notifier & App Theme
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:gscanner/core/theme/theme.dart';
+import 'package:glutiend/core/theme/theme.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
