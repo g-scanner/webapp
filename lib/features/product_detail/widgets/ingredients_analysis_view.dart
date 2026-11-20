@@ -214,7 +214,7 @@ class IngredientsAnalysisView extends StatelessWidget {
               Divider(
                 height: 24,
                 thickness: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                color: colorScheme.outlineVariant,
               ),
             ...sortedIngredientsAnalyzed.asMap().entries.map((entry) {
               final index = entry.key;

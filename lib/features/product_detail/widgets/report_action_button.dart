@@ -25,7 +25,7 @@ class ReportActionButton extends StatelessWidget {
     final colorScheme = context.colorScheme;
 
     if (hasUserReported || pendingReportsCount > 0) {
-      final mutedColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.75);
+      final mutedColor = colorScheme.textTertiary;
 
       return SizedBox(
         height: _kSlotHeight,
@@ -63,7 +63,7 @@ class ReportActionButton extends StatelessWidget {
     return SizedBox(
       height: _kSlotHeight,
       width: double.infinity,
-      child: AppSecondaryButton(
+      child: AppTertiaryButton(
         onPressed: onReportPressed,
         icon: Icons.flag_outlined,
         label: "product.actions.reportError".tr(),

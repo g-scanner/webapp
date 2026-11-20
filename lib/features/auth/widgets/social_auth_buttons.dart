@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 
 class SocialAuthButtons extends StatelessWidget {
   final bool isLoading;
@@ -44,18 +45,15 @@ class SocialAuthButtons extends StatelessWidget {
           onTap: onGoogleSignIn,
         ),
         const SizedBox(height: 12),
-        _buildSocialBtn(
-          context: context,
-          text: "auth.social.continueWithFacebook".tr(),
+        AppTertiaryButton(
+          onPressed: onFacebookSignIn,
           iconWidget: Image.asset(
             'assets/icons/facebook.png',
             width: 20,
             height: 20,
           ),
-          bgColor: context.cardBackground,
-          textColor: context.colorScheme.onSurface,
-          borderColor: context.colorScheme.outlineVariant,
-          onTap: onFacebookSignIn,
+          label: "auth.social.continueWithFacebook".tr(),
+          fullWidth: true,
         ),
         const SizedBox(height: 24),
 
@@ -64,10 +62,8 @@ class SocialAuthButtons extends StatelessWidget {
           children: [
             Expanded(
               child: Divider(
-                color: context.colorScheme.outlineVariant.withValues(
-                  alpha: 0.4,
-                ),
-                thickness: 1.5,
+                color: context.colorScheme.onSurface.withValues(alpha: 0.12),
+                thickness: 1.0,
               ),
             ),
             Padding(
@@ -86,10 +82,8 @@ class SocialAuthButtons extends StatelessWidget {
             ),
             Expanded(
               child: Divider(
-                color: context.colorScheme.outlineVariant.withValues(
-                  alpha: 0.4,
-                ),
-                thickness: 1.5,
+                color: context.colorScheme.onSurface.withValues(alpha: 0.12),
+                thickness: 1.0,
               ),
             ),
           ],

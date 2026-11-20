@@ -37,7 +37,7 @@ void main() {
       );
 
       // Verify button exists and uses flag_outlined icon
-      expect(find.byType(FilledButton), findsOneWidget);
+      expect(find.byType(OutlinedButton), findsOneWidget);
       expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
       expect(find.text('product.actions.reportError'), findsOneWidget);
 
@@ -50,7 +50,7 @@ void main() {
       expect(tester.getSize(buttonFinder).height, 50.0);
 
       // Verify tap works
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byType(OutlinedButton));
       expect(pressed, isTrue);
     });
 

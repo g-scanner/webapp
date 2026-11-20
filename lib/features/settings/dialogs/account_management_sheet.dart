@@ -56,7 +56,7 @@ void showAccountManagementSheet({
     isScrollControlled: true,
     useRootNavigator: false,
     constraints: const BoxConstraints(maxWidth: 500),
-    backgroundColor: context.cardBackground,
+    backgroundColor: context.modalBackgroundColor,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
     ),
@@ -388,10 +388,10 @@ class _AccountManagementSheetContentState
         const SizedBox(height: 20),
         Divider(
           height: 1,
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          color: colorScheme.onSurface.withValues(alpha: 0.12),
         ),
         const SizedBox(height: 20),
-        AppSecondaryButton(
+        AppTertiaryButton(
           onPressed: () {
             Navigator.pop(context);
             widget.onLogout(widget.parentContext);
@@ -458,7 +458,7 @@ class _AccountManagementSheetContentState
                 height: 5,
                 margin: const EdgeInsets.only(top: 16, bottom: 24),
                 decoration: BoxDecoration(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  color: colorScheme.outline.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -475,7 +475,7 @@ class _AccountManagementSheetContentState
                   color: cardBg,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    color: colorScheme.cardPrimaryBorder,
                   ),
                 ),
                 child: Column(

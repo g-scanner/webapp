@@ -391,7 +391,10 @@ class AppTertiaryButton extends StatelessWidget {
       onPressed: isLoading ? null : onPressed,
       style: OutlinedButton.styleFrom(
         foregroundColor: colorScheme.buttonTertiaryFg,
-        side: BorderSide(color: colorScheme.buttonTertiaryBorder),
+        side: BorderSide(
+          color: colorScheme.buttonTertiaryBorder,
+          width: 1.5,
+        ),
         disabledForegroundColor: colorScheme.buttonTertiaryDisabledFg,
         padding: padding ?? const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
         shape: RoundedRectangleBorder(borderRadius: r),
@@ -517,7 +520,10 @@ class AppTertiaryDestructiveButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: colorScheme.buttonTertiaryDestructiveFg,
         backgroundColor: colorScheme.buttonTertiaryDestructiveBg,
-        side: BorderSide(color: colorScheme.buttonTertiaryDestructiveBorder),
+        side: BorderSide(
+          color: colorScheme.buttonTertiaryDestructiveBorder,
+          width: 1.5,
+        ),
         disabledForegroundColor: colorScheme.buttonTertiaryDestructiveDisabledFg,
         disabledBackgroundColor: colorScheme.buttonTertiaryDestructiveDisabledBg,
         padding: padding ?? const EdgeInsets.symmetric(vertical: 14, horizontal: 24),

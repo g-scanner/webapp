@@ -130,7 +130,7 @@ class AppStatusPill extends StatelessWidget {
   ) {
     switch (variant) {
       case AppStatusPillVariant.primary:
-        return colorScheme.iconCirclePrimaryBg;
+        return colorScheme.statusSafeAlpha; //todo o iconCirclePrimaryBg
       case AppStatusPillVariant.error:
         return colorScheme.iconCircleErrorBg;
       case AppStatusPillVariant.tertiary:

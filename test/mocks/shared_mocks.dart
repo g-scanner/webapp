@@ -1,9 +1,10 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: GlutiEnd — Shared Mocks for Widget & Unit Tests.
 
 // ignore_for_file: subtype_of_sealed_class
 
 import 'package:flutter/material.dart';
+import 'package:glutiend/core/theme/app_colors.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -116,14 +117,14 @@ Widget createTestApp({
           theme: ThemeData(
             useMaterial3: true,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF0D631B),
+              seedColor: lightPrimary,
               brightness: Brightness.light,
             ),
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
             colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF0D631B),
+              seedColor: lightPrimary,
               brightness: Brightness.dark,
             ),
           ),

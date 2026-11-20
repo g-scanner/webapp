@@ -155,6 +155,10 @@ extension AppThemeContextExtension on BuildContext {
       isDarkMode ? darkCardBackground : lightCardBackground;
   Color get surfaceContainerLow =>
       isDarkMode ? darkSurfaceContainerLow : lightSurfaceContainerLow;
+  Color get modalBackgroundColor =>
+      isDarkMode ? darkBottomSheetBg : lightBottomSheetBg;
+  Color get bottomNavBg => isDarkMode ? darkBottomNavBg : lightBottomNavBg;
+  Color get textTertiary => isDarkMode ? darkTextTertiary : lightTextTertiary;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -205,26 +209,31 @@ extension AppColorTokens on ColorScheme {
       (solid: statusSafeSolid, alpha: statusSafeAlpha);
 
   // STATO VIETATO (Unsafe / Non adatto)
-  Color get statusUnsafeSolid =>
-      brightness == Brightness.dark ? darkStatusUnsafeText : lightStatusUnsafeText;
+  Color get statusUnsafeSolid => brightness == Brightness.dark
+      ? darkStatusUnsafeText
+      : lightStatusUnsafeText;
   Color get statusUnsafeAlpha =>
       brightness == Brightness.dark ? darkStatusUnsafeBg : lightStatusUnsafeBg;
   ({Color solid, Color alpha}) get statusUnsafeColors =>
       (solid: statusUnsafeSolid, alpha: statusUnsafeAlpha);
 
   // STATO INCERTO (Uncertain / Warning / Segnalazione)
-  Color get statusUncertainSolid =>
-      brightness == Brightness.dark ? darkStatusUncertainText : lightStatusUncertainText;
-  Color get statusUncertainAlpha =>
-      brightness == Brightness.dark ? darkStatusUncertainBg : lightStatusUncertainBg;
+  Color get statusUncertainSolid => brightness == Brightness.dark
+      ? darkStatusUncertainText
+      : lightStatusUncertainText;
+  Color get statusUncertainAlpha => brightness == Brightness.dark
+      ? darkStatusUncertainBg
+      : lightStatusUncertainBg;
   ({Color solid, Color alpha}) get statusUncertainColors =>
       (solid: statusUncertainSolid, alpha: statusUncertainAlpha);
 
   // STATO IGNOTO (Unknown / Sconosciuto / Neutro)
-  Color get statusUnknownSolid =>
-      brightness == Brightness.dark ? darkStatusUnknownText : lightStatusUnknownText;
-  Color get statusUnknownAlpha =>
-      brightness == Brightness.dark ? darkStatusUnknownBg : lightStatusUnknownBg;
+  Color get statusUnknownSolid => brightness == Brightness.dark
+      ? darkStatusUnknownText
+      : lightStatusUnknownText;
+  Color get statusUnknownAlpha => brightness == Brightness.dark
+      ? darkStatusUnknownBg
+      : lightStatusUnknownBg;
   ({Color solid, Color alpha}) get statusUnknownColors =>
       (solid: statusUnknownSolid, alpha: statusUnknownAlpha);
 
@@ -251,14 +260,17 @@ extension AppColorTokens on ColorScheme {
   }
 
   // Pallini Legenda Scanner (pieni 100%)
-  Color get statusSafeLegendDot =>
-      brightness == Brightness.dark ? darkStatusSafeText : lightStatusSafeLegendDot;
-  Color get statusUncertainLegendDot =>
-      brightness == Brightness.dark ? darkStatusUncertainText : lightStatusUncertainLegendDot;
+  Color get statusSafeLegendDot => brightness == Brightness.dark
+      ? darkStatusSafeText
+      : lightStatusSafeLegendDot;
+  Color get statusUncertainLegendDot => brightness == Brightness.dark
+      ? darkStatusUncertainText
+      : lightStatusUncertainLegendDot;
   Color get statusUnsafeLegendDot =>
       brightness == Brightness.dark ? darkError : lightStatusUnsafeLegendDot;
-  Color get statusUnknownLegendDot =>
-      brightness == Brightness.dark ? darkStatusUnknownText : lightStatusUnknownLegendDot;
+  Color get statusUnknownLegendDot => brightness == Brightness.dark
+      ? darkStatusUnknownText
+      : lightStatusUnknownLegendDot;
 
   // Alias semantici per compatibilità
   Color get statusPrimaryBg => statusSafeAlpha;
@@ -294,8 +306,9 @@ extension AppColorTokens on ColorScheme {
 
   // Pulsante Terziario (outlined blu)
   Color get buttonTertiaryBg => colorTransparent;
-  Color get buttonTertiaryBorder =>
-      brightness == Brightness.dark ? darkButtonTertiaryBorder : lightButtonTertiaryBorder;
+  Color get buttonTertiaryBorder => brightness == Brightness.dark
+      ? darkButtonTertiaryBorder
+      : lightButtonTertiaryBorder;
   Color get buttonTertiaryFg => primary;
   Color get buttonTertiaryDisabledBorder =>
       buttonTertiaryBorder.withValues(alpha: 0.2);
@@ -305,17 +318,16 @@ extension AppColorTokens on ColorScheme {
   Color get buttonPrimaryDestructiveBg => error;
   Color get buttonPrimaryDestructiveFg => onError;
   Color get buttonPrimaryDestructiveDisabledBg => error.withValues(alpha: 0.6);
-  Color get buttonPrimaryDestructiveDisabledFg => onError.withValues(alpha: 0.6);
+  Color get buttonPrimaryDestructiveDisabledFg =>
+      onError.withValues(alpha: 0.6);
 
   // Pulsante Terziario Distruttivo (cancellazione, outline con leggerissimo riempimento)
-  Color get buttonTertiaryDestructiveBg =>
-      brightness == Brightness.dark
-          ? darkStatusUnsafeBg.withValues(alpha: 0.5)
-          : lightStatusUnsafeBg.withValues(alpha: 0.5);
-  Color get buttonTertiaryDestructiveBorder =>
-      brightness == Brightness.dark
-          ? darkStatusUnsafeDestructiveBorder
-          : lightStatusUnsafeDestructiveBorder;
+  Color get buttonTertiaryDestructiveBg => brightness == Brightness.dark
+      ? darkStatusUnsafeBg.withValues(alpha: 0.5)
+      : lightStatusUnsafeBg.withValues(alpha: 0.5);
+  Color get buttonTertiaryDestructiveBorder => brightness == Brightness.dark
+      ? darkStatusUnsafeDestructiveBorder
+      : lightStatusUnsafeDestructiveBorder;
   Color get buttonTertiaryDestructiveFg => error;
   Color get buttonTertiaryDestructiveDisabledBg =>
       buttonTertiaryDestructiveBg.withValues(alpha: 0.2);
@@ -335,26 +347,30 @@ extension AppColorTokens on ColorScheme {
   // Card Principale (sfondo tema chiaro/scuro con bordo sottile)
   Color get cardPrimaryBg =>
       brightness == Brightness.dark ? darkCardBackground : lightCardBackground;
-  Color get cardPrimaryBorder =>
-      brightness == Brightness.dark ? darkCardPrimaryBorder : lightCardPrimaryBorder;
+  Color get cardPrimaryBorder => brightness == Brightness.dark
+      ? darkCardPrimaryBorder
+      : lightCardPrimaryBorder;
   Color get cardPrimaryShadow => shadow;
   Color get cardPrimaryHover => surfaceContainerHighest;
-  Color get cardPrimaryHighlight =>
-      brightness == Brightness.dark ? darkSurfaceContainerLow : lightSurfaceContainerLow;
+  Color get cardPrimaryHighlight => brightness == Brightness.dark
+      ? darkSurfaceContainerLow
+      : lightSurfaceContainerLow;
 
   // Card Secondaria (sfondo uniforme grigio neutro con bordo sottile neutro)
-  Color get cardSecondaryBg =>
-      brightness == Brightness.dark ? darkCardSecondaryBg : lightCardSecondaryBg;
-  Color get cardSecondaryBorder =>
-      brightness == Brightness.dark ? darkCardSecondaryBorder : lightCardSecondaryBorder;
+  Color get cardSecondaryBg => brightness == Brightness.dark
+      ? darkCardSecondaryBg
+      : lightCardSecondaryBg;
+  Color get cardSecondaryBorder => brightness == Brightness.dark
+      ? darkCardSecondaryBorder
+      : lightCardSecondaryBorder;
   Color get cardSecondaryFg => onSurface;
+  Color get cardSecondaryShadow => brightness == Brightness.dark
+      ? shadow.withValues(alpha: 0.3)
+      : shadow.withValues(alpha: 0.08);
 
   // Card ad Alta Evidenziazione (High Emphasis)
   Color get cardHighEmphasisBg => cardPrimaryBg;
-  Color get cardHighEmphasisBorder =>
-      brightness == Brightness.dark
-          ? darkCardPrimaryBorder.withValues(alpha: 0.15)
-          : lightCardPrimaryBorder.withValues(alpha: 0.2);
+  Color get cardHighEmphasisBorder => cardPrimaryBorder;
   Color get cardHighEmphasisShadow => shadow;
 
   // ── 4. CERCHI ICONA (ICON CIRCLES) ────────────────────────────────────────
@@ -382,10 +398,15 @@ extension AppColorTokens on ColorScheme {
   Color get dropdownPillBg => surfaceContainerHighest;
 
   // ── 8. CONTAINER LEGENDA SCANNER ──────────────────────────────────────────
-  Color get scannerLegendContainerBg =>
-      brightness == Brightness.dark ? darkScannerLegendBg : lightScannerLegendBg;
+  Color get scannerLegendContainerBg => brightness == Brightness.dark
+      ? darkScannerLegendBg
+      : lightScannerLegendBg;
 
-  // ── 9. NAVIGAZIONE ────────────────────────────────────────────────────────
+  // ── 9. NAVIGAZIONE E MODAL ───────────────────────────────────────────────
+  Color get bottomNavBg =>
+      brightness == Brightness.dark ? darkBottomNavBg : lightBottomNavBg;
+  Color get modalBackgroundColor =>
+      brightness == Brightness.dark ? darkBottomSheetBg : lightBottomSheetBg;
   Color get navSelectedBg => secondaryContainer;
   Color get navSelectedFg => onSecondaryContainer;
 

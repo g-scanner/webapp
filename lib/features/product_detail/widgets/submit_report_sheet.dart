@@ -127,7 +127,7 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: context.cardBackground,
+          color: context.modalBackgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
@@ -141,7 +141,7 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                 height: 5,
                 margin: const EdgeInsets.only(top: 16, bottom: 24),
                 decoration: BoxDecoration(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  color: colorScheme.outline.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -208,7 +208,7 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                             ),
                             tooltip: "product.reportSheet.reasonTooltip".tr(),
                             elevation: 6,
-                            shadowColor: Colors.black.withValues(alpha: 0.12),
+                            shadowColor: colorScheme.shadow,
                             offset: const Offset(0, 60),
                             color: context.cardBackground,
                             surfaceTintColor: Colors.transparent,
@@ -217,9 +217,7 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                               side: BorderSide(
-                                color: colorScheme.outlineVariant.withValues(
-                                  alpha: 0.4,
-                                ),
+                                color: colorScheme.cardPrimaryBorder,
                               ),
                             ),
                             itemBuilder: (popCtx) {
@@ -304,9 +302,7 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                       decoration: InputDecoration(
                         hintText: "product.reportSheet.detailsHint".tr(),
                         hintStyle: TextStyle(
-                          color: colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.5,
-                          ),
+                          color: colorScheme.textTertiary,
                         ),
                         filled: true,
                         fillColor: colorScheme.surfaceContainerHighest,
@@ -357,7 +353,7 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                           flex: 2,
                           child: SizedBox(
                             height: 48,
-                            child: AppPrimaryDestructiveButton(
+                            child: AppPrimaryButton(
                               onPressed: isBlocked
                                   ? null
                                   : () {

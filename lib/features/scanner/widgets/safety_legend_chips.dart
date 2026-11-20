@@ -324,8 +324,8 @@ class _SafetyLegendChipsState extends State<SafetyLegendChips> {
                       return CustomPaint(
                         painter: _UnifiedCardPainter(
                           color: cardBg,
-                          shadowColor: Colors.black.withValues(
-                            alpha: context.isDarkMode ? 0.3 : 0.08,
+                          shadowColor: colorScheme.shadow.withValues(
+                            alpha: context.isDarkMode ? 0.35 : 0.12,
                           ),
                           pointerX: pointerX,
                           pointerWidth: _kPointerWidth,

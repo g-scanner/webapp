@@ -26,8 +26,8 @@ const Color lightTextTertiary = Color(0xFF6E798B); // Hint / Placeholder / Terzi
 
 // Bordi e outline
 const Color lightOutline = Color(0xFF6C798E); // Switch off, divider forti
-const Color lightCardPrimaryBorder = Color(0x14194B96); // Bordo sottile Card Principali rgba(25, 75, 150, 0.08)
-const Color lightCardSecondaryBorder = Color(0x0F141923); // Bordo sottile Card Secondarie / CTA bar rgba(20, 25, 35, 0.06)
+const Color lightCardPrimaryBorder = Color(0xFFDEE1E6); // Bordo opaco Card Principali
+const Color lightCardSecondaryBorder = Color(0xFFE2E5EA); // Bordo opaco Card Secondarie / CTA bar
 const Color lightButtonTertiaryBorder = Color(0x6B1E5FA8); // Bordo Bottoni Outlined rgba(30, 95, 168, 0.42)
 
 // Brand Primary & Bottoni
@@ -95,8 +95,8 @@ const Color darkTextTertiary = Color(0xFF6E7685); // Hint / Placeholder / Terzia
 
 // Bordi e outline
 const Color darkOutline = Color(0xFF6C7482); // Switch off, divider forti
-const Color darkCardPrimaryBorder = Color(0x0FFFFFFF); // Bordo sottile Card Principali rgba(255, 255, 255, 0.06)
-const Color darkCardSecondaryBorder = Color(0x0BFFFFFF); // Bordo sottile Card Secondarie / CTA bar rgba(255, 255, 255, 0.045)
+const Color darkCardPrimaryBorder = Color(0xFF32353A); // Bordo opaco Card Principali
+const Color darkCardSecondaryBorder = Color(0xFF282B30); // Bordo opaco Card Secondarie / CTA bar
 const Color darkButtonTertiaryBorder = Color(0x5C86B4EB); // Bordo Bottoni Outlined rgba(134, 180, 235, 0.36)
 
 // Brand Primary & Bottoni

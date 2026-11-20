@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
@@ -425,7 +425,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
         border: checked
             ? null
             : Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+                color: colorScheme.outlineVariant,
                 width: 1.5,
               ),
       ),
@@ -471,33 +471,11 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
         SizedBox(
           width: double.infinity,
           height: 48,
-          child: TextButton.icon(
+          child: AppTertiaryDestructiveButton(
             onPressed: !_isProcessing ? _showDiscardConfirmation : null,
-            style: TextButton.styleFrom(
-              foregroundColor: colorScheme.error,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(32),
-              ),
-            ).copyWith(
-              overlayColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.pressed)) {
-                  return colorScheme.splashError;
-                }
-                if (states.contains(WidgetState.hovered) ||
-                    states.contains(WidgetState.focused)) {
-                  return colorScheme.selectedErrorItemBg;
-                }
-                return null;
-              }),
-            ),
-            icon: const Icon(Icons.delete_outline_rounded, size: 20),
-            label: Text(
-              "sync.localDataFound.discard".tr(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            icon: Icons.delete_outline_rounded,
+            label: "sync.localDataFound.discard".tr(),
+            fullWidth: true,
           ),
         ),
       ],

@@ -360,8 +360,8 @@ class _CameraModuleState extends State<CameraModule>
                 children: [
                   Expanded(
                     child: Divider(
-                      color: colorScheme.surfaceContainerHighest,
-                      thickness: 1.5,
+                      color: colorScheme.onSurface.withValues(alpha: 0.12),
+                      thickness: 1.0,
                     ),
                   ),
                   Padding(
@@ -380,8 +380,8 @@ class _CameraModuleState extends State<CameraModule>
                   ),
                   Expanded(
                     child: Divider(
-                      color: colorScheme.surfaceContainerHighest,
-                      thickness: 1.5,
+                      color: colorScheme.onSurface.withValues(alpha: 0.12),
+                      thickness: 1.0,
                     ),
                   ),
                 ],

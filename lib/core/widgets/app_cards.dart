@@ -21,7 +21,7 @@ abstract final class AppCard {
     Color? bgColor,
     Color? borderColor,
     bool hasBorder = true,
-    double borderWidth = 1.0,
+    double borderWidth = 1.5,
     double borderRadius = 24.0,
     bool hasShadow = true,
     Clip clipBehavior = Clip.antiAlias,
@@ -58,7 +58,7 @@ abstract final class AppCard {
     Color? bgColor,
     Color? borderColor,
     bool hasBorder = false,
-    double borderWidth = 1.0,
+    double borderWidth = 1.5,
     double borderRadius = 24.0,
     Clip clipBehavior = Clip.antiAlias,
   }) {
@@ -86,7 +86,7 @@ abstract final class AppCard {
     Color? bgColor,
     Color? borderColor,
     bool hasBorder = false,
-    double borderWidth = 1.0,
+    double borderWidth = 1.5,
     EdgeInsetsGeometry? padding,
     EdgeInsetsGeometry? margin,
     VoidCallback? onTap,
@@ -146,7 +146,7 @@ class AppPrimaryCard extends StatelessWidget {
     this.bgColor,
     this.borderColor,
     this.hasBorder = true,
-    this.borderWidth = 1.0,
+    this.borderWidth = 1.5,
     this.borderRadius = 24.0,
     this.hasShadow = true,
     this.clipBehavior = Clip.antiAlias,
@@ -188,8 +188,8 @@ class AppPrimaryCard extends StatelessWidget {
             ? [
                 BoxShadow(
                   color: colorScheme.cardPrimaryShadow,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
                 ),
               ]
             : null,
@@ -229,7 +229,7 @@ class AppSecondaryCard extends StatelessWidget {
     this.bgColor,
     this.borderColor,
     this.hasBorder = false,
-    this.borderWidth = 1.0,
+    this.borderWidth = 1.5,
     this.borderRadius = 24.0,
     this.clipBehavior = Clip.antiAlias,
   });
@@ -261,10 +261,17 @@ class AppSecondaryCard extends StatelessWidget {
         borderRadius: radius,
         border: hasBorder
             ? Border.all(
-                color: borderColor ?? colorScheme.cardPrimaryBorder,
+                color: borderColor ?? colorScheme.cardSecondaryBorder,
                 width: borderWidth,
               )
             : null,
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.cardSecondaryShadow,
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       clipBehavior: clipBehavior,
       child: Material(
@@ -297,7 +304,7 @@ class AppHighEmphasisCard extends StatelessWidget {
     this.bgColor,
     this.borderColor,
     this.hasBorder = false,
-    this.borderWidth = 1.0,
+    this.borderWidth = 1.5,
     this.padding,
     this.margin,
     this.onTap,

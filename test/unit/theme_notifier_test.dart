@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: GlutiEnd — Pure Unit Tests: Theme Notifier & App Theme
 
 import 'package:flutter/material.dart';
@@ -83,25 +83,25 @@ void main() {
       expect(darkTheme.brightness, Brightness.dark);
       expect(darkTheme.colorScheme.primary, darkPrimary);
       expect(darkTheme.scaffoldBackgroundColor, darkSurface);
-      expect(darkTheme.cardColor, const Color(0xFF1E1E22));
+      expect(darkTheme.cardColor, const Color(0xFF16191F));
     });
 
-    test('red backgrounds use lower opacity in dark theme', () {
+    test('red backgrounds match statusUnsafeBg tokens in light and dark theme', () {
       expect(
         lightTheme.colorScheme.statusErrorBg,
-        lightTheme.colorScheme.errorContainer.withValues(alpha: 0.5),
+        lightStatusUnsafeBg,
       );
       expect(
         darkTheme.colorScheme.statusErrorBg,
-        darkTheme.colorScheme.errorContainer.withValues(alpha: 0.2),
+        darkStatusUnsafeBg,
       );
       expect(
         lightTheme.colorScheme.iconCircleErrorBg,
-        lightTheme.colorScheme.errorContainer.withValues(alpha: 0.5),
+        lightStatusUnsafeBg,
       );
       expect(
         darkTheme.colorScheme.iconCircleErrorBg,
-        darkTheme.colorScheme.errorContainer.withValues(alpha: 0.2),
+        darkStatusUnsafeBg,
       );
     });
   });
@@ -128,7 +128,7 @@ void main() {
 
       expect(capturedContext.isDarkMode, isFalse);
       expect(capturedContext.cardBackground, const Color(0xFFFFFFFF));
-      expect(capturedContext.surfaceContainerLow, const Color(0xFFF5F3F7));
+      expect(capturedContext.surfaceContainerLow, const Color(0xFFECEFF4));
       expect(capturedContext.colorScheme.primary, lightPrimary);
     });
 
@@ -149,8 +149,8 @@ void main() {
       );
 
       expect(capturedContext.isDarkMode, isTrue);
-      expect(capturedContext.cardBackground, const Color(0xFF1E1E22));
-      expect(capturedContext.surfaceContainerLow, const Color(0xFF18181C));
+      expect(capturedContext.cardBackground, const Color(0xFF16191F));
+      expect(capturedContext.surfaceContainerLow, const Color(0xFF121419));
       expect(capturedContext.colorScheme.primary, darkPrimary);
     });
   });

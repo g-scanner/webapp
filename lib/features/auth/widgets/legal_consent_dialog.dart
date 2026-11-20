@@ -85,7 +85,7 @@ class _LegalConsentDialogState extends State<LegalConsentDialog> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
           side: BorderSide(
-            color: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            color: context.colorScheme.outlineVariant,
           ),
         ),
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -207,8 +207,7 @@ class _LegalConsentDialogState extends State<LegalConsentDialog> {
                             border: _isChecked
                                 ? null
                                 : Border.all(
-                                    color: context.colorScheme.outlineVariant
-                                        .withValues(alpha: 0.6),
+                                    color: context.colorScheme.outlineVariant,
                                     width: 1.5,
                                   ),
                           ),

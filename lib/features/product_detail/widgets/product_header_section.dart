@@ -90,9 +90,7 @@ class ProductHeaderSection extends StatelessWidget {
             formatScanDate(scannedAt ?? lastUpdated ?? ''),
             style: TextStyle(
               fontSize: 12,
-              color: colorScheme.onSurfaceVariant.withValues(
-                alpha: 0.8,
-              ),
+              color: colorScheme.textTertiary,
             ),
           ),
         ],

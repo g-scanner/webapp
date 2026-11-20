@@ -20,12 +20,12 @@ class MainCustomBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: context.surfaceContainerLow,
+        color: context.bottomNavBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: context.isDarkMode ? 0.2 : 0.05,
+            color: context.colorScheme.shadow.withValues(
+              alpha: context.isDarkMode ? 0.3 : 0.08,
             ),
             blurRadius: 10,
             offset: const Offset(0, -2),

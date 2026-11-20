@@ -111,10 +111,10 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
 
   Widget _buildSkeletonStatusPill(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final bgColor = colorScheme.tertiaryContainer.withValues(alpha: 0.15);
-    final tertiary = colorScheme.tertiary;
-    final baseAlpha = _isHovered ? 0.65 : 0.45;
-    final highlightAlpha = _isHovered ? 0.35 : 0.20;
+    final bgColor = colorScheme.surfaceContainerHighest;
+    final shimmerColor = colorScheme.textTertiary;
+    final baseAlpha = _isHovered ? 0.45 : 0.30;
+    final highlightAlpha = _isHovered ? 0.20 : 0.10;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -125,14 +125,14 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
       child: Skeletonizer(
         enabled: true,
         effect: ShimmerEffect(
-          baseColor: tertiary.withValues(alpha: baseAlpha),
-          highlightColor: tertiary.withValues(alpha: highlightAlpha),
+          baseColor: shimmerColor.withValues(alpha: baseAlpha),
+          highlightColor: shimmerColor.withValues(alpha: highlightAlpha),
         ),
         child: Container(
           width: 52,
           height: 11,
           decoration: BoxDecoration(
-            color: tertiary.withValues(alpha: baseAlpha),
+            color: shimmerColor.withValues(alpha: baseAlpha),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -260,9 +260,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                           Icon(
                             Icons.storefront_outlined,
                             size: 14,
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.6,
-                            ),
+                            color: colorScheme.textTertiary,
                           ),
                           const SizedBox(width: 4),
                           Skeletonizer(
@@ -284,9 +282,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                           Icon(
                             Icons.calendar_month_outlined,
                             size: 14,
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.4,
-                            ),
+                            color: colorScheme.textTertiary,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -294,9 +290,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurfaceVariant.withValues(
-                                alpha: 0.6,
-                              ),
+                              color: colorScheme.textTertiary,
                             ),
                           ),
                         ],
@@ -327,9 +321,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                           Icon(
                             Icons.storefront_outlined,
                             size: 14,
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.6,
-                            ),
+                            color: colorScheme.textTertiary,
                           ),
                           const SizedBox(width: 4),
                           Flexible(
@@ -339,9 +331,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.9,
-                                ),
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -353,9 +343,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                           Icon(
                             Icons.calendar_month_outlined,
                             size: 14,
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.4,
-                            ),
+                            color: colorScheme.textTertiary,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -363,9 +351,7 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurfaceVariant.withValues(
-                                alpha: 0.6,
-                              ),
+                              color: colorScheme.textTertiary,
                             ),
                           ),
                         ],

@@ -156,12 +156,12 @@ class _ScannerViewportState extends State<ScannerViewport> {
                                     Container(
                                       width: 2,
                                       height: 24,
-                                      color: colorScheme.primaryContainer,
+                                      color: colorScheme.primary,
                                     ),
                                     Container(
                                       width: 24,
                                       height: 2,
-                                      color: colorScheme.primaryContainer,
+                                      color: colorScheme.primary,
                                     ),
                                   ],
                                 ),
@@ -204,7 +204,7 @@ class _ScannerViewportState extends State<ScannerViewport> {
                             ? colorScheme.primaryContainer
                             : cardBg,
                         elevation: 4,
-                        shadowColor: Colors.black.withValues(alpha: 0.4),
+                        shadowColor: colorScheme.shadow.withValues(alpha: 0.4),
                         shape: const CircleBorder(),
                         clipBehavior: Clip.antiAlias,
                         child: InkWell(
@@ -319,7 +319,7 @@ class _ScannerViewportState extends State<ScannerViewport> {
           child: CustomPaint(
             size: const Size(cornerLen, cornerLen),
             painter: CornerPainter(
-              color: colorScheme.primaryContainer,
+              color: colorScheme.primary,
               alignment: Alignment.topLeft,
             ),
           ),
@@ -330,7 +330,7 @@ class _ScannerViewportState extends State<ScannerViewport> {
           child: CustomPaint(
             size: const Size(cornerLen, cornerLen),
             painter: CornerPainter(
-              color: colorScheme.primaryContainer,
+              color: colorScheme.primary,
               alignment: Alignment.topRight,
             ),
           ),
@@ -341,7 +341,7 @@ class _ScannerViewportState extends State<ScannerViewport> {
           child: CustomPaint(
             size: const Size(cornerLen, cornerLen),
             painter: CornerPainter(
-              color: colorScheme.primaryContainer,
+              color: colorScheme.primary,
               alignment: Alignment.bottomLeft,
             ),
           ),
@@ -352,7 +352,7 @@ class _ScannerViewportState extends State<ScannerViewport> {
           child: CustomPaint(
             size: const Size(cornerLen, cornerLen),
             painter: CornerPainter(
-              color: colorScheme.primaryContainer,
+              color: colorScheme.primary,
               alignment: Alignment.bottomRight,
             ),
           ),

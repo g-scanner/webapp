@@ -3,6 +3,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:glutiend/core/theme/app_colors.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -55,7 +56,7 @@ Future<void> _pumpLicensesPage(
             theme: ThemeData(
               useMaterial3: true,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF0D631B),
+                seedColor: lightPrimary,
                 brightness: Brightness.light,
               ),
             ),

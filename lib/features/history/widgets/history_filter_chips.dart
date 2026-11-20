@@ -25,7 +25,7 @@ class HistoryFilterChips extends StatelessWidget {
     if (status == null) {
       return (
         bg: colorScheme.surfaceContainerHighest,
-        text: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+        text: colorScheme.textTertiary,
       );
     }
     final pair = colorScheme.statusColorsFor(status);

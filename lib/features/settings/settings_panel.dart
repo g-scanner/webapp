@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/foundation.dart';
@@ -271,15 +271,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           const SizedBox(height: 16),
 
-          Material(
-            color: cardBg,
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-              side: BorderSide(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-              ),
-            ),
+          AppCard.primary(
+            borderRadius: 28,
             child: Column(
               children: [
                 SettingsNavigationItem(
@@ -354,13 +347,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           const SizedBox(height: 16),
 
-          Container(
+          AppCard.primary(
+            borderRadius: 28,
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-            ),
             child: AppearanceSection(
               preferredTheme: widget.settings.preferredTheme,
               onThemeChange: _handleThemeChange,
@@ -377,13 +366,9 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           const SizedBox(height: 16),
 
-          Container(
+          AppCard.primary(
+            borderRadius: 28,
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-            ),
             child: LanguageSection(
               preferredLanguage: widget.settings.preferredLanguage,
               onLanguageChange: _handleLanguageChange,

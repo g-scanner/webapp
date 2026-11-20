@@ -31,7 +31,7 @@ void showOfflineDatabaseSheet({
       return Container(
         height: sheetHeight,
         decoration: BoxDecoration(
-          color: ctx.cardBackground,
+          color: ctx.modalBackgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: _OfflineDatabaseSheetContent(
@@ -858,7 +858,7 @@ class _OfflineDatabaseSheetContentState
             height: 5,
             margin: const EdgeInsets.only(top: 16, bottom: 24),
             decoration: BoxDecoration(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+              color: colorScheme.outline.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -1111,9 +1111,7 @@ class _OfflineDatabaseSheetContentState
                         child: Divider(
                           height: 1,
                           thickness: 1,
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.3,
-                          ),
+                          color: colorScheme.onSurface.withValues(alpha: 0.12),
                         ),
                       ),
 

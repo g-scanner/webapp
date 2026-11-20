@@ -32,7 +32,7 @@ void showStorageHistorySheet({
     isScrollControlled: true,
     useRootNavigator: false,
     constraints: const BoxConstraints(maxWidth: 500),
-    backgroundColor: context.cardBackground,
+    backgroundColor: context.modalBackgroundColor,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
     ),
@@ -69,7 +69,7 @@ void showStorageHistorySheet({
                   height: 5,
                   margin: const EdgeInsets.only(top: 16, bottom: 24),
                   decoration: BoxDecoration(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    color: colorScheme.outline.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -206,7 +206,7 @@ void showStorageHistorySheet({
                             ),
                           ),
                           const SizedBox(height: 18),
-                          AppSecondaryButton(
+                          AppTertiaryButton(
                             onPressed: onClearProductCache == null
                                 ? null
                                 : () async {

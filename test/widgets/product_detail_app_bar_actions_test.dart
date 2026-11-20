@@ -1,7 +1,8 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: GlutiEnd — Widget Tests: ProductDetailAppBarActions
 
 import 'package:flutter/material.dart';
+import 'package:glutiend/core/theme/app_colors.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +29,7 @@ void main() {
     Future<void> Function(String reportId)? onDeleteReport,
     VoidCallback? onBack,
   }) {
-    final colorScheme = ColorScheme.fromSeed(seedColor: Colors.green);
+    final colorScheme = ColorScheme.fromSeed(seedColor: lightPrimary);
     return createTestApp(
       child: Scaffold(
         appBar: AppBar(
@@ -42,7 +43,7 @@ void main() {
               onDeleteHistoryByBarcode: onDeleteHistoryByBarcode,
               onDeleteReport: onDeleteReport,
               onBack: onBack ?? () {},
-              cardBg: Colors.white,
+              cardBg: lightCardBackground,
               colorScheme: colorScheme,
             ),
           ],

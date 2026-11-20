@@ -88,7 +88,7 @@ class ProductDetailAppBarActions extends StatelessWidget {
                   child: Divider(
                     height: 1,
                     thickness: 1,
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    color: colorScheme.outlineVariant,
                   ),
                 ),
               ),

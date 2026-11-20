@@ -331,7 +331,7 @@ class AppSnackBarWidgetState extends State<AppSnackBarWidget>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
+                        color: colorScheme.shadow.withValues(alpha: 0.25),
                         blurRadius: 20,
                         offset: const Offset(0, 6),
                       ),

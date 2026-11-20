@@ -49,7 +49,7 @@ class ManualBarcodeField extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: "scanner.manualInput.hint".tr(),
                   hintStyle: TextStyle(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    color: colorScheme.textTertiary,
                     fontSize: 15,
                     fontWeight: FontWeight.w400,
                   ),
@@ -116,13 +116,13 @@ class ManualBarcodeField extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: hasText
-                    ? colorScheme.primaryContainer
-                    : colorScheme.surfaceContainerHighest,
+                    ? colorScheme.buttonPrimaryBg
+                    : colorScheme.buttonPrimaryDisabledBg,
                 boxShadow: hasText
                     ? [
                         BoxShadow(
-                          color: colorScheme.primaryContainer.withValues(
-                            alpha: 0.3,
+                          color: colorScheme.buttonPrimaryBg.withValues(
+                            alpha: 0.25,
                           ),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
@@ -142,10 +142,8 @@ class ManualBarcodeField extends StatelessWidget {
                         Icons.chevron_right_rounded,
                         size: 22,
                         color: hasText
-                            ? colorScheme.onPrimaryContainer
-                            : colorScheme.onSurfaceVariant.withValues(
-                                alpha: 0.6,
-                              ),
+                            ? colorScheme.buttonPrimaryFg
+                            : colorScheme.buttonPrimaryDisabledFg,
                       ),
                     ),
                   ),

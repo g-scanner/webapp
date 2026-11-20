@@ -1,10 +1,11 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/theme.dart';
+import '../../core/widgets/widgets.dart';
 
 class CustomLicensesPage extends StatefulWidget {
   const CustomLicensesPage({super.key});
@@ -85,13 +86,9 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
-          Container(
+          AppCard.primary(
+            borderRadius: 28,
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-            ),
             child: Text.rich(
               TextSpan(
                 style: TextStyle(
@@ -149,13 +146,9 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
             color: colorScheme.primary,
           ),
           const SizedBox(height: 16),
-          Container(
+          AppCard.primary(
+            borderRadius: 28,
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-            ),
             child: Text.rich(
               TextSpan(
                 style: TextStyle(
@@ -249,15 +242,8 @@ class _CustomLicensesPageState extends State<CustomLicensesPage> {
                   baseColor: colorScheme.surfaceContainerHighest,
                   highlightColor: cardBg,
                 ),
-                child: Material(
-                  color: cardBg,
-                  clipBehavior: Clip.antiAlias,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    side: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                    ),
-                  ),
+                child: AppCard.primary(
+                  borderRadius: 28,
                   child: Column(
                     children: displayLicenses.entries.toList().asMap().entries.expand((
                       entry,

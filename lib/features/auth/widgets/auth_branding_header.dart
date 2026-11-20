@@ -18,7 +18,7 @@ class AuthBrandingHeader extends StatelessWidget {
           height: 96,
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: context.colorScheme.primaryContainer.withValues(alpha: 0.2),
+            color: context.colorScheme.iconCirclePrimaryBg,
             shape: BoxShape.circle,
           ),
           clipBehavior: Clip.antiAlias,
@@ -45,7 +45,7 @@ class AuthBrandingHeader extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
-            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            color: context.textTertiary,
           ),
         ),
       ],

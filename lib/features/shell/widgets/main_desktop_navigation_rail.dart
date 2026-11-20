@@ -53,15 +53,13 @@ class MainDesktopNavigationRail extends StatelessWidget {
                         color: context.cardBackground,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
+                          color: colorScheme.cardPrimaryBorder,
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: context.isDarkMode ? 0.2 : 0.06,
+                            color: colorScheme.shadow.withValues(
+                              alpha: context.isDarkMode ? 0.3 : 0.08,
                             ),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
@@ -166,15 +164,13 @@ class MainDesktopNavigationRail extends StatelessWidget {
                           color: context.cardBackground,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: colorScheme.outlineVariant.withValues(
-                              alpha: 0.5,
-                            ),
+                            color: colorScheme.cardPrimaryBorder,
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(
-                                alpha: context.isDarkMode ? 0.2 : 0.06,
+                              color: colorScheme.shadow.withValues(
+                                alpha: context.isDarkMode ? 0.3 : 0.08,
                               ),
                               blurRadius: 24,
                               offset: const Offset(0, 8),

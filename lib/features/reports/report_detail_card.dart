@@ -449,7 +449,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHigh,
+                        color: colorScheme.surfaceContainerHighest,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -487,7 +487,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     Icon(
                       Icons.chevron_right_rounded,
                       size: 24,
-                      color: colorScheme.outlineVariant,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -587,7 +587,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: colorScheme.outlineVariant,
+                      color: colorScheme.textTertiary,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -598,9 +598,7 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     decoration: BoxDecoration(
                       border: Border(
                         left: BorderSide(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.6,
-                          ),
+                          color: colorScheme.outline,
                           width: 4,
                         ),
                       ),

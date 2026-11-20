@@ -39,7 +39,7 @@ class ReportsFilterHeader extends StatelessWidget {
   Color _getFilterColor(BuildContext context, String filter) {
     final colorScheme = context.colorScheme;
     if (filter == "Mie") {
-      return colorScheme.statusSecondaryBg;
+      return colorScheme.selectedItemBg;
     }
     return colorScheme.surfaceContainerHighest;
   }
@@ -47,9 +47,9 @@ class ReportsFilterHeader extends StatelessWidget {
   Color _getFilterTextColor(BuildContext context, String filter) {
     final colorScheme = context.colorScheme;
     if (filter == "Mie") {
-      return colorScheme.statusSecondaryText;
+      return colorScheme.primary;
     }
-    return colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
+    return colorScheme.textTertiary;
   }
 
   String _getFilterLabel(String filter) {
@@ -145,7 +145,7 @@ class ReportsFilterHeader extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: showSkeleton
-                        ? colorScheme.tertiary.withValues(alpha: 0.18)
+                        ? colorScheme.surfaceContainerHighest
                         : colorScheme.tertiary,
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -155,7 +155,7 @@ class ReportsFilterHeader extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: showSkeleton
-                          ? colorScheme.tertiary
+                          ? colorScheme.textTertiary
                           : colorScheme.onTertiary,
                     ),
                   ),

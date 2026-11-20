@@ -1,4 +1,4 @@
-# Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿# Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 # PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 name: glutiend
@@ -56,7 +56,7 @@ flutter_launcher_icons:
   image_path: "assets/logo/app_icon_solid.png"
   # --- ANDROID ---
   android: true
-  adaptive_icon_background: "#BFDEB4"
+  adaptive_icon_background: "#D3E4FF"
   adaptive_icon_foreground: "assets/logo/app_icon_foreground.png" # Logo trasparente
   # --- IOS ---
   ios: true
@@ -66,8 +66,8 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/logo/app_icon_solid.png"
-    background_color: "#BFDEB4"
-    theme_color: "#0D631B" # Il verde primario della tua app (primaryContainer)
+    background_color: "#F4F7FC"
+    theme_color: "#1E5FA8" # Il verde primario della tua app (primaryContainer)
   # # --- WINDOWS (Opzionale, se generi la build Desktop) ---
   # windows:
   #   generate: true
@@ -80,7 +80,7 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   # Colore di sfondo (Light Mode)
-  color: "#BFDEB4"
+  color: "#F4F7FC"
   # Percorso della tua immagine PNG
   image: "assets/splash/splash_icon.png"
   
@@ -96,7 +96,7 @@ flutter_native_splash:
   # Configurazione specifica e obbligatoria per i dispositivi Android 12 e superiori
   android_12:
     image: "assets/splash/splash_icon.png"
-    color: "#BFDEB4"
+    color: "#F4F7FC"
     # image_dark: "assets/splash/splash_icon_dark.png"
     # color_dark: "#121212"
 

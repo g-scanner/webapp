@@ -30,7 +30,7 @@ class AppCircleMoreMenu<T> extends StatelessWidget {
       child: PopupMenuButton<T>(
         tooltip: tooltip ?? "common.actions.moreOptions".tr(),
         elevation: 6,
-        shadowColor: Colors.black.withValues(alpha: 0.12),
+        shadowColor: colorScheme.shadow,
         offset: offset,
         color: cardBg,
         surfaceTintColor: Colors.transparent,
@@ -39,7 +39,7 @@ class AppCircleMoreMenu<T> extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+            color: colorScheme.cardPrimaryBorder,
             width: 1,
           ),
         ),

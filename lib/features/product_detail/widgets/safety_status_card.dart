@@ -32,7 +32,6 @@ class SafetyStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
 
-    final variant = AppStatusPill.variantForStatus(effectiveStatus);
     final colors = colorScheme.statusColorsFor(effectiveStatus);
     final heroBgColor = colors.alpha;
     final heroTextColor = colors.solid;
@@ -69,7 +68,7 @@ class SafetyStatusCard extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppStatusPill.iconCircleBgForVariant(variant, colorScheme),
+              color: heroBgColor,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -168,11 +167,7 @@ class GlutenEvaluationCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             decoration: BoxDecoration(
               color: colorScheme.ctaBarBg,
-              border: Border(
-                top: BorderSide(
-                  color: colorScheme.ctaBarBorder,
-                ),
-              ),
+              border: Border(top: BorderSide(color: colorScheme.ctaBarBorder)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

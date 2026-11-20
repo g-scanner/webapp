@@ -117,16 +117,10 @@ class _VoteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Colori attivi coordinati con i selettori di sincronizzazione dati
-    final activeColor = isUpvote
-        ? colorScheme.statusPrimaryText
-        : colorScheme.statusErrorText;
-    final activeBg = isUpvote
-        ? colorScheme.selectedItemBg
-        : colorScheme.selectedErrorItemBg;
-    final activeBorder = isUpvote
-        ? colorScheme.selectedItemBorder
-        : colorScheme.selectedErrorItemBorder;
+    // Colori attivi coordinati con i colori primari del design system
+    final activeColor = colorScheme.primary;
+    final activeBg = colorScheme.selectedItemBg;
+    final activeBorder = colorScheme.selectedItemBorder;
 
     final iconColor = isActive ? activeColor : colorScheme.onSurfaceVariant;
     final textColor = isActive ? activeColor : colorScheme.onSurfaceVariant;
@@ -149,12 +143,8 @@ class _VoteButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(999),
-          splashColor: isUpvote
-              ? colorScheme.splashPrimary
-              : colorScheme.splashError,
-          highlightColor: isUpvote
-              ? colorScheme.selectedItemBg
-              : colorScheme.selectedErrorItemBg,
+          splashColor: colorScheme.splashPrimary,
+          highlightColor: colorScheme.selectedItemBg,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(

@@ -78,7 +78,7 @@ class SettingsDropdownTile<T> extends StatelessWidget {
             child: PopupMenuButton<T>(
               tooltip: tooltip,
               elevation: 6,
-              shadowColor: Colors.black.withValues(alpha: 0.12),
+              shadowColor: colorScheme.shadow,
               position: PopupMenuPosition.under,
               offset: const Offset(0, 8),
               color: cardBg,
@@ -88,7 +88,7 @@ class SettingsDropdownTile<T> extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                  color: colorScheme.cardPrimaryBorder,
                 ),
               ),
               onSelected: onSelected,

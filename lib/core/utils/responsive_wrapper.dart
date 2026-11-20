@@ -49,7 +49,7 @@ class ResponsiveMaxCardWidth extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
+                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
@@ -66,7 +66,7 @@ class ResponsiveMaxCardWidth extends StatelessWidget {
                 side: BorderSide(
                   color: Theme.of(
                     context,
-                  ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ).colorScheme.outlineVariant,
                   width: 1,
                 ),
               ),

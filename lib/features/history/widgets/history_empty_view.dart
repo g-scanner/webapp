@@ -51,7 +51,7 @@ class HistoryEmptyView extends StatelessWidget {
               color: colorScheme.surfaceContainerHighest,
               shape: BoxShape.circle,
             ),
-            child: Icon(emptyIcon, size: 40, color: colorScheme.outlineVariant),
+            child: Icon(emptyIcon, size: 40, color: colorScheme.textTertiary),
           ),
           const SizedBox(height: 16),
           Text(

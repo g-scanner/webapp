@@ -1,9 +1,10 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../licenses/licenses_screen.dart';
 import '../dialogs/legal_content_dialog.dart';
 import 'settings_navigation_item.dart';
@@ -15,15 +16,9 @@ class LegalSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final cardBg = context.cardBackground;
 
-    return Material(
-      color: cardBg,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-        side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
-      ),
+    return AppCard.primary(
+      borderRadius: 28,
       child: Column(
         children: [
           SettingsNavigationItem(

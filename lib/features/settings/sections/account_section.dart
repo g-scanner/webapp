@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
+﻿// Copyright (c) 2026 Emanuele Ciotola. All Rights Reserved.
 // PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
@@ -32,15 +32,9 @@ class AccountSection extends StatelessWidget {
         optimisticDisplayName ?? currentUser?.displayName ?? "";
     final colorScheme = context.colorScheme;
 
-    return Container(
+    return AppCard.primary(
+      borderRadius: 28,
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: context.cardBackground,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
       child: Column(
         children: [
           Row(
@@ -118,7 +112,7 @@ class AccountSection extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHigh,
+          color: colorScheme.surfaceContainerHighest,
           shape: BoxShape.circle,
         ),
         child: Icon(

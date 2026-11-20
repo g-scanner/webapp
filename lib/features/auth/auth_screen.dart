@@ -281,89 +281,33 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.colorScheme.surface,
-      body: Stack(
-        children: [
-          // Sfondo decorativo: Blob alto a sinistra
-          Positioned(
-            top: -100,
-            left: -50,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.colorScheme.secondaryContainer.withValues(alpha: 0.15),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.colorScheme.secondaryContainer.withValues(alpha: 0.15),
-                    blurRadius: 100,
-                    spreadRadius: 50,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: AppCard.primary(
+              borderRadius: 24,
+              padding: const EdgeInsets.symmetric(
+                vertical: 32,
+                horizontal: 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AuthBrandingHeader(),
+                  const SizedBox(height: 32),
+                  SocialAuthButtons(
+                    isLoading: _isLoading,
+                    onGoogleSignIn: () => _checkAndShowLegalPopup(_signInWithGoogle),
+                    onFacebookSignIn: () => _checkAndShowLegalPopup(_signInWithFacebook),
+                    onAnonymousSignIn: () => _checkAndShowLegalPopup(_signInAnonymously),
                   ),
                 ],
               ),
             ),
           ),
-          // Sfondo decorativo: Blob basso a destra
-          Positioned(
-            bottom: -150,
-            right: -100,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.colorScheme.primaryContainer.withValues(alpha: 0.15),
-                    blurRadius: 120,
-                    spreadRadius: 60,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Contenuto Centrato
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxWidth: 400),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 32,
-                  horizontal: 24,
-                ),
-                decoration: BoxDecoration(
-                  color: context.cardBackground,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: context.colorScheme.outlineVariant.withValues(alpha: 0.3)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.colorScheme.shadow.withValues(alpha: 0.02),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const AuthBrandingHeader(),
-                    const SizedBox(height: 32),
-                    SocialAuthButtons(
-                      isLoading: _isLoading,
-                      onGoogleSignIn: () => _checkAndShowLegalPopup(_signInWithGoogle),
-                      onFacebookSignIn: () => _checkAndShowLegalPopup(_signInWithFacebook),
-                      onAnonymousSignIn: () => _checkAndShowLegalPopup(_signInAnonymously),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
