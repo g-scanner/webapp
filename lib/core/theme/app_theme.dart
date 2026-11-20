@@ -23,12 +23,12 @@ final ThemeData lightTheme = ThemeData(
     onSecondary: lightOnSecondaryContainer,
     secondaryContainer: lightSecondaryContainer,
     onSecondaryContainer: lightOnSecondaryContainer,
-    tertiary: lightTertiaryContainer,
-    onTertiary: lightOnTertiaryContainer,
+    tertiary: lightStatusUncertainText,
+    onTertiary: colorWhite,
     tertiaryContainer: lightTertiaryContainer,
     onTertiaryContainer: lightOnTertiaryContainer,
     error: lightError,
-    onError: lightOnPrimary,
+    onError: colorWhite,
     errorContainer: lightErrorContainer,
     onErrorContainer: lightOnErrorContainer,
     surface: lightSurface,
@@ -36,10 +36,10 @@ final ThemeData lightTheme = ThemeData(
     surfaceContainerHighest: lightSurfaceVariant,
     onSurfaceVariant: lightOnSurfaceVariant,
     outline: lightOutline,
-    outlineVariant: lightOutline,
+    outlineVariant: lightCardPrimaryBorder,
     shadow: lightShadow,
     scrim: lightScrim,
-    inverseSurface: lightOnSurface,
+    inverseSurface: darkSurface,
     onInverseSurface: lightSurface,
     inversePrimary: darkPrimary,
   ),
@@ -47,10 +47,14 @@ final ThemeData lightTheme = ThemeData(
   splashColor: lightPrimary.withValues(alpha: 0.12),
   highlightColor: lightPrimary.withValues(alpha: 0.08),
   appBarTheme: const AppBarTheme(
-    backgroundColor: lightCardBackground,
+    backgroundColor: lightSurface,
     foregroundColor: lightOnSurface,
     elevation: 0,
     scrolledUnderElevation: 0,
+  ),
+  navigationBarTheme: NavigationBarThemeData(
+    backgroundColor: lightBottomNavBg,
+    indicatorColor: lightSecondaryContainer,
   ),
   dialogTheme: const DialogThemeData(
     backgroundColor: lightCardBackground,
@@ -59,7 +63,7 @@ final ThemeData lightTheme = ThemeData(
   bottomSheetTheme: const BottomSheetThemeData(
     backgroundColor: lightCardBackground,
     surfaceTintColor: colorTransparent,
-    modalBackgroundColor: lightSurface,
+    modalBackgroundColor: lightBottomSheetBg,
   ),
   popupMenuTheme: PopupMenuThemeData(
     color: lightCardBackground,
@@ -68,7 +72,7 @@ final ThemeData lightTheme = ThemeData(
     surfaceTintColor: colorTransparent,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(20),
-      side: BorderSide(color: lightOutline.withValues(alpha: 0.4)),
+      side: const BorderSide(color: lightCardPrimaryBorder),
     ),
   ),
 );
@@ -88,8 +92,8 @@ final ThemeData darkTheme = ThemeData(
     onSecondary: darkOnSecondaryContainer,
     secondaryContainer: darkSecondaryContainer,
     onSecondaryContainer: darkOnSecondaryContainer,
-    tertiary: darkTertiaryContainer,
-    onTertiary: darkOnTertiaryContainer,
+    tertiary: darkStatusUncertainText,
+    onTertiary: darkSurface,
     tertiaryContainer: darkTertiaryContainer,
     onTertiaryContainer: darkOnTertiaryContainer,
     error: darkError,
@@ -101,10 +105,10 @@ final ThemeData darkTheme = ThemeData(
     surfaceContainerHighest: darkSurfaceVariant,
     onSurfaceVariant: darkOnSurfaceVariant,
     outline: darkOutline,
-    outlineVariant: darkOutline,
+    outlineVariant: darkCardPrimaryBorder,
     shadow: darkShadow,
     scrim: darkScrim,
-    inverseSurface: darkOnSurface,
+    inverseSurface: lightSurface,
     onInverseSurface: darkSurface,
     inversePrimary: lightPrimary,
   ),
@@ -117,6 +121,10 @@ final ThemeData darkTheme = ThemeData(
     elevation: 0,
     scrolledUnderElevation: 0,
   ),
+  navigationBarTheme: NavigationBarThemeData(
+    backgroundColor: darkBottomNavBg,
+    indicatorColor: darkSecondaryContainer,
+  ),
   dialogTheme: const DialogThemeData(
     backgroundColor: darkCardBackground,
     surfaceTintColor: colorTransparent,
@@ -124,7 +132,7 @@ final ThemeData darkTheme = ThemeData(
   bottomSheetTheme: const BottomSheetThemeData(
     backgroundColor: darkCardBackground,
     surfaceTintColor: colorTransparent,
-    modalBackgroundColor: darkSurface,
+    modalBackgroundColor: darkBottomSheetBg,
   ),
   popupMenuTheme: PopupMenuThemeData(
     color: darkCardBackground,
@@ -133,7 +141,7 @@ final ThemeData darkTheme = ThemeData(
     surfaceTintColor: colorTransparent,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(20),
-      side: BorderSide(color: darkOutline.withValues(alpha: 0.4)),
+      side: const BorderSide(color: darkCardPrimaryBorder),
     ),
   ),
 );
@@ -186,36 +194,37 @@ extension AppColorTokens on ColorScheme {
   // ── 1. STATI DEL CIBO (4 STATI GLUTINE + LATTOSIO) ────────────────────────
   // Ciascuno stato possiede ESATTAMENTE una coppia:
   // - un colore solido (per testi, icone, elementi grafici primari)
-  // - un colore con alpha (per sfondi, pillole, container, hero card)
+  // - un colore con alpha / sfondo (per sfondi, pillole, container, hero card - già pastello al 100%)
 
   // STATO SICURO (Safe / Adatto) - Scollegato da primary / primaryContainer
   Color get statusSafeSolid =>
       brightness == Brightness.dark ? darkStatusSafeText : lightStatusSafeText;
   Color get statusSafeAlpha =>
-      (brightness == Brightness.dark
-              ? darkStatusSafeContainer
-              : lightStatusSafeContainer)
-          .withValues(alpha: 0.15);
+      brightness == Brightness.dark ? darkStatusSafeBg : lightStatusSafeBg;
   ({Color solid, Color alpha}) get statusSafeColors =>
       (solid: statusSafeSolid, alpha: statusSafeAlpha);
 
   // STATO VIETATO (Unsafe / Non adatto)
-  Color get statusUnsafeSolid => error;
-  Color get statusUnsafeAlpha => errorContainer.withValues(
-    alpha: brightness == Brightness.dark ? 0.2 : 0.5,
-  );
+  Color get statusUnsafeSolid =>
+      brightness == Brightness.dark ? darkStatusUnsafeText : lightStatusUnsafeText;
+  Color get statusUnsafeAlpha =>
+      brightness == Brightness.dark ? darkStatusUnsafeBg : lightStatusUnsafeBg;
   ({Color solid, Color alpha}) get statusUnsafeColors =>
       (solid: statusUnsafeSolid, alpha: statusUnsafeAlpha);
 
   // STATO INCERTO (Uncertain / Warning / Segnalazione)
-  Color get statusUncertainSolid => tertiary;
-  Color get statusUncertainAlpha => tertiaryContainer.withValues(alpha: 0.1);
+  Color get statusUncertainSolid =>
+      brightness == Brightness.dark ? darkStatusUncertainText : lightStatusUncertainText;
+  Color get statusUncertainAlpha =>
+      brightness == Brightness.dark ? darkStatusUncertainBg : lightStatusUncertainBg;
   ({Color solid, Color alpha}) get statusUncertainColors =>
       (solid: statusUncertainSolid, alpha: statusUncertainAlpha);
 
   // STATO IGNOTO (Unknown / Sconosciuto / Neutro)
-  Color get statusUnknownSolid => onSurfaceVariant;
-  Color get statusUnknownAlpha => surfaceContainerHighest;
+  Color get statusUnknownSolid =>
+      brightness == Brightness.dark ? darkStatusUnknownText : lightStatusUnknownText;
+  Color get statusUnknownAlpha =>
+      brightness == Brightness.dark ? darkStatusUnknownBg : lightStatusUnknownBg;
   ({Color solid, Color alpha}) get statusUnknownColors =>
       (solid: statusUnknownSolid, alpha: statusUnknownAlpha);
 
@@ -223,10 +232,7 @@ extension AppColorTokens on ColorScheme {
   Color get statusLactoseSolid =>
       brightness == Brightness.dark ? darkLactoseText : lightLactoseText;
   Color get statusLactoseAlpha =>
-      (brightness == Brightness.dark
-              ? darkLactoseContainer
-              : lightLactoseContainer)
-          .withValues(alpha: 0.15);
+      brightness == Brightness.dark ? darkLactoseBg : lightLactoseBg;
   ({Color solid, Color alpha}) get statusLactoseColors =>
       (solid: statusLactoseSolid, alpha: statusLactoseAlpha);
 
@@ -243,6 +249,16 @@ extension AppColorTokens on ColorScheme {
         return statusUnknownColors;
     }
   }
+
+  // Pallini Legenda Scanner (pieni 100%)
+  Color get statusSafeLegendDot =>
+      brightness == Brightness.dark ? darkStatusSafeText : lightStatusSafeLegendDot;
+  Color get statusUncertainLegendDot =>
+      brightness == Brightness.dark ? darkStatusUncertainText : lightStatusUncertainLegendDot;
+  Color get statusUnsafeLegendDot =>
+      brightness == Brightness.dark ? darkError : lightStatusUnsafeLegendDot;
+  Color get statusUnknownLegendDot =>
+      brightness == Brightness.dark ? darkStatusUnknownText : lightStatusUnknownLegendDot;
 
   // Alias semantici per compatibilità
   Color get statusPrimaryBg => statusSafeAlpha;
@@ -261,11 +277,13 @@ extension AppColorTokens on ColorScheme {
   // ── 2. PULSANTI (BUTTONS) ─────────────────────────────────────────────────
   // Token cromatici dedicati per la gerarchia dei pulsanti dell'app.
 
-  // Pulsante Primario (verde pieno)
-  Color get buttonPrimaryBg => primary;
-  Color get buttonPrimaryFg => onPrimary;
-  Color get buttonPrimaryDisabledBg => primary.withValues(alpha: 0.38);
-  Color get buttonPrimaryDisabledFg => onPrimary.withValues(alpha: 0.38);
+  // Pulsante Primario (pieno blu Cobalt Mist; in dark mode usa darkButtonPrimaryBg anti-abbagliamento)
+  Color get buttonPrimaryBg =>
+      brightness == Brightness.dark ? darkButtonPrimaryBg : primary;
+  Color get buttonPrimaryFg =>
+      brightness == Brightness.dark ? darkButtonPrimaryFg : onPrimary;
+  Color get buttonPrimaryDisabledBg => buttonPrimaryBg.withValues(alpha: 0.38);
+  Color get buttonPrimaryDisabledFg => buttonPrimaryFg.withValues(alpha: 0.38);
 
   // Pulsante Secondario (grigio pieno)
   Color get buttonSecondaryBg => surfaceContainerHighest;
@@ -274,13 +292,14 @@ extension AppColorTokens on ColorScheme {
       surfaceContainerHighest.withValues(alpha: 0.38);
   Color get buttonSecondaryDisabledFg => onSurface.withValues(alpha: 0.38);
 
-  // Pulsante Terziario (outlined)
+  // Pulsante Terziario (outlined blu)
   Color get buttonTertiaryBg => colorTransparent;
-  Color get buttonTertiaryBorder => outlineVariant.withValues(alpha: 0.5);
-  Color get buttonTertiaryFg => onSurface;
+  Color get buttonTertiaryBorder =>
+      brightness == Brightness.dark ? darkButtonTertiaryBorder : lightButtonTertiaryBorder;
+  Color get buttonTertiaryFg => primary;
   Color get buttonTertiaryDisabledBorder =>
-      outlineVariant.withValues(alpha: 0.2);
-  Color get buttonTertiaryDisabledFg => onSurface.withValues(alpha: 0.38);
+      buttonTertiaryBorder.withValues(alpha: 0.2);
+  Color get buttonTertiaryDisabledFg => primary.withValues(alpha: 0.38);
 
   // Pulsante Primario Distruttivo (rosso pieno di eliminazione)
   Color get buttonPrimaryDestructiveBg => error;
@@ -289,13 +308,19 @@ extension AppColorTokens on ColorScheme {
   Color get buttonPrimaryDestructiveDisabledFg => onError.withValues(alpha: 0.6);
 
   // Pulsante Terziario Distruttivo (cancellazione, outline con leggerissimo riempimento)
-  Color get buttonTertiaryDestructiveBg => errorContainer.withValues(alpha: 0.3);
-  Color get buttonTertiaryDestructiveBorder => errorContainer;
+  Color get buttonTertiaryDestructiveBg =>
+      brightness == Brightness.dark
+          ? darkStatusUnsafeBg.withValues(alpha: 0.5)
+          : lightStatusUnsafeBg.withValues(alpha: 0.5);
+  Color get buttonTertiaryDestructiveBorder =>
+      brightness == Brightness.dark
+          ? darkStatusUnsafeDestructiveBorder
+          : lightStatusUnsafeDestructiveBorder;
   Color get buttonTertiaryDestructiveFg => error;
   Color get buttonTertiaryDestructiveDisabledBg =>
-      errorContainer.withValues(alpha: 0.1);
+      buttonTertiaryDestructiveBg.withValues(alpha: 0.2);
   Color get buttonTertiaryDestructiveDisabledBorder =>
-      errorContainer.withValues(alpha: 0.2);
+      buttonTertiaryDestructiveBorder.withValues(alpha: 0.2);
   Color get buttonTertiaryDestructiveDisabledFg =>
       error.withValues(alpha: 0.38);
 
@@ -310,46 +335,48 @@ extension AppColorTokens on ColorScheme {
   // Card Principale (sfondo tema chiaro/scuro con bordo sottile)
   Color get cardPrimaryBg =>
       brightness == Brightness.dark ? darkCardBackground : lightCardBackground;
-  Color get cardPrimaryBorder => outlineVariant.withValues(alpha: 0.3);
-  Color get cardPrimaryShadow => shadow.withValues(alpha: 0.02);
+  Color get cardPrimaryBorder =>
+      brightness == Brightness.dark ? darkCardPrimaryBorder : lightCardPrimaryBorder;
+  Color get cardPrimaryShadow => shadow;
   Color get cardPrimaryHover => surfaceContainerHighest;
   Color get cardPrimaryHighlight =>
       brightness == Brightness.dark ? darkSurfaceContainerLow : lightSurfaceContainerLow;
 
-  // Card Secondaria (sfondo uniforme grigio pieno)
-  Color get cardSecondaryBg => surfaceContainerHighest;
-  Color get cardSecondaryBorder => colorTransparent;
+  // Card Secondaria (sfondo uniforme grigio neutro con bordo sottile neutro)
+  Color get cardSecondaryBg =>
+      brightness == Brightness.dark ? darkCardSecondaryBg : lightCardSecondaryBg;
+  Color get cardSecondaryBorder =>
+      brightness == Brightness.dark ? darkCardSecondaryBorder : lightCardSecondaryBorder;
   Color get cardSecondaryFg => onSurface;
 
   // Card ad Alta Evidenziazione (High Emphasis)
   Color get cardHighEmphasisBg => cardPrimaryBg;
-  Color get cardHighEmphasisBorder => outlineVariant.withValues(alpha: 0.5);
-  Color get cardHighEmphasisShadow => shadow.withValues(alpha: 0.04);
+  Color get cardHighEmphasisBorder =>
+      brightness == Brightness.dark
+          ? darkCardPrimaryBorder.withValues(alpha: 0.15)
+          : lightCardPrimaryBorder.withValues(alpha: 0.2);
+  Color get cardHighEmphasisShadow => shadow;
 
   // ── 4. CERCHI ICONA (ICON CIRCLES) ────────────────────────────────────────
-  // Sfondi dedicati per i cerchi contenenti icone.
-  Color get iconCirclePrimaryBg => primaryContainer.withValues(alpha: 0.15);
-  Color get iconCircleErrorBg => errorContainer.withValues(
-    alpha: brightness == Brightness.dark ? 0.2 : 0.5,
-  );
-  Color get iconCircleTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
-  Color get iconCircleNeutralBg => onSurfaceVariant.withValues(alpha: 0.1);
-  Color get iconCircleSecondaryBg => secondaryContainer.withValues(alpha: 0.15);
+  // Cerchio brand usa primaryContainer pieno; i cerchi stato usano gli sfondi pieni.
+  Color get iconCirclePrimaryBg => primaryContainer;
+  Color get iconCircleErrorBg => statusUnsafeAlpha;
+  Color get iconCircleTertiaryBg => statusUncertainAlpha;
+  Color get iconCircleNeutralBg => statusUnknownAlpha;
+  Color get iconCircleSecondaryBg => statusLactoseAlpha;
 
   // ── 5. CALL TO ACTION BAR (FOOTER CARD SEGNALAZIONI/DETTAGLI) ────────────
-  Color get ctaBarBg => tertiaryContainer.withValues(alpha: 0.1);
-  Color get ctaBarBorder => outlineVariant.withValues(alpha: 0.2);
-  Color get ctaBarFg => tertiary;
+  Color get ctaBarBg => cardSecondaryBg;
+  Color get ctaBarBorder => cardSecondaryBorder;
+  Color get ctaBarFg => primary;
   Color get ctaTertiaryBg => ctaBarBg;
 
   // ── 6. ELEMENTI SELEZIONABILI E NON SELEZIONATI ──────────────────────────
-  Color get selectedItemBg => primaryContainer.withValues(alpha: 0.08);
-  Color get selectedItemBorder => primary.withValues(alpha: 0.25);
-  Color get selectedErrorItemBg => errorContainer.withValues(
-    alpha: brightness == Brightness.dark ? 0.2 : 0.5,
-  );
-  Color get selectedErrorItemBorder => error.withValues(alpha: 0.25);
-  Color get unselectedItemBg => surfaceContainerHighest.withValues(alpha: 0.35);
+  Color get selectedItemBg => primaryContainer;
+  Color get selectedItemBorder => primary.withValues(alpha: 0.35);
+  Color get selectedErrorItemBg => statusUnsafeAlpha;
+  Color get selectedErrorItemBorder => error.withValues(alpha: 0.35);
+  Color get unselectedItemBg => surfaceContainerHighest;
 
   // ── 7. SELETTORI POPUP / PILL ─────────────────────────────────────────────
   Color get dropdownPillBg => surfaceContainerHighest;
@@ -359,7 +386,7 @@ extension AppColorTokens on ColorScheme {
       brightness == Brightness.dark ? darkScannerLegendBg : lightScannerLegendBg;
 
   // ── 9. NAVIGAZIONE ────────────────────────────────────────────────────────
-  Color get navSelectedBg => secondaryContainer.withValues(alpha: 0.3);
+  Color get navSelectedBg => secondaryContainer;
   Color get navSelectedFg => onSecondaryContainer;
 
   // ── 10. ACCESSO ANONIMO ───────────────────────────────────────────────────
@@ -368,4 +395,8 @@ extension AppColorTokens on ColorScheme {
   // ── 11. EFFETTI SPLASH / OVERLAY ──────────────────────────────────────────
   Color get splashPrimary => primary.withValues(alpha: 0.12);
   Color get splashError => error.withValues(alpha: 0.12);
+
+  // ── 12. TESTO TERZIARIO (Hint / Placeholder) ──────────────────────────────
+  Color get textTertiary =>
+      brightness == Brightness.dark ? darkTextTertiary : lightTextTertiary;
 }

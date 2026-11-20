@@ -8,72 +8,139 @@ const Color colorWhite = Color(0xFFFFFFFF);
 const Color colorBlack = Color(0xFF000000);
 const Color colorTransparent = Color(0x00000000);
 
-// ─── Light Palette (Brand & General M3) ───────────────────────────────────────
-const Color lightPrimary = Color(0xFF0D631B);
-const Color lightOnPrimary = Color(0xFFFFFFFF);
-const Color lightPrimaryContainer = Color(0xFF2E7D32);
-const Color lightOnPrimaryContainer = Color(0xFFFFFFFF);
-const Color lightSurface = Color(0xFFFAF9FC);
-const Color lightOnSurface = Color(0xFF1B1B1E);
-const Color lightSurfaceVariant = Color(0xFFEFEDF1);
-const Color lightOnSurfaceVariant = Color(0xFF40493D);
-const Color lightOutline = Color(0xFFBFCABA);
-const Color lightSecondaryContainer = Color(0xFF54A0FE);
-const Color lightOnSecondaryContainer = Color(0xFF003567);
-const Color lightTertiaryContainer = Color(0xFFAD5600);
-const Color lightOnTertiaryContainer = Color(0xFFFFFFFF);
-const Color lightError = Color(0xFFBA1A1A);
-const Color lightErrorContainer = Color(0xFFFFDAD6);
-const Color lightOnErrorContainer = Color(0xFF410002);
+// ─── Light Palette — Cobalt Mist (Material 3) ─────────────────────────────────
+// Superfici e sfondi
+const Color lightSurface = Color(0xFFF4F7FC); // Sfondo pagina
+const Color lightCardBackground = Color(0xFFFFFFFF); // Card principale
+const Color lightCardSecondaryBg = Color(0xFFECEFF4); // Container secondario / Legenda / Box note / Footer
+const Color lightSurfaceContainerLow = Color(0xFFECEFF4); // surfaceContainerLow
+const Color lightSurfaceVariant = Color(0xFFE2E9F4); // Input / Pillole ricerca / Campi form / Chip barcode
+const Color lightBottomNavBg = Color(0xFFECF1F9); // Bottom Navigation Bar sfondo
+const Color lightBottomSheetBg = Color(0xFFF5F8FD); // Bottom Sheet modalBackgroundColor
+const Color lightScannerLegendBg = Color(0xFFECEFF4); // Legenda scanner
 
-// Component-specific Light Tokens
-const Color lightCardBackground = Color(0xFFFFFFFF);
-const Color lightSurfaceContainerLow = Color(0xFFF5F3F7);
-const Color lightScannerLegendBg = Color(0xFFECEEF3);
-const Color lightShadow = Color(0x1F000000);
-const Color lightScrim = Color(0x52000000);
+// Testi e icone neutre
+const Color lightOnSurface = Color(0xFF141923); // Testo primario
+const Color lightOnSurfaceVariant = Color(0xFF465061); // Testo secondario
+const Color lightTextTertiary = Color(0xFF6E798B); // Hint / Placeholder / Terziario
 
-// ─── Dark Palette (Brand & General M3) ────────────────────────────────────────
-const Color darkPrimary = Color(0xFF3D9142); // verde medio — contrasto ~6:1 su bianco
-const Color darkOnPrimary = Color(0xFFFFFFFF); // bianco leggibile su darkPrimary
-const Color darkOnError = Color(0xFF1A0002); // scuro leggibile su darkError (rosa chiaro)
-const Color darkPrimaryContainer = Color(0xFF065314);
-const Color darkOnPrimaryContainer = Color(0xFF9DF49E);
-const Color darkSurface = Color(0xFF121214);
-const Color darkOnSurface = Color(0xFFE4E2E6);
-const Color darkSurfaceVariant = Color(0xFF242528);
-const Color darkOnSurfaceVariant = Color(0xFFC1C9BE);
-const Color darkOutline = Color(0xFF8B9389);
-const Color darkSecondaryContainer = Color(0xFF004886);
-const Color darkOnSecondaryContainer = Color(0xFFD0E4FF);
-const Color darkTertiaryContainer = Color(0xFFFFB68A);
-const Color darkOnTertiaryContainer = Color(0xFF5C2D00);
-const Color darkError = Color(0xFFFFB4AB);
-const Color darkErrorContainer = Color(0xFF93000A);
-const Color darkOnErrorContainer = Color(0xFFFFDAD6);
+// Bordi e outline
+const Color lightOutline = Color(0xFF6C798E); // Switch off, divider forti
+const Color lightCardPrimaryBorder = Color(0x14194B96); // Bordo sottile Card Principali rgba(25, 75, 150, 0.08)
+const Color lightCardSecondaryBorder = Color(0x0F141923); // Bordo sottile Card Secondarie / CTA bar rgba(20, 25, 35, 0.06)
+const Color lightButtonTertiaryBorder = Color(0x6B1E5FA8); // Bordo Bottoni Outlined rgba(30, 95, 168, 0.42)
 
-// Component-specific Dark Tokens
-const Color darkCardBackground = Color(0xFF1E1E22);
-const Color darkSurfaceContainerLow = Color(0xFF18181C);
-const Color darkScannerLegendBg = Color(0xFF18181C);
-const Color darkShadow = Color(0x3F000000);
-const Color darkScrim = Color(0x80000000);
+// Brand Primary & Bottoni
+const Color lightPrimary = Color(0xFF1E5FA8); // Blu brand principale
+const Color lightOnPrimary = Color(0xFFFFFFFF); // Testo su bottone primario
+const Color lightPrimaryContainer = Color(0xFFD3E4FF); // Cerchi icona brand, tile selezionate, invio barcode
+const Color lightOnPrimaryContainer = Color(0xFF072347); // Testo su primary container
 
-// ─── Safe Status Tokens (Scollegati da primary / primaryContainer) ───────────
-// Fonte di verità autonoma per il cibo sicuro / adatto: modifiche al brand primary
-// non impattano lo stato di sicurezza alimentare.
-const Color lightStatusSafeText = Color(0xFF0D631B);
-const Color lightStatusSafeContainer = Color(0xFF2E7D32);
-const Color darkStatusSafeText = Color(0xFF51CF66);
-const Color darkStatusSafeContainer = Color(0xFF065314);
+// Navigazione attiva (Bottom Nav pill)
+const Color lightSecondaryContainer = Color(0xFFDAE6F7); // navSelectedBg
+const Color lightOnSecondaryContainer = Color(0xFF153257); // navSelectedFg
 
-// Backward-compatible alias
-const Color darkStatusPrimaryText = darkStatusSafeText;
+// Stati Cibo — Sicuro (Safe / Adatto) — Indipendente dal brand blu
+const Color lightStatusSafeText = Color(0xFF14632F);
+const Color lightStatusSafeBg = Color(0xFFDFF0E4); // Sfondo pastello già pronto (100% opacity)
+const Color lightStatusSafeContainer = Color(0xFFDFF0E4);
+const Color lightStatusSafeLegendDot = Color(0xFF1E733B); // Pallino legenda pieno
 
-// ─── Lactose Status Tokens (Scollegati da secondaryContainer / Navigation) ──
-// Fonte di verità autonoma per l'allerta Lattosio: modifiche alla Bottom Navigation
-// (secondaryContainer) non impattano il badge e gli indicatori del lattosio.
-const Color lightLactoseText = Color(0xFF003567);
-const Color lightLactoseContainer = Color(0xFF54A0FE);
-const Color darkLactoseText = Color(0xFFD0E4FF);
-const Color darkLactoseContainer = Color(0xFF004886);
+// Stati Cibo — Incerto / Warning
+const Color lightStatusUncertainText = Color(0xFFA35300);
+const Color lightStatusUncertainBg = Color(0xFFF8ECDE); // Sfondo pastello già pronto (100% opacity)
+const Color lightTertiaryContainer = Color(0xFFF8ECDE);
+const Color lightOnTertiaryContainer = Color(0xFFA35300);
+const Color lightStatusUncertainLegendDot = Color(0xFFB35C00); // Pallino legenda pieno
+
+// Stati Cibo — Vietato / Errore
+const Color lightError = Color(0xFFB0251E);
+const Color lightErrorContainer = Color(0xFFFCE6E6); // Sfondo pastello già pronto (100% opacity)
+const Color lightOnErrorContainer = Color(0xFFB0251E);
+const Color lightStatusUnsafeText = Color(0xFFB0251E);
+const Color lightStatusUnsafeBg = Color(0xFFFCE6E6);
+const Color lightStatusUnsafeDestructiveBorder = Color(0x73B0251E); // rgba(176, 37, 30, 0.45)
+const Color lightStatusUnsafeLegendDot = Color(0xFFB3261E); // Pallino legenda pieno
+
+// Stati Cibo — Ignoto / Neutro
+const Color lightStatusUnknownText = Color(0xFF495058);
+const Color lightStatusUnknownBg = Color(0xFFE8ECF1); // Sfondo pastello già pronto (100% opacity)
+const Color lightStatusUnknownLegendDot = Color(0xFF565B62); // Pallino legenda pieno
+
+// Stati Cibo — Lattosio (Scollegato da Bottom Nav)
+const Color lightLactoseText = Color(0xFF0E5A7A);
+const Color lightLactoseBg = Color(0xFFDCF3FA); // Sfondo pastello già pronto (100% opacity)
+const Color lightLactoseContainer = Color(0xFFDCF3FA);
+
+// Scrim e Shadow
+const Color lightScrim = Color(0x730E1622); // rgba(14, 22, 34, 0.45)
+const Color lightShadow = Color(0x1A0A1E3C);
+
+
+// ─── Dark Palette — Cobalt Mist Neutro Anti-Abbagliamento ─────────────────────
+// Superfici e sfondi
+const Color darkSurface = Color(0xFF0E1014); // Sfondo pagina antracite neutro
+const Color darkCardBackground = Color(0xFF16191F); // Card principale grigio neutro
+const Color darkCardSecondaryBg = Color(0xFF121419); // Container secondario / Legenda / Box note / Footer
+const Color darkSurfaceContainerLow = Color(0xFF121419); // surfaceContainerLow
+const Color darkSurfaceVariant = Color(0xFF21252E); // Input / Pillole ricerca / Campi form / Chip barcode
+const Color darkBottomNavBg = Color(0xFF12151A); // Bottom Navigation Bar sfondo
+const Color darkBottomSheetBg = Color(0xFF15181E); // Bottom Sheet modalBackgroundColor
+const Color darkScannerLegendBg = Color(0xFF121419); // Legenda scanner
+
+// Testi e icone neutre
+const Color darkOnSurface = Color(0xFFDCE1E8); // Testo primario bianco morbido
+const Color darkOnSurfaceVariant = Color(0xFF9BA3B0); // Testo secondario
+const Color darkTextTertiary = Color(0xFF6E7685); // Hint / Placeholder / Terziario
+
+// Bordi e outline
+const Color darkOutline = Color(0xFF6C7482); // Switch off, divider forti
+const Color darkCardPrimaryBorder = Color(0x0FFFFFFF); // Bordo sottile Card Principali rgba(255, 255, 255, 0.06)
+const Color darkCardSecondaryBorder = Color(0x0BFFFFFF); // Bordo sottile Card Secondarie / CTA bar rgba(255, 255, 255, 0.045)
+const Color darkButtonTertiaryBorder = Color(0x5C86B4EB); // Bordo Bottoni Outlined rgba(134, 180, 235, 0.36)
+
+// Brand Primary & Bottoni
+const Color darkPrimary = Color(0xFF86B4EB); // Per testi, link, switch, icone sezione
+const Color darkOnPrimary = Color(0xFF0B2442);
+const Color darkButtonPrimaryBg = Color(0xFF255C99); // Sfondo bottone primario pieno anti-abbagliamento
+const Color darkButtonPrimaryFg = Color(0xFFEDF4FC); // Testo bottone primario pieno
+const Color darkPrimaryContainer = Color(0xFF1C2C42); // Cerchi icona, card licenza, tile selezionate, invio barcode
+const Color darkOnPrimaryContainer = Color(0xFFC7DCF7);
+
+// Navigazione attiva (Bottom Nav pill)
+const Color darkSecondaryContainer = Color(0xFF202836); // navSelectedBg
+const Color darkOnSecondaryContainer = Color(0xFFCEDBF0); // navSelectedFg
+
+// Stati Cibo — Sicuro (Safe / Adatto)
+const Color darkStatusSafeText = Color(0xFF75CF94);
+const Color darkStatusSafeBg = Color(0xFF152B1E); // Sfondo pastello già pronto (100% opacity)
+const Color darkStatusSafeContainer = Color(0xFF152B1E);
+const Color darkStatusPrimaryText = darkStatusSafeText; // Alias retrocompatibile
+
+// Stati Cibo — Incerto / Warning
+const Color darkStatusUncertainText = Color(0xFFEBA85E);
+const Color darkStatusUncertainBg = Color(0xFF2E2214); // Sfondo pastello già pronto (100% opacity)
+const Color darkTertiaryContainer = Color(0xFF2E2214);
+const Color darkOnTertiaryContainer = Color(0xFFEBA85E);
+
+// Stati Cibo — Vietato / Errore
+const Color darkError = Color(0xFFEB827D);
+const Color darkErrorContainer = Color(0xFF331A1C); // Sfondo pastello già pronto (100% opacity)
+const Color darkOnErrorContainer = Color(0xFFEB827D);
+const Color darkOnError = Color(0xFF1A0002); // Per bottone distruttivo pieno
+const Color darkStatusUnsafeText = Color(0xFFEB827D);
+const Color darkStatusUnsafeBg = Color(0xFF331A1C);
+const Color darkStatusUnsafeDestructiveBorder = Color(0x6BEB827D); // rgba(235, 130, 125, 0.42)
+
+// Stati Cibo — Ignoto / Neutro
+const Color darkStatusUnknownText = Color(0xFFAEB6C2);
+const Color darkStatusUnknownBg = Color(0xFF20242C); // Sfondo pastello già pronto (100% opacity)
+
+// Stati Cibo — Lattosio (Scollegato da Bottom Nav)
+const Color darkLactoseText = Color(0xFF75C4DE);
+const Color darkLactoseBg = Color(0xFF142C38); // Sfondo pastello già pronto (100% opacity)
+const Color darkLactoseContainer = Color(0xFF142C38);
+
+// Scrim e Shadow
+const Color darkScrim = Color(0xBD04060A); // rgba(4, 6, 10, 0.74)
+const Color darkShadow = Color(0x47000000);
