@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/widgets/widgets.dart';
-import '../dialogs/dialogs.dart';
+import 'delete_account_dialog.dart';
 
 /// Mostra il bottom sheet di gestione account per l'utente loggato.
 void showAccountManagementSheet({
@@ -243,23 +243,10 @@ class _AccountManagementSheetContentState
           ),
         ),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
+        AppTertiaryButton(
           onPressed: _startEditing,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: colorScheme.onSurface,
-            side: BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 12,
-            ),
-          ),
-          icon: const Icon(Icons.edit_outlined, size: 18),
-          label: Text(
-            "settings.account.editName".tr(),
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+          icon: Icons.edit_outlined,
+          label: "settings.account.editName".tr(),
         ),
       ],
     );
@@ -334,25 +321,10 @@ class _AccountManagementSheetContentState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Flexible(
-                child: OutlinedButton(
+                child: AppTertiaryButton(
                   onPressed: _cancelEditing,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colorScheme.onSurface,
-                    side: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    minimumSize: const Size(0, 40),
-                  ),
-                  child: Text(
-                    "common.actions.cancel".tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  label: "common.actions.cancel".tr(),
                 ),
               ),
               const SizedBox(width: 8),
@@ -361,28 +333,10 @@ class _AccountManagementSheetContentState
                   valueListenable: _nameController,
                   builder: (context, value, child) {
                     final bool isValid = value.text.trim().isNotEmpty;
-                    return FilledButton(
-                      onPressed: isValid
-                          ? () => _handleSaveName(value.text.trim())
-                          : null,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        minimumSize: const Size(0, 40),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                      child: Text(
-                        "common.actions.save".tr(),
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    return AppPrimaryButton(
+                      onPressed: isValid ? () => _handleSaveName(value.text.trim()) : null,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      label: "common.actions.save".tr(),
                     );
                   },
                 ),
@@ -437,24 +391,14 @@ class _AccountManagementSheetContentState
           color: colorScheme.outlineVariant.withValues(alpha: 0.3),
         ),
         const SizedBox(height: 20),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.tonalIcon(
-            onPressed: () {
-              Navigator.pop(context);
-              widget.onLogout(widget.parentContext);
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              foregroundColor: colorScheme.onSurface,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            icon: const Icon(Icons.logout, size: 20),
-            label: Text(
-              "settings.account.signOut".tr(),
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
+        AppSecondaryButton(
+          onPressed: () {
+            Navigator.pop(context);
+            widget.onLogout(widget.parentContext);
+          },
+          icon: Icons.logout,
+          label: "settings.account.signOut".tr(),
+          fullWidth: true,
         ),
         const SizedBox(height: 12),
         AppDestructiveActionButton(

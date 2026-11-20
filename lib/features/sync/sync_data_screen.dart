@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../core/theme/theme.dart';
+import '../../core/widgets/widgets.dart';
 import '../../core/utils/utils.dart';
 import '../../models/models.dart';
 
@@ -105,38 +106,14 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              FilledButton(
+              AppPrimaryDestructiveButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.error,
-                  foregroundColor: colorScheme.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "sync.localDataFound.discardConfirmAction".tr(),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
+                label: "sync.localDataFound.discardConfirmAction".tr(),
               ),
               const SizedBox(height: 10),
-              OutlinedButton(
+              AppTertiaryButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onSurface,
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.cancel".tr(),
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
+                label: "common.actions.cancel".tr(),
               ),
             ],
           ),
@@ -256,21 +233,8 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
   }
 
   Widget _buildCategoryCard(ColorScheme colorScheme, AnonymousDataSummary summary) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.cardBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return AppCard.primary(
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -480,7 +444,7 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
         SizedBox(
           width: double.infinity,
           height: 56,
-          child: FilledButton.icon(
+          child: AppPrimaryButton(
             onPressed: hasSelection && !_isProcessing
                 ? () {
                     setState(() => _isProcessing = true);
@@ -494,29 +458,11 @@ class _SyncDataScreenState extends State<SyncDataScreen> {
                     );
                   }
                 : null,
-            style: FilledButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.3),
-              disabledForegroundColor: colorScheme.onPrimary.withValues(alpha: 0.5),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(32),
-              ),
-            ),
-            icon: Icon(
-              hasSelection ? Icons.cloud_upload_outlined : Icons.block,
-              size: 20,
-            ),
-            label: Text(
-              hasSelection
-                  ? "sync.localDataFound.merge".tr()
-                  : "sync.localDataFound.noneSelected".tr(),
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            icon: hasSelection ? Icons.cloud_upload_outlined : Icons.block,
+            label: hasSelection
+                ? "sync.localDataFound.merge".tr()
+                : "sync.localDataFound.noneSelected".tr(),
+            fullWidth: true,
           ),
         ),
         const SizedBox(height: 10),

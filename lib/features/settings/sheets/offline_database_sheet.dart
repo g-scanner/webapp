@@ -412,43 +412,14 @@ class _OfflineDatabaseSheetContentState
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              FilledButton(
+              AppPrimaryDestructiveButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ctx.colorScheme.error,
-                  foregroundColor: ctx.colorScheme.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "settings.offlineDb.uninstallPackage".tr(),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                label: "settings.offlineDb.uninstallPackage".tr(),
               ),
               const SizedBox(height: 10),
-              OutlinedButton(
+              AppTertiaryButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ctx.colorScheme.onSurface,
-                  side: BorderSide(
-                    color: ctx.colorScheme.outlineVariant.withValues(
-                      alpha: 0.5,
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.cancel".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                label: "common.actions.cancel".tr(),
               ),
             ],
           ),
@@ -572,43 +543,14 @@ class _OfflineDatabaseSheetContentState
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              FilledButton(
+              AppPrimaryButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: ctx.colorScheme.primary,
-                  foregroundColor: ctx.colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  confirmBtnText,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                label: confirmBtnText,
               ),
               const SizedBox(height: 10),
-              OutlinedButton(
+              AppTertiaryButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ctx.colorScheme.onSurface,
-                  side: BorderSide(
-                    color: ctx.colorScheme.outlineVariant.withValues(
-                      alpha: 0.5,
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.cancel".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                label: "common.actions.cancel".tr(),
               ),
             ],
           ),
@@ -681,43 +623,14 @@ class _OfflineDatabaseSheetContentState
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                FilledButton(
+                AppPrimaryButton(
                   onPressed: () => Navigator.pop(ctx, true),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ctx.colorScheme.primary,
-                    foregroundColor: ctx.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: Text(
-                    "settings.offlineDb.updateBtn".tr(),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  label: "settings.offlineDb.updateBtn".tr(),
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton(
+                AppTertiaryButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ctx.colorScheme.onSurface,
-                    side: BorderSide(
-                      color: ctx.colorScheme.outlineVariant.withValues(
-                        alpha: 0.5,
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: Text(
-                    "common.actions.cancel".tr(),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  label: "common.actions.cancel".tr(),
                 ),
               ],
             ),
@@ -1025,33 +938,15 @@ class _OfflineDatabaseSheetContentState
                       if (_installedTier != OfflineDbTier.none &&
                           !isSyncing) ...[
                         const SizedBox(height: 14),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            _handleManualUpdate();
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: colorScheme.onSurface,
-                            side: BorderSide(
-                              color: colorScheme.outlineVariant.withValues(
-                                alpha: 0.5,
-                              ),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
+                        AppTertiaryButton(
+                          onPressed: _handleManualUpdate,
+                          icon: Icons.refresh_rounded,
+                          label: "settings.offlineDb.updateBtn".tr(),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
-                          icon: const Icon(Icons.refresh_rounded, size: 16),
-                          label: Text(
-                            "settings.offlineDb.updateBtn".tr(),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          fontSize: 13,
                         ),
                       ],
 
@@ -1153,12 +1048,9 @@ class _OfflineDatabaseSheetContentState
                 const SizedBox(height: 14),
 
                 // 5. Scheda Spiegazione (grigia senza bordo)
-                Container(
+                AppCard.secondary(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
+                  borderRadius: 24,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -1265,56 +1157,36 @@ class _OfflineDatabaseSheetContentState
                           label: "settings.offlineDb.uninstallPackage".tr(),
                         )
                       else if (_installedTier == OfflineDbTier.none)
-                        FilledButton(
+                        AppPrimaryButton(
                           onPressed: isSyncing
                               ? null
                               : () => _handleSwitchPackage(
                                   _previewPack,
                                   isInitialInstall: true,
                                 ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: colorScheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                          child: Text(
-                            "settings.offlineDb.downloadAndActivate".tr(
-                              args: [
-                                "settings.offlineDb.packages.$_previewPack.title"
-                                    .tr(),
-                              ],
-                            ),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          fullWidth: true,
+                          label: "settings.offlineDb.downloadAndActivate".tr(
+                            args: [
+                              "settings.offlineDb.packages.$_previewPack.title"
+                                  .tr(),
+                            ],
                           ),
                         )
                       else
-                        FilledButton(
+                        AppPrimaryButton(
                           onPressed: isSyncing
                               ? null
                               : () => _handleSwitchPackage(
                                   _previewPack,
                                   isInitialInstall: false,
                                 ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: colorScheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                          child: Text(
-                            "settings.offlineDb.switchConfirmTitle".tr(
-                              namedArgs: {
-                                'name':
-                                    "settings.offlineDb.packages.$_previewPack.title"
-                                        .tr(),
-                              },
-                            ),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          fullWidth: true,
+                          label: "settings.offlineDb.switchConfirmTitle".tr(
+                            namedArgs: {
+                              'name':
+                                  "settings.offlineDb.packages.$_previewPack.title"
+                                      .tr(),
+                            },
                           ),
                         ),
                     ],

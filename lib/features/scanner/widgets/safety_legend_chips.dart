@@ -60,9 +60,7 @@ class _SafetyLegendChipsState extends State<SafetyLegendChips> {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
     final items = _buildItems();
-    final containerColor = context.isDarkMode
-        ? context.surfaceContainerLow
-        : const Color(0xFFECEEF3);
+    final containerColor = colorScheme.scannerLegendContainerBg;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),

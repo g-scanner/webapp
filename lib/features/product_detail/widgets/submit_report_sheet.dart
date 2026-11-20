@@ -345,27 +345,10 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                         Flexible(
                           child: SizedBox(
                             height: 48,
-                            child: OutlinedButton(
+                            child: AppTertiaryButton(
                               onPressed: () => Navigator.pop(context),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: colorScheme.onSurface,
-                                side: BorderSide(
-                                  color: colorScheme.outlineVariant.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                              ),
-                              child: Text(
-                                "common.actions.cancel".tr(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              label: "common.actions.cancel".tr(),
                             ),
                           ),
                         ),
@@ -374,7 +357,7 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                           flex: 2,
                           child: SizedBox(
                             height: 48,
-                            child: FilledButton(
+                            child: AppPrimaryDestructiveButton(
                               onPressed: isBlocked
                                   ? null
                                   : () {
@@ -427,38 +410,17 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                                         reportData,
                                       );
                                     },
-                              style: FilledButton.styleFrom(
-                                backgroundColor: colorScheme.error,
-                                foregroundColor: colorScheme.onError,
-                                disabledBackgroundColor:
-                                    colorScheme.surfaceContainerHighest,
-                                disabledForegroundColor: colorScheme
-                                    .onSurfaceVariant
-                                    .withValues(alpha: 0.6),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                              child: Text(
-                                isBlocked
-                                    ? "product.reportSheet.waitCountdown".tr(
-                                        namedArgs: {
-                                          'time':
-                                              ReportRateLimiter.formatRemainingTime(
-                                                _remainingSeconds,
-                                              ),
-                                        },
-                                      )
-                                    : "product.reportSheet.submit".tr(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              label: isBlocked
+                                  ? "product.reportSheet.waitCountdown".tr(
+                                      namedArgs: {
+                                        'time':
+                                            ReportRateLimiter.formatRemainingTime(
+                                              _remainingSeconds,
+                                            ),
+                                      },
+                                    )
+                                  : "product.reportSheet.submit".tr(),
                             ),
                           ),
                         ),

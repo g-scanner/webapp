@@ -206,45 +206,26 @@ void showStorageHistorySheet({
                             ),
                           ),
                           const SizedBox(height: 18),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.tonalIcon(
-                              onPressed: onClearProductCache == null
-                                  ? null
-                                  : () async {
-                                      final confirm =
-                                          await showClearProductCacheDialog(
-                                        sheetContext,
-                                      );
-                                      if (confirm == true) {
-                                        await onClearProductCache();
-                                        setModalState(() {
-                                          currentCacheCount = 0;
-                                          currentCacheBytes = 0;
-                                        });
-                                        onStorageUpdated?.call();
-                                      }
-                                    },
-                              style: FilledButton.styleFrom(
-                                backgroundColor:
-                                    colorScheme.surfaceContainerHighest,
-                                foregroundColor: colorScheme.onSurface,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                              icon: const Icon(Icons.cached_rounded, size: 20),
-                              label: Text(
-                                "settings.dataHistory.clearCacheAction".tr(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
+                          AppSecondaryButton(
+                            onPressed: onClearProductCache == null
+                                ? null
+                                : () async {
+                                    final confirm =
+                                        await showClearProductCacheDialog(
+                                      sheetContext,
+                                    );
+                                    if (confirm == true) {
+                                      await onClearProductCache();
+                                      setModalState(() {
+                                        currentCacheCount = 0;
+                                        currentCacheBytes = 0;
+                                      });
+                                      onStorageUpdated?.call();
+                                    }
+                                  },
+                            icon: Icons.cached_rounded,
+                            label: "settings.dataHistory.clearCacheAction".tr(),
+                            fullWidth: true,
                           ),
                         ],
                       ),

@@ -390,43 +390,14 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                FilledButton(
+                AppPrimaryButton(
                   onPressed: () => Navigator.pop(ctx, true),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ctx.colorScheme.primary,
-                    foregroundColor: ctx.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: Text(
-                    "settings.offlineDb.updateBtn".tr(),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  label: "settings.offlineDb.updateBtn".tr(),
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton(
+                AppTertiaryButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ctx.colorScheme.onSurface,
-                    side: BorderSide(
-                      color: ctx.colorScheme.outlineVariant.withValues(
-                        alpha: 0.5,
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: Text(
-                    "settings.offlineDb.webWeeklyUpdateCancel".tr(),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  label: "settings.offlineDb.webWeeklyUpdateCancel".tr(),
                 ),
               ],
             ),

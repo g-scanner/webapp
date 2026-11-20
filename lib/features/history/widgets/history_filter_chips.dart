@@ -28,10 +28,8 @@ class HistoryFilterChips extends StatelessWidget {
         text: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
       );
     }
-    return AppStatusPill.colorsForVariant(
-      AppStatusPill.variantForStatus(status),
-      colorScheme,
-    );
+    final pair = colorScheme.statusColorsFor(status);
+    return (bg: pair.alpha, text: pair.solid);
   }
 
   String _getFilterLabel(GlutenSafetyStatus? status) {

@@ -2,6 +2,7 @@
 // PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
+import '../../models/gluten_safety_status.dart';
 import 'app_colors.dart';
 
 export 'app_colors.dart';
@@ -11,7 +12,7 @@ final ThemeData lightTheme = ThemeData(
   useMaterial3: true,
   fontFamily: 'Inter',
   brightness: Brightness.light,
-  cardColor: const Color(0xFFFFFFFF),
+  cardColor: lightCardBackground,
   colorScheme: const ColorScheme(
     brightness: Brightness.light,
     primary: lightPrimary,
@@ -36,8 +37,8 @@ final ThemeData lightTheme = ThemeData(
     onSurfaceVariant: lightOnSurfaceVariant,
     outline: lightOutline,
     outlineVariant: lightOutline,
-    shadow: Color(0x1F000000),
-    scrim: Color(0x52000000),
+    shadow: lightShadow,
+    scrim: lightScrim,
     inverseSurface: lightOnSurface,
     onInverseSurface: lightSurface,
     inversePrimary: darkPrimary,
@@ -46,25 +47,25 @@ final ThemeData lightTheme = ThemeData(
   splashColor: lightPrimary.withValues(alpha: 0.12),
   highlightColor: lightPrimary.withValues(alpha: 0.08),
   appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFFFFFFFF),
+    backgroundColor: lightCardBackground,
     foregroundColor: lightOnSurface,
     elevation: 0,
     scrolledUnderElevation: 0,
   ),
   dialogTheme: const DialogThemeData(
-    backgroundColor: Color(0xFFFFFFFF),
-    surfaceTintColor: Colors.transparent,
+    backgroundColor: lightCardBackground,
+    surfaceTintColor: colorTransparent,
   ),
   bottomSheetTheme: const BottomSheetThemeData(
-    backgroundColor: Color(0xFFFFFFFF),
-    surfaceTintColor: Colors.transparent,
-    modalBackgroundColor: Color(0xFFFAF9FC),
+    backgroundColor: lightCardBackground,
+    surfaceTintColor: colorTransparent,
+    modalBackgroundColor: lightSurface,
   ),
   popupMenuTheme: PopupMenuThemeData(
-    color: const Color(0xFFFFFFFF),
+    color: lightCardBackground,
     elevation: 6,
-    shadowColor: const Color(0x1F000000),
-    surfaceTintColor: Colors.transparent,
+    shadowColor: lightShadow,
+    surfaceTintColor: colorTransparent,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(20),
       side: BorderSide(color: lightOutline.withValues(alpha: 0.4)),
@@ -76,7 +77,7 @@ final ThemeData darkTheme = ThemeData(
   useMaterial3: true,
   fontFamily: 'Inter',
   brightness: Brightness.dark,
-  cardColor: const Color(0xFF1E1E22),
+  cardColor: darkCardBackground,
   colorScheme: const ColorScheme(
     brightness: Brightness.dark,
     primary: darkPrimary,
@@ -101,8 +102,8 @@ final ThemeData darkTheme = ThemeData(
     onSurfaceVariant: darkOnSurfaceVariant,
     outline: darkOutline,
     outlineVariant: darkOutline,
-    shadow: Color(0x3F000000),
-    scrim: Color(0x80000000),
+    shadow: darkShadow,
+    scrim: darkScrim,
     inverseSurface: darkOnSurface,
     onInverseSurface: darkSurface,
     inversePrimary: lightPrimary,
@@ -117,19 +118,19 @@ final ThemeData darkTheme = ThemeData(
     scrolledUnderElevation: 0,
   ),
   dialogTheme: const DialogThemeData(
-    backgroundColor: Color(0xFF1E1E22),
-    surfaceTintColor: Colors.transparent,
+    backgroundColor: darkCardBackground,
+    surfaceTintColor: colorTransparent,
   ),
   bottomSheetTheme: const BottomSheetThemeData(
-    backgroundColor: Color(0xFF1E1E22),
-    surfaceTintColor: Colors.transparent,
-    modalBackgroundColor: Color(0xFF121214),
+    backgroundColor: darkCardBackground,
+    surfaceTintColor: colorTransparent,
+    modalBackgroundColor: darkSurface,
   ),
   popupMenuTheme: PopupMenuThemeData(
-    color: const Color(0xFF1E1E22),
+    color: darkCardBackground,
     elevation: 6,
-    shadowColor: const Color(0x3F000000),
-    surfaceTintColor: Colors.transparent,
+    shadowColor: darkShadow,
+    surfaceTintColor: colorTransparent,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(20),
       side: BorderSide(color: darkOutline.withValues(alpha: 0.4)),
@@ -143,9 +144,9 @@ extension AppThemeContextExtension on BuildContext {
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
 
   Color get cardBackground =>
-      isDarkMode ? const Color(0xFF1E1E22) : const Color(0xFFFFFFFF);
+      isDarkMode ? darkCardBackground : lightCardBackground;
   Color get surfaceContainerLow =>
-      isDarkMode ? const Color(0xFF18181C) : const Color(0xFFF5F3F7);
+      isDarkMode ? darkSurfaceContainerLow : lightSurfaceContainerLow;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -173,53 +174,160 @@ String themeModeToString(ThemeMode mode) {
 
 // ─── Semantic colour tokens ───────────────────────────────────────────────────
 //
-// Unica fonte di verità per tutti i colori semantici dell'app.
-// Ogni widget deve usare questi getter invece di calcolare i colori inline.
+// Unica fonte di verità per tutti i colori dell'applicazione.
+// Ogni widget deve usare questi getter invece di calcolare i colori inline
+// o usare colori hardcoded.
 //
-// Varianti stato glutine
-//   statusPrimaryBg / statusPrimaryText  → adatto / sicuro / primario
-//   statusErrorBg  / statusErrorText     → non adatto / errore
-//   statusTertiaryBg / statusTertiaryText → incerto / segnalazione / warning
-//   statusNeutralBg / statusNeutralText  → sconosciuto / neutro
-//
-// Cerchi icona
-//   iconCirclePrimaryBg  → sfondo cerchio icona per azioni primarie / info
-//   iconCircleErrorBg    → sfondo cerchio icona per azioni distruttive
-//   iconCircleTertiaryBg → sfondo cerchio icona per warning / segnalazioni
-//   iconCircleNeutralBg  → sfondo cerchio icona per stati sconosciuti
-//
-// Sfondo CTA bar (footer colorato nelle card)
-//   ctaTertiaryBg → sfondo barra CTA segnalazioni / incerto
-//
-// Sfondo elementi selezionati (selettori, chip selezionata)
-//   selectedItemBg → sfondo leggero quando un elemento è selezionato/attivo
+// Le fonti di verità sono separate logicamente: se due elementi oggi condividono
+// lo stesso valore cromatico ma rappresentano concetti diversi, hanno comunque
+// due getter distinti per consentire variazioni future indipendenti.
 //
 extension AppColorTokens on ColorScheme {
-  // ── Stato glutine ──────────────────────────────────────────────────────────
-  Color get statusPrimaryBg => primaryContainer.withValues(alpha: 0.15);
-  Color get statusPrimaryText =>
-      brightness == Brightness.dark ? darkStatusPrimaryText : primary;
+  // ── 1. STATI DEL CIBO (4 STATI GLUTINE + LATTOSIO) ────────────────────────
+  // Ciascuno stato possiede ESATTAMENTE una coppia:
+  // - un colore solido (per testi, icone, elementi grafici primari)
+  // - un colore con alpha (per sfondi, pillole, container, hero card)
 
-  Color get statusErrorBg => errorContainer.withValues(
+  // STATO SICURO (Safe / Adatto) - Scollegato da primary / primaryContainer
+  Color get statusSafeSolid =>
+      brightness == Brightness.dark ? darkStatusSafeText : lightStatusSafeText;
+  Color get statusSafeAlpha =>
+      (brightness == Brightness.dark
+              ? darkStatusSafeContainer
+              : lightStatusSafeContainer)
+          .withValues(alpha: 0.15);
+  ({Color solid, Color alpha}) get statusSafeColors =>
+      (solid: statusSafeSolid, alpha: statusSafeAlpha);
+
+  // STATO VIETATO (Unsafe / Non adatto)
+  Color get statusUnsafeSolid => error;
+  Color get statusUnsafeAlpha => errorContainer.withValues(
     alpha: brightness == Brightness.dark ? 0.2 : 0.5,
   );
-  Color get statusErrorText => error;
+  ({Color solid, Color alpha}) get statusUnsafeColors =>
+      (solid: statusUnsafeSolid, alpha: statusUnsafeAlpha);
 
-  Color get statusTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
-  Color get statusTertiaryText => tertiary;
+  // STATO INCERTO (Uncertain / Warning / Segnalazione)
+  Color get statusUncertainSolid => tertiary;
+  Color get statusUncertainAlpha => tertiaryContainer.withValues(alpha: 0.1);
+  ({Color solid, Color alpha}) get statusUncertainColors =>
+      (solid: statusUncertainSolid, alpha: statusUncertainAlpha);
 
-  Color get statusNeutralBg => surfaceContainerHighest;
-  Color get statusNeutralText => onSurfaceVariant;
+  // STATO IGNOTO (Unknown / Sconosciuto / Neutro)
+  Color get statusUnknownSolid => onSurfaceVariant;
+  Color get statusUnknownAlpha => surfaceContainerHighest;
+  ({Color solid, Color alpha}) get statusUnknownColors =>
+      (solid: statusUnknownSolid, alpha: statusUnknownAlpha);
 
-  // ── Variante secondaria / Lattosio / Filtro attivo (azzurrino + blu) ───────
-  Color get statusSecondaryBg => secondaryContainer.withValues(alpha: 0.15);
-  Color get statusSecondaryText => onSecondaryContainer;
+  // STATO LATTOSIO (Lactose Alert / Intolleranza) - Scollegato da secondaryContainer / navSelected
+  Color get statusLactoseSolid =>
+      brightness == Brightness.dark ? darkLactoseText : lightLactoseText;
+  Color get statusLactoseAlpha =>
+      (brightness == Brightness.dark
+              ? darkLactoseContainer
+              : lightLactoseContainer)
+          .withValues(alpha: 0.15);
+  ({Color solid, Color alpha}) get statusLactoseColors =>
+      (solid: statusLactoseSolid, alpha: statusLactoseAlpha);
 
-  // Alias semantici espliciti per Lattosio
-  Color get lactoseBg => statusSecondaryBg;
-  Color get lactoseText => statusSecondaryText;
+  /// Helper unificato per ottenere la coppia ({solid, alpha}) per qualsiasi [GlutenSafetyStatus].
+  ({Color solid, Color alpha}) statusColorsFor(GlutenSafetyStatus status) {
+    switch (status) {
+      case GlutenSafetyStatus.adatto:
+        return statusSafeColors;
+      case GlutenSafetyStatus.nonAdatto:
+        return statusUnsafeColors;
+      case GlutenSafetyStatus.incerto:
+        return statusUncertainColors;
+      case GlutenSafetyStatus.sconosciuto:
+        return statusUnknownColors;
+    }
+  }
 
-  // ── Cerchi icona ──────────────────────────────────────────────────────────
+  // Alias semantici per compatibilità
+  Color get statusPrimaryBg => statusSafeAlpha;
+  Color get statusPrimaryText => statusSafeSolid;
+  Color get statusErrorBg => statusUnsafeAlpha;
+  Color get statusErrorText => statusUnsafeSolid;
+  Color get statusTertiaryBg => statusUncertainAlpha;
+  Color get statusTertiaryText => statusUncertainSolid;
+  Color get statusNeutralBg => statusUnknownAlpha;
+  Color get statusNeutralText => statusUnknownSolid;
+  Color get statusSecondaryBg => statusLactoseAlpha;
+  Color get statusSecondaryText => statusLactoseSolid;
+  Color get lactoseBg => statusLactoseAlpha;
+  Color get lactoseText => statusLactoseSolid;
+
+  // ── 2. PULSANTI (BUTTONS) ─────────────────────────────────────────────────
+  // Token cromatici dedicati per la gerarchia dei pulsanti dell'app.
+
+  // Pulsante Primario (verde pieno)
+  Color get buttonPrimaryBg => primary;
+  Color get buttonPrimaryFg => onPrimary;
+  Color get buttonPrimaryDisabledBg => primary.withValues(alpha: 0.38);
+  Color get buttonPrimaryDisabledFg => onPrimary.withValues(alpha: 0.38);
+
+  // Pulsante Secondario (grigio pieno)
+  Color get buttonSecondaryBg => surfaceContainerHighest;
+  Color get buttonSecondaryFg => onSurface;
+  Color get buttonSecondaryDisabledBg =>
+      surfaceContainerHighest.withValues(alpha: 0.38);
+  Color get buttonSecondaryDisabledFg => onSurface.withValues(alpha: 0.38);
+
+  // Pulsante Terziario (outlined)
+  Color get buttonTertiaryBg => colorTransparent;
+  Color get buttonTertiaryBorder => outlineVariant.withValues(alpha: 0.5);
+  Color get buttonTertiaryFg => onSurface;
+  Color get buttonTertiaryDisabledBorder =>
+      outlineVariant.withValues(alpha: 0.2);
+  Color get buttonTertiaryDisabledFg => onSurface.withValues(alpha: 0.38);
+
+  // Pulsante Primario Distruttivo (rosso pieno di eliminazione)
+  Color get buttonPrimaryDestructiveBg => error;
+  Color get buttonPrimaryDestructiveFg => onError;
+  Color get buttonPrimaryDestructiveDisabledBg => error.withValues(alpha: 0.6);
+  Color get buttonPrimaryDestructiveDisabledFg => onError.withValues(alpha: 0.6);
+
+  // Pulsante Terziario Distruttivo (cancellazione, outline con leggerissimo riempimento)
+  Color get buttonTertiaryDestructiveBg => errorContainer.withValues(alpha: 0.3);
+  Color get buttonTertiaryDestructiveBorder => errorContainer;
+  Color get buttonTertiaryDestructiveFg => error;
+  Color get buttonTertiaryDestructiveDisabledBg =>
+      errorContainer.withValues(alpha: 0.1);
+  Color get buttonTertiaryDestructiveDisabledBorder =>
+      errorContainer.withValues(alpha: 0.2);
+  Color get buttonTertiaryDestructiveDisabledFg =>
+      error.withValues(alpha: 0.38);
+
+  // Compatibilità per AppDestructiveActionButton
+  Color get destructiveButtonBg => buttonTertiaryDestructiveBg;
+  Color get destructiveButtonBorder => buttonTertiaryDestructiveBorder;
+  Color get destructiveButtonFg => buttonTertiaryDestructiveFg;
+
+  // ── 3. CARD (SCHEDE) ──────────────────────────────────────────────────────
+  // Token cromatici dedicati per le tre tipologie di card.
+
+  // Card Principale (sfondo tema chiaro/scuro con bordo sottile)
+  Color get cardPrimaryBg =>
+      brightness == Brightness.dark ? darkCardBackground : lightCardBackground;
+  Color get cardPrimaryBorder => outlineVariant.withValues(alpha: 0.3);
+  Color get cardPrimaryShadow => shadow.withValues(alpha: 0.02);
+  Color get cardPrimaryHover => surfaceContainerHighest;
+  Color get cardPrimaryHighlight =>
+      brightness == Brightness.dark ? darkSurfaceContainerLow : lightSurfaceContainerLow;
+
+  // Card Secondaria (sfondo uniforme grigio pieno)
+  Color get cardSecondaryBg => surfaceContainerHighest;
+  Color get cardSecondaryBorder => colorTransparent;
+  Color get cardSecondaryFg => onSurface;
+
+  // Card ad Alta Evidenziazione (High Emphasis)
+  Color get cardHighEmphasisBg => cardPrimaryBg;
+  Color get cardHighEmphasisBorder => outlineVariant.withValues(alpha: 0.5);
+  Color get cardHighEmphasisShadow => shadow.withValues(alpha: 0.04);
+
+  // ── 4. CERCHI ICONA (ICON CIRCLES) ────────────────────────────────────────
+  // Sfondi dedicati per i cerchi contenenti icone.
   Color get iconCirclePrimaryBg => primaryContainer.withValues(alpha: 0.15);
   Color get iconCircleErrorBg => errorContainer.withValues(
     alpha: brightness == Brightness.dark ? 0.2 : 0.5,
@@ -228,38 +336,36 @@ extension AppColorTokens on ColorScheme {
   Color get iconCircleNeutralBg => onSurfaceVariant.withValues(alpha: 0.1);
   Color get iconCircleSecondaryBg => secondaryContainer.withValues(alpha: 0.15);
 
-  // ── Elemento selezionato barra navigazione (azzurrino + blu) ───────────────
-  Color get navSelectedBg => secondaryContainer.withValues(alpha: 0.3);
-  Color get navSelectedFg => onSecondaryContainer;
+  // ── 5. CALL TO ACTION BAR (FOOTER CARD SEGNALAZIONI/DETTAGLI) ────────────
+  Color get ctaBarBg => tertiaryContainer.withValues(alpha: 0.1);
+  Color get ctaBarBorder => outlineVariant.withValues(alpha: 0.2);
+  Color get ctaBarFg => tertiary;
+  Color get ctaTertiaryBg => ctaBarBg;
 
-  // ── CTA bar ───────────────────────────────────────────────────────────────
-  Color get ctaTertiaryBg => tertiaryContainer.withValues(alpha: 0.1);
-
-  // ── Elementi selezionati e non selezionati ────────────────────────────────
+  // ── 6. ELEMENTI SELEZIONABILI E NON SELEZIONATI ──────────────────────────
   Color get selectedItemBg => primaryContainer.withValues(alpha: 0.08);
   Color get selectedItemBorder => primary.withValues(alpha: 0.25);
-
   Color get selectedErrorItemBg => errorContainer.withValues(
     alpha: brightness == Brightness.dark ? 0.2 : 0.5,
   );
   Color get selectedErrorItemBorder => error.withValues(alpha: 0.25);
-
   Color get unselectedItemBg => surfaceContainerHighest.withValues(alpha: 0.35);
 
-  // ── Pillola selettore popup (tema, lingua, motivo, …) ─────────────────────
-  //   Sfondo neutro della pillola che apre un PopupMenuButton di scelta.
+  // ── 7. SELETTORI POPUP / PILL ─────────────────────────────────────────────
   Color get dropdownPillBg => surfaceContainerHighest;
 
-  // ── Accesso anonimo ────────────────────────────────────────────────────────
-  //   Colore del bottone "Entra senza autenticazione" nella schermata di login.
+  // ── 8. CONTAINER LEGENDA SCANNER ──────────────────────────────────────────
+  Color get scannerLegendContainerBg =>
+      brightness == Brightness.dark ? darkScannerLegendBg : lightScannerLegendBg;
+
+  // ── 9. NAVIGAZIONE ────────────────────────────────────────────────────────
+  Color get navSelectedBg => secondaryContainer.withValues(alpha: 0.3);
+  Color get navSelectedFg => onSecondaryContainer;
+
+  // ── 10. ACCESSO ANONIMO ───────────────────────────────────────────────────
   Color get anonymousEntryFg => primary;
 
-  // ── Effetti splash / interazione ───────────────────────────────────────────
+  // ── 11. EFFETTI SPLASH / OVERLAY ──────────────────────────────────────────
   Color get splashPrimary => primary.withValues(alpha: 0.12);
   Color get splashError => error.withValues(alpha: 0.12);
-
-  // ── Bottone azione distruttiva (elimina account, disinstalla, cancella dati) ─
-  Color get destructiveButtonBg => errorContainer.withValues(alpha: 0.3);
-  Color get destructiveButtonBorder => errorContainer;
-  Color get destructiveButtonFg => error;
 }

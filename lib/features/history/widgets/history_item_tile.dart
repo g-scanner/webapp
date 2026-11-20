@@ -203,7 +203,6 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final cardBg = context.cardBackground;
     final skeletonBg = _skeletonColor(context);
 
     final bool hasLactosePill =
@@ -393,27 +392,14 @@ class _HistoryItemTileState extends State<HistoryItemTile> {
       ),
     );
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: cardBg,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
-      child: InkWell(
-        onTap: () => widget.onSelectItem(widget.item.barcode),
-        onLongPress: widget.isPending ? null : widget.onLongPress,
-        onHover: widget.isPending
-            ? (hovering) => setState(() => _isHovered = hovering)
-            : null,
-        hoverColor: colorScheme.surfaceContainerHighest,
-        highlightColor: context.surfaceContainerLow,
-        child: cardContent,
-      ),
+    return AppCard.primary(
+      borderRadius: 20,
+      onTap: () => widget.onSelectItem(widget.item.barcode),
+      onLongPress: widget.isPending ? null : widget.onLongPress,
+      onHover: widget.isPending
+          ? (hovering) => setState(() => _isHovered = hovering)
+          : null,
+      child: cardContent,
     );
   }
 }
@@ -424,10 +410,10 @@ class HistoryItemSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    return AppCard.primary(
+      borderRadius: 20,
+      hasBorder: false,
+      hasShadow: false,
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(

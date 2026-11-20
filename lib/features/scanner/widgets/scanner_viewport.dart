@@ -7,7 +7,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
-import '../../../core/widgets/app_snackbar.dart';
+import '../../../core/widgets/widgets.dart';
 import 'scanner_view_painters.dart';
 
 export 'scanner_view_painters.dart';
@@ -239,7 +239,6 @@ class _ScannerViewportState extends State<ScannerViewport> {
   }
 
   Widget _buildInPageErrorOverlay(BuildContext context, Object? error) {
-    final colorScheme = context.colorScheme;
     final category = error != null
         ? categorizeCameraError(error)
         : CameraErrorCategory.permissionDenied;
@@ -284,30 +283,22 @@ class _ScannerViewportState extends State<ScannerViewport> {
             ),
             if (!kIsWeb && category == CameraErrorCategory.permissionDenied) ...[
               const SizedBox(height: 20),
-              FilledButton.icon(
+              AppPrimaryButton(
                 onPressed: () async {
                   if (_isMobile) await openAppSettings();
                   await widget.onStartCamera();
                 },
-                icon: const Icon(Icons.refresh, size: 18),
-                label: Text('common.actions.settings'.tr()),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.primaryContainer,
-                  foregroundColor: colorScheme.onPrimaryContainer,
-                ),
+                icon: Icons.refresh,
+                label: 'common.actions.settings'.tr(),
               ),
             ] else ...[
               const SizedBox(height: 20),
-              FilledButton.icon(
+              AppPrimaryButton(
                 onPressed: () async {
                   await widget.onStartCamera();
                 },
-                icon: const Icon(Icons.refresh, size: 18),
-                label: Text('common.actions.retry'.tr()),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.primaryContainer,
-                  foregroundColor: colorScheme.onPrimaryContainer,
-                ),
+                icon: Icons.refresh,
+                label: 'common.actions.retry'.tr(),
               ),
             ],
           ],

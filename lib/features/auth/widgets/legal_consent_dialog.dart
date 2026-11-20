@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 
 class LegalConsentDialog extends StatefulWidget {
   final String lang;
@@ -266,30 +267,13 @@ class _LegalConsentDialogState extends State<LegalConsentDialog> {
                 SizedBox(
                   width: double.infinity,
                   height: 56,
-                  child: FilledButton(
+                  child: AppPrimaryButton(
                     onPressed: _isChecked
                         ? () => Navigator.pop(context, true)
                         : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: context.colorScheme.primary,
-                      foregroundColor: context.colorScheme.onPrimary,
-                      disabledBackgroundColor: context.colorScheme.primary
-                          .withValues(alpha: 0.3),
-                      disabledForegroundColor: context.colorScheme.onPrimary
-                          .withValues(alpha: 0.5),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32),
-                      ),
-                    ),
-                    child: Text(
-                      "auth.legal.startButton".tr(),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    label: "auth.legal.startButton".tr(),
+                    borderRadius: BorderRadius.circular(32),
+                    fullWidth: true,
                   ),
                 ),
               ],

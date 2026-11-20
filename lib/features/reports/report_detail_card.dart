@@ -409,7 +409,9 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
 
             // ── BOTTONE NEUTRO: Scheda Prodotto (anti-loop) ────────────
             if (widget.showProductLink)
-              InkWell(
+              AppCard.primary(
+                borderRadius: 16,
+                padding: const EdgeInsets.all(16),
                 onTap: () {
                   final productToShow = widget.product;
                   Navigator.push(
@@ -441,71 +443,53 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
                     ),
                   );
                 },
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                child: Row(
+                  children: [
+                    // Icona neutra a sinistra
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHigh,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.inventory_2_outlined,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.onSurface.withValues(alpha: 0.03),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Icona neutra a sinistra
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHigh,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.inventory_2_outlined,
-                          size: 20,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Testo
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "report.detail.showProductCard".tr(),
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
+                    const SizedBox(width: 16),
+                    // Testo
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "report.detail.showProductCard".tr(),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              "report.detail.ingredientsAllergensNotes".tr(),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "report.detail.ingredientsAllergensNotes".tr(),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurfaceVariant,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      // Freccia a destra per indicare la navigazione
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 24,
-                        color: colorScheme.outlineVariant,
-                      ),
-                    ],
-                  ),
+                    ),
+                    // Freccia a destra per indicare la navigazione
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 24,
+                      color: colorScheme.outlineVariant,
+                    ),
+                  ],
                 ),
               ),
             if (widget.showProductLink) const SizedBox(height: 24),
@@ -674,22 +658,10 @@ class _ReportDetailCardState extends State<ReportDetailCard> {
     IconData? icon,
     required Widget child,
   }) {
-    return Container(
+    return AppCard.primary(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.onSurface.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderRadius: 24,
+      bgColor: cardBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

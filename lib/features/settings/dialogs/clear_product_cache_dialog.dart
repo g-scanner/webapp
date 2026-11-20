@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 
 /// Dialog di conferma eliminazione cache prodotti locali.
 Future<bool?> showClearProductCacheDialog(BuildContext context) {
@@ -54,46 +55,16 @@ Future<bool?> showClearProductCacheDialog(BuildContext context) {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Azione Distruttiva: Cancella cache prodotti
-            FilledButton(
+            AppPrimaryDestructiveButton(
               onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.error,
-                foregroundColor: colorScheme.onError,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              child: Text(
-                "settings.dataAndHistory.clearProductsAction".tr(),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              label: "settings.dataAndHistory.clearProductsAction".tr(),
             ),
             const SizedBox(height: 10),
 
             // Azione Neutra: Annulla
-            OutlinedButton(
+            AppTertiaryButton(
               onPressed: () => Navigator.pop(ctx, false),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: colorScheme.onSurface,
-                side: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              child: Text(
-                "common.actions.cancel".tr(),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              label: "common.actions.cancel".tr(),
             ),
           ],
         ),

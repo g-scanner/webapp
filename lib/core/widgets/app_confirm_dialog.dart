@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../theme/app_theme.dart';
+import 'app_buttons.dart';
 
 /// Mostra un dialogo di conferma modale coordinato con il design system di GlutiEnd.
 Future<void> showAppConfirmDialog({
@@ -71,51 +72,26 @@ Future<void> showAppConfirmDialog({
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              FilledButton(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  await onConfirm();
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: isDestructive
-                      ? colorScheme.error
-                      : colorScheme.primary,
-                  foregroundColor: isDestructive
-                      ? colorScheme.onError
-                      : colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+              if (isDestructive)
+                AppPrimaryDestructiveButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await onConfirm();
+                  },
+                  label: confirmLabel,
+                )
+              else
+                AppPrimaryButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await onConfirm();
+                  },
+                  label: confirmLabel,
                 ),
-                child: Text(
-                  confirmLabel,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
               const SizedBox(height: 10),
-              OutlinedButton(
+              AppTertiaryButton(
                 onPressed: () => Navigator.pop(ctx),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onSurface,
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  cancelLabel ?? "common.actions.cancel".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                label: cancelLabel ?? "common.actions.cancel".tr(),
               ),
             ],
           ),

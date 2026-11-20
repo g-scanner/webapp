@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../../core/theme/theme.dart';
-import '../../../core/widgets/widgets.dart';
-import '../../../models/models.dart';
 
 class HistoryBentoStats extends StatelessWidget {
   final int safeCount;
@@ -28,22 +26,10 @@ class HistoryBentoStats extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
 
-    final safeColors = AppStatusPill.colorsForVariant(
-      AppStatusPill.variantForStatus(GlutenSafetyStatus.adatto),
-      colorScheme,
-    );
-    final uncertainColors = AppStatusPill.colorsForVariant(
-      AppStatusPill.variantForStatus(GlutenSafetyStatus.incerto),
-      colorScheme,
-    );
-    final dangerColors = AppStatusPill.colorsForVariant(
-      AppStatusPill.variantForStatus(GlutenSafetyStatus.nonAdatto),
-      colorScheme,
-    );
-    final unknownColors = AppStatusPill.colorsForVariant(
-      AppStatusPill.variantForStatus(GlutenSafetyStatus.sconosciuto),
-      colorScheme,
-    );
+    final safeColors = colorScheme.statusSafeColors;
+    final uncertainColors = colorScheme.statusUncertainColors;
+    final dangerColors = colorScheme.statusUnsafeColors;
+    final unknownColors = colorScheme.statusUnknownColors;
 
     return Skeletonizer(
       enabled: showSkeleton,
@@ -52,32 +38,28 @@ class HistoryBentoStats extends StatelessWidget {
           _buildStatBox(
             count: safeCount.toString(),
             label: "history.filters.safe".tr(),
-            bgColor: safeColors.bg,
-            textColor: safeColors.text,
+            bgColor: safeColors.alpha, textColor: safeColors.solid,
             icon: Icons.check_circle,
           ),
           const SizedBox(width: 10),
           _buildStatBox(
             count: uncertainCount.toString(),
             label: "history.filters.uncertain".tr(),
-            bgColor: uncertainColors.bg,
-            textColor: uncertainColors.text,
+            bgColor: uncertainColors.alpha, textColor: uncertainColors.solid,
             icon: Icons.warning,
           ),
           const SizedBox(width: 10),
           _buildStatBox(
             count: dangerCount.toString(),
             label: "history.filters.unsafe".tr(),
-            bgColor: dangerColors.bg,
-            textColor: dangerColors.text,
+            bgColor: dangerColors.alpha, textColor: dangerColors.solid,
             icon: Icons.cancel,
           ),
           const SizedBox(width: 10),
           _buildStatBox(
             count: unknownCount.toString(),
             label: "history.filters.unknown".tr(),
-            bgColor: unknownColors.bg,
-            textColor: unknownColors.text,
+            bgColor: unknownColors.alpha, textColor: unknownColors.solid,
             icon: Icons.help,
           ),
         ],

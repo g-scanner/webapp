@@ -33,9 +33,9 @@ class SafetyStatusCard extends StatelessWidget {
     final colorScheme = context.colorScheme;
 
     final variant = AppStatusPill.variantForStatus(effectiveStatus);
-    final colors = AppStatusPill.colorsForVariant(variant, colorScheme);
-    final heroBgColor = colors.bg;
-    final heroTextColor = colors.text;
+    final colors = colorScheme.statusColorsFor(effectiveStatus);
+    final heroBgColor = colors.alpha;
+    final heroTextColor = colors.solid;
 
     String statusBigText;
     IconData statusIcon;
@@ -59,12 +59,10 @@ class SafetyStatusCard extends StatelessWidget {
         break;
     }
 
-    return Container(
+    return AppCard.highEmphasis(
+      bgColor: heroBgColor,
+      borderRadius: 24,
       padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: heroBgColor,
-        borderRadius: BorderRadius.circular(24),
-      ),
       child: Column(
         children: [
           Container(
@@ -125,7 +123,6 @@ class GlutenEvaluationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final cardBg = context.cardBackground;
 
     final Widget cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,10 +167,10 @@ class GlutenEvaluationCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             decoration: BoxDecoration(
-              color: colorScheme.ctaTertiaryBg,
+              color: colorScheme.ctaBarBg,
               border: Border(
                 top: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+                  color: colorScheme.ctaBarBorder,
                 ),
               ),
             ),
@@ -185,7 +182,7 @@ class GlutenEvaluationCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.tertiary,
+                    color: colorScheme.ctaBarFg,
                   ),
                 ),
                 Transform.translate(
@@ -193,7 +190,7 @@ class GlutenEvaluationCard extends StatelessWidget {
                   child: Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: colorScheme.tertiary,
+                    color: colorScheme.ctaBarFg,
                   ),
                 ),
               ],
@@ -203,25 +200,10 @@ class GlutenEvaluationCard extends StatelessWidget {
       ],
     );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: hasActiveReport && onViewReport != null
-          ? InkWell(onTap: onViewReport, child: cardContent)
-          : cardContent,
+    return AppCard.primary(
+      borderRadius: 24,
+      onTap: hasActiveReport ? onViewReport : null,
+      child: cardContent,
     );
   }
 }

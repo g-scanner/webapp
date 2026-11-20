@@ -2,9 +2,9 @@
 // PROJECT: GlutiEnd — See LICENSE file in root for terms.
 
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import 'app_buttons.dart';
 
-/// Pulsante riutilizzabile per azioni distruttive secondarie / tonali,
+/// Pulsante riutilizzabile per azioni distruttive terziarie / tonali,
 /// coordinato con il design system di GlutiEnd per operazioni critiche
 /// (elimina account, disinstalla pacchetto offline, cancella cronologia).
 class AppDestructiveActionButton extends StatelessWidget {
@@ -23,44 +23,11 @@ class AppDestructiveActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-
-    final button = OutlinedButton.icon(
+    return AppTertiaryDestructiveButton(
       onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: colorScheme.destructiveButtonFg,
-        backgroundColor: colorScheme.destructiveButtonBg,
-        side: BorderSide(color: colorScheme.destructiveButtonBorder),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
-      ).copyWith(
-        overlayColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.pressed)) {
-            return colorScheme.splashError;
-          }
-          if (states.contains(WidgetState.hovered) ||
-              states.contains(WidgetState.focused)) {
-            return colorScheme.selectedErrorItemBg;
-          }
-          return null;
-        }),
-      ),
-      icon: Icon(icon, size: 20),
-      label: Text(
-        label,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
+      icon: icon,
+      label: label,
+      fullWidth: fullWidth,
     );
-
-    if (fullWidth) {
-      return SizedBox(
-        width: double.infinity,
-        child: button,
-      );
-    }
-
-    return button;
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../services/db_service.dart';
 
 /// Mostra il dialog "serve riautenticazione" e, se confermato, effettua il signOut
@@ -56,47 +57,17 @@ Future<bool> _showReauthDialog(BuildContext context, FirebaseAuth auth) async {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Azione 1: Procedi con il login (Primaria a pillola)
-            FilledButton(
+            // Azione 1: Procedi con il login
+            AppPrimaryButton(
               onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              child: Text(
-                "auth.social.proceed".tr(),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              label: "auth.social.proceed".tr(),
             ),
             const SizedBox(height: 10),
 
-            // Azione 2: Annulla (Outlined neutro a pillola)
-            OutlinedButton(
+            // Azione 2: Annulla
+            AppTertiaryButton(
               onPressed: () => Navigator.pop(ctx, false),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: colorScheme.onSurface,
-                side: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              child: Text(
-                "common.actions.cancel".tr(),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              label: "common.actions.cancel".tr(),
             ),
           ],
         ),
@@ -190,7 +161,7 @@ Future<void> showDeleteAccountFlow({
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Pulsante 1: Elimina definitivamente (Azione Distruttiva)
-                FilledButton(
+                AppPrimaryDestructiveButton(
                   onPressed: isDeletingAccount
                       ? null
                       : () async {
@@ -253,63 +224,17 @@ Future<void> showDeleteAccountFlow({
                             );
                           }
                         },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: colorScheme.error,
-                    foregroundColor: colorScheme.onError,
-                    disabledBackgroundColor: colorScheme.error.withValues(
-                      alpha: 0.6,
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: isDeletingAccount
-                        ? SizedBox(
-                            key: const ValueKey('loading'),
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: colorScheme.onError,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            "settings.account.deleteConfirmAction".tr(),
-                            key: const ValueKey('text'),
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
+                  isLoading: isDeletingAccount,
+                  label: "settings.account.deleteConfirmAction".tr(),
                 ),
                 const SizedBox(height: 10),
 
-                // Pulsante 2: Annulla (Outlined neutro a pillola)
-                OutlinedButton(
+                // Pulsante 2: Annulla
+                AppTertiaryButton(
                   onPressed: isDeletingAccount
                       ? null
                       : () => Navigator.pop(dialogCtx),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colorScheme.onSurface,
-                    side: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: Text(
-                    "common.actions.cancel".tr(),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  label: "common.actions.cancel".tr(),
                 ),
               ],
             ),

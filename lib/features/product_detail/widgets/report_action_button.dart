@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 
 class ReportActionButton extends StatelessWidget {
   static const double _kSlotHeight = 50.0;
@@ -62,24 +63,11 @@ class ReportActionButton extends StatelessWidget {
     return SizedBox(
       height: _kSlotHeight,
       width: double.infinity,
-      child: FilledButton.tonalIcon(
+      child: AppSecondaryButton(
         onPressed: onReportPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: colorScheme.surfaceContainerHighest,
-          foregroundColor: colorScheme.onSurface,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
-          ),
-        ),
-        icon: const Icon(Icons.flag_outlined, size: 20),
-        label: Text(
-          "product.actions.reportError".tr(),
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
+        icon: Icons.flag_outlined,
+        label: "product.actions.reportError".tr(),
+        fullWidth: true,
       ),
     );
   }

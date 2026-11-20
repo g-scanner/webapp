@@ -96,28 +96,28 @@ class AppStatusPill extends StatelessWidget {
     switch (variant) {
       case AppStatusPillVariant.primary:
         return (
-          bg: colorScheme.statusPrimaryBg,
-          text: colorScheme.statusPrimaryText,
+          bg: colorScheme.statusSafeAlpha,
+          text: colorScheme.statusSafeSolid,
         );
       case AppStatusPillVariant.error:
         return (
-          bg: colorScheme.statusErrorBg,
-          text: colorScheme.statusErrorText,
+          bg: colorScheme.statusUnsafeAlpha,
+          text: colorScheme.statusUnsafeSolid,
         );
       case AppStatusPillVariant.tertiary:
         return (
-          bg: colorScheme.statusTertiaryBg,
-          text: colorScheme.statusTertiaryText,
+          bg: colorScheme.statusUncertainAlpha,
+          text: colorScheme.statusUncertainSolid,
         );
       case AppStatusPillVariant.neutral:
         return (
-          bg: colorScheme.statusNeutralBg,
-          text: colorScheme.statusNeutralText,
+          bg: colorScheme.statusUnknownAlpha,
+          text: colorScheme.statusUnknownSolid,
         );
       case AppStatusPillVariant.secondary:
         return (
-          bg: colorScheme.statusSecondaryBg,
-          text: colorScheme.statusSecondaryText,
+          bg: colorScheme.statusLactoseAlpha,
+          text: colorScheme.statusLactoseSolid,
         );
     }
   }

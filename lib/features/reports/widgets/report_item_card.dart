@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../models/models.dart';
 
 class ReportItemCard extends StatelessWidget {
@@ -21,25 +22,12 @@ class ReportItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final cardBg = context.cardBackground;
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: cardBg,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        hoverColor: colorScheme.surfaceContainerHighest,
-        highlightColor: context.surfaceContainerLow,
-        child: Column(
+    return AppCard.primary(
+      borderRadius: 20,
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // PARTE SUPERIORE: Dettagli in nuovo formato
@@ -152,10 +140,10 @@ class ReportItemCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                color: colorScheme.ctaTertiaryBg,
+                color: colorScheme.ctaBarBg,
                 border: Border(
                   top: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+                    color: colorScheme.ctaBarBorder,
                   ),
                 ),
               ),
@@ -167,7 +155,7 @@ class ReportItemCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: colorScheme.tertiary,
+                      color: colorScheme.ctaBarFg,
                     ),
                   ),
                   Transform.translate(
@@ -175,7 +163,7 @@ class ReportItemCard extends StatelessWidget {
                     child: Icon(
                       Icons.chevron_right_rounded,
                       size: 18,
-                      color: colorScheme.tertiary.withValues(alpha: 0.8),
+                      color: colorScheme.ctaBarFg.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -183,7 +171,6 @@ class ReportItemCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }
@@ -194,19 +181,9 @@ class ReportItemSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final cardBg = context.cardBackground;
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: cardBg,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
+    return AppCard.primary(
+      borderRadius: 20,
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(

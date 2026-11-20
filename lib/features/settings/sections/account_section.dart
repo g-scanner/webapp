@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/widgets/widgets.dart';
 import '../../../services/db_service.dart';
 import '../dialogs/dialogs.dart';
 
@@ -79,49 +80,28 @@ class AccountSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: isAnonymous
-                ? FilledButton.tonalIcon(
-                    onPressed: () => _handleAnonymousAction(context),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: colorScheme.surfaceContainerHighest,
-                      foregroundColor: colorScheme.onSurface,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    icon: const Icon(Icons.login, size: 20),
-                    label: Text(
-                      "auth.social.signInOrRegister".tr(),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  )
-                : OutlinedButton.icon(
-                    onPressed: () => showAccountManagementSheet(
-                      context: context,
-                      auth: auth,
-                      optimisticDisplayName: optimisticDisplayName,
-                      onTriggerToast: onTriggerToast,
-                      onUpdateOptimisticDisplayName:
-                          onUpdateOptimisticDisplayName,
-                      onLogout: _handleLogout,
-                      buildAvatar: buildUserAvatar,
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colorScheme.onSurface,
-                      side: BorderSide(
-                        color: colorScheme.outlineVariant.withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    icon: const Icon(Icons.manage_accounts_outlined, size: 20),
-                    label: Text(
-                      "settings.account.manageAccount".tr(),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
+          isAnonymous
+              ? AppSecondaryButton(
+                  onPressed: () => _handleAnonymousAction(context),
+                  icon: Icons.login,
+                  label: "auth.social.signInOrRegister".tr(),
+                  fullWidth: true,
+                )
+              : AppTertiaryButton(
+                  onPressed: () => showAccountManagementSheet(
+                    context: context,
+                    auth: auth,
+                    optimisticDisplayName: optimisticDisplayName,
+                    onTriggerToast: onTriggerToast,
+                    onUpdateOptimisticDisplayName:
+                        onUpdateOptimisticDisplayName,
+                    onLogout: _handleLogout,
+                    buildAvatar: buildUserAvatar,
                   ),
-          ),
+                  icon: Icons.manage_accounts_outlined,
+                  label: "settings.account.manageAccount".tr(),
+                  fullWidth: true,
+                ),
         ],
       ),
     );
@@ -207,47 +187,14 @@ class AccountSection extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Azione 1: Procedi con il login (Pillola Primaria)
-              FilledButton(
+              AppPrimaryButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "auth.social.proceed".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                label: "auth.social.proceed".tr(),
               ),
               const SizedBox(height: 10),
-
-              // Azione 2: Annulla (Pillola Outlined neutra)
-              OutlinedButton(
+              AppTertiaryButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onSurface,
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.cancel".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                label: "common.actions.cancel".tr(),
               ),
             ],
           ),
@@ -316,47 +263,17 @@ class AccountSection extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Azione 1: Esci dall'account (Filled a pillola)
-              FilledButton(
+              // Azione 1: Esci dall'account
+              AppPrimaryDestructiveButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.error,
-                  foregroundColor: colorScheme.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.signOut".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                label: "common.actions.signOut".tr(),
               ),
               const SizedBox(height: 10),
 
-              // Azione 2: Annulla (Outlined neutro a pillola)
-              OutlinedButton(
+              // Azione 2: Annulla
+              AppTertiaryButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onSurface,
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-                child: Text(
-                  "common.actions.cancel".tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                label: "common.actions.cancel".tr(),
               ),
             ],
           ),
