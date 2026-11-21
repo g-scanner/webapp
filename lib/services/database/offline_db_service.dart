@@ -219,6 +219,21 @@ class OfflineDbService {
       );
     }
 
+    final labelsList = labelsTags.isNotEmpty
+        ? labelsTags
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : const <String>[];
+    final tracesList = tracesTags.isNotEmpty
+        ? tracesTags
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : const <String>[];
+
     return Product(
       barcode: barcode,
       nameMap: {'it': productName, 'en': productName},
@@ -232,6 +247,8 @@ class OfflineDbService {
       isFromOfflineDb: true,
       isOfflineNotFound: false,
       needsVerification: true,
+      labelsTags: labelsList,
+      tracesTags: tracesList,
     );
   }
 

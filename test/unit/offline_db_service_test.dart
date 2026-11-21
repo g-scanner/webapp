@@ -109,6 +109,8 @@ void main() {
         expect(product.getBrand('it'), equals('Barilla'));
         expect(product.isFromOfflineDb, isTrue);
         expect(product.isOfflineNotFound, isFalse);
+        expect(product.labelsTags, contains('en:gluten-free'));
+        expect(product.toOffTags().labelsTags, contains('en:gluten-free'));
       },
     );
 
