@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/models.dart';
 import '../../core/network/connectivity_helper.dart';
+import '../analyzer/analyzer.dart';
 import 'background_sync_manager.dart';
 
 /// Servizio responsabile dell'interrogazione e gestione del Database SQLite offline locale.
@@ -235,11 +236,31 @@ class OfflineDbService {
             .toList()
         : const <String>[];
 
+    final hasGlutenFreeClaim = labelsList.any((t) {
+      final lt = t.toLowerCase();
+      return lt.contains('gluten-free') ||
+          lt.contains('gluten_free') ||
+          lt.contains('glutenfree') ||
+          lt.contains('sans-gluten') ||
+          lt.contains('sin-gluten') ||
+          lt.contains('senza-glutine') ||
+          lt.contains('no-gluten') ||
+          AllergenCanonicalizer.isSafeGlutenClaim(t);
+    });
+
+    String finalIngredientsText = ingredientsText;
+    if (hasGlutenFreeClaim &&
+        !AllergenCanonicalizer.isSafeGlutenClaim(finalIngredientsText)) {
+      finalIngredientsText = finalIngredientsText.isEmpty
+          ? 'Senza glutine'
+          : '$finalIngredientsText (Senza glutine)';
+    }
+
     return Product(
       barcode: barcode,
       nameMap: {'it': productName, 'en': productName},
       brandMap: {'it': brand, 'en': brand},
-      ingredientsMap: {'it': ingredientsText, 'en': ingredientsText},
+      ingredientsMap: {'it': finalIngredientsText, 'en': finalIngredientsText},
       allergensMap: {'it': allergensList, 'en': allergensList},
       imageUrl: null,
       pendingReportsCount: 0,

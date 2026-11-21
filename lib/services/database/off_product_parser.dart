@@ -85,7 +85,66 @@ class OffProductParser {
       }
     }
 
-    // 6. Estrazione Allergeni con rilevamento accurato dei dati mancanti:
+    // 6. Estrazione Labels / Certificazioni
+    final List<String> labelsTags = [];
+    if (pData['labels_tags'] is List && (pData['labels_tags'] as List).isNotEmpty) {
+      labelsTags.addAll(
+        (pData['labels_tags'] as List)
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty),
+      );
+    }
+    if (pData['labels'] != null &&
+        pData['labels'].toString().trim().isNotEmpty) {
+      labelsTags.addAll(
+        pData['labels']
+            .toString()
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
+      );
+    }
+
+    // 7. Estrazione Categories Tags
+    final List<String> categoriesTags = [];
+    if (pData['categories_tags'] is List &&
+        (pData['categories_tags'] as List).isNotEmpty) {
+      categoriesTags.addAll(
+        (pData['categories_tags'] as List)
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty),
+      );
+    }
+
+    // 8. Estrazione Traces Tags
+    final List<String> tracesTags = [];
+    if (pData['traces_tags'] is List && (pData['traces_tags'] as List).isNotEmpty) {
+      tracesTags.addAll(
+        (pData['traces_tags'] as List)
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty),
+      );
+    } else if (pData['traces_from_ingredients'] != null &&
+        pData['traces_from_ingredients'].toString().trim().isNotEmpty) {
+      tracesTags.addAll(
+        pData['traces_from_ingredients']
+            .toString()
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
+      );
+    } else if (pData['traces'] != null &&
+        pData['traces'].toString().trim().isNotEmpty) {
+      tracesTags.addAll(
+        pData['traces']
+            .toString()
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
+      );
+    }
+
+    // 9. Estrazione Allergeni con rilevamento accurato dei dati mancanti:
     List<String>? rawAllergens;
     if (pData['allergens_tags'] != null &&
         (pData['allergens_tags'] as List).isNotEmpty) {
@@ -120,18 +179,34 @@ class OffProductParser {
           lang,
         );
       }
+    }
 
-      final safeClaims = rawAllergens
-          .where(AllergenCanonicalizer.isSafeGlutenClaim)
-          .toList();
-      if (safeClaims.isNotEmpty) {
-        for (final lang in supportedLangs) {
-          final currentIng = ingredientsMap[lang] ?? '';
-          if (!AllergenCanonicalizer.isSafeGlutenClaim(currentIng)) {
-            ingredientsMap[lang] = currentIng.isEmpty
-                ? 'Senza glutine'
-                : '$currentIng (Senza glutine)';
-          }
+    // Integrazione dicitura gluten-free negli ingredienti se certificato da bollino o claim
+    final safeClaims = (rawAllergens ?? [])
+        .where(AllergenCanonicalizer.isSafeGlutenClaim)
+        .toList();
+    final bool hasSafeLabelClaim = labelsTags.any((t) {
+      final lt = t.toLowerCase();
+      return lt.contains('gluten-free') ||
+          lt.contains('gluten_free') ||
+          lt.contains('glutenfree') ||
+          lt.contains('sans-gluten') ||
+          lt.contains('sin-gluten') ||
+          lt.contains('senza-glutine') ||
+          lt.contains('no-gluten') ||
+          AllergenCanonicalizer.isSafeGlutenClaim(t);
+    }) ||
+    (pData['labels'] != null &&
+        GlutenRules.safeTextKeywords.any((k) =>
+            pData['labels'].toString().toLowerCase().contains(k)));
+
+    if (safeClaims.isNotEmpty || hasSafeLabelClaim) {
+      for (final lang in supportedLangs) {
+        final currentIng = ingredientsMap[lang] ?? '';
+        if (!AllergenCanonicalizer.isSafeGlutenClaim(currentIng)) {
+          ingredientsMap[lang] = currentIng.isEmpty
+              ? 'Senza glutine'
+              : '$currentIng (Senza glutine)';
         }
       }
     }
@@ -142,64 +217,6 @@ class OffProductParser {
     final imageUrl = (rawImageUrl is String && rawImageUrl.trim().isNotEmpty)
         ? rawImageUrl.trim()
         : null;
-
-    // 7. Estrazione Labels / Certificazioni
-    final List<String> labelsTags = [];
-    if (pData['labels_tags'] is List && (pData['labels_tags'] as List).isNotEmpty) {
-      labelsTags.addAll(
-        (pData['labels_tags'] as List)
-            .map((e) => e.toString().trim())
-            .where((e) => e.isNotEmpty),
-      );
-    } else if (pData['labels'] != null &&
-        pData['labels'].toString().trim().isNotEmpty) {
-      labelsTags.addAll(
-        pData['labels']
-            .toString()
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty),
-      );
-    }
-
-    // 8. Estrazione Categories Tags
-    final List<String> categoriesTags = [];
-    if (pData['categories_tags'] is List &&
-        (pData['categories_tags'] as List).isNotEmpty) {
-      categoriesTags.addAll(
-        (pData['categories_tags'] as List)
-            .map((e) => e.toString().trim())
-            .where((e) => e.isNotEmpty),
-      );
-    }
-
-    // 9. Estrazione Traces Tags
-    final List<String> tracesTags = [];
-    if (pData['traces_tags'] is List && (pData['traces_tags'] as List).isNotEmpty) {
-      tracesTags.addAll(
-        (pData['traces_tags'] as List)
-            .map((e) => e.toString().trim())
-            .where((e) => e.isNotEmpty),
-      );
-    } else if (pData['traces_from_ingredients'] != null &&
-        pData['traces_from_ingredients'].toString().trim().isNotEmpty) {
-      tracesTags.addAll(
-        pData['traces_from_ingredients']
-            .toString()
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty),
-      );
-    } else if (pData['traces'] != null &&
-        pData['traces'].toString().trim().isNotEmpty) {
-      tracesTags.addAll(
-        pData['traces']
-            .toString()
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty),
-      );
-    }
 
     final nowIso = DateTime.now().toIso8601String();
 
