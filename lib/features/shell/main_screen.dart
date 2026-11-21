@@ -1257,6 +1257,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         lastUpdated: DateTime.now().toIso8601String(),
         pendingReportsCount: updatedProduct.pendingReportsCount,
         fetchedFromOffAt: updatedProduct.fetchedFromOffAt,
+        labelsTags: updatedProduct.labelsTags,
+        categoriesTags: updatedProduct.categoriesTags,
+        tracesTags: updatedProduct.tracesTags,
       );
       await DbService.db
           .collection('products')

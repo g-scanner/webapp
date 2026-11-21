@@ -1503,4 +1503,42 @@ void main() {
       expect(res.status, GlutenSafetyStatus.incerto);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 18 – Harvest Snaps (0071146012455) Parity Test
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 18 – Harvest Snaps (0071146012455) Parity Test', () {
+    test('Harvest Snaps with en:no-gluten and en:gfco-gluten-free is adatto (Green) with offTags', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'HARVEST SNAPS ORIGINAL BAKED VEGGIE SNACKS',
+        brand: 'Calbee',
+        ingredients: 'Green peas, Vegetable oil, Rice, Salt, Calcium carbonate, Rosemary. May contain: Milk, Mustard.',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:snacks', 'en:salty-snacks', 'en:biscuits-and-crackers'],
+        offTags: OffTags(
+          allergensTags: [],
+          tracesTags: ['en:milk', 'en:mustard'],
+          labelsTags: ['en:no-gluten', 'en:gfco-gluten-free'],
+          ingredientsAnalysisTags: [],
+        ),
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+    });
+
+    test('Harvest Snaps without offTags and without text claim is incerto (Orange) - proving safety lock', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'HARVEST SNAPS ORIGINAL BAKED VEGGIE SNACKS',
+        brand: 'Calbee',
+        ingredients: 'Green peas, Vegetable oil, Rice, Salt, Calcium carbonate, Rosemary. May contain: Milk, Mustard.',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: ['en:snacks', 'en:salty-snacks', 'en:biscuits-and-crackers'],
+        offTags: null,
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+    });
+  });
 }

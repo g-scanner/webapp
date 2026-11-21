@@ -65,6 +65,7 @@ def export_package(
         allergens_tags TEXT,
         labels_tags TEXT,
         traces_tags TEXT,
+        categories_tags TEXT,
         last_modified_t INTEGER
     );
     """)
@@ -80,11 +81,11 @@ def export_package(
     insert_query = f"""
     INSERT INTO sqlite_db.products (
         code, product_name, brands, ingredients_text,
-        allergens_tags, labels_tags, traces_tags, last_modified_t
+        allergens_tags, labels_tags, traces_tags, categories_tags, last_modified_t
     )
     SELECT
         code, product_name, brands, ingredients_text,
-        allergens_tags, labels_tags, traces_tags, last_modified_t
+        allergens_tags, labels_tags, traces_tags, categories_tags, last_modified_t
     FROM (
         SELECT *, ROW_NUMBER() OVER (PARTITION BY code ORDER BY last_modified_t DESC) as rn
         FROM ({filtered_query}) candidates

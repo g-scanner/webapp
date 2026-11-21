@@ -269,5 +269,25 @@ void main() {
       expect(offTags.labelsTags, contains('en:no-gluten'));
       expect(offTags.tracesTags, contains('en:nuts'));
     });
+
+    test('Harvest Snaps (0071146012455) extracts GFCO and no-gluten labelsTags', () {
+      final payload = {
+        'product_name': 'HARVEST SNAPS ORIGINAL BAKED VEGGIE SNACKS',
+        'ingredients_text_en': 'Green peas, Vegetable oil, Rice, Salt, Calcium carbonate, Rosemary. May contain: Milk, Mustard.',
+        'allergens_tags': <dynamic>[],
+        'traces_tags': ['en:milk', 'en:mustard'],
+        'labels_tags': ['en:no-gluten', 'en:gfco-gluten-free'],
+        'categories_tags': ['en:snacks', 'en:salty-snacks'],
+      };
+
+      final product = OffProductParser.parseProduct('0071146012455', payload, testSettings);
+      expect(product.labelsTags, containsAll(['en:no-gluten', 'en:gfco-gluten-free']));
+      expect(product.allergensMap['en'], isEmpty);
+      expect(product.tracesTags, containsAll(['en:milk', 'en:mustard']));
+
+      final offTags = product.toOffTags();
+      expect(offTags.labelsTags, contains('en:no-gluten'));
+      expect(offTags.labelsTags, contains('en:gfco-gluten-free'));
+    });
   });
 }

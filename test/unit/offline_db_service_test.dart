@@ -170,5 +170,49 @@ void main() {
       await OfflineDbService.deleteDatabaseFile();
       expect(await File(dbPath).exists(), isFalse);
     });
+
+    test('searchProduct maps labels, traces, and categories without polluting allergens', () async {
+      final db = await openDatabase(
+        dbPath,
+        version: 1,
+        onCreate: (db, v) async {
+          await db.execute('''
+            CREATE TABLE products (
+              code TEXT PRIMARY KEY,
+              product_name TEXT,
+              brands TEXT,
+              ingredients_text TEXT,
+              allergens_tags TEXT,
+              labels_tags TEXT,
+              traces_tags TEXT,
+              categories_tags TEXT,
+              last_modified_t INTEGER
+            );
+          ''');
+        },
+      );
+
+      await db.insert('products', {
+        'code': '0071146012455',
+        'product_name': 'HARVEST SNAPS ORIGINAL BAKED VEGGIE SNACKS',
+        'brands': 'Calbee',
+        'ingredients_text': 'Green peas, Vegetable oil, Rice, Salt, Calcium carbonate, Rosemary. May contain: Milk, Mustard.',
+        'allergens_tags': '',
+        'labels_tags': 'en:no-gluten,en:gfco-gluten-free',
+        'traces_tags': 'en:milk,en:mustard',
+        'categories_tags': 'en:snacks,en:salty-snacks',
+        'last_modified_t': 1773000000,
+      });
+      await db.close();
+
+      final product = await OfflineDbService.searchProduct('0071146012455');
+      expect(product, isNotNull);
+      expect(product!.labelsTags, containsAll(['en:no-gluten', 'en:gfco-gluten-free']));
+      expect(product.tracesTags, containsAll(['en:milk', 'en:mustard']));
+      expect(product.categoriesTags, containsAll(['en:snacks', 'en:salty-snacks']));
+      // Allergeni puliti: non devono contenere le labels
+      expect(product.getAllergens('it'), isNot(contains('en:no-gluten')));
+      expect(product.getAllergens('it'), isNot(contains('en:gfco-gluten-free')));
+    });
   });
 }

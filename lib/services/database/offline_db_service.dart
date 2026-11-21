@@ -195,6 +195,7 @@ class OfflineDbService {
     final allergensTags = row['allergens_tags']?.toString() ?? '';
     final labelsTags = row['labels_tags']?.toString() ?? '';
     final tracesTags = row['traces_tags']?.toString() ?? '';
+    final categoriesTags = row['categories_tags']?.toString() ?? '';
 
     // Creazione liste allergeni e tracce
     final allergensList = <String>[];
@@ -212,13 +213,6 @@ class OfflineDbService {
       );
     }
 
-    // Integrazione claim da labels
-    if (labelsTags.isNotEmpty) {
-      allergensList.addAll(
-        labelsTags.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty),
-      );
-    }
-
     final labelsList = labelsTags.isNotEmpty
         ? labelsTags
             .split(',')
@@ -228,6 +222,13 @@ class OfflineDbService {
         : const <String>[];
     final tracesList = tracesTags.isNotEmpty
         ? tracesTags
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : const <String>[];
+    final categoriesList = categoriesTags.isNotEmpty
+        ? categoriesTags
             .split(',')
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty)
@@ -249,6 +250,7 @@ class OfflineDbService {
       needsVerification: true,
       labelsTags: labelsList,
       tracesTags: tracesList,
+      categoriesTags: categoriesList,
     );
   }
 
