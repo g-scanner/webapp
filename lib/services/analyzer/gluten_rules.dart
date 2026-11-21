@@ -52,6 +52,60 @@ class GlutenRules {
     "malz",
   ];
 
+  static const List<String> barleyMaltPhrases = [
+    // Italiano
+    "estratto di malto d'orzo",
+    "estratto di malto di orzo",
+    "estratto di malto d’orzo",
+    "estratto di malto",
+    "malto d'orzo",
+    "malto di orzo",
+    "malto d’orzo",
+    "aroma di malto d'orzo",
+    "aroma di malto d’orzo",
+    "aromi di malto d'orzo",
+    "aromi di malto d’orzo",
+    "aroma di malto",
+    "aromi di malto",
+    // Inglese
+    "barley malt extract",
+    "barley malt",
+    "malt extract (barley)",
+    "extract of barley malt",
+    "barley malt flavouring",
+    "barley malt flavoring",
+    // Francese
+    "extrait de malt d'orge",
+    "extrait de malt d’orge",
+    "malt d'orge",
+    "malt d’orge",
+    // Spagnolo
+    "extracto de malta de cebada",
+    "malta de cebada",
+    // Tedesco
+    "gerstenmalzextrakt",
+    "gerstenmalz",
+    // Olandese
+    "gerstemoutextract",
+    "gerstemout",
+  ];
+
+  /// Restituisce `true` se la parola 'orzo' (o equivalenti traduzioni) compare
+  /// ESCLUSIVAMENTE all'interno di frasi relative ad estratto di malto d'orzo / aromi di malto.
+  /// Se compare anche come cereale a sé (es. 'farina d'orzo', 'orzo perlato'), restituisce `false`.
+  static bool isBarleyOnlyFromMalt(String text) {
+    String sanitized = text.toLowerCase();
+    for (final phrase in barleyMaltPhrases) {
+      sanitized = sanitized.replaceAll(phrase, " ");
+    }
+    sanitized = sanitized.replaceAll("’", "'");
+    final regex = RegExp(
+      r"\b(orzo|barley|orge|cebada|gerste|gerst)\b",
+      caseSensitive: false,
+    );
+    return !regex.hasMatch(sanitized);
+  }
+
   static const List<String> traceKeywords = [
     // Italiano
     "può contenere tracce di cereali contenenti glutine",

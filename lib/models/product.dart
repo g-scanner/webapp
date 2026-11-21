@@ -23,6 +23,9 @@ class Product {
   final bool isFromOfflineDb;
   final bool isOfflineNotFound;
   final bool needsVerification;
+  final List<String> labelsTags;
+  final List<String> categoriesTags;
+  final List<String> tracesTags;
 
   Product({
     required this.barcode,
@@ -37,6 +40,9 @@ class Product {
     this.isFromOfflineDb = false,
     this.isOfflineNotFound = false,
     this.needsVerification = false,
+    this.labelsTags = const [],
+    this.categoriesTags = const [],
+    this.tracesTags = const [],
   });
 
   // Helper getters per estrarre la lingua corrente con fallback intelligente
@@ -195,6 +201,16 @@ class Product {
   /// `true` se il prodotto si trova nel Livello C: Hard Stale (> 30 giorni, incompleto o ghost > 24h).
   bool get isStale => freshnessWindow == ProductFreshnessWindow.hardStale;
 
+  /// Restituisce un'istanza [OffTags] pronta per l'analisi gluten safety.
+  OffTags toOffTags() {
+    return OffTags(
+      allergensTags: allergensMap['en'] ?? (allergensMap.isNotEmpty ? allergensMap.values.first : const []),
+      tracesTags: tracesTags,
+      labelsTags: labelsTags,
+      ingredientsAnalysisTags: const [],
+    );
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
     // Gestione nameMap
     Map<String, String> nMap = {};
@@ -254,6 +270,18 @@ class Product {
           json['is_offline_not_found'] ?? json['isOfflineNotFound'] ?? false,
       needsVerification:
           json['needs_verification'] ?? json['needsVerification'] ?? false,
+      labelsTags: (json['labels_tags'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      categoriesTags: (json['categories_tags'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      tracesTags: (json['traces_tags'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 
@@ -271,6 +299,9 @@ class Product {
       'is_from_offline_db': isFromOfflineDb,
       'is_offline_not_found': isOfflineNotFound,
       'needs_verification': needsVerification,
+      'labels_tags': labelsTags,
+      'categories_tags': categoriesTags,
+      'traces_tags': tracesTags,
     };
   }
 }

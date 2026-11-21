@@ -143,6 +143,64 @@ class OffProductParser {
         ? rawImageUrl.trim()
         : null;
 
+    // 7. Estrazione Labels / Certificazioni
+    final List<String> labelsTags = [];
+    if (pData['labels_tags'] is List && (pData['labels_tags'] as List).isNotEmpty) {
+      labelsTags.addAll(
+        (pData['labels_tags'] as List)
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty),
+      );
+    } else if (pData['labels'] != null &&
+        pData['labels'].toString().trim().isNotEmpty) {
+      labelsTags.addAll(
+        pData['labels']
+            .toString()
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
+      );
+    }
+
+    // 8. Estrazione Categories Tags
+    final List<String> categoriesTags = [];
+    if (pData['categories_tags'] is List &&
+        (pData['categories_tags'] as List).isNotEmpty) {
+      categoriesTags.addAll(
+        (pData['categories_tags'] as List)
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty),
+      );
+    }
+
+    // 9. Estrazione Traces Tags
+    final List<String> tracesTags = [];
+    if (pData['traces_tags'] is List && (pData['traces_tags'] as List).isNotEmpty) {
+      tracesTags.addAll(
+        (pData['traces_tags'] as List)
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty),
+      );
+    } else if (pData['traces_from_ingredients'] != null &&
+        pData['traces_from_ingredients'].toString().trim().isNotEmpty) {
+      tracesTags.addAll(
+        pData['traces_from_ingredients']
+            .toString()
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
+      );
+    } else if (pData['traces'] != null &&
+        pData['traces'].toString().trim().isNotEmpty) {
+      tracesTags.addAll(
+        pData['traces']
+            .toString()
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty),
+      );
+    }
+
     final nowIso = DateTime.now().toIso8601String();
 
     return Product(
@@ -155,6 +213,9 @@ class OffProductParser {
       pendingReportsCount: 0,
       lastUpdated: nowIso,
       fetchedFromOffAt: nowIso,
+      labelsTags: labelsTags,
+      categoriesTags: categoriesTags,
+      tracesTags: tracesTags,
     );
   }
 

@@ -374,7 +374,8 @@ class _SubmitReportSheetContentState extends State<_SubmitReportSheetContent> {
                                             allergensList: widget.currentProduct
                                                 .getAllergens(currentLang),
                                             reportCount: 0,
-                                            categoriesTags: const [],
+                                            categoriesTags: widget.currentProduct.categoriesTags,
+                                            offTags: widget.currentProduct.toOffTags(),
                                             strictMode:
                                                 widget.userSettings.strictMode,
                                             warnAdditives: widget

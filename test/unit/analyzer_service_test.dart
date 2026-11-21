@@ -1350,4 +1350,157 @@ void main() {
       );
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP 17 – Certified Barley Malt Extract & Safety Lock Verification
+  // ═══════════════════════════════════════════════════════════════════════════
+  group('GROUP 17 – Certified Barley Malt Extract & Safety Lock Verification', () {
+    test(
+        'Lindor latte with estratto di malto d\'orzo and en:no-gluten tag is adatto with safe barley malt info and no phantom traces',
+        () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Lindor latte',
+        brand: 'Lindt',
+        ingredients:
+            'Zucchero, grasso vegetale (cocco, palmisti), burro di cacao, pasta di cacao, latte intero in polvere, latte scremato in polvere, lattosio, burro anidro, emulsionante (lecitina di soia), estratto di malto d\'orzo, aromi. Può contenere nocciole ed altra frutta a guscio.',
+        allergensList: ['Glutine', 'Latte', 'Soia'],
+        reportCount: 0,
+        categoriesTags: [],
+        offTags: OffTags(
+          allergensTags: ['en:gluten', 'en:milk', 'en:soybeans'],
+          tracesTags: [],
+          labelsTags: ['en:no-gluten'],
+          ingredientsAnalysisTags: [],
+        ),
+        strictMode: false,
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) =>
+              i.ingredient == 'product.analysis.safeTraceIngredient'.tr() ||
+              i.ingredient == 'product.analysis.safeTraceIngredient',
+        ),
+        isTrue,
+      );
+      // Nessuna traccia di contaminazione generica/fantasma (traceIngredient)!
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) =>
+              i.ingredient == 'product.analysis.traceIngredient'.tr() ||
+              i.ingredient == 'product.analysis.traceIngredient',
+        ),
+        isFalse,
+      );
+      // Gli allergeni non contengono Glutine o Orzo se adatto
+      expect(res.allergens.contains('Glutine'), isFalse);
+      expect(res.allergens.contains('Orzo'), isFalse);
+      expect(res.allergens, containsAll(['Latte', 'Soia']));
+    });
+
+    test('strictMode does not block certified barley malt product without traces', () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Lindor latte',
+        brand: 'Lindt',
+        ingredients:
+            'Zucchero, burro di cacao, estratto di malto d\'orzo, lecitina di soia, aromi.',
+        allergensList: ['Glutine', 'Soia'],
+        reportCount: 0,
+        categoriesTags: [],
+        offTags: OffTags(
+          allergensTags: ['en:gluten', 'en:soybeans'],
+          tracesTags: [],
+          labelsTags: ['en:gluten-free'],
+          ingredientsAnalysisTags: [],
+        ),
+        strictMode: true,
+      );
+
+      expect(res.status, GlutenSafetyStatus.adatto);
+    });
+
+    test(
+        'barley malt extract without gluten-free claim is nonAdatto (Red) - never false green',
+        () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Cioccolato al latte',
+        brand: 'Brand',
+        ingredients:
+            'Zucchero, pasta di cacao, burro di cacao, estratto di malto d\'orzo, aromi.',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+        offTags: OffTags(
+          allergensTags: [],
+          tracesTags: [],
+          labelsTags: [],
+          ingredientsAnalysisTags: [],
+        ),
+        strictMode: false,
+      );
+
+      expect(res.status, GlutenSafetyStatus.nonAdatto);
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isTrue,
+      );
+    });
+
+    test(
+        'SAFETY LOCK: en:no-gluten tag on product with wheat flour is incerto (Discrepancy), NEVER adatto',
+        () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Biscotti Falsi',
+        brand: 'Brand',
+        ingredients: 'Farina di frumento, zucchero, burro, uova.',
+        allergensList: ['en:gluten'],
+        reportCount: 0,
+        categoriesTags: [],
+        offTags: OffTags(
+          allergensTags: ['en:gluten'],
+          tracesTags: [],
+          labelsTags: ['en:no-gluten'],
+          ingredientsAnalysisTags: [],
+        ),
+        strictMode: false,
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+      expect(
+        res.ingredientsAnalyzed.any(
+          (i) =>
+              i.ingredient == 'product.analysis.glutenFreeIngredient'.tr() ||
+              i.ingredient == 'product.analysis.glutenFreeIngredient',
+        ),
+        isTrue,
+      );
+      expect(
+        res.ingredientsAnalyzed.any((i) => i.dangerLevel == 'danger'),
+        isTrue,
+      );
+    });
+
+    test(
+        'SAFETY LOCK: en:no-gluten tag on product with whole barley (orzo perlato) is incerto, NEVER adatto',
+        () {
+      final res = AnalyzerService.analyzeGlutenSafety(
+        name: 'Zuppa',
+        brand: 'Brand',
+        ingredients: 'Orzo perlato, carote, sedano, cipolla.',
+        allergensList: [],
+        reportCount: 0,
+        categoriesTags: [],
+        offTags: OffTags(
+          allergensTags: [],
+          tracesTags: [],
+          labelsTags: ['en:no-gluten'],
+          ingredientsAnalysisTags: [],
+        ),
+        strictMode: false,
+      );
+
+      expect(res.status, GlutenSafetyStatus.incerto);
+    });
+  });
 }

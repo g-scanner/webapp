@@ -105,6 +105,41 @@ class AnalyzerService {
       }
     }
 
+    // Gestione specifica Estratto di Malto d'Orzo in prodotti certificati
+    final bool hasGlutenFreeCertification =
+        hasGlutenFreeBollino || hasGlutenFreeTextClaim;
+    final String combinedTextForMalt = "$safeIng $safeName";
+    final bool hasBarleyMaltMention = GlutenRules.barleyMaltPhrases.any(
+      (p) => combinedTextForMalt.contains(p.toLowerCase()),
+    );
+    final bool isBarleyOnlyMalt = hasBarleyMaltMention &&
+        GlutenRules.isBarleyOnlyFromMalt(combinedTextForMalt);
+
+    bool hasCertifiedSafeBarleyMalt = false;
+    if (hasGlutenFreeCertification && isBarleyOnlyMalt) {
+      final bool hasOtherDangerCereals = foundDanger.any((k) {
+        final lk = k.toLowerCase();
+        return lk != 'orzo' &&
+            lk != 'barley' &&
+            lk != 'orge' &&
+            lk != 'cebada' &&
+            lk != 'gerste' &&
+            lk != 'gerst';
+      });
+      if (!hasOtherDangerCereals) {
+        foundDanger.removeWhere((k) {
+          final lk = k.toLowerCase();
+          return lk == 'orzo' ||
+              lk == 'barley' ||
+              lk == 'orge' ||
+              lk == 'cebada' ||
+              lk == 'gerste' ||
+              lk == 'gerst';
+        });
+        hasCertifiedSafeBarleyMalt = true;
+      }
+    }
+
     bool hasMalto = false;
     for (String m in GlutenRules.maltoKeywords) {
       final isAgglutinative = GlutenRules.agglutinativeRoots.contains(m);
@@ -114,7 +149,8 @@ class AnalyzerService {
       if (regex.hasMatch(lowerIng) || regex.hasMatch(lowerName)) {
         final combinedText = "$lowerIng $lowerName";
         if (!combinedText.contains("malto di riso") &&
-            !combinedText.contains("rice malt")) {
+            !combinedText.contains("rice malt") &&
+            !hasCertifiedSafeBarleyMalt) {
           hasMalto = true;
         }
       }
@@ -144,11 +180,13 @@ class AnalyzerService {
             lowerT.contains('kamut');
       }
 
-      hasOffGlutenAllergen =
-          offTags.allergensTags.any(isGlutenTag) ||
-          offTags.ingredientsAnalysisTags.any(
-            (t) => t == 'en:gluten' || t == 'en:contains-gluten',
-          );
+      if (!hasCertifiedSafeBarleyMalt) {
+        hasOffGlutenAllergen =
+            offTags.allergensTags.any(isGlutenTag) ||
+            offTags.ingredientsAnalysisTags.any(
+              (t) => t == 'en:gluten' || t == 'en:contains-gluten',
+            );
+      }
       hasOffGlutenTrace =
           offTags.tracesTags.any(isGlutenTag) ||
           offTags.ingredientsAnalysisTags.any(
@@ -169,8 +207,21 @@ class AnalyzerService {
           isSafeGlutenClaim(a)) {
         continue;
       }
-      if (GlutenRules.dangerKeywords.any((k) => lowerA.contains(k)) &&
-          !foundDanger.contains(lowerA)) {
+      // Se il prodotto è certificato senza glutine ed è a norma per il malto,
+      // un tag allergene "glutine" o "orzo" proveniente da OFF non è una traccia.
+      if (hasCertifiedSafeBarleyMalt &&
+          (lowerA == 'glutine' ||
+              lowerA == 'gluten' ||
+              lowerA == 'orzo' ||
+              lowerA == 'barley')) {
+        continue;
+      }
+      // Se abbiamo già identificato un pericolo reale negli ingredienti,
+      // l'allergene primario non è una traccia di contaminazione.
+      if (foundDanger.isNotEmpty) {
+        continue;
+      }
+      if (GlutenRules.dangerKeywords.any((k) => lowerA.contains(k))) {
         foundTraces.add(lowerA);
       }
     }
@@ -218,24 +269,70 @@ class AnalyzerService {
 
     // CASO 1: BOLLINO UFFICIALE (Se c'è bollino ufficiale OFF, ci fidiamo della certificazione a norma di legge)
     if (hasGlutenFreeBollino) {
-      status = GlutenSafetyStatus.adatto;
-      reason = "product.analysis.safe".tr();
-      ingredientsAnalyzed.add(
-        IngredientAnalyzed(
-          ingredient: "product.analysis.glutenFreeIngredient".tr(),
-          dangerLevel: "safe",
-          reason: "product.analysis.glutenFreeReason".tr(),
-        ),
-      );
-
-      if (hasAnyTrace) {
+      if (hasDanger) {
+        // Blocco di sicurezza: discrepanza grave tra bollino OFF e ingredienti vietati (es. farina di grano)
+        status = GlutenSafetyStatus.incerto;
+        reason = "product.analysis.claimDiscrepancy".tr();
         ingredientsAnalyzed.add(
           IngredientAnalyzed(
-            ingredient: "product.analysis.safeTraceIngredient".tr(),
+            ingredient: "product.analysis.glutenFreeIngredient".tr(),
             dangerLevel: "warning",
-            reason: "product.analysis.safeTraceReason".tr(),
+            reason: "product.analysis.claimDiscrepancyReason".tr(),
           ),
         );
+
+        for (var ing in foundDanger) {
+          ingredientsAnalyzed.add(
+            IngredientAnalyzed(
+              ingredient: ing,
+              dangerLevel: "danger",
+              reason: "product.analysis.glutenSource".tr(),
+            ),
+          );
+        }
+
+        if (hasOffGlutenAllergen &&
+            !ingredientsAnalyzed.any((i) => i.dangerLevel == "danger")) {
+          ingredientsAnalyzed.add(
+            IngredientAnalyzed(
+              ingredient: "product.analysis.glutenAllergenIngredient".tr(),
+              dangerLevel: "danger",
+              reason: "product.analysis.glutenSource".tr(),
+            ),
+          );
+        }
+
+        if (hasAnyTrace) {
+          ingredientsAnalyzed.add(
+            IngredientAnalyzed(
+              ingredient: "product.analysis.traceIngredient".tr(),
+              dangerLevel: "warning",
+              reason: "product.analysis.traceWarningReason".tr(),
+            ),
+          );
+        }
+      } else {
+        status = GlutenSafetyStatus.adatto;
+        reason = "product.analysis.safe".tr();
+        ingredientsAnalyzed.add(
+          IngredientAnalyzed(
+            ingredient: "product.analysis.glutenFreeIngredient".tr(),
+            dangerLevel: "safe",
+            reason: "product.analysis.glutenFreeReason".tr(),
+          ),
+        );
+
+        if ((hasCertifiedSafeBarleyMalt || hasAnyTrace) &&
+            !ingredientsAnalyzed.any((i) =>
+                i.ingredient == "product.analysis.safeTraceIngredient".tr())) {
+          ingredientsAnalyzed.add(
+            IngredientAnalyzed(
+              ingredient: "product.analysis.safeTraceIngredient".tr(),
+              dangerLevel: "warning",
+              reason: "product.analysis.safeTraceReason".tr(),
+            ),
+          );
+        }
       }
     }
     // CASO 1-BIS: CLAIM SOLO TESTUALE (Senza bollino ufficiale nei labels OFF)
@@ -295,7 +392,9 @@ class AnalyzerService {
           ),
         );
 
-        if (hasAnyTrace) {
+        if ((hasCertifiedSafeBarleyMalt || hasAnyTrace) &&
+            !ingredientsAnalyzed.any((i) =>
+                i.ingredient == "product.analysis.safeTraceIngredient".tr())) {
           ingredientsAnalyzed.add(
             IngredientAnalyzed(
               ingredient: "product.analysis.safeTraceIngredient".tr(),
@@ -414,6 +513,16 @@ class AnalyzerService {
       allergensList,
       preferredLanguage,
     );
+
+    if (status == GlutenSafetyStatus.adatto) {
+      finalAllergens.removeWhere((a) {
+        final lower = a.toLowerCase();
+        return lower == 'glutine' ||
+            lower == 'gluten' ||
+            lower == 'orzo' ||
+            lower == 'barley';
+      });
+    }
 
     if ((status == GlutenSafetyStatus.nonAdatto ||
             (!hasGlutenFreeBollino && hasGlutenFreeTextClaim && hasDanger)) &&

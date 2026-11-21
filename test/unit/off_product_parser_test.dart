@@ -250,5 +250,24 @@ void main() {
       final product = OffProductParser.parseProduct('7777', payload, testSettings);
       expect(product.ingredientsMap['it'], contains('Senza glutine'));
     });
+
+    test('extracts labelsTags, categoriesTags, and tracesTags from OFF payload', () {
+      final payload = {
+        'product_name': 'Lindor latte',
+        'ingredients_text_it': 'Estratto di malto d\'orzo',
+        'labels_tags': ['en:no-gluten', 'en:fair-trade'],
+        'categories_tags': ['en:chocolates'],
+        'traces_tags': ['en:nuts'],
+      };
+
+      final product = OffProductParser.parseProduct('8003340045825', payload, testSettings);
+      expect(product.labelsTags, containsAll(['en:no-gluten', 'en:fair-trade']));
+      expect(product.categoriesTags, contains('en:chocolates'));
+      expect(product.tracesTags, contains('en:nuts'));
+
+      final offTags = product.toOffTags();
+      expect(offTags.labelsTags, contains('en:no-gluten'));
+      expect(offTags.tracesTags, contains('en:nuts'));
+    });
   });
 }
